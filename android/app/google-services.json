@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "596868327459",
+    "project_id": "barzzyapp2",
+    "storage_bucket": "barzzyapp2.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:596868327459:android:dae19a802b0bc2e003a996",
+        "android_client_info": {
+          "package_name": "com.example.barzzy_app2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBoykd3G0ct7Yt64ZIzMw_MNa4rwS7SkB8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

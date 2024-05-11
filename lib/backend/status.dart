@@ -1,0 +1,1 @@
+enum Status {unclaimed, preparing, ready, cancelled, past}
