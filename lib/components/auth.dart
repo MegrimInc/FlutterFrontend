@@ -30,7 +30,6 @@ class _AuthPageState extends State<AuthPage> {
   void _initPages() {
     _pages = [
       const HomePage(),
-      //const HomePage(),
       const OrdersPage(),
       const ProfilePage(),
       const NotificationsPage(),
