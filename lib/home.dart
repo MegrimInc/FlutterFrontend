@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -38,6 +39,24 @@ class HomePage extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8.29),
               child: const MyTopIcons(),
             ),
+
+
+
+
+
+
+
+              if (historyLength == 0)
+              
+              
+              const Padding(
+                padding: EdgeInsets.only(top: 300),
+                child: Center(child: Text('FIND YOUR BAR')),
+              ),
+
+
+
+
 
 
               //CONTENT
@@ -155,6 +174,14 @@ class HomePage extends StatelessWidget {
                           ),
                         ],
                       ),
+                    //   const SizedBox(width: 45),
+
+                    //    Text( 
+                    //     'No Recents', 
+                    //   style: GoogleFonts.sourceSans3(
+                    //   fontSize: 15,
+                    //   color: Colors.white,
+                    // ),)
                     ],
                   ),
                 ),
