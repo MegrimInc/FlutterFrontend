@@ -71,7 +71,7 @@ class MenuPageState extends State<MenuPage> {
           TextButton(
             onPressed: () => _togglePopupMenu(context),
             style: ButtonStyle(
-              overlayColor: MaterialStateProperty.all(Colors.transparent),
+              overlayColor: WidgetStateProperty.all(Colors.transparent),
             ),
             child: actionWidget,
           ),

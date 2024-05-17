@@ -23,6 +23,12 @@ class HomePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+           
+           
+           // BARZZY LOGO, SEARCH, AND TAB
+            
+              //DEFAULT
+            if (historyLength == 0)
             Container(
               decoration: const BoxDecoration(
               border: Border(
@@ -32,58 +38,179 @@ class HomePage extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8.29),
               child: const MyTopIcons(),
             ),
-            if (historyLength > 1)
-              Padding(
-                padding: const EdgeInsets.only(
-                  top: 11.5, 
-                  left: 5),
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    height: 97.5,
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Color.fromARGB(255, 126, 126, 126),
-                          width: 0.1,
-                        ),
-                      ),
-                    ),
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: historyLength - 1,
-                      itemBuilder: (context, index) {
-                        return GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  MenuPage(barId: historyIds[index + 1]),
-                            ),
-                          ),
-                          child: Container(
-                            width: 85,
-                            margin: const EdgeInsets.symmetric(horizontal: 5),
-                            decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 0, 0, 0),
-                              border: Border.all(
-                                color: Colors.white, 
-                                width: .5),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Center(
-                              child: Text(
-                                barDatabase.getBarById(historyIds[index + 1])?.name ?? 'No Name',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
+
+
+              //CONTENT
+              if (historyLength > 0)
+            Container(
+            padding: const EdgeInsets.only(bottom: 8),
+              child: const MyTopIcons(),
+            ),
+
+
+            
+            // RECENT BARS LIST
+
+             if (historyLength > 1)
+  Padding(
+    padding: const EdgeInsets.only(
+      left: 5,
+    ),
+    child: Container(
+      padding: const EdgeInsets.only(bottom: 12),
+      height: 130, // Adjusted height to fit the name below
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Color.fromARGB(255, 126, 126, 126),
+            width: 0.1,
+          ),
+        ),
+      ),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: historyLength - 1,
+        itemBuilder: (context, index) {
+          return GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    MenuPage(barId: historyIds[index + 1]),
               ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 85,
+                  height: 85,
+                  margin: const EdgeInsets.symmetric(horizontal: 5),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 0, 0, 0),
+                    border: Border.all(
+                      color: Colors.white,
+                      width: .5,
+                    ),
+                    borderRadius: BorderRadius.circular(60),
+                  ),
+                  child: const Text('')
+                ),
+                const SizedBox(height: 2.9),
+                Text(
+                  barDatabase.getBarById(historyIds[index + 1])?.name ?? 'No Name',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    ),
+  ),   
+              
+              
+              
+              
+              
+              if (historyLength == 1)
+              Container(
+  padding: const EdgeInsets.only(bottom: 12),
+  height: 130,
+  width: 800,
+  decoration: const BoxDecoration(
+    border: Border(
+      bottom: BorderSide(
+        color: Color.fromARGB(255, 126, 126, 126),
+        width: 0.1,
+      ),
+    ),
+  ),
+  child: Padding(
+    padding: const EdgeInsets.only(right: 275),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 85,
+          height: 85,
+          margin: const EdgeInsets.symmetric(horizontal: 5),
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 0, 0, 0),
+            border: Border.all(
+              color: Colors.white,
+              width: .5,
+            ),
+            borderRadius: BorderRadius.circular(60),
+          ),
+          child: const Text(''),
+        ),
+        const SizedBox(height: 2.9),
+        const Text(
+          'Recents',
+          style: TextStyle(color: Colors.white),
+        ),
+      ],
+    ),
+  ),
+),
+
+              
+
+
+
+
+
+              
+              
+              
+              
+              
+              
+              const SizedBox(height: 17.5),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+
+             // TOP ROW WITH BAR NAME AND WAIT TIME 
+            
+                  if (historyLength > 0)
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children:[
+
+                    
+                    Text(
+                      barDatabase.getBarById(historyIds[0])?.name ?? 'No Name',
+                      style: const TextStyle(color: Colors.white),
+                      ),
+
+
+
+                    Text(
+        'Wait: 10 min',
+        style: GoogleFonts.sourceSans3(
+          fontSize: 15,
+          color: Colors.white,
+        ),
+      ),
+                  ]),
+
+
+            // MAIN MOST RECENT BAR 
+
+            
             if (historyLength > 0)
               GestureDetector(
                 onTap: () => Navigator.push(
@@ -97,82 +224,116 @@ class HomePage extends StatelessWidget {
                   margin: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: const Color.fromARGB(255, 0, 0, 0),
-                    border: Border.all(color: Colors.white),
+                    //border: Border.all(color: Colors.white),
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: Center(
+                  child: const Center(
                     child: Text(
-                      barDatabase.getBarById(historyIds[0])?.name ?? 'No Recent Bar',
-                      style: const TextStyle(color: Colors.white, fontSize: 24),
+                      'Picture',
+                      style: TextStyle(
+                        color: Colors.white, 
+                        fontSize: 24),
                     ),
                   ),
                 ),
               ),
             const SizedBox(height: 10),
+            
+            
+            //BOTTOM ROW WITH RECENT DRINKS AND WAIT TIME
+            
+            
             if (historyLength > 0)
               Container(
-                height: 30,
-                margin: const EdgeInsets.symmetric(vertical: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 17.5),
-                      child: Text(
-                        'Open',
-                        style: GoogleFonts.sourceSans3(
-                          fontSize: 15,
-                          color: Colors.lightGreen,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      'Wait time: 5 min',
-                      style: GoogleFonts.sourceSans3(
-                        fontSize: 15,
-                        color: Colors.white,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.info),
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.black,
-                          builder: (BuildContext context) {
-                            double screenHeight = MediaQuery.of(context).size.height;
-                            double bottomSheetHeight = screenHeight * 0.75; // Set the height to 80% of the screen height
+  height: 30,
+  margin: const EdgeInsets.symmetric(vertical: 10),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      RichText(
+  text: const TextSpan(
+    children: [
+      TextSpan(
+        text: 'Open',
+        style: TextStyle(
+          //fontWeight: FontWeight.w900,
+          fontSize: 15,
+          color: Colors.green,
+        ),
+      ),
+      TextSpan(
+        text: ' / ',
+        style: TextStyle(
+          //fontWeight: FontWeight.w900,
+          fontSize: 17.5,
+          color: Colors.white,
+        ),
+      ),
+      TextSpan(
+        text: 'Closed',
+        style: TextStyle(
+          //fontWeight: FontWeight.w900,
+          fontSize: 15,
+          color: Colors.grey,
+        ),
+      ),
+    ],
+  ),
+),
 
-                            return Container(
-                              height: bottomSheetHeight,
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  
-                                  Container(
-                                    width: 150,
-                                    height: 5,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.withOpacity(0.5), // Set color and opacity
-                                      borderRadius: BorderRadius.circular(20), // Make it circular
-                                    ),
-                                  ),
-                                  
-                                  
-                                  // Add more widgets as needed
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
+
+      GestureDetector(
+        onTap: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.black,
+            builder: (BuildContext context) {
+              double screenHeight = MediaQuery.of(context).size.height;
+              double bottomSheetHeight = screenHeight * 0.718;
+
+              return Container(
+                height: bottomSheetHeight,
+                width: double.infinity,
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                   borderRadius: BorderRadius.circular(20),
+                  border: const Border(
+                    top: BorderSide(
+                      color: Color.fromARGB(255, 126, 126, 126),
+                      width: 0.1,
                     ),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 150,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    // Add more widgets as needed
                   ],
                 ),
-              ),
+              );
+            },
+          );
+        },
+        child: const Icon(
+    Icons.history_rounded, // or Icons.bookmark_border, or Icons.bookmark_outline
+    color: Colors.grey,
+    size: 27.5,
+  ),
+        
+      ),
+    ],
+  ),
+),
+
           ],
         ),
       ),
