@@ -50,6 +50,7 @@ class HomePage extends StatelessWidget {
 
             
             // RECENT BARS LIST
+              // CONTENT
 
              if (historyLength > 1)
   Padding(
@@ -110,52 +111,69 @@ class HomePage extends StatelessWidget {
   ),   
               
               
-              
-              
-              
-              if (historyLength == 1)
-              Container(
-  padding: const EdgeInsets.only(bottom: 12),
-  height: 130,
-  width: 800,
-  decoration: const BoxDecoration(
-    border: Border(
-      bottom: BorderSide(
-        color: Color.fromARGB(255, 126, 126, 126),
-        width: 0.1,
-      ),
-    ),
-  ),
-  child: Padding(
-    padding: const EdgeInsets.only(right: 275),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 85,
-          height: 85,
-          margin: const EdgeInsets.symmetric(horizontal: 5),
-          decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 0, 0, 0),
-            border: Border.all(
-              color: Colors.white,
-              width: .5,
-            ),
-            borderRadius: BorderRadius.circular(60),
-          ),
-          child: const Text(''),
-        ),
-        const SizedBox(height: 2.9),
-        const Text(
-          'Recents',
-          style: TextStyle(color: Colors.white),
-        ),
-      ],
-    ),
-  ),
-),
 
-              
+            // DEFAULT
+
+
+              if (historyLength == 1)
+              Padding(
+                padding: const EdgeInsets.only(left: 5),
+                child: Container(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  height: 130,
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Color.fromARGB(255, 126, 126, 126),
+                        width: 0.1,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 85,
+                            height: 85,
+                            margin: const EdgeInsets.symmetric(horizontal: 5),
+                            decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 0, 0, 0),
+                border: Border.all(
+                  color: Colors.white,
+                  width: .5,
+                ),
+                borderRadius: BorderRadius.circular(60),
+                            ),
+                            child: const Text(''),
+                          ),
+                          const SizedBox(height: 2.9),
+                          const Text(
+                            'Recents',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
