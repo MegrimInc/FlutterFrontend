@@ -1,93 +1,79 @@
-import 'package:barzzy_app1/search.dart';
-import 'package:barzzy_app1/tabs.dart';
+import 'package:barzzy_app1/SettingsPage/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/heroicons_solid.dart';
+ 
 
-
-
-class MyTopIcons extends StatefulWidget {
-  
-  const MyTopIcons({super.key});
+class MyTopIcons1 extends StatefulWidget {
+   const MyTopIcons1({super.key});
 
   @override
-  State<MyTopIcons> createState() => _MyTopIconsState();
+  State<MyTopIcons1> createState() => _MyTopIcons1State();
 }
 
-class _MyTopIconsState extends State<MyTopIcons> {
-  // late TextEditingController _searchController;
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _searchController = TextEditingController();
-  // }
-
-  // @override
-  // void dispose() {
-  //   _searchController.dispose();
-  //   super.dispose();
-  // }
-
+class _MyTopIcons1State extends State<MyTopIcons1> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(15, 57.5, 15, 5),
+    padding: const EdgeInsets.fromLTRB(15, 57.5, 15, 5),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
+        children: [ 
+
           //BARZZY TAG
 
-          Container(
-            padding: const EdgeInsets.only(left: 15.97445, top: 7),
-            width: (MediaQuery.of(context).size.width / 3) * 2 + 1,
-            height: 45,
-            child: Text(
-              'B A R Z Z Y',
-              style: GoogleFonts.megrim(
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                fontSize: 24,
+           Container(
+                padding: const EdgeInsets.only(left: 15.5, top: 19
+                ),
+                width: (MediaQuery.of(context).size.width / 3) * 2 + 1,
+                height: 45,
+                child: Text(
+                  'Barzzy',
+                  style: GoogleFonts.lakkiReddy(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontSize:25,
+                  ),
+                ),
               ),
-            ),
-          ),
+          
 
-          //SEARCH
 
+          //SETTINGS BUTTON
+          
           GestureDetector(
             onTap: () {
+              // Navigate to FriendsPage() when the icon is tapped
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const SearchPage(),
-                ),
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
               );
             },
-            child: Container(
+            child: Container( 
               padding: const EdgeInsets.all(10),
               height: 42,
               width: 42,
               decoration: BoxDecoration(
-                color: Colors.black,
+                color: const Color.fromARGB(255, 4, 7, 9),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Iconify(
-                
-                HeroiconsSolid.search,
-                size: 3,
+                HeroiconsSolid.cog,
+                size: 5,
                 color: Colors.grey,
               ),
             ),
           ),
           const SizedBox(width: 10),
 
-          //TAB BUTTON
+          //CART BUTTON 
           GestureDetector(
             onTap: () {
+              // Navigate to FriendsPage() when the icon is tapped
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const TabsPage()),
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
               );
             },
             child: Container(
@@ -95,7 +81,7 @@ class _MyTopIconsState extends State<MyTopIcons> {
               height: 42,
               width: 42,
               decoration: BoxDecoration(
-                color: Colors.black,
+                color: const Color.fromARGB(255, 4, 7, 9),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Iconify(
@@ -106,7 +92,7 @@ class _MyTopIconsState extends State<MyTopIcons> {
             ),
           ),
         ],
-      ),
+      ),  
     );
   }
 }

@@ -1,4 +1,4 @@
-import 'package:barzzy_app1/components/profiletopicons.dart';
+import 'package:barzzy_app1/ProfilePage/profiletopicons.dart';
 import 'package:flutter/material.dart';
 
 class ProfilePage extends StatefulWidget {

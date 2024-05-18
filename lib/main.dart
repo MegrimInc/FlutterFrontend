@@ -1,10 +1,10 @@
-import 'package:barzzy_app1/backend/searchengine.dart';
+import 'package:barzzy_app1/Backend/searchengine.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:barzzy_app1/backend/bardatabase.dart';
-import 'package:barzzy_app1/backend/filereader.dart';
-import 'package:barzzy_app1/components/auth.dart';
-import 'package:barzzy_app1/components/barhistory.dart';
+import 'package:barzzy_app1/Backend/bardatabase.dart';
+import 'package:barzzy_app1/Backend/filereader.dart';
+import 'package:barzzy_app1/Extra/auth.dart';
+import 'package:barzzy_app1/Extra/barhistory.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

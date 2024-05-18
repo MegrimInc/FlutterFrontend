@@ -1,24 +1,28 @@
-import 'package:barzzy_app1/backend/bartender.dart';
-import 'package:barzzy_app1/backend/order.dart';
-import 'package:barzzy_app1/backend/orderque.dart';
+import 'package:barzzy_app1/Backend/bartender.dart';
+import 'package:barzzy_app1/Backend/order.dart';
+import 'package:barzzy_app1/Backend/orderque.dart';
 import 'package:uuid/uuid.dart';
 import 'drink.dart';
 
 class Bar {
   List<Drink>? drinks;
   String? name, address;
+  String? tag;
   final Uuid _uuid = const Uuid();
 
   List<Bartender>? bartenders;
   OrderQueue orderQ = OrderQueue(); // Manages order operations
 
-  Bar({this.drinks, this.name, this.address});
+  Bar({this.drinks, this.name, this.address, this.tag});
 
   void addDrink(Drink drink) {
     drinks ??= [];
     drink.id = _uuid.v4(); // Assign a unique ID to the drink
     drinks!.add(drink);
   }
+
+
+  //GETTER METHODS
 
   String? getName() {
     return name;
@@ -44,23 +48,30 @@ class Bar {
     orderQ.displayOrdersAsList();
   }
 
+  String? gettag() {
+    return tag;
+  }
+
   // JSON serialization to support saving and loading bar data
   Map<String, dynamic> toJson() {
     return {
       'drinks': drinks?.map((d) => d.toJson()).toList(),
       'name': name,
-      'address': address
+      'address': address,
+      'tag': tag
     };
   }
 
   // Factory constructor for creating an instance from JSON
   factory Bar.fromJson(Map<String, dynamic> json) {
     var drinksList = json['drinks'] as List?;
-    List<Drink>? drinks = drinksList?.map((item) => Drink.fromJson(item)).toList();
+    List<Drink>? drinks =
+        drinksList?.map((item) => Drink.fromJson(item)).toList();
     return Bar(
       drinks: drinks,
       name: json['name'] as String?,
       address: json['address'] as String?,
+      tag: json['tag'] as String?,
     );
   }
 }

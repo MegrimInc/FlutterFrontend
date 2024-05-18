@@ -1,8 +1,8 @@
 // ignore: unused_import
-import 'package:barzzy_app1/home.dart';
-import 'package:barzzy_app1/notifications.dart';
-import 'package:barzzy_app1/orders.dart';
-import 'package:barzzy_app1/profile.dart';
+import 'package:barzzy_app1/HomePage/home.dart';
+import 'package:barzzy_app1/NotificationsPage/notifications.dart';
+import 'package:barzzy_app1/OrdersPage/orders.dart';
+import 'package:barzzy_app1/ProfilePage/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -49,16 +49,14 @@ class _AuthPageState extends State<AuthPage> {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.black,
-        //Color(0xFF1A1819),
         border: Border(
             top: BorderSide(
                 color: Color.fromARGB(255, 126, 126, 126), width: .075)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 3),
         child: GNav(
           backgroundColor: Colors.black,
-          //Color(0xFF1A1819),
           gap: 7.65,
           color: Colors.grey,
           activeColor: Colors.grey,
@@ -71,9 +69,8 @@ class _AuthPageState extends State<AuthPage> {
           },
           tabs: [
             GButton(
-              //icon: Icons.home,
               icon: Icons.home_rounded,
-              iconSize: 26.55,
+              iconSize: 26.75,
               text: 'Home',
               iconActiveColor: Colors.white,
               textStyle: GoogleFonts.sourceSans3(

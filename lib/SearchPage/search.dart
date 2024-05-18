@@ -1,8 +1,8 @@
-import 'package:barzzy_app1/backend/searchengine.dart';
-import 'package:barzzy_app1/components/searchbar.dart';
+import 'package:barzzy_app1/Backend/searchengine.dart';
+import 'package:barzzy_app1/SearchPage/searchbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:barzzy_app1/menu.dart';
+import 'package:barzzy_app1/MenuPage/menu.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SearchPage extends StatefulWidget {

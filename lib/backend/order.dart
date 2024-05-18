@@ -1,7 +1,7 @@
 // ignore_for_file: prefer_initializing_formals
 
-import 'package:barzzy_app1/backend/bar.dart';
-import 'package:barzzy_app1/backend/drink.dart';
+import 'package:barzzy_app1/Backend/bar.dart';
+import 'package:barzzy_app1/Backend/drink.dart';
 
 
 import 'status.dart';

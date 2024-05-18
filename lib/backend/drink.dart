@@ -5,9 +5,10 @@ class Drink {
   double price;
   double alcohol;
   String type;
+  String image;
   List<String> ingredients;
 
-  Drink(this.id, this.name, this.description, this.price, this.alcohol, this.type, this.ingredients);
+  Drink(this.id, this.name, this.description, this.price, this.alcohol, this.type, this.ingredients, this.image);
 
 
 
@@ -25,6 +26,10 @@ class Drink {
     return alcohol;
   }
 
+  String? getImage() {
+    return image;
+  }
+
 
 
 
@@ -38,6 +43,7 @@ class Drink {
       'alcohol': alcohol,
       'type': type,
       'ingredients': ingredients,
+      'image': image,
     };
   }
 
@@ -50,7 +56,8 @@ class Drink {
       (json['price'] as num).toDouble(),
       (json['alcohol'] as num).toDouble(),
       json['type'] as String,
-      List<String>.from(json['ingredients'] as List<dynamic>)
+      List<String>.from(json['ingredients'] as List<dynamic>),
+      json['image'] as String,
     );
   }
 }

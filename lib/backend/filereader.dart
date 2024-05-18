@@ -17,7 +17,7 @@ class FileReader {
       final Map<String, dynamic> manifestMap = json.decode(manifestContent);
 
       final excelFiles = manifestMap.keys.where(
-          (path) => path.startsWith('lib/menus/') && path.endsWith('.xlsx'));
+          (path) => path.startsWith('lib/MenuPage/menus') && path.endsWith('.xlsx'));
 
       for (final filePath in excelFiles) {
         final ByteData data = await rootBundle.load(filePath);
@@ -27,9 +27,10 @@ class FileReader {
         for (var table in excel.tables.keys) {
           var sheet = excel.tables[table];
           if (sheet != null) {
+            var tag = extractTagFromSheetName(table);
             var barName = sheet.cell(CellIndex.indexByString('A1')).value.toString();
             var barAddress = sheet.cell(CellIndex.indexByString('D1')).value.toString();
-            var currentBar = Bar(name: barName, address: barAddress);
+            var currentBar = Bar(name: barName, address: barAddress, tag: tag);
             
 
             for (var row in sheet.rows.skip(2)) {  // Assuming the first two rows are headers
@@ -39,6 +40,10 @@ class FileReader {
                 var drinkPrice = double.tryParse(row[3]?.value?.toString() ?? '0') ?? 0;
                 var drinkAlcohol = double.tryParse(row[4]?.value?.toString() ?? '0') ?? 0;
                 var drinkType = row[0]?.value?.toString() ?? 'Unknown Type';
+                var drinkImage = 'lib/MenuPage/drinkimgs/${row[14]?.value?.toString() ?? ''}';
+                 
+                  // debugPrint('Constructed path for drink image: $drinkImage');
+                
                 List<String> drinkIngredients = [];
 
                 for (int i = 8; i <= 13; i++) {
@@ -50,7 +55,7 @@ class FileReader {
 
                 // Create the drink without specifying an ID
                 Drink drink = Drink("", drinkName, drinkDescription, drinkPrice,
-                    drinkAlcohol, drinkType, drinkIngredients);
+                    drinkAlcohol, drinkType, drinkIngredients, drinkImage);
                 currentBar.addDrink(drink);
               }
             }
@@ -62,4 +67,10 @@ class FileReader {
       debugPrint('Error reading files: $e');
     }
   }
+
+    String extractTagFromSheetName(String sheetName) {
+    // Use the entire sheet name as the tag
+    return sheetName;
+  }
+
 }

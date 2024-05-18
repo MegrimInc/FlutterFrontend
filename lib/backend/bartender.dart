@@ -1,7 +1,7 @@
-import 'package:barzzy_app1/backend/bar.dart';
-import 'package:barzzy_app1/backend/order.dart';
+import 'package:barzzy_app1/Backend/bar.dart';
+import 'package:barzzy_app1/Backend/order.dart';
 
-import 'package:barzzy_app1/backend/status.dart';
+import 'package:barzzy_app1/Backend/status.dart';
 
 class Bartender {
   Bar bar;

@@ -13,7 +13,8 @@ class BarDatabase with ChangeNotifier {
     _bars[newId] = Bar(
       name: bar.name,
       address: bar.address,
-      drinks: bar.drinks
+      drinks: bar.drinks,
+      tag: bar.tag
     );
     notifyListeners();
   }

@@ -1,8 +1,8 @@
-import 'package:barzzy_app1/components/barhistory.dart';
+import 'package:barzzy_app1/Extra/barhistory.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'backend/bar.dart';
-import 'backend/bardatabase.dart';
+import '../Backend/bar.dart';
+import '../Backend/bardatabase.dart';
 
 class MenuPage extends StatefulWidget {
   final String barId; // Assume barId is passed to this page
@@ -88,6 +88,7 @@ class MenuPageState extends State<MenuPage> {
             final drink = currentBar!.drinks!.firstWhere((d) => d.id == displayedDrinkIds[index]);
             return ListTile(
               title: Text(drink.name, style: const TextStyle(color: Colors.white)),
+              trailing: Image.asset(drink.image, width: 100, height: 100),
             );
           },
         ),

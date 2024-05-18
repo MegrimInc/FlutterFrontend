@@ -1,4 +1,4 @@
-import 'package:barzzy_app1/backend/bardatabase.dart';
+import 'package:barzzy_app1/Backend/bardatabase.dart';
 
 class SearchService {
   final BarDatabase barDatabase;

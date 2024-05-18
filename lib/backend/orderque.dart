@@ -1,6 +1,6 @@
 import 'dart:collection';
-import 'package:barzzy_app1/backend/status.dart';
-import 'package:barzzy_app1/backend/order.dart';
+import 'package:barzzy_app1/Backend/status.dart';
+import 'package:barzzy_app1/Backend/order.dart';
 
 /// The OrderQueue class stores the orders to connect
 /// with the restaurant's front end.  Orders are stored
