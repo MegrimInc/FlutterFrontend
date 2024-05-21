@@ -70,7 +70,7 @@ class _AuthPageState extends State<AuthPage> {
           tabs: [
             GButton(
               icon: Icons.home_rounded,
-              iconSize: 26.75,
+              iconSize: 25.75,
               text: 'Home',
               iconActiveColor: Colors.white,
               textStyle: GoogleFonts.sourceSans3(
@@ -83,7 +83,7 @@ class _AuthPageState extends State<AuthPage> {
             ),
             GButton(
               icon: Icons.description,
-              iconSize: 22.15,
+              iconSize: 22,
               text: 'Orders',
               iconActiveColor: Colors.white,
               textStyle: GoogleFonts.sourceSans3(

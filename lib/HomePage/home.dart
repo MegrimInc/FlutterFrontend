@@ -26,7 +26,10 @@ class HomePage extends StatelessWidget {
         isScrollControlled: true,
         backgroundColor: Colors.black,
         builder: (BuildContext context) {
-          return BarBottomSheet(barId: barId);
+          return BarBottomSheet(
+            barId: barId,
+            barHistory: barHistory
+            );
         },
       );
     }
@@ -56,12 +59,35 @@ class HomePage extends StatelessWidget {
                 child: const MyTopIcons(),
               ),
 
-            // FIND YOUR BAR
-
+            // LIST OF ALL BARS
             if (historyLength == 0)
-              const Padding(
-                padding: EdgeInsets.only(top: 300),
-                child: Center(child: Text('FIND YOUR BAR')),
+              Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: barDatabase.getSearchableBarInfo().entries.map((entry) {
+                    final barId = entry.key;
+                    final barInfo = entry.value;
+                    return ListTile(
+                      title: Text(
+                        barInfo['name'] ?? 'No Name',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      subtitle: Text(
+                        barInfo['address'] ?? 'No Address',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MenuPage(barId: barId),
+                          ),
+                        );
+                      },
+                    );
+                  }).toList(),
+                ),
               ),
 
                                                                           // STAGE 2 ***Default Does Appear***
@@ -115,7 +141,7 @@ class HomePage extends StatelessWidget {
                            Text(
                             'Recents',
                             style: GoogleFonts.sourceSans3(
-                          fontSize: 15.25,
+                          fontSize: 12,
                           color: Colors.white,
                         ),
                           ),
@@ -190,7 +216,7 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ),
-            const SizedBox(height: 17.5),
+            const SizedBox(height: 20),
 
                                                                           // DEFAULT
 
@@ -198,7 +224,7 @@ class HomePage extends StatelessWidget {
 
             // TOP ROW WITH BAR NAME AND WAIT TIME
 
-            if (historyLength > 0)
+            if (historyLength > 0 && !barHistory.isBarPinned(historyIds[0]))
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Padding(
                   padding: const EdgeInsets.only(left: 27),
@@ -206,30 +232,25 @@ class HomePage extends StatelessWidget {
                     barDatabase.getBarById(historyIds[0])?.name ?? 'No Name',
                     style: const TextStyle(
                           color: Colors.white,
-                          //fontWeight: FontWeight.w500
                         ),
                   ),
                 ),
-
-                GestureDetector(
-                  onTap: () {
-                    showBottomSheet(context, historyIds[0]);
-                  },
-                  child: const Padding(
-                    padding:  EdgeInsets.only(right: 27),
-                    child: Icon(
-                      Icons.history_rounded,
-                      color: Colors.grey,
-                      size: 30,
-                    ),
-                  ),
+               Padding(
+                  padding: const EdgeInsets.only(right: 17),
+                  child: IconButton(
+                                icon: const Icon(Icons.history_rounded, 
+                                size: 30,
+                                color: Colors.grey,),
+                                onPressed: () {
+                  showBottomSheet(context, historyIds[0]);
+                  }
+                                ),
                 ),
-
               ]),
 
             // MAIN MOST RECENT BAR
 
-            if (historyLength > 0)
+            if (historyLength > 0 && !barHistory.isBarPinned(historyIds[0]))
               GestureDetector(
                 onTap: () => Navigator.push(
                   context,
@@ -238,7 +259,7 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
                 child: Container(
-                  height: 400,
+                  height: 350,
                   margin: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: const Color.fromARGB(255, 0, 0, 0),
@@ -252,11 +273,11 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
 
             //BOTTOM ROW WITH RECENT DRINKS AND WAIT TIME
 
-            if (historyLength > 0)
+            if (historyLength > 0 && !barHistory.isBarPinned(historyIds[0]))
               Container(
                 height: 30,
                 margin: const EdgeInsets.symmetric(vertical: 10),
@@ -272,22 +293,22 @@ class HomePage extends StatelessWidget {
                               text: 'Open',
                               style: TextStyle(
                                 color: Colors.green,
-                                //fontWeight: FontWeight.w500
+                                fontWeight: FontWeight.bold
                               ),
                             ),
                             TextSpan(
                               text: ' / ',
                               style: TextStyle(
                                 fontSize: 17.5,
-                                color: Colors.white,
-                                //fontWeight: FontWeight.w500
+                                color: Colors.grey,
+                                fontWeight: FontWeight.bold
                               ),
                             ),
                             TextSpan(
                               text: 'Closed',
                               style: TextStyle(
                                 color: Colors.grey,
-                                //fontWeight: FontWeight.w500
+                                fontWeight: FontWeight.w700
                               ),
                             ),
                           ],
@@ -300,13 +321,52 @@ class HomePage extends StatelessWidget {
                         'Wait: 10 min',
                         style: TextStyle(
                           color: Colors.white,
-                          //fontWeight: FontWeight.w500
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
+
+
+              //TEST ///////////////////////////////////////////////////////////////////////
+
+
+
+if (historyLength > 0 && barHistory.isBarPinned(historyIds[0]))
+  Container(
+    height: 100, // Adjust the height as needed
+    width: double.infinity,
+    color: Colors.black, // Changed color to black
+    child: Center(
+      child: Text(
+        barDatabase.getBarById(historyIds[0])?.name ?? 'No Name', // Changed text to display the name of the pinned bar
+        style: const TextStyle(color: Colors.white, fontSize: 24),
+      ),
+    ),
+  ),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
           ],
         ),
       ),

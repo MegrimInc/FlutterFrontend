@@ -26,7 +26,7 @@ class _MyTopIconsState extends State<MyTopIcons> {
           //BARZZY TAG
 
           Container(
-            padding: const EdgeInsets.only(left: 0, top: 6),
+            padding: const EdgeInsets.only(left: 0, top: 5),
             width: (MediaQuery.of(context).size.width / 3) * 2 + 1,
             height: 45,
             child: Text(

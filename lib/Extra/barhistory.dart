@@ -5,6 +5,7 @@ class BarHistory with ChangeNotifier {
   List<String> _historyIds = [];
   Function()? _updateSearchFeedCallback;
   List<String> get historyIds => _historyIds;
+  final List<String> _pinnedBars = []; 
 
   
   // Adds a bar ID to the history, ensuring it's the first item if it already exists
@@ -44,5 +45,29 @@ List<String> getHistoryInOrder() {
 void setUpdateSearchFeedCallback(Function() callback) {
     _updateSearchFeedCallback = callback;
   }
+
+
+  //PIN LOGIC
+
+  // Pin a bar
+  void pinBar(String barId) {
+    _pinnedBars.add(barId);
+    notifyListeners();
+  }
+
+  // Unpin a bar
+  void unpinBar(String barId) {
+    _pinnedBars.remove(barId);
+    notifyListeners();
+  }
+
+  // Check if a bar is pinned
+  bool isBarPinned(String barId) {
+    return _pinnedBars.contains(barId);
+  }
+
+
+
+
 
 }
