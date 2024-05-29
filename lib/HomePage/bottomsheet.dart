@@ -1,29 +1,22 @@
-//import 'package:barzzy_app1/HomePage/popup.dart';
-// import 'package:barzzy_app1/HomePage/popup.dart';
+import 'package:barzzy_app1/HomePage/popup.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-// import 'package:popover/popover.dart';
-import 'package:provider/provider.dart';
+import 'package:popover/popover.dart';
 import 'package:barzzy_app1/Backend/bardatabase.dart';
-import 'package:barzzy_app1/MenuPage/menu.dart'; // Ensure to import your MenuPage
-import 'package:barzzy_app1/Extra/barhistory.dart';
-
+import 'package:barzzy_app1/MenuPage/menu.dart'; 
 class BarBottomSheet extends StatelessWidget {
   final String barId;
-  final BarHistory barHistory;
+  
 
   const BarBottomSheet({
     super.key,
     required this.barId,
-    required this.barHistory,
   });
 
   @override
   Widget build(BuildContext context) {
-    final barDatabase = Provider.of<BarDatabase>(context);
-    final barName = barDatabase.getBarById(barId)?.tag ?? 'No Name';
-    //final isPinned = barHistory.isBarPinned(barId);
-
+    final bar = BarDatabase.getBarById(barId);
+    
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.718,
       child: Column(
@@ -43,6 +36,7 @@ class BarBottomSheet extends StatelessWidget {
                 ),
               ),
               child: Column(children: [
+                
                 //DRAG BAR
 
                 Container(
@@ -59,38 +53,24 @@ class BarBottomSheet extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // IconButton(
-                    //   icon: const Icon(
-                    //     Icons.more_horiz,
-                    //     size: 35,
-                    //     color: Colors.white,
-                    //   ),
-                    //   onPressed: () {
-                    //     showPopover(
-                    //         context: context,
-                    //         bodyBuilder: (context) => const Popup(),
-                    //         height: 100,
-                    //         width: 100,
-                    //         backgroundColor: Colors.grey,
-                    //         direction: PopoverDirection.top);
-                    //   },
-                    // ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.more_horiz,
+                        size: 35,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        showPopover(
+                            context: context,
+                            bodyBuilder: (context) => const Popup(),
+                            height: 100,
+                            width: 100,
+                            backgroundColor: Colors.grey,
+                            direction: PopoverDirection.top);
+                      },
+                    ),
 
-          ElevatedButton(
-  onPressed: () {
-    // Toggle pin/unpin when button is pressed
-    if (barHistory.isBarPinned(barId)) {
-      barHistory.unpinBar(barId);
-    } else {
-      barHistory.pinBar(barId);
-    }
-  },
-  child: Consumer<BarHistory>(
-    builder: (context, barHistory, _) {
-      return Text(barHistory.isBarPinned(barId) ? 'Unpin' : 'Pin'); // Button text changes based on pinning state
-    },
-  ),
-),
+          
 
                     RichText(
                       text: TextSpan(
@@ -109,7 +89,7 @@ class BarBottomSheet extends StatelessWidget {
                             ),
                           ),
                           TextSpan(
-                            text: barName,
+                            text: bar?.tag ?? 'No Tag',
                             style: GoogleFonts.megrim(
                               fontSize: 16,
                               color: Colors.grey, // Grey color for the barName

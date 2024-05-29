@@ -3,6 +3,14 @@ import 'package:uuid/uuid.dart';
 import 'bar.dart';
 
 class BarDatabase with ChangeNotifier {
+  static final BarDatabase _singleton = BarDatabase._internal();
+
+  factory BarDatabase() {
+    return _singleton;
+  }
+
+  BarDatabase._internal();
+
   final Map<String, Bar> _bars = {};
 
   final Uuid _uuid = const Uuid();
@@ -13,22 +21,17 @@ class BarDatabase with ChangeNotifier {
     _bars[newId] = Bar(
         name: bar.name, address: bar.address, drinks: bar.drinks, tag: bar.tag);
     notifyListeners();
+    
   }
 
   // Method to get minimal information necessary for search
   Map<String, Map<String, String>> getSearchableBarInfo() {
     return _bars.map((id, bar) =>
         MapEntry(id, {'name': bar.name ?? '', 'address': bar.address ?? ''}));
+        
   }
 
-  // Retrieving, updating, and removing bars using their IDs
-  Bar? getBarById(String id) => _bars[id];
-  void updateBar(String id, Bar updatedBar) {
-    if (_bars.containsKey(id)) {
-      _bars[id] = updatedBar;
-      notifyListeners();
-    }
-  }
+
 
   void removeBar(String id) {
     if (_bars.remove(id) != null) {
@@ -36,8 +39,22 @@ class BarDatabase with ChangeNotifier {
     }
   }
 
+ //Method to get all bar IDs
+  List<String> getAllBarIds() {
+    return _bars.keys.toList();
+  }
 
+  
+
+static Bar? getBarById(String id) {
+    return _singleton._bars[id];
+  }
 
 
 
 }
+
+
+
+
+

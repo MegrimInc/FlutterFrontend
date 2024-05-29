@@ -1,13 +1,15 @@
-import 'package:barzzy_app1/Extra/barhistory.dart';
+import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../Backend/bar.dart';
 import '../Backend/bardatabase.dart';
 
 class MenuPage extends StatefulWidget {
-  final String barId; // Assume barId is passed to this page
+  final String barId;
+  
 
-  const MenuPage({super.key, required this.barId});
+  const MenuPage({super.key, required this.barId,
+  });
 
   @override
   MenuPageState createState() => MenuPageState();
@@ -35,24 +37,43 @@ class MenuPageState extends State<MenuPage> {
     _fetchBarData();
   }
 
+
+//SENDS ID TO BAR HISTORY CLASS
+
+  Future<void> _handleBarTapAndReorder() async {
+  // Add a delay to ensure that the page has finished initializing
+  await Future.delayed(Duration.zero);
+
+  // Now you can call the methods
+  // ignore: use_build_context_synchronously
+  final barHistory = Provider.of<BarHistory>(context, listen: false);
+  // ignore: use_build_context_synchronously
+  barHistory.tapBar(widget.barId, context);
+  
+  barHistory.reorderList(widget.barId);
+}
+
+
   Future<void> _fetchBarData() async {
-    final barDatabase = Provider.of<BarDatabase>(context, listen: false);
-    currentBar = barDatabase.getBarById(widget.barId);
+    currentBar = BarDatabase.getBarById(widget.barId);
     if (currentBar != null) {
-        displayedDrinkIds = currentBar!.drinks!.map((d) => d.id).toList(); // Use IDs to manage displayed drinks
-        debugPrint("Reloaded ${displayedDrinkIds.length} drinks from the bar.");
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-        Provider.of<BarHistory>(context, listen: false).addToHistory(widget.barId);
-      });
+      displayedDrinkIds = currentBar!.drinks!.map((d) => d.id).toList(); // Use IDs to manage displayed drinks
+      //debugPrint("Reloaded ${displayedDrinkIds.length} drinks from the bar.");
+
+
+
+     
     }
     setState(() {
-        isLoading = false;
-        appBarTitle = currentBar!.name ?? 'Menu Page';
-        actionWidget = const Icon(Icons.menu, color: Colors.white);
-        previousCategory = null;
-        isSecondLevelMenuOpen = false;
+      isLoading = false;
+      appBarTitle = currentBar!.name ?? 'Menu Page';
+      actionWidget = const Icon(Icons.menu, color: Colors.white);
+      previousCategory = null;
+      isSecondLevelMenuOpen = false;
     });
-}
+
+    await _handleBarTapAndReorder();
+  }
 
   @override
   Widget build(BuildContext context) {

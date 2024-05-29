@@ -1,10 +1,11 @@
 import 'package:barzzy_app1/Backend/searchengine.dart';
+import 'package:barzzy_app1/Backend/recommended.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:barzzy_app1/Backend/bardatabase.dart';
 import 'package:barzzy_app1/Backend/filereader.dart';
 import 'package:barzzy_app1/Extra/auth.dart';
-import 'package:barzzy_app1/Extra/barhistory.dart';
+import 'package:barzzy_app1/Backend/barhistory.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,11 +14,13 @@ void main() async {
 
   await fileReader.loadMenu(); // Load the menu data at startup
 
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => barDatabase),
         ChangeNotifierProvider(create: (context) => BarHistory()),
+        ChangeNotifierProvider(create: (context) => Recommended()),
         ProxyProvider<BarDatabase, SearchService>(
           update: (_, barDatabase, __) => SearchService(barDatabase),)
       ],
