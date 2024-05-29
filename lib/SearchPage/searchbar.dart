@@ -71,6 +71,7 @@ class SearchState extends State<Search> {
                   border: InputBorder.none,
                   fillColor: const Color.fromARGB(255, 0, 0, 0),
                 ),
+                keyboardAppearance: Brightness.light
               ),
             ),
             const SizedBox(width: 2),
