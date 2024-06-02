@@ -187,11 +187,11 @@ class HomePageState extends State<HomePage> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.only(right:4),
                       child: IconButton(
                           icon: const Icon(
                             Icons.history_rounded,
-                            size: 30,
+                            size: 28,
                             color: Colors.grey,
                           ),
                           onPressed: () {
@@ -215,7 +215,7 @@ class HomePageState extends State<HomePage> {
                 ),
               ),
               child: Container(
-                height: 387,
+                height: 395,
                 decoration: const BoxDecoration(
                   color: Colors.black,
                   // border: Border(

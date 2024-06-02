@@ -36,13 +36,12 @@ class FileReader {
             for (var row in sheet.rows.skip(2)) {  // Assuming the first two rows are headers
               if (row[0] != null && row[0]!.value.toString().isNotEmpty) {
                 var drinkName = row[1]!.value.toString();
-                var drinkDescription = row[2]?.value?.toString() ?? '';
-                var drinkPrice = double.tryParse(row[3]?.value?.toString() ?? '0') ?? 0;
-                var drinkAlcohol = double.tryParse(row[4]?.value?.toString() ?? '0') ?? 0;
+                var drinkDescription = row[3]?.value?.toString() ?? '';
+                var drinkPrice = double.tryParse(row[6]?.value?.toString() ?? '0') ?? 0;
+                var drinkAlcohol = double.tryParse(row[7]?.value?.toString() ?? '0') ?? 0;
                 var drinkType = row[0]?.value?.toString() ?? 'Unknown Type';
                 var drinkImage = 'lib/MenuPage/drinkimgs/${row[14]?.value?.toString() ?? ''}';
                  
-                  // debugPrint('Constructed path for drink image: $drinkImage');
                 
                 List<String> drinkIngredients = [];
 

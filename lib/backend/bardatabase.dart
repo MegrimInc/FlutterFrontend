@@ -50,6 +50,16 @@ static Bar? getBarById(String id) {
     return _singleton._bars[id];
   }
 
+ // Method to get bar and drink IDs
+  static List<String> getBarAndDrinkIds(String barId) {
+    final List<String> drinkIds = [];
+    final Bar? bar = _singleton._bars[barId];
+    if (bar != null) {
+      drinkIds.addAll(bar.drinks!.map((drink) => drink.id));
+    }
+    drinkIds.insert(0, barId);
+    return drinkIds;
+  }
 
 
 }

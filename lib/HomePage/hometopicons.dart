@@ -19,7 +19,7 @@ class _MyTopIconsState extends State<MyTopIcons> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(15, 57.5, 15, 5),
+      padding: const EdgeInsets.fromLTRB(16, 49.5, 12, 5),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -28,7 +28,7 @@ class _MyTopIconsState extends State<MyTopIcons> {
           Container(
             padding: const EdgeInsets.only(top: 5.5
             ),
-            width: (MediaQuery.of(context).size.width / 3) * 2 + 1,
+            width: (MediaQuery.of(context).size.width / 3) * 2 + 0,
             height: 45,
             child: Text(
               'B A R Z Z Y',
@@ -76,7 +76,7 @@ class _MyTopIconsState extends State<MyTopIcons> {
             },
             child: const Iconify(
               HeroiconsSolid.clipboard_list,
-              size: 24,
+              size: 24.9,
               color: Colors.grey,
             ),
           ),

@@ -74,4 +74,23 @@ class Bar {
       tag: json['tag'] as String?,
     );
   }
+
+
+  Map<String, int> calculateDrinkCounts() {
+  Map<String, int> counts = {
+    'Liquor': 0,
+    'Casual': 0,
+    'Virgin': 0,
+  };
+
+  for (var drink in drinks!) {
+    // Trim the type string to remove any leading or trailing spaces
+    String type = drink.type.trim();
+
+    // Increment the count for the corresponding type
+    counts.update(type, (value) => value + 1, ifAbsent: () => 1);
+  }
+
+  return counts;
+}
 }
