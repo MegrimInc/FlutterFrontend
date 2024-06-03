@@ -80,7 +80,7 @@ class HomePageState extends State<HomePage> {
                     .take(4)
                     .toList();
             
-                //print('Master List (Builder): $masterList');
+                
             
                 return Padding(
                   padding: const EdgeInsets.only(left: 4.5),
@@ -177,7 +177,7 @@ class HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(left: 20),
+                      padding: const EdgeInsets.only(left: 17),
                       child: Text(
                         BarDatabase.getBarById(barHistory.barIds.first)?.name ??
                             'No Name',
@@ -187,7 +187,7 @@ class HomePageState extends State<HomePage> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(right:4),
+                      padding: const EdgeInsets.only(right:2),
                       child: IconButton(
                           icon: const Icon(
                             Icons.history_rounded,
@@ -252,7 +252,7 @@ class HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(left: 20),
+                      padding: const EdgeInsets.only(left: 17),
                       child: RichText(
                         text: const TextSpan(
                           children: [
@@ -280,7 +280,7 @@ class HomePageState extends State<HomePage> {
                       ),
                     ),
                     const Padding(
-                      padding: EdgeInsets.only(right: 20),
+                      padding: EdgeInsets.only(right: 17),
                       child: Text(
                         'Wait: 10 min',
                         style: TextStyle(

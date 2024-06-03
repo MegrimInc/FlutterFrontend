@@ -21,7 +21,6 @@ class Bar {
     drinks!.add(drink);
   }
 
-
   //GETTER METHODS
 
   String? getName() {
@@ -75,22 +74,97 @@ class Bar {
     );
   }
 
+Drink getDrinkById(String id) {
+  return drinks!.firstWhere((drink) => drink.id == id);
+}
 
-  Map<String, int> calculateDrinkCounts() {
-  Map<String, int> counts = {
-    'Liquor': 0,
-    'Casual': 0,
-    'Virgin': 0,
-  };
+  
 
-  for (var drink in drinks!) {
-    // Trim the type string to remove any leading or trailing spaces
-    String type = drink.type.trim();
+//Filtering Stuff
 
-    // Increment the count for the corresponding type
-    counts.update(type, (value) => value + 1, ifAbsent: () => 1);
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Method to separate drinks into one big list of ids
+  List<String> getAllDrinkIds() {
+    return drinks?.map((drink) => drink.id).toList() ?? [];
   }
 
-  return counts;
+
+
+List<String> getDrinkIdsByCategory(String category) {
+  List<String> drinkIds = [];
+  category = category.trim(); // Trim the category
+
+  for (var drink in drinks!) {
+    if (drink.type.trim() == category) {
+      drinkIds.add(drink.id);
+    }
+  }
+
+  return drinkIds;
 }
+
+
+List<String> getDrinkIdsBySubcategory(String category, String subcategory) {
+  List<String> drinkIds = [];
+  category = category.trim();
+
+  for (var drink in drinks!) {
+    if (drink.type == category && drink.ingredients.contains(subcategory)) {
+      drinkIds.add(drink.id);
+    }
+  }
+
+  return drinkIds;
 }
+
+
+Map<String, int> getDrinkCounts() {
+  // Initialize counts for each category
+  int liquorCount = 0;
+  int casualCount = 0;
+  int virginCount = 0;
+
+  // Loop through all drinks and increment counts based on type
+  for (var drink in drinks!) {
+    switch (drink.type) {
+      case 'Liquor':
+        liquorCount++;
+        break;
+      case 'Casual':
+        casualCount++;
+        break;
+      case 'Virgin':
+        virginCount++;
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Return a map containing counts for each category
+  return {
+    'Liquor': liquorCount,
+    'Casual': casualCount,
+    'Virgin': virginCount,
+  };
+}
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
