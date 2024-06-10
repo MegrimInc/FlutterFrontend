@@ -37,6 +37,7 @@ class Barzzy extends StatelessWidget {
     return  MaterialApp(
       theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
+      //home: const ActionSheet(),
       home: const AuthPage(),
     );
   }

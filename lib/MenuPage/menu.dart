@@ -1,6 +1,4 @@
 import 'package:barzzy_app1/Backend/barhistory.dart';
-import 'package:barzzy_app1/MenuPage/contextmenu.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
@@ -21,30 +19,54 @@ class MenuPage extends StatefulWidget {
 
 class MenuPageState extends State<MenuPage> {
   List<String> masterList = [];
-  String appBarTitle = '';
   Widget actionWidget = const Icon(Icons.menu, color: Colors.white);
   bool isLoading = true;
   Bar? currentBar;
-
   // DRINK COUNT AND DISPLAY DRINK IDS
   List<String> displayedDrinkIds = [];
   Map<String, int> drinkCounts = {};
-
-  bool isSecondLevelMenuOpen = false;
-  String? previousCategory;
   GlobalKey _gridKey = GlobalKey();
 
-  final Map<String, List<String>> secondLevelOptions = {
-    'Liquor': ['Vodka', 'Whiskey', 'Rum', 'Gin', 'Tequila', 'Brandy'],
-    'Casual': ['Beer', 'Seltzer'],
-    'Virgin': [],
-  };
+  Future<void> _focusTextField() async {
+  appBarController.text = '';
+  _isFocused = true;
+  _focusNode.requestFocus();
+  _focusNode.addListener(() {
+    if (!_focusNode.hasFocus && _isFocused) {
+      // If the user has typed nothing after "All&"
+      if (appBarController.text == '& ') {
+        setState(() {
+          // Reset to currentBar.tag if user types nothing
+          appBarController.text =
+              '@${(currentBar!.tag ?? 'Menu Page').replaceAll(' ', '').toLowerCase()}';
+        });
+      }
+      _isFocused = false;
+    }
+  });
+}
+
+  TextEditingController appBarController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  bool _isFocused = false;
 
   @override
-  void initState() {
-    super.initState();
-    _fetchBarData();
-  }
+void initState() {
+  super.initState();
+  _fetchBarData();
+
+  _focusNode.addListener(() {
+    if (_focusNode.hasFocus && !_isFocused) {
+      setState(() {
+        _isFocused = true;
+        // If the text field is empty, set the prefix "All&"
+        if (appBarController.text.isEmpty) {
+          appBarController.text = '';
+        }
+      });
+    }
+  });
+}
 
   //SENDS ID TO BAR HISTORY CLASS
 
@@ -70,14 +92,15 @@ class MenuPageState extends State<MenuPage> {
 
     setState(() {
       isLoading = false;
-      appBarTitle = currentBar!.tag ?? 'Menu Page';
+      // appBarTitle =
+      //     '@${(currentBar!.tag ?? 'Menu Page').replaceAll(' ', '').toLowerCase()}';
+      appBarController.text =
+          '@${(currentBar!.tag ?? 'Menu Page').replaceAll(' ', '').toLowerCase()}';
       actionWidget = const Icon(
         Icons.menu,
         size: 26,
         color: Colors.white,
       );
-      previousCategory = null;
-      isSecondLevelMenuOpen = false;
     });
 
     await _handleBarTapAndReorder();
@@ -96,30 +119,55 @@ class MenuPageState extends State<MenuPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(left: 11),
+                          padding: const EdgeInsets.only(left: 7.5),
                           child: IconButton(
                             icon: const Icon(
                               Icons.arrow_back,
                               color: Colors.white,
-                              size: 28,
+                              size: 27,
                             ),
                             onPressed: () => Navigator.pop(context),
                           ),
                         ),
                         Center(
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 11),
-                            child: Text(
-                              appBarTitle,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
+                          child: SizedBox(
+                            width: 250,
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 7.5),
+                              child: TextField(
+                                controller: appBarController,
+                                focusNode: _focusNode,
+                                textAlign: TextAlign.center,
+                                decoration: InputDecoration(
+                                  //prefixText: 'All&',
+                                  hintText: appBarController.text,
+                                  border: InputBorder.none,
+                                ),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                ),
+                                onTap: () {
+                                  if (!_isFocused) {
+                                    setState(() {
+                                      _isFocused = true;
+                                      //appBarController.clear();
+                                    });
+                                  }
+                                },
+                                onChanged: (text) {
+    if (!text.startsWith('')) {
+      setState(() {
+        appBarController.text = '';
+      });
+    }
+  },
                               ),
                             ),
                           ),
                         ),
                         TextButton(
-                          onPressed: () => _togglePopupMenu(context),
+                          onPressed: () => _focusTextField,
                           style: ButtonStyle(
                             overlayColor:
                                 WidgetStateProperty.all(Colors.transparent),
@@ -131,7 +179,7 @@ class MenuPageState extends State<MenuPage> {
                   ),
                   Expanded(
                     child: RefreshIndicator(
-                      onRefresh: _fetchBarData,
+                      onRefresh: _focusTextField,
                       color: Colors.grey,
                       backgroundColor: Colors.black,
                       notificationPredicate: (_) => true,
@@ -154,7 +202,7 @@ class MenuPageState extends State<MenuPage> {
                                   children: [
                                     Padding(
                                       padding: const EdgeInsets.only(
-                                          top: 8.0, right: 11),
+                                          top: 8.0, right: 10),
                                       child: SizedBox(
                                         width: 360,
                                         child: Row(
@@ -183,41 +231,104 @@ class MenuPageState extends State<MenuPage> {
                                               //DRINK COUNT
 
                                               GestureDetector(
-                                                onTap: () {
-                                                  _showContextMenu(
-                                                      'Liquor', context);
+                                                onTap: () async {
+                                                  const String selected =
+                                                      'Liquor'; // Assuming 'Liquor' is selected
+                                                  if (currentBar?.drinks !=
+                                                      null) {
+                                                    displayedDrinkIds = currentBar!
+                                                        .getDrinkIdsByCategory(
+                                                            selected);
+                                                    masterList = [
+                                                      widget.barId,
+                                                      ...displayedDrinkIds
+                                                    ];
+                                                    setState(() {
+                                                      _gridKey = GlobalKey();
+                                                      appBarController.text =
+                                                          selected;
+                                                    });
+                                                  }
                                                 },
                                                 child: Column(
                                                   children: [
                                                     Text(
-                                                        '${drinkCounts["Liquor"] ?? 0}'),
-                                                    const Text('Liquor'),
+                                                      '${drinkCounts["Liquor"] ?? 0}',
+                                                      style: const TextStyle(
+                                                          color: Colors.white),
+                                                    ),
+                                                    const Text('Liquor',
+                                                        style: TextStyle(
+                                                            color:
+                                                                Colors.white)),
                                                   ],
                                                 ),
                                               ),
                                               GestureDetector(
-                                                onTap: () {
-                                                  _showContextMenu(
-                                                      'Casual', context);
+                                                onTap: () async {
+                                                  const String selected =
+                                                      'Brew'; // Assuming 'Liquor' is selected
+                                                  if (currentBar?.drinks !=
+                                                      null) {
+                                                    displayedDrinkIds = currentBar!
+                                                        .getDrinkIdsByCategory(
+                                                            selected);
+                                                    masterList = [
+                                                      widget.barId,
+                                                      ...displayedDrinkIds
+                                                    ];
+                                                    setState(() {
+                                                      _gridKey = GlobalKey();
+                                                      appBarController.text =
+                                                          selected;
+                                                    });
+                                                  }
                                                 },
                                                 child: Column(
                                                   children: [
                                                     Text(
-                                                        '${drinkCounts["Casual"] ?? 0}'),
-                                                    const Text('Casual'),
+                                                      '${drinkCounts["Brew"] ?? 0}',
+                                                      style: const TextStyle(
+                                                          color: Colors.white),
+                                                    ),
+                                                    const Text('Brew',
+                                                        style: TextStyle(
+                                                            color:
+                                                                Colors.white)),
                                                   ],
                                                 ),
                                               ),
                                               GestureDetector(
-                                                onTap: () {
-                                                  _showContextMenu(
-                                                      'Virgin', context);
+                                                onTap: () async {
+                                                  const String selected =
+                                                      'Virgin';
+                                                  if (currentBar?.drinks !=
+                                                      null) {
+                                                    displayedDrinkIds = currentBar!
+                                                        .getDrinkIdsByCategory(
+                                                            selected);
+                                                    masterList = [
+                                                      widget.barId,
+                                                      ...displayedDrinkIds
+                                                    ];
+                                                    setState(() {
+                                                      _gridKey = GlobalKey();
+                                                      appBarController.text =
+                                                          selected;
+                                                    });
+                                                  }
                                                 },
                                                 child: Column(
                                                   children: [
                                                     Text(
-                                                        '${drinkCounts["Virgin"] ?? 0}'),
-                                                    const Text('Virgin'),
+                                                      '${drinkCounts["Virgin"] ?? 0}',
+                                                      style: const TextStyle(
+                                                          color: Colors.white),
+                                                    ),
+                                                    const Text('Virgin',
+                                                        style: TextStyle(
+                                                            color:
+                                                                Colors.white)),
                                                   ],
                                                 ),
                                               ),
@@ -321,84 +432,11 @@ class MenuPageState extends State<MenuPage> {
         const QuiltedGridTile(2, 1),
         const QuiltedGridTile(2, 1),
         const QuiltedGridTile(2, 1),
+        // const QuiltedGridTile(1, 1),
+        // const QuiltedGridTile(1, 1),
+        // const QuiltedGridTile(1, 1),
       ]);
     }
     return pattern;
   }
-
-  //MAIN FILTER MENU
-
-  Future<void> _showPrimaryPopupMenu(BuildContext context) async {
-    final String? selected = await showMenu<String>(
-      context: context,
-      position: const RelativeRect.fromLTRB(100, 80, 0, 0),
-      initialValue: null,
-      items: <PopupMenuEntry<String>>[
-        const PopupMenuItem<String>(value: 'Liquor', child: Text('Liquor')),
-        const PopupMenuItem<String>(value: 'Casual', child: Text('Casual')),
-        const PopupMenuItem<String>(value: 'Virgin', child: Text('Virgin')),
-      ],
-      elevation: 8.0,
-    );
-
-    if (selected != null && currentBar?.drinks != null) {
-      displayedDrinkIds = currentBar!.getDrinkIdsByCategory(selected);
-      masterList = [widget.barId, ...displayedDrinkIds];
-
-      setState(() {
-        _gridKey = GlobalKey();
-        appBarTitle = selected;
-        actionWidget =
-            const Text('Filter', style: TextStyle(color: Colors.white));
-        previousCategory = selected;
-      });
-    }
-  }
-
-  // SUB FILTER MENU
-
-  Future<void> _showSubmenu(BuildContext context, String category) async {
-    final String? selected = await showMenu<String>(
-      context: context,
-      position: const RelativeRect.fromLTRB(100, 80, 0, 0),
-      items: secondLevelOptions[category]!
-          .map((option) =>
-              PopupMenuItem<String>(value: option, child: Text(option)))
-          .toList(),
-      elevation: 8.0,
-    );
-
-    if (selected != null && currentBar?.drinks != null) {
-      displayedDrinkIds =
-          currentBar!.getDrinkIdsBySubcategory(category, selected);
-      masterList = [widget.barId, ...displayedDrinkIds];
-
-      setState(() {
-        _gridKey = GlobalKey();
-        appBarTitle = selected; // Set the AppBar title to the selected sub-type
-        actionWidget =
-            const Text('Filter', style: TextStyle(color: Colors.white));
-        previousCategory = category; // Set the previous category for toggling
-      });
-    }
-  }
-
-  //TOGGLE MENU METHOD
-
-  void _togglePopupMenu(BuildContext context) async {
-    if (previousCategory == null) {
-      _showPrimaryPopupMenu(context);
-    } else {
-      _showSubmenu(context, previousCategory!);
-    }
-  }
-}
-
-void _showContextMenu(String category, BuildContext context) {
-  showCupertinoModalPopup(
-    context: context,
-    builder: (BuildContext context) {
-      return ContextMenu(category: category);
-    },
-  );
 }

@@ -63,25 +63,23 @@ class HomePageState extends State<HomePage> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.black,
-      body:SingleChildScrollView(
+      body: SingleChildScrollView(
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.only(bottom: 8.29),
               child: const MyTopIcons(),
             ),
-            
+
             //MASTER LIST
-            
+
             Consumer2<BarHistory, Recommended>(
               builder: (context, barHistory, recommended, _) {
                 final recommendedIds = recommended.barIds;
                 masterList = [...barHistory.barIds.skip(1), ...recommendedIds]
                     .take(4)
                     .toList();
-            
-                
-            
+
                 return Padding(
                   padding: const EdgeInsets.only(left: 4.5),
                   child: Container(
@@ -141,16 +139,37 @@ class HomePageState extends State<HomePage> {
                                       ),
                                       borderRadius: BorderRadius.circular(60),
                                     ),
-                                    child: isRecommended
-                                        ? const Padding(
-                                            padding: EdgeInsets.fromLTRB(
-                                                35, 25, 25, 25),
-                                            child: Iconify(
-                                              HeroiconsSolid.search,
-                                              color: Colors.white,
-                                            ),
-                                          )
-                                        : const Text(''),
+                                     child:
+                                     ClipRRect(
+                                  borderRadius: BorderRadius.circular(60),
+                                  child: isRecommended
+                                      ? const Padding(
+                                          padding: EdgeInsets.fromLTRB(
+                                              35, 25, 25, 25),
+                                          child: Iconify(
+                                            HeroiconsSolid.search,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : Image.asset(
+                                          'lib/MenuPage/drinkimgs/1.webp',
+                                          fit: BoxFit.cover,
+                                        ),
+                                ),
+                               
+                                    // isRecommended
+                                    //     ? const Padding(
+                                    //         padding: EdgeInsets.fromLTRB(
+                                    //             35, 25, 25, 25),
+                                    //         child: Iconify(
+                                    //           HeroiconsSolid.search,
+                                    //           color: Colors.white,
+                                    //         ),
+                                    //       )
+                                    //     :  Image.asset(
+                                    //       'lib/MenuPage/drinkimgs/1.webp',
+                                    //       fit: BoxFit.cover,
+                                    //     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(bar?.tag ?? 'No Tag',
@@ -165,133 +184,133 @@ class HomePageState extends State<HomePage> {
                 );
               },
             ),
-            
+
             // EVERYTHING BELOW THE MASTER LIST
-            
+
             // TOP ROW WITH BAR NAME AND WAIT TIME
-            
+
             if (barHistory.barIds.isNotEmpty)
-            SizedBox(
-              height: 68.5,
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 17),
-                      child: Text(
-                        BarDatabase.getBarById(barHistory.barIds.first)?.name ??
-                            'No Name',
-                        style: const TextStyle(
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(right:2),
-                      child: IconButton(
-                          icon: const Icon(
-                            Icons.history_rounded,
-                            size: 28,
-                            color: Colors.grey,
-                          ),
-                          onPressed: () {
-                            showBottomSheet(context, barHistory.barIds.first);
-                          }),
-                    ),
-                  ]),
-            ),
-            
-            
-            // MAIN MOST RECENT BAR
-            
-            if (barHistory.barIds.isNotEmpty)
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MenuPage(
-                    barId: barHistory.barIds.first,
-                  ),
-                ),
-              ),
-              child: Container(
-                height: 395,
-                decoration: const BoxDecoration(
-                  color: Colors.black,
-                  // border: Border(
-                  //   top: BorderSide(
-                  //     color: Colors.white,
-                  //     width: .1),
-                  //   bottom: BorderSide(
-                  //     color: Colors.white,
-                  //     width: .1)
-                  //   )
-                ),
-                child: const Center(
-                  child: Text(
-                    'Picture',
-                    style: TextStyle(color: Colors.white, fontSize: 24),
-                  ),
-                ),
-              ),
-            ),
-            
-            //BOTTOM ROW WITH RECENT DRINKS AND WAIT TIME
-            
-            if (barHistory.barIds.isNotEmpty)
-            GestureDetector(
-              onVerticalDragEnd: (details) {
-                if (details.velocity.pixelsPerSecond.dy < -50) {
-                  showBottomSheet(context, barHistory.barIds.first);
-                }
-              },
-              child: Container(
-                decoration: const BoxDecoration(),
+              SizedBox(
                 height: 68.5,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 17),
-                      child: RichText(
-                        text: const TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'Open',
-                              style: TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            TextSpan(
-                              text: ' / ',
-                              style: TextStyle(
-                                  fontSize: 17.5,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            TextSpan(
-                              text: 'Closed',
-                              style: TextStyle(
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w700),
-                            ),
-                          ],
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 17),
+                        child: Text(
+                          BarDatabase.getBarById(barHistory.barIds.first)
+                                  ?.name ??
+                              'No Name',
+                          style: const TextStyle(
+                            color: Colors.white,
+                          ),
                         ),
                       ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.only(right: 17),
-                      child: Text(
-                        'Wait: 10 min',
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 2),
+                        child: IconButton(
+                            icon: const Icon(
+                              Icons.history_rounded,
+                              size: 28,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              showBottomSheet(context, barHistory.barIds.first);
+                            }),
                       ),
+                    ]),
+              ),
+
+            // MAIN MOST RECENT BAR
+
+            if (barHistory.barIds.isNotEmpty)
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MenuPage(
+                      barId: barHistory.barIds.first,
                     ),
-                  ],
+                  ),
+                ),
+                child: Container(
+                  height: 395,
+                  decoration: const BoxDecoration(
+                    color: Colors.black,
+                    // border: Border(
+                    //   top: BorderSide(
+                    //     color: Colors.white,
+                    //     width: .1),
+                    //   bottom: BorderSide(
+                    //     color: Colors.white,
+                    //     width: .1)
+                    //   )
+                  ),
+                  child:  Center(
+                    child: Image.asset('lib/MenuPage/drinkimgs/1.webp'
+                        // 'Picture',
+                        // style: TextStyle(color: Colors.white, fontSize: 24),
+                        ),
+                  ),
                 ),
               ),
-            ),
+
+            //BOTTOM ROW WITH RECENT DRINKS AND WAIT TIME
+
+            if (barHistory.barIds.isNotEmpty)
+              GestureDetector(
+                onVerticalDragEnd: (details) {
+                  if (details.velocity.pixelsPerSecond.dy < -50) {
+                    showBottomSheet(context, barHistory.barIds.first);
+                  }
+                },
+                child: Container(
+                  decoration: const BoxDecoration(),
+                  height: 68.5,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 17),
+                        child: RichText(
+                          text: const TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'Open',
+                                style: TextStyle(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              TextSpan(
+                                text: ' / ',
+                                style: TextStyle(
+                                    fontSize: 17.5,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              TextSpan(
+                                text: 'Closed',
+                                style: TextStyle(
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w700),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.only(right: 17),
+                        child: Text(
+                          'Wait: 10 min',
+                          style: TextStyle(
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),

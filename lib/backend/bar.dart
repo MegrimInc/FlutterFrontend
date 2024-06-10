@@ -110,7 +110,7 @@ List<String> getDrinkIdsBySubcategory(String category, String subcategory) {
   category = category.trim();
 
   for (var drink in drinks!) {
-    if (drink.type == category && drink.ingredients.contains(subcategory)) {
+    if (drink.type.trim() == category && drink.ingredients.contains(subcategory)) {
       drinkIds.add(drink.id);
     }
   }
@@ -131,7 +131,7 @@ Map<String, int> getDrinkCounts() {
       case 'Liquor':
         liquorCount++;
         break;
-      case 'Casual':
+      case 'Brew':
         casualCount++;
         break;
       case 'Virgin':
@@ -145,14 +145,34 @@ Map<String, int> getDrinkCounts() {
   // Return a map containing counts for each category
   return {
     'Liquor': liquorCount,
-    'Casual': casualCount,
+    'Brew': casualCount,
     'Virgin': virginCount,
   };
 }
 
 
 
+Map<String, Map<String, int>> getSubcategoryDrinkCounts() {
+    Map<String, Map<String, int>> subcategoryCounts = {};
 
+    for (var drink in drinks ?? []) {
+      String category = drink.type.trim();
+
+      if (!subcategoryCounts.containsKey(category)) {
+        subcategoryCounts[category] = {};
+      }
+
+      for (var ingredient in drink.ingredients) {
+        String subcategory = ingredient.trim();
+        if (!subcategoryCounts[category]!.containsKey(subcategory)) {
+          subcategoryCounts[category]![subcategory] = 0;
+        }
+        subcategoryCounts[category]![subcategory] = subcategoryCounts[category]![subcategory]! + 1;
+      }
+    }
+
+    return subcategoryCounts;
+  }
 
 
 

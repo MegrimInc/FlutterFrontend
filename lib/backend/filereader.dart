@@ -35,18 +35,20 @@ class FileReader {
 
             for (var row in sheet.rows.skip(2)) {  // Assuming the first two rows are headers
               if (row[0] != null && row[0]!.value.toString().isNotEmpty) {
-                var drinkName = row[1]!.value.toString();
-                var drinkDescription = row[3]?.value?.toString() ?? '';
-                var drinkPrice = double.tryParse(row[6]?.value?.toString() ?? '0') ?? 0;
-                var drinkAlcohol = double.tryParse(row[7]?.value?.toString() ?? '0') ?? 0;
-                var drinkType = row[0]?.value?.toString() ?? 'Unknown Type';
-                var drinkImage = 'lib/MenuPage/drinkimgs/${row[14]?.value?.toString() ?? ''}';
+                var drinkStyle = row[0]!.value.toString();
+                var drinkType = row[1]?.value?.toString() ?? 'Unknown Type';
+                var drinkName = row[2]!.value.toString();
+                var drinkDescription = row[4]?.value?.toString() ?? '';
+                var drinkPrice = double.tryParse(row[7]?.value?.toString() ?? '0') ?? 0;
+                var drinkAlcohol = double.tryParse(row[8]?.value?.toString() ?? '0') ?? 0;
+                
+                var drinkImage = 'lib/MenuPage/drinkimgs/${row[9]?.value?.toString() ?? ''}';
                  
                 
                 List<String> drinkIngredients = [];
 
-                for (int i = 8; i <= 13; i++) {
-                  var cellValue = row[i]?.value?.toString().trim() ?? '';
+                for (int i = 10; i <= 12; i++) {
+                  var cellValue = row[i]?.value?.toString().trim() ?? ' ';
                   if (cellValue.isNotEmpty && cellValue.toUpperCase() != "N/A") {
                     drinkIngredients.add(cellValue);
                   }
@@ -54,7 +56,7 @@ class FileReader {
 
                 // Create the drink without specifying an ID
                 Drink drink = Drink("", drinkName, drinkDescription, drinkPrice,
-                    drinkAlcohol, drinkType, drinkIngredients, drinkImage);
+                    drinkAlcohol, drinkType, drinkIngredients, drinkImage, drinkStyle);
                 currentBar.addDrink(drink);
               }
             }

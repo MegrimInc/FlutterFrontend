@@ -113,8 +113,14 @@ class BarBottomSheet extends StatelessWidget {
                             );
                           }),
                     ),
+                  
+
                   ],
                 ),
+                 const SizedBox(height: 50,),
+                    Text('Shots'),
+                    const SizedBox(height: 50),
+                    Text('Vodka')
               ])),
         ],
       ),
