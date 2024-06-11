@@ -118,9 +118,9 @@ class BarBottomSheet extends StatelessWidget {
                   ],
                 ),
                  const SizedBox(height: 50,),
-                    Text('Shots'),
+                    const Text('Shots'),
                     const SizedBox(height: 50),
-                    Text('Vodka')
+                    const Text('Vodka')
               ])),
         ],
       ),

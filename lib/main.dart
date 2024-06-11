@@ -1,5 +1,6 @@
 import 'package:barzzy_app1/Backend/searchengine.dart';
 import 'package:barzzy_app1/Backend/recommended.dart';
+import 'package:barzzy_app1/Backend/user.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:barzzy_app1/Backend/bardatabase.dart';
@@ -21,6 +22,11 @@ void main() async {
         ChangeNotifierProvider(create: (context) => barDatabase),
         ChangeNotifierProvider(create: (context) => BarHistory()),
         ChangeNotifierProvider(create: (context) => Recommended()),
+        // Provider<User>(
+        //   create: (_) => User(), // Create an instance of the User class
+        // ), 
+        ChangeNotifierProvider(create: (context) => User()),
+        
         ProxyProvider<BarDatabase, SearchService>(
           update: (_, barDatabase, __) => SearchService(barDatabase),)
       ],
