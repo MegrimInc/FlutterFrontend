@@ -19,7 +19,11 @@ class BarDatabase with ChangeNotifier {
   void addBar(Bar bar) {
     String newId = _uuid.v4(); // Generate a unique ID
     _bars[newId] = Bar(
-        name: bar.name, address: bar.address, drinks: bar.drinks, tag: bar.tag);
+        name: bar.name, 
+        address: bar.address, 
+        drinks: bar.drinks, 
+        tag: bar.tag,
+        nameAndTagMap: bar.nameAndTagMap);
     notifyListeners();
     
   }

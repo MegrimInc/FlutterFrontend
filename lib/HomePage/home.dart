@@ -104,7 +104,6 @@ class HomePageState extends State<HomePage> {
                         return GestureDetector(
                             behavior: HitTestBehavior.translucent,
                             onTap: () {
-                              if (isRecommended) {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -112,12 +111,6 @@ class HomePageState extends State<HomePage> {
                                         MenuPage(barId: barId),
                                   ),
                                 );
-                              } else {
-                                showBottomSheet(
-                                  context,
-                                  barId,
-                                );
-                              }
                             },
                             child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -191,7 +184,7 @@ class HomePageState extends State<HomePage> {
 
             if (barHistory.barIds.isNotEmpty)
               SizedBox(
-                height: 68.5,
+                height: 65.5,
                 child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -234,7 +227,7 @@ class HomePageState extends State<HomePage> {
                   ),
                 ),
                 child: Container(
-                  height: 395,
+                  height: 401,
                   decoration: const BoxDecoration(
                     color: Colors.black,
                     // border: Border(
@@ -266,7 +259,7 @@ class HomePageState extends State<HomePage> {
                 },
                 child: Container(
                   decoration: const BoxDecoration(),
-                  height: 68.5,
+                  height: 65.5,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [

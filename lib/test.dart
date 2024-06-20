@@ -1,77 +1,133 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
-class ActionSheet extends StatelessWidget {
+class ActionSheet extends StatefulWidget {
   const ActionSheet({super.key});
 
   @override
+  State<ActionSheet> createState() => ActionSheetState();
+}
+
+class ActionSheetState extends State<ActionSheet> {
+  ScrollController scrollController = ScrollController();
+  @override
+  void initState() {
+    scrollController = ScrollController();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        _showActionSheet(context);
-      },
-      child: Container(
-        alignment: Alignment.center,
-        color: Colors.grey,
-        width: double.infinity,
-        height: 50, // Adjust the height according to your needs
-        child: const Text(
-          'Show Action Sheet',
-          style: TextStyle(color: Colors.white),
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: AnimatedBuilder(
+          animation: scrollController,
+          builder: (BuildContext context, Widget? child) {
+            return AnimatedContainer(
+              color: Colors.blueGrey,
+              duration: const Duration(milliseconds: 400),
+              height: scrollController.position.userScrollDirection ==
+                      ScrollDirection.reverse
+                  ? 0
+                  : 80,
+              child: child,
+            );
+          },
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Text('gey faggot'),
+              Icon(Icons.home),
+              Icon(Icons.shopping_bag),
+              Icon(Icons.favorite),
+              Icon(Icons.person),
+            ],
+          ),
+        ),
+      ),
+      
+      bottomNavigationBar: AnimatedBuilder(
+        animation: scrollController,
+        builder: (BuildContext context, Widget? child) {
+          return AnimatedContainer(
+            color: Colors.blueGrey,
+            duration: const Duration(milliseconds: 400),
+            height: scrollController.position.userScrollDirection ==
+                    ScrollDirection.reverse
+                ? 0
+                : 80,
+            child: child,
+          );
+        },
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Icon(Icons.home),
+            Icon(Icons.shopping_bag),
+            Icon(Icons.favorite),
+            Icon(Icons.person),
+          ],
+        ),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xff3F3F3F),
+              Color(0xff1E1E1E),
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          controller: scrollController,
+          child: Column(
+            children: [
+              const SizedBox(height: 100),
+              const Text(
+                "Hide On Scroll",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 25,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              ListView.separated(
+                shrinkWrap: true,
+                itemCount: 50,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(10),
+                separatorBuilder: (context, index) => const SizedBox(
+                  height: 20,
+                ),
+                itemBuilder: (context, index) => Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                      color: Colors.grey,
+                      borderRadius: BorderRadius.circular(15)),
+                  child: Center(
+                    child: Text(
+                      index.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 25,
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );
   }
-
-  void _showActionSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: const Text('Option 1'),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Perform action for Option 1
-                },
-              ),
-              ListTile(
-                title: const Text('Option 2'),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Perform action for Option 2
-                },
-              ),
-              ListTile(
-                title: const Text('Cancel', style: TextStyle(color: Colors.red)),
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-void main() {
-  runApp(const MaterialApp(
-    home: Scaffold(
-      backgroundColor: Colors.black,
-      body: ActionSheet(),
-    ),
-  ));
 }

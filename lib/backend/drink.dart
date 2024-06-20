@@ -37,7 +37,6 @@ class Drink {
 
 
 
-
   // JSON serialization
   Map<String, dynamic> toJson() {
     return {
