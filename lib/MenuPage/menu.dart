@@ -1,17 +1,16 @@
 import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/user.dart';
+import 'package:barzzy_app1/MenuPage/cart.dart';
 import 'package:barzzy_app1/MenuPage/chatbot.dart';
 import 'package:barzzy_app1/MenuPage/drinkfeed.dart';
-import 'package:barzzy_app1/MenuPage/infinitescroll.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import '../Backend/bar.dart';
 import '../Backend/bardatabase.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/services.dart';
-import 'dart:ui' as ui;
+import 'package:animated_text_kit/animated_text_kit.dart';
 
 class MenuPage extends StatefulWidget {
   final String barId;
@@ -33,6 +32,7 @@ class MenuPageState extends State<MenuPage> {
   bool hasText = false;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+  Cart cart = Cart();
 
   @override
   void initState() {
@@ -102,7 +102,8 @@ class MenuPageState extends State<MenuPage> {
                             builder: (context, user, _) {
                               final searchHistoryEntries =
                                   user.getSearchHistory(widget.barId);
-
+                              final responseHistory =
+                                  user.getResponseHistory(widget.barId);
                               return ListView.builder(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
@@ -111,16 +112,76 @@ class MenuPageState extends State<MenuPage> {
                                     final entry = searchHistoryEntries[index];
                                     final query = entry.key;
                                     final drinkIds = entry.value;
+                                    final response = responseHistory.length > index
+                                        ? responseHistory[index]
+                                        : '';
                                     return Column(
                                       children: [
                                         ListTile(
-                                          title: Text(
-                                            query,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                          title: Align(
+                                            alignment: Alignment.centerRight,
+                                            child: 
+                                            
+                                            
+                                            
+                                            
+
+
+
+
+
+
+Center(
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.end, // Align text to the right
+    children: [
+      Flexible(
+        child: Text(
+          query,
+          style: const TextStyle(
+            fontSize: 18.0,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          
+           
+              
+                
+                
+                textAlign: TextAlign.right,
+                
+              
+            
+            
+          
+        ),
+      ),
+    ],
+  ),
+),
+            
+
+
+
+
+
+                                            
+                                            
+                                            
+                                            
+    
+
+
+
+
+
+
+
+
+
+
+
+
                                           ),
                                         ),
 
@@ -131,12 +192,17 @@ class MenuPageState extends State<MenuPage> {
                                               const NeverScrollableScrollPhysics(),
                                           gridDelegate:
                                               SliverQuiltedGridDelegate(
-                                            crossAxisCount: 3,
-                                            mainAxisSpacing: 2.5,
-                                            crossAxisSpacing: 2.5,
-                                            pattern: _generatePattern(
-                                                drinkIds.length),
-                                          ),
+                                                  crossAxisCount: 3,
+                                                  mainAxisSpacing: 2.5,
+                                                  crossAxisSpacing: 2.5,
+                                                  repeatPattern:
+                                                      QuiltedGridRepeatPattern
+                                                          .same,
+                                                  pattern: [
+                                                const QuiltedGridTile(2, 1),
+                                                const QuiltedGridTile(2, 1),
+                                                const QuiltedGridTile(2, 1),
+                                              ]),
                                           childrenDelegate:
                                               SliverChildBuilderDelegate(
                                             (context, index) {
@@ -147,6 +213,12 @@ class MenuPageState extends State<MenuPage> {
                                               // DRINK FEED
 
                                               return GestureDetector(
+                                                onTap: () {
+                                                  cart.addDrink(drink.id);
+                                                },
+                                                onDoubleTap: () {
+                                                  cart.removeDrink(drink.id);
+                                                },
                                                 onLongPress: () {
                                                   // Trigger haptic feedback on long press
                                                   HapticFeedback.heavyImpact();
@@ -172,28 +244,51 @@ class MenuPageState extends State<MenuPage> {
                                                       ),
                                                       Positioned.fill(
                                                           child: Column(
-                                                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
                                                         children: [
-                                                          Infinitescroll(
-                                                              childrenWidth:
-                                                                  _calculateTextWidth(
-                                                                "${drink.name}: ${drink.ingredients.join(' ')} ${drink.name}: '${drink.ingredients.join(' ')}"),
-                                                              scrollDuration:
-                                                                  const Duration(
-                                                                      seconds:
-                                                                          60),
-                                                              children: [
-                                                                Text(
-                                                                  "${drink.name}: ${drink.ingredients.join(' ')} ${drink.name}: '${drink.ingredients.join(' ')}",
-                                                                  style:
-                                                                      const TextStyle(
+// Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+//                                                             children: [
+//                                                               Text(drink.name,
+//                                                               style: const TextStyle(
+//                                                                fontSize: 15,
+//                                                                 color: Colors.white
+//                                                               ),
+//                                                               ),
+//                                                             ],
+//                                                           ),
+
+//Spacer(),
+                                                          ...drink.ingredients
+                                                              .map(
+                                                                  (ingredient) {
+                                                            return Text(
+                                                              "`${ingredient.trim()}",
+                                                              style:
+                                                                  const TextStyle(
+                                                                //color: Colors.white,
+                                                                fontSize: 11,
+                                                                //fontWeight: FontWeight.bold
+                                                              ),
+                                                            );
+                                                          }),
+                                                          const Spacer(),
+                                                          Row(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .spaceEvenly,
+                                                            children: [
+                                                              Text(
+                                                                drink.name,
+                                                                style: const TextStyle(
+                                                                    fontSize:
+                                                                        15,
                                                                     color: Colors
-                                                                        .white,
-                                                                    fontWeight:
-                                                                        FontWeight.bold,
-                                                                  ),
-                                                                ),
-                                                              ]),
+                                                                        .white),
+                                                              ),
+                                                            ],
+                                                          )
                                                         ],
                                                       ))
                                                     ],
@@ -204,6 +299,18 @@ class MenuPageState extends State<MenuPage> {
                                             childCount: drinkIds.length > 6
                                                 ? 6
                                                 : drinkIds.length,
+                                          ),
+                                        ),
+
+                                        ListTile(
+                                          title: Text(
+                                            response,
+                                            style: const TextStyle(
+                                              fontSize: 14.0,
+                                              fontStyle: FontStyle.italic,
+                                              color: Colors.red,
+                                            ),
+                                            textAlign: TextAlign.left,
                                           ),
                                         ),
                                       ],
@@ -225,7 +332,7 @@ class MenuPageState extends State<MenuPage> {
                     child: BottomAppBar(
                       color: Colors.black,
 
-                      //BACK ICON
+                      //PLUS ICON
                       child: Row(
                         children: [
                           Padding(
@@ -264,7 +371,7 @@ class MenuPageState extends State<MenuPage> {
                                   _scrollToBottom(); // Trigger scroll to bottom when text field is tapped
                                 },
                                 decoration: InputDecoration(
-                                    labelText: 'Message..',
+                                    labelText: 'Message...',
                                     labelStyle: const TextStyle(
                                       color: Colors
                                           .white, // Set the color of the label text here
@@ -292,7 +399,10 @@ class MenuPageState extends State<MenuPage> {
                           GestureDetector(
                             child: Row(
                               children: [
-                                const SizedBox(width: 20),
+                                Container(
+                                  width: 20,
+                                  decoration: const BoxDecoration(),
+                                ),
                                 hasText
                                     ? Container(
                                         height: 27,
@@ -334,25 +444,6 @@ class MenuPageState extends State<MenuPage> {
     );
   }
 
-  // PATTERN METHOD
-
-  List<QuiltedGridTile> _generatePattern(int length) {
-    List<QuiltedGridTile> pattern = [];
-    pattern.addAll([
-      const QuiltedGridTile(2, 1),
-      const QuiltedGridTile(2, 1),
-      const QuiltedGridTile(2, 1),
-    ]); // Add the initial pattern for index 0
-    for (int i = 1; i < length; i++) {
-      pattern.addAll([
-        const QuiltedGridTile(2, 1),
-        const QuiltedGridTile(2, 1),
-        const QuiltedGridTile(2, 1),
-      ]);
-    }
-    return pattern;
-  }
-
 //SENDS ID TO BAR HISTORY CLASS
 
   Future<void> _handleBarTapAndReorder() async {
@@ -364,9 +455,7 @@ class MenuPageState extends State<MenuPage> {
 
     barHistory.reorderList(widget.barId);
   }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  
-  
+
   Route _createRoute(Drink drink) {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) =>
@@ -391,31 +480,5 @@ class MenuPageState extends State<MenuPage> {
       },
     );
   }
-
-
-
-
-
-double _calculateTextWidth(String text) {
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-
-    textPainter.layout(maxWidth: double.infinity);
-    // Return the text width with additional padding or margin as needed
-    return textPainter.width + 16; // Adjust this padding/margin as per your layout needs
-  }
-
-
-
-
-
-
 }
+

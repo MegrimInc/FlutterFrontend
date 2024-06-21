@@ -75,6 +75,7 @@ class DrinkFeed extends StatelessWidget {
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () {
                 Navigator.of(context).pop();
+                FocusScope.of(context).unfocus();
               },
             ),
           ),

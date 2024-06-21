@@ -2,6 +2,7 @@ import 'package:barzzy_app1/Backend/bartender.dart';
 import 'package:barzzy_app1/Backend/order.dart';
 import 'package:barzzy_app1/Backend/orderque.dart';
 import 'package:barzzy_app1/Backend/user.dart';
+import 'package:barzzy_app1/MenuPage/response.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'drink.dart';
@@ -26,52 +27,7 @@ class Bar {
     updateNameAndTagMap(drink);
   }
 
-//   void updateNameAndTagMap(Drink drink) {
-//      nameAndTagMap ??= {};
-//     Set<String> uniqueDrinkIds = {};
 
-//     try {
-//       // Extract and process the name
-//       String name = drink.name.toLowerCase().replaceAll(' ', '');
-
-//       // Extract and process the ingredients as tags
-//       for (var ingredient in drink.ingredients) {
-//         try {
-//           String tag = ingredient.toLowerCase().replaceAll(' ', '');
-
-//           if (!uniqueDrinkIds.contains(drink.id)) {
-//             nameAndTagMap?.putIfAbsent(tag, () => []).add(drink.id);
-//             //debugPrint('Added drink ID ${drink.id} under tag $tag');
-//             uniqueDrinkIds.add(drink.id); // Add the drink ID to the set
-//           }
-//         } catch (e) {
-//           debugPrint('Error processing tag for drink ${drink.name}: $e');
-//         }
-//       }
-
-//       nameAndTagMap?.putIfAbsent(name, () => []).add(drink.id);
-//       //debugPrint('Inlcuded drink ID: ${drink.id} under tag $name');
-//       uniqueDrinkIds.add(drink.id);
-//     } catch (e) {
-//       debugPrint('Error processing drink ${drink.name}: $e');
-//     }
-
-//     // debugPrintVodkaTagDrinkIds();
-
-//     // Remove duplicates
-//     nameAndTagMap?.forEach((key, value) {
-//       nameAndTagMap?[key] = value.toSet().toList();
-//     });
-
-//     // Debug statement to show the final nameAndTagMap
-//     //debugPrint('Final nameAndTagMap: $nameAndTagMap');
-//   }
-
-//   //GETTER METHODS
-
-//  Map<String, List<String>>? getNameAndTagMap() {
-//   return nameAndTagMap;
-// }
 
   void updateNameAndTagMap(Drink drink) {
   nameAndTagMap ??= {};
@@ -215,6 +171,12 @@ class Bar {
 
     debugPrint(
         'Filtered IDs for query $query: $filteredIds'); // Print the filtered IDs
+
+        if (filteredIds.isEmpty) {
+     Response().addNegativeResponse(user, barId);
+    } else {
+      Response().addEmptyResponse(user, barId);
+    }
 
     user.addSearchQuery(barId, query, filteredIds);
   }

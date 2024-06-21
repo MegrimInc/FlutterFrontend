@@ -1,9 +1,9 @@
-import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:flutter/foundation.dart';
 
 class User extends ChangeNotifier {
   List<MapEntry<String, MapEntry<String, List<String>>>> searchHistory = [];
   List<MapEntry<String, List<String>>> allSearchEntries = [];
+  Map<String, List<String>> responseHistory = {};
 
 
 
@@ -29,10 +29,19 @@ class User extends ChangeNotifier {
 
 
 
+// Add a response to the response history for a specific bar
+  void addResponseToHistory(String barId, String response) {
+    if (!responseHistory.containsKey(barId)) {
+      responseHistory[barId] = [];
+    }
+    responseHistory[barId]!.add(response);
+    notifyListeners();
+  }
 
-
-
-
+  // Retrieve response history for a specific bar
+  List<String> getResponseHistory(String barId) {
+    return responseHistory[barId] ?? [];
+  }
 
 
 
