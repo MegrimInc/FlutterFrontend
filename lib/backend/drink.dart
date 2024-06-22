@@ -11,8 +11,6 @@ class Drink {
 
   Drink(this.id, this.name, this.description, this.price, this.alcohol, this.type, this.ingredients, this.image, this.style);
 
-
-
  // Getter methods
   String? getName() {
     return name;

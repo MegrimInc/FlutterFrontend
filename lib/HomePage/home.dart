@@ -230,19 +230,9 @@ class HomePageState extends State<HomePage> {
                   height: 401,
                   decoration: const BoxDecoration(
                     color: Colors.black,
-                    // border: Border(
-                    //   top: BorderSide(
-                    //     color: Colors.white,
-                    //     width: .1),
-                    //   bottom: BorderSide(
-                    //     color: Colors.white,
-                    //     width: .1)
-                    //   )
                   ),
                   child:  Center(
                     child: Image.asset('lib/MenuPage/drinkimgs/1.webp'
-                        // 'Picture',
-                        // style: TextStyle(color: Colors.white, fontSize: 24),
                         ),
                   ),
                 ),

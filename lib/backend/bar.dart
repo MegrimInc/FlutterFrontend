@@ -1,8 +1,8 @@
 import 'package:barzzy_app1/Backend/bartender.dart';
 import 'package:barzzy_app1/Backend/order.dart';
 import 'package:barzzy_app1/Backend/orderque.dart';
+import 'package:barzzy_app1/Backend/response.dart';
 import 'package:barzzy_app1/Backend/user.dart';
-import 'package:barzzy_app1/MenuPage/response.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'drink.dart';
@@ -113,6 +113,11 @@ class Bar {
     return tag;
   }
 
+  // Method to get a drink object by its ID
+  Drink getDrinkById(String id) {
+    return drinks!.firstWhere((drink) => drink.id == id);
+  }
+
   // JSON serialization to support saving and loading bar data
   Map<String, dynamic> toJson() {
     return {
@@ -150,10 +155,6 @@ class Bar {
     );
   }
 
-  Drink getDrinkById(String id) {
-    return drinks!.firstWhere((drink) => drink.id == id);
-  }
-
   void searchDrinks(String query, User user, String barId) {
     Set<String> filteredIdsSet = {};
    // List<String> filteredIds = [];
@@ -180,4 +181,16 @@ class Bar {
 
     user.addSearchQuery(barId, query, filteredIds);
   }
+
+
+double getDrinkPrice(String drinkId) {
+    Drink drink = getDrinkById(drinkId);
+    return drink.price;
+  }
+
+  // Drink getDrinkById(String id) {
+  //   return drinks!.firstWhere((drink) => drink.id == id);
+  // }
+
+
 }

@@ -14,7 +14,7 @@ class BarDatabase with ChangeNotifier {
   final Map<String, Bar> _bars = {};
 
   final Uuid _uuid = const Uuid();
-
+ 
   // Method to add a new bar, generating an ID for it
   void addBar(Bar bar) {
     String newId = _uuid.v4(); // Generate a unique ID

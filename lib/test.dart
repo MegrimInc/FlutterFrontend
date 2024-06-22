@@ -1,133 +1,47 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+// import 'package:flutter/material.dart';
+// import 'package:flutter_chat_bubble/chat_bubble.dart';
 
-class ActionSheet extends StatefulWidget {
-  const ActionSheet({super.key});
+// class ChatScreen extends StatelessWidget {
+//   const ChatScreen({super.key});
 
-  @override
-  State<ActionSheet> createState() => ActionSheetState();
-}
-
-class ActionSheetState extends State<ActionSheet> {
-  ScrollController scrollController = ScrollController();
-  @override
-  void initState() {
-    scrollController = ScrollController();
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: AnimatedBuilder(
-          animation: scrollController,
-          builder: (BuildContext context, Widget? child) {
-            return AnimatedContainer(
-              color: Colors.blueGrey,
-              duration: const Duration(milliseconds: 400),
-              height: scrollController.position.userScrollDirection ==
-                      ScrollDirection.reverse
-                  ? 0
-                  : 80,
-              child: child,
-            );
-          },
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              Text('gey faggot'),
-              Icon(Icons.home),
-              Icon(Icons.shopping_bag),
-              Icon(Icons.favorite),
-              Icon(Icons.person),
-            ],
-          ),
-        ),
-      ),
-      
-      bottomNavigationBar: AnimatedBuilder(
-        animation: scrollController,
-        builder: (BuildContext context, Widget? child) {
-          return AnimatedContainer(
-            color: Colors.blueGrey,
-            duration: const Duration(milliseconds: 400),
-            height: scrollController.position.userScrollDirection ==
-                    ScrollDirection.reverse
-                ? 0
-                : 80,
-            child: child,
-          );
-        },
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Icon(Icons.home),
-            Icon(Icons.shopping_bag),
-            Icon(Icons.favorite),
-            Icon(Icons.person),
-          ],
-        ),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xff3F3F3F),
-              Color(0xff1E1E1E),
-            ],
-          ),
-        ),
-        child: SingleChildScrollView(
-          controller: scrollController,
-          child: Column(
-            children: [
-              const SizedBox(height: 100),
-              const Text(
-                "Hide On Scroll",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 25,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              ListView.separated(
-                shrinkWrap: true,
-                itemCount: 50,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(10),
-                separatorBuilder: (context, index) => const SizedBox(
-                  height: 20,
-                ),
-                itemBuilder: (context, index) => Container(
-                  height: 50,
-                  decoration: BoxDecoration(
-                      color: Colors.grey,
-                      borderRadius: BorderRadius.circular(15)),
-                  child: Center(
-                    child: Text(
-                      index.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 25,
-                        fontStyle: FontStyle.italic,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              )
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(title: const Text('Chat Bubbles')),
+//       body: Column(
+//         children: <Widget>[
+//           ChatBubble(
+//             clipper: ChatBubbleClipper1(type: BubbleType.receiverBubble),
+//             alignment: Alignment.topLeft,
+//             margin: const EdgeInsets.only(top: 20),
+//             backGroundColor: const Color(0xffE7E7ED),
+//             child: Container(
+//               constraints: BoxConstraints(
+//                 maxWidth: MediaQuery.of(context).size.width * 0.7,
+//               ),
+//               child: const Text(
+//                 'Hi, how are you?',
+//                 style: TextStyle(color: Colors.black),
+//               ),
+//             ),
+//           ),
+//           ChatBubble(
+//             clipper: ChatBubbleClipper1(type: BubbleType.sendBubble),
+//             alignment: Alignment.topRight,
+//             margin: const EdgeInsets.only(top: 20),
+//             backGroundColor: Colors.blue,
+//             child: Container(
+//               constraints: BoxConstraints(
+//                 maxWidth: MediaQuery.of(context).size.width * 0.7,
+//               ),
+//               child: const Text(
+//                 'I am good, thanks!',
+//                 style: TextStyle(color: Colors.white),
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }

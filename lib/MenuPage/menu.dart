@@ -1,16 +1,15 @@
 import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/user.dart';
-import 'package:barzzy_app1/MenuPage/cart.dart';
-import 'package:barzzy_app1/MenuPage/chatbot.dart';
+import 'package:barzzy_app1/OrdersPage/cart.dart';
 import 'package:barzzy_app1/MenuPage/drinkfeed.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../Backend/bar.dart';
 import '../Backend/bardatabase.dart';
 import 'package:flutter/services.dart';
-import 'package:animated_text_kit/animated_text_kit.dart';
 
 class MenuPage extends StatefulWidget {
   final String barId;
@@ -32,11 +31,15 @@ class MenuPageState extends State<MenuPage> {
   bool hasText = false;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
-  Cart cart = Cart();
+  late Cart cart;
+  
+  
 
   @override
   void initState() {
+    
     super.initState();
+    cart = Cart(widget.barId);
     _fetchBarData();
     _searchController.addListener(() {
       setState(() {
@@ -74,373 +77,413 @@ class MenuPageState extends State<MenuPage> {
     });
   }
 
-  void _scrollToBottom() {
-    _scrollController.animateTo(
-      0,
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeInOut,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Scaffold(
-          resizeToAvoidBottomInset: true,
-          backgroundColor: Colors.black,
-          body: isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Column(children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      reverse: true,
-                      key: _listKey,
-                      controller: _scrollController,
-                      child: Column(
+      child: GestureDetector(
+        onHorizontalDragUpdate: (details) {
+    // Handle horizontal drag update here
+    if (details.primaryDelta! > 0) {
+      // Swiping to the right
+    }
+  },
+        child: Scaffold(
+            resizeToAvoidBottomInset: true,
+            backgroundColor: Colors.black,
+            body: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Column(children: [
+                    SizedBox(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Consumer<User>(
-                            builder: (context, user, _) {
-                              final searchHistoryEntries =
-                                  user.getSearchHistory(widget.barId);
-                              final responseHistory =
-                                  user.getResponseHistory(widget.barId);
-                              return ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: searchHistoryEntries.length,
-                                  itemBuilder: (context, index) {
-                                    final entry = searchHistoryEntries[index];
-                                    final query = entry.key;
-                                    final drinkIds = entry.value;
-                                    final response = responseHistory.length > index
-                                        ? responseHistory[index]
-                                        : '';
-                                    return Column(
-                                      children: [
-                                        ListTile(
-                                          title: Align(
-                                            alignment: Alignment.centerRight,
-                                            child: 
-                                            
-                                            
-                                            
-                                            
+                          //BACK ARROW BUTTON
 
-
-
-
-
-
-Center(
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.end, // Align text to the right
-    children: [
-      Flexible(
-        child: Text(
-          query,
-          style: const TextStyle(
-            fontSize: 18.0,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-          
-           
-              
-                
-                
-                textAlign: TextAlign.right,
-                
-              
-            
-            
-          
-        ),
-      ),
-    ],
-  ),
-),
-            
-
-
-
-
-
-                                            
-                                            
-                                            
-                                            
-    
-
-
-
-
-
-
-
-
-
-
-
-
-                                          ),
-                                        ),
-
-                                        // List of Search Results
-                                        GridView.custom(
-                                          shrinkWrap: true,
-                                          physics:
-                                              const NeverScrollableScrollPhysics(),
-                                          gridDelegate:
-                                              SliverQuiltedGridDelegate(
-                                                  crossAxisCount: 3,
-                                                  mainAxisSpacing: 2.5,
-                                                  crossAxisSpacing: 2.5,
-                                                  repeatPattern:
-                                                      QuiltedGridRepeatPattern
-                                                          .same,
-                                                  pattern: [
-                                                const QuiltedGridTile(2, 1),
-                                                const QuiltedGridTile(2, 1),
-                                                const QuiltedGridTile(2, 1),
-                                              ]),
-                                          childrenDelegate:
-                                              SliverChildBuilderDelegate(
-                                            (context, index) {
-                                              final drink = currentBar!.drinks!
-                                                  .firstWhere((d) =>
-                                                      d.id == drinkIds[index]);
-
-                                              // DRINK FEED
-
-                                              return GestureDetector(
-                                                onTap: () {
-                                                  cart.addDrink(drink.id);
-                                                },
-                                                onDoubleTap: () {
-                                                  cart.removeDrink(drink.id);
-                                                },
-                                                onLongPress: () {
-                                                  // Trigger haptic feedback on long press
-                                                  HapticFeedback.heavyImpact();
-                                                  Future.delayed(
-                                                      const Duration(
-                                                          milliseconds: 150),
-                                                      () {
-                                                    Navigator.of(context).push(
-                                                        _createRoute(drink));
-                                                  });
-                                                },
-                                                child: ClipRRect(
-                                                  borderRadius:
-                                                      const BorderRadius
-                                                          .vertical(),
-                                                  child: Stack(
-                                                    children: [
-                                                      Positioned.fill(
-                                                        child: Image.asset(
-                                                          drink.image,
-                                                          fit: BoxFit.cover,
-                                                        ),
-                                                      ),
-                                                      Positioned.fill(
-                                                          child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-// Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-//                                                             children: [
-//                                                               Text(drink.name,
-//                                                               style: const TextStyle(
-//                                                                fontSize: 15,
-//                                                                 color: Colors.white
-//                                                               ),
-//                                                               ),
-//                                                             ],
-//                                                           ),
-
-//Spacer(),
-                                                          ...drink.ingredients
-                                                              .map(
-                                                                  (ingredient) {
-                                                            return Text(
-                                                              "`${ingredient.trim()}",
-                                                              style:
-                                                                  const TextStyle(
-                                                                //color: Colors.white,
-                                                                fontSize: 11,
-                                                                //fontWeight: FontWeight.bold
-                                                              ),
-                                                            );
-                                                          }),
-                                                          const Spacer(),
-                                                          Row(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .spaceEvenly,
-                                                            children: [
-                                                              Text(
-                                                                drink.name,
-                                                                style: const TextStyle(
-                                                                    fontSize:
-                                                                        15,
-                                                                    color: Colors
-                                                                        .white),
-                                                              ),
-                                                            ],
-                                                          )
-                                                        ],
-                                                      ))
-                                                    ],
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            childCount: drinkIds.length > 6
-                                                ? 6
-                                                : drinkIds.length,
-                                          ),
-                                        ),
-
-                                        ListTile(
-                                          title: Text(
-                                            response,
-                                            style: const TextStyle(
-                                              fontSize: 14.0,
-                                              fontStyle: FontStyle.italic,
-                                              color: Colors.red,
-                                            ),
-                                            textAlign: TextAlign.left,
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  });
-                            },
+                          IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: Colors.grey,
+                              size: 29,
+                            ),
+                            onPressed: () => Navigator.pop(context),
                           ),
-                          const SizedBox(
-                            height: 25,
-                          )
+
+                          // BAR NAME
+
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 5),
+                              child: Text(
+                                appBarTitle,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 17,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // MENU BUTTON
+
+                          IconButton(
+                            onPressed: () {},
+                            icon: const Icon(
+                              FontAwesomeIcons.penToSquare,
+                              size: 21.5,
+                              color: Colors.grey,
+                            ), // Replace with your desired icon
+                          ),
                         ],
                       ),
                     ),
-                  ),
 
-                  // BOTTOM BAR
-                  SizedBox(
-                    height: 60,
-                    child: BottomAppBar(
-                      color: Colors.black,
+                    Expanded(
+                      child: SingleChildScrollView(
+                        reverse: true,
+                        key: _listKey,
+                        controller: _scrollController,
+                        child: Column(
+                          children: [
+                            Consumer<User>(
+                              builder: (context, user, _) {
+                                final searchHistoryEntries =
+                                    user.getSearchHistory(widget.barId);
+                                final responseHistory =
+                                    user.getResponseHistory(widget.barId);
+                                return ListView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: searchHistoryEntries.length,
+                                    itemBuilder: (context, index) {
+                                      final entry = searchHistoryEntries[index];
+                                      final query = entry.key;
+                                      final drinkIds = entry.value;
+                                      final response =
+                                          responseHistory.length > index
+                                              ? responseHistory[index]
+                                              : '';
 
-                      //PLUS ICON
-                      child: Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: .5),
-                            child: GestureDetector(
-                              child: Row(
-                                children: [
-                                  Container(
-                                      height: 30,
-                                      width: 30,
-                                      decoration: BoxDecoration(
-                                          color: const Color.fromARGB(
-                                              255, 52, 51, 51),
-                                          borderRadius:
-                                              BorderRadius.circular(20)),
-                                      child: const Icon(
-                                        Icons.add,
-                                        color: Colors.grey,
-                                        size: 22,
-                                      )),
-                                  const SizedBox(width: 20),
-                                ],
-                              ),
-                              onTap: () {},
+
+
+
+
+
+       
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                      return Column(
+                                        children: [
+                                          const SizedBox(height: 15),
+                                          ListTile(
+                                            title: Align(
+                                              alignment: Alignment.centerRight,
+                                              child: Center(
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .end, // Align text to the right
+                                                  children: [
+                                                    Flexible(
+                                                      child: Container(
+                                                      color: const Color.fromARGB(255, 74, 74, 74),
+                                                        child: Text(
+                                                          query,
+                                                          style: const TextStyle(
+                                                            fontSize: 18.0,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            color: Colors.white,
+                                                          ),
+                                                          textAlign:
+                                                              TextAlign.right,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 15),
+
+                                          GridView.custom(
+                                            shrinkWrap: true,
+                                            physics:
+                                                const NeverScrollableScrollPhysics(),
+                                            gridDelegate:
+                                                SliverQuiltedGridDelegate(
+                                                    crossAxisCount: 3,
+                                                    mainAxisSpacing: 2.5,
+                                                    crossAxisSpacing: 2.5,
+                                                    repeatPattern:
+                                                        QuiltedGridRepeatPattern
+                                                            .same,
+                                                    pattern: [
+                                                  const QuiltedGridTile(2, 1),
+                                                  const QuiltedGridTile(2, 1),
+                                                  const QuiltedGridTile(2, 1),
+                                                ]),
+                                            childrenDelegate:
+                                                SliverChildBuilderDelegate(
+                                              (context, index) {
+                                                final drink = currentBar!
+                                                    .drinks!
+                                                    .firstWhere((d) =>
+                                                        d.id ==
+                                                        drinkIds[index]);
+
+                                                // DRINK FEED
+
+                                                return GestureDetector(
+                                                  onTap: () {
+                                                    cart.addDrink(drink.id);
+                                                  },
+                                                  onDoubleTap: () {
+                                                   cart.removeDrink(drink.id);
+                                                  },
+                                                  onLongPress: () {
+                                                    // Trigger haptic feedback on long press
+                                                    HapticFeedback
+                                                        .heavyImpact();
+                                                    Future.delayed(
+                                                        const Duration(
+                                                            milliseconds: 150),
+                                                        () {
+                                                      Navigator.of(context)
+                                                          .push(_createRoute(
+                                                              drink));
+                                                    });
+                                                  },
+                                                  child: ClipRRect(
+                                                    borderRadius:
+                                                        const BorderRadius
+                                                            .vertical(),
+                                                    child: Stack(
+                                                      children: [
+                                                        Positioned.fill(
+                                                          child: Image.asset(
+                                                            drink.image,
+                                                            fit: BoxFit.cover,
+                                                          ),
+                                                        ),
+                                                        Positioned.fill(
+                                                            child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            // Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                                            //                                                             children: [
+                                                            //                                                               Text(drink.name,
+                                                            //                                                               style: const TextStyle(
+                                                            //                                                                fontSize: 15,
+                                                            //                                                                 color: Colors.white
+                                                            //                                                               ),
+                                                            //                                                               ),
+                                                            //                                                             ],
+                                                            //                                                           ),
+
+                                                            //Spacer(),
+                                                            ...drink.ingredients
+                                                                .map(
+                                                                    (ingredient) {
+                                                              return Text(
+                                                                "`${ingredient.trim()}",
+                                                                style:
+                                                                    const TextStyle(
+                                                                  //color: Colors.white,
+                                                                  fontSize: 11,
+                                                                  //fontWeight: FontWeight.bold
+                                                                ),
+                                                              );
+                                                            }),
+                                                            const Spacer(),
+                                                            Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .spaceEvenly,
+                                                              children: [
+                                                                Text(
+                                                                  drink.name,
+                                                                  style: const TextStyle(
+                                                                      fontSize:
+                                                                          15,
+                                                                      color: Colors
+                                                                          .white),
+                                                                ),
+                                                              ],
+                                                            )
+                                                          ],
+                                                        ))
+                                                      ],
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              childCount: drinkIds.length > 6
+                                                  ? 6
+                                                  : drinkIds.length,
+                                            ),
+                                          ),
+                                          
+                                          if (response.isNotEmpty)
+                                          ListTile(
+                                            title: Container(
+                                              color: Colors.grey,
+                                              child: Text(
+                                                response,
+                                                style: const TextStyle(
+                                                  fontSize: 14.0,
+                                                  fontStyle: FontStyle.italic,
+                                                  color: Colors.red,
+                                                ),
+                                                textAlign: TextAlign.left,
+                                              ),
+                                            ),
+                                          ),
+                                          
+                                        ],
+                                      );
+                                    });
+                              },
                             ),
-                          ),
+                          ],
+                        ),
+                      ),
+                    ),
 
-                          //MESSAGE FIELD
-                          Expanded(
-                            child: SizedBox(
-                              height: 35,
-                              child: TextFormField(
-                                cursorColor: Colors.white,
-                                controller: _searchController,
-                                onTap: () {
-                                  _scrollToBottom(); // Trigger scroll to bottom when text field is tapped
-                                },
-                                decoration: InputDecoration(
-                                    labelText: 'Message...',
-                                    labelStyle: const TextStyle(
-                                      color: Colors
-                                          .white, // Set the color of the label text here
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderSide:
-                                          const BorderSide(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(20.0),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(20.0),
-                                      borderSide: const BorderSide(
-                                        color: Colors.grey,
-                                      ), // Same color as default
-                                    ),
-                                    contentPadding: const EdgeInsets.only(
-                                        left: 15.0, bottom: 0),
-                                    floatingLabelBehavior:
-                                        FloatingLabelBehavior.never),
-                              ),
-                            ),
-                          ),
+                    // BOTTOM BAR
+                    SizedBox(
+                      height: 60,
+                      child: BottomAppBar(
+                        color: Colors.black,
 
-                          //QR AND SEARCH BUTTON
-                          GestureDetector(
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 20,
-                                  decoration: const BoxDecoration(),
-                                ),
-                                hasText
-                                    ? Container(
-                                        height: 27,
-                                        width: 27,
+                        //PLUS ICON
+                        child: Row(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: .5),
+                              child: GestureDetector(
+                                child: Row(
+                                  children: [
+                                    Container(
+                                        height: 30,
+                                        width: 30,
                                         decoration: BoxDecoration(
                                             color: const Color.fromARGB(
-                                                255, 255, 255, 255),
+                                                255, 52, 51, 51),
                                             borderRadius:
                                                 BorderRadius.circular(20)),
                                         child: const Icon(
-                                          Icons.arrow_upward_outlined,
-                                          size: 19,
-                                          color: Colors.black,
-                                        ),
-                                      )
-                                    : const Icon(
-                                        Icons.qr_code_scanner_rounded,
-                                        size: 25,
-                                        color: Colors.grey,
-                                      ),
-                              ],
+                                          Icons.add,
+                                          color: Colors.grey,
+                                          size: 22,
+                                        )),
+                                    const SizedBox(width: 20),
+                                  ],
+                                ),
+                                onTap: () {},
+                              ),
                             ),
-                            onTap: () {
-                              if (hasText) {
-                                String query = _searchController.text;
-                                debugPrint('Query being sent: $query');
-                                _search(query);
-                                _searchController.clear();
 
-                                // Send message functionality
-                              } else {}
-                            },
-                          )
-                        ],
+                            //MESSAGE FIELD
+                            Expanded(
+                              child: SizedBox(
+                                height: 35,
+                                child: TextFormField(
+                                  cursorColor: Colors.white,
+                                  controller: _searchController,
+                                  onTap: () {
+                                    _scrollToBottom(); // Trigger scroll to bottom when text field is tapped
+                                  },
+                                  decoration: InputDecoration(
+                                      labelText: 'Message...',
+                                      labelStyle: const TextStyle(
+                                        color: Colors
+                                            .white, // Set the color of the label text here
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderSide: const BorderSide(
+                                            color: Colors.grey),
+                                        borderRadius:
+                                            BorderRadius.circular(20.0),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(20.0),
+                                        borderSide: const BorderSide(
+                                          color: Colors.grey,
+                                        ), // Same color as default
+                                      ),
+                                      contentPadding: const EdgeInsets.only(
+                                          left: 15.0, bottom: 0),
+                                      floatingLabelBehavior:
+                                          FloatingLabelBehavior.never),
+                                ),
+                              ),
+                            ),
+
+                            //QR AND SEARCH BUTTON
+                            GestureDetector(
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 20,
+                                    decoration: const BoxDecoration(),
+                                  ),
+                                  hasText
+                                      ? Container(
+                                          height: 27,
+                                          width: 27,
+                                          decoration: BoxDecoration(
+                                              color: const Color.fromARGB(
+                                                  255, 255, 255, 255),
+                                              borderRadius:
+                                                  BorderRadius.circular(20)),
+                                          child: const Icon(
+                                            Icons.arrow_upward_outlined,
+                                            size: 19,
+                                            color: Colors.black,
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.qr_code_scanner_rounded,
+                                          size: 25,
+                                          color: Colors.grey,
+                                        ),
+                                ],
+                              ),
+                              onTap: () {
+                                if (hasText) {
+                                  String query = _searchController.text;
+                                  debugPrint('Query being sent: $query');
+                                  _search(query);
+                                  _searchController.clear();
+
+                                  // Send message functionality
+                                } else {}
+                              },
+                            )
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ])),
+                  ])),
+      ),
     );
   }
 
@@ -455,6 +498,8 @@ Center(
 
     barHistory.reorderList(widget.barId);
   }
+
+//EXPANDED IMAGE
 
   Route _createRoute(Drink drink) {
     return PageRouteBuilder(
@@ -480,5 +525,12 @@ Center(
       },
     );
   }
-}
 
+  void _scrollToBottom() {
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeInOut,
+    );
+  }
+}
