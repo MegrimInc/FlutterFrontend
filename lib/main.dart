@@ -2,6 +2,8 @@ import 'package:barzzy_app1/Backend/searchengine.dart';
 import 'package:barzzy_app1/Backend/recommended.dart';
 import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/test.dart';
+// import 'package:barzzy_app1/OrdersPage/cart.dart';
+// import 'package:barzzy_app1/test.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:barzzy_app1/Backend/bardatabase.dart';
@@ -41,8 +43,9 @@ class Barzzy extends StatelessWidget {
     return  MaterialApp(
       theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
+      home: Testing()
+      //home: const AuthPage(),
       
-       home: const AuthPage(),
     );
   }
 }

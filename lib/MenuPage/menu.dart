@@ -31,15 +31,11 @@ class MenuPageState extends State<MenuPage> {
   bool hasText = false;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
-  late Cart cart;
-  
-  
 
   @override
   void initState() {
-    
     super.initState();
-    cart = Cart(widget.barId);
+
     _fetchBarData();
     _searchController.addListener(() {
       setState(() {
@@ -68,7 +64,6 @@ class MenuPageState extends State<MenuPage> {
       // If query contains only empty spaces or is empty after trimming, do nothing
       return;
     }
-
     final user = Provider.of<User>(context, listen: false);
     currentBar?.searchDrinks(query, user, widget.barId);
     setState(() {
@@ -79,410 +74,447 @@ class MenuPageState extends State<MenuPage> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: GestureDetector(
-        onHorizontalDragUpdate: (details) {
-    // Handle horizontal drag update here
-    if (details.primaryDelta! > 0) {
-      // Swiping to the right
-    }
-  },
-        child: Scaffold(
-            resizeToAvoidBottomInset: true,
-            backgroundColor: Colors.black,
-            body: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : Column(children: [
-                    SizedBox(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          //BACK ARROW BUTTON
+    return ChangeNotifierProvider(
+      create: (context) => Cart(),
+      child: SafeArea(
+        child: GestureDetector(
+          onHorizontalDragUpdate: (details) {
+            // Handle horizontal drag update here
+            if (details.primaryDelta! > 0) {
+              // Swiping to the right
+            }
+          },
+          child: Scaffold(
+              backgroundColor: Colors.black,
+              body: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : Column(children: [
+                      SizedBox(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            //BACK ARROW BUTTON
 
-                          IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back,
-                              color: Colors.grey,
-                              size: 29,
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.grey,
+                                size: 29,
+                              ),
+                              onPressed: () => Navigator.pop(context),
                             ),
-                            onPressed: () => Navigator.pop(context),
-                          ),
 
-                          // BAR NAME
+                            // BAR NAME
 
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 5),
-                              child: Text(
-                                appBarTitle,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 17,
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 5),
+                                child: Text(
+                                  appBarTitle,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
 
-                          // MENU BUTTON
+                            // MENU BUTTON
 
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(
-                              FontAwesomeIcons.penToSquare,
-                              size: 21.5,
-                              color: Colors.grey,
-                            ), // Replace with your desired icon
-                          ),
-                        ],
+                            IconButton(
+                              onPressed: () {},
+                              icon: const Icon(
+                                FontAwesomeIcons.penToSquare,
+                                size: 21.5,
+                                color: Colors.grey,
+                              ), // Replace with your desired icon
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
 
-                    Expanded(
-                      child: SingleChildScrollView(
-                        reverse: true,
-                        key: _listKey,
-                        controller: _scrollController,
-                        child: Column(
-                          children: [
-                            Consumer<User>(
-                              builder: (context, user, _) {
-                                final searchHistoryEntries =
-                                    user.getSearchHistory(widget.barId);
-                                final responseHistory =
-                                    user.getResponseHistory(widget.barId);
-                                return ListView.builder(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    itemCount: searchHistoryEntries.length,
-                                    itemBuilder: (context, index) {
-                                      final entry = searchHistoryEntries[index];
-                                      final query = entry.key;
-                                      final drinkIds = entry.value;
-                                      final response =
-                                          responseHistory.length > index
-                                              ? responseHistory[index]
-                                              : '';
+                      Expanded(
+                        child: SingleChildScrollView(
+                            reverse: true,
+                            key: _listKey,
+                            controller: _scrollController,
+                            child: Consumer<User>(builder: (context, user, _) {
+                              final queryHistoryEntries =
+                                  user.getQueryHistory(widget.barId);
 
+                              return ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: queryHistoryEntries.length,
+                                  itemBuilder: (context, index) {
+                                    return Column(
+                                      children: [
+                                        Consumer<User>(
+                                            builder: (context, user, _) {
+                                          final query =
+                                              queryHistoryEntries[index];
+                                          return Row(
+                                            mainAxisAlignment: MainAxisAlignment
+                                                .end, // Align text to the right
+                                            children: [
+                                              const SizedBox(width: 50),
+                                              Flexible(
+                                                child: Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      vertical: 10,
+                                                      horizontal: 15),
+                                                  margin: const EdgeInsets
+                                                      .symmetric(
+                                                      vertical: 2.5,
+                                                      horizontal: 0),
+                                                  child: Text(
+                                                    '`$query',
+                                                    style: const TextStyle(
+                                                      fontSize: 15.0,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        }),
 
+                                        //DRINK RESULTS AND RESPONSE
+                                        Consumer<User>(
+                                          builder: (context, user, _) {
+                                            final searchHistoryEntries = user
+                                                .getSearchHistory(widget.barId);
+                                            final responseHistory =
+                                                user.getResponseHistory(
+                                                    widget.barId);
+                                            final entry =
+                                                searchHistoryEntries[index];
+                                            final drinkIds = entry.value;
+                                            final response =
+                                                responseHistory.length > index
+                                                    ? responseHistory[index]
+                                                    : '';
+                                            return Column(
+                                              children: [
+                                                GridView.custom(
+                                                  shrinkWrap: true,
+                                                  physics:
+                                                      const NeverScrollableScrollPhysics(),
+                                                  gridDelegate:
+                                                      SliverQuiltedGridDelegate(
+                                                          crossAxisCount: 3,
+                                                          mainAxisSpacing: 2.5,
+                                                          crossAxisSpacing: 2.5,
+                                                          repeatPattern:
+                                                              QuiltedGridRepeatPattern
+                                                                  .same,
+                                                          pattern: [
+                                                        const QuiltedGridTile(
+                                                            2, 1),
+                                                        const QuiltedGridTile(
+                                                            2, 1),
+                                                        const QuiltedGridTile(
+                                                            2, 1),
+                                                      ]),
+                                                  childrenDelegate:
+                                                      SliverChildBuilderDelegate(
+                                                    (context, index) {
+                                                      final drink = currentBar!
+                                                          .drinks!
+                                                          .firstWhere((d) =>
+                                                              d.id ==
+                                                              drinkIds[index]);
 
+                                                      // DRINK FEED
 
+                                                      return GestureDetector(
+                                                        
+                                                        onLongPress: () {
+                                                          HapticFeedback
+                                                              .heavyImpact();
 
+                                                              final cart =
+                                                              Provider.of<Cart>(
+                                                                  context,
+                                                                  listen:
+                                                                      false);
+                                                          Navigator.of(context)
+                                                              .push(
+                                                                  _createRoute(
+                                                            drink,
+                                                            cart,
+                                                          ));
+                                                  
+                                                            
+                                                        },
+                                                        
+                                                        onDoubleTap: () {
+                                                          HapticFeedback
+                                                              .lightImpact();
+                                                          Provider.of<Cart>(
+                                                                  context,
+                                                                  listen: false)
+                                                              .addDrink(
+                                                                  widget.barId,
+                                                                  drink.id);
+                                                        },
+                                                        child: ClipRRect(
+                                                          child: Stack(
+                                                            children: [
+                                                              Positioned.fill(
+                                                                child:
+                                                                    Image.asset(
+                                                                  drink.image,
+                                                                  fit: BoxFit
+                                                                      .cover,
+                                                                ),
+                                                              ),
+                                                              Positioned(
+                                                                top: 8,
+                                                                right: 8,
+                                                                child: Consumer<
+                                                                    Cart>(
+                                                                  builder:
+                                                                      (context,
+                                                                          cart,
+                                                                          _) {
+                                                                    int drinkQuantities = cart.getDrinkQuantity(
+                                                                        widget
+                                                                            .barId,
+                                                                        drink
+                                                                            .id);
 
-       
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                      return Column(
-                                        children: [
-                                          const SizedBox(height: 15),
-                                          ListTile(
-                                            title: Align(
-                                              alignment: Alignment.centerRight,
-                                              child: Center(
-                                                child: Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .end, // Align text to the right
+                                                                    // Only render the container if drinkQuantities is greater than 0
+                                                                    if (drinkQuantities >
+                                                                        0) {
+                                                                      return Container(
+                                                                        padding: const EdgeInsets
+                                                                            .symmetric(
+                                                                            vertical:
+                                                                                4,
+                                                                            horizontal:
+                                                                                8),
+                                                                        decoration:
+                                                                            BoxDecoration(
+                                                                          color:
+                                                                              Colors.black54,
+                                                                          borderRadius:
+                                                                              BorderRadius.circular(12),
+                                                                        ),
+                                                                        child:
+                                                                            Text(
+                                                                          'x$drinkQuantities',
+                                                                          style:
+                                                                              const TextStyle(
+                                                                            color:
+                                                                                Colors.white,
+                                                                            fontSize:
+                                                                                16,
+                                                                            fontWeight:
+                                                                                FontWeight.bold,
+                                                                          ),
+                                                                        ),
+                                                                      );
+                                                                    } else {
+                                                                      return const SizedBox
+                                                                          .shrink(); // Render an empty widget if drinkQuantities is 0
+                                                                    }
+                                                                  },
+                                                                ),
+                                                              ),
+                                                              Positioned.fill(
+                                                                child: Column(
+                                                                  crossAxisAlignment:
+                                                                      CrossAxisAlignment
+                                                                          .start,
+                                                                  children: [
+                                                                    for (final ingredient
+                                                                        in drink
+                                                                            .ingredients)
+                                                                      Text(
+                                                                        '`$ingredient',
+                                                                        style: const TextStyle(
+                                                                            fontSize:
+                                                                                12,
+                                                                            fontWeight:
+                                                                                FontWeight.w600,
+                                                                            fontStyle: FontStyle.italic,
+                                                                            color: Colors.white),
+                                                                      ),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                    childCount:
+                                                        drinkIds.length > 6
+                                                            ? 6
+                                                            : drinkIds.length,
+                                                  ),
+                                                ),
+                                                Row(
                                                   children: [
                                                     Flexible(
                                                       child: Container(
-                                                      color: const Color.fromARGB(255, 74, 74, 74),
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 10,
+                                                                horizontal: 15),
+                                                        margin: const EdgeInsets
+                                                            .symmetric(
+                                                            vertical: 2.5,
+                                                            horizontal: 0),
                                                         child: Text(
-                                                          query,
-                                                          style: const TextStyle(
-                                                            fontSize: 18.0,
-                                                            fontWeight:
-                                                                FontWeight.bold,
+                                                          response,
+                                                          style:
+                                                              const TextStyle(
+                                                            fontSize: 15.0,
+                                                            fontStyle: FontStyle
+                                                                .italic,
                                                             color: Colors.white,
                                                           ),
-                                                          textAlign:
-                                                              TextAlign.right,
                                                         ),
                                                       ),
                                                     ),
+                                                    const SizedBox(width: 50),
                                                   ],
                                                 ),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 15),
-
-                                          GridView.custom(
-                                            shrinkWrap: true,
-                                            physics:
-                                                const NeverScrollableScrollPhysics(),
-                                            gridDelegate:
-                                                SliverQuiltedGridDelegate(
-                                                    crossAxisCount: 3,
-                                                    mainAxisSpacing: 2.5,
-                                                    crossAxisSpacing: 2.5,
-                                                    repeatPattern:
-                                                        QuiltedGridRepeatPattern
-                                                            .same,
-                                                    pattern: [
-                                                  const QuiltedGridTile(2, 1),
-                                                  const QuiltedGridTile(2, 1),
-                                                  const QuiltedGridTile(2, 1),
-                                                ]),
-                                            childrenDelegate:
-                                                SliverChildBuilderDelegate(
-                                              (context, index) {
-                                                final drink = currentBar!
-                                                    .drinks!
-                                                    .firstWhere((d) =>
-                                                        d.id ==
-                                                        drinkIds[index]);
-
-                                                // DRINK FEED
-
-                                                return GestureDetector(
-                                                  onTap: () {
-                                                    cart.addDrink(drink.id);
-                                                  },
-                                                  onDoubleTap: () {
-                                                   cart.removeDrink(drink.id);
-                                                  },
-                                                  onLongPress: () {
-                                                    // Trigger haptic feedback on long press
-                                                    HapticFeedback
-                                                        .heavyImpact();
-                                                    Future.delayed(
-                                                        const Duration(
-                                                            milliseconds: 150),
-                                                        () {
-                                                      Navigator.of(context)
-                                                          .push(_createRoute(
-                                                              drink));
-                                                    });
-                                                  },
-                                                  child: ClipRRect(
-                                                    borderRadius:
-                                                        const BorderRadius
-                                                            .vertical(),
-                                                    child: Stack(
-                                                      children: [
-                                                        Positioned.fill(
-                                                          child: Image.asset(
-                                                            drink.image,
-                                                            fit: BoxFit.cover,
-                                                          ),
-                                                        ),
-                                                        Positioned.fill(
-                                                            child: Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            // Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                                            //                                                             children: [
-                                                            //                                                               Text(drink.name,
-                                                            //                                                               style: const TextStyle(
-                                                            //                                                                fontSize: 15,
-                                                            //                                                                 color: Colors.white
-                                                            //                                                               ),
-                                                            //                                                               ),
-                                                            //                                                             ],
-                                                            //                                                           ),
-
-                                                            //Spacer(),
-                                                            ...drink.ingredients
-                                                                .map(
-                                                                    (ingredient) {
-                                                              return Text(
-                                                                "`${ingredient.trim()}",
-                                                                style:
-                                                                    const TextStyle(
-                                                                  //color: Colors.white,
-                                                                  fontSize: 11,
-                                                                  //fontWeight: FontWeight.bold
-                                                                ),
-                                                              );
-                                                            }),
-                                                            const Spacer(),
-                                                            Row(
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .spaceEvenly,
-                                                              children: [
-                                                                Text(
-                                                                  drink.name,
-                                                                  style: const TextStyle(
-                                                                      fontSize:
-                                                                          15,
-                                                                      color: Colors
-                                                                          .white),
-                                                                ),
-                                                              ],
-                                                            )
-                                                          ],
-                                                        ))
-                                                      ],
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                              childCount: drinkIds.length > 6
-                                                  ? 6
-                                                  : drinkIds.length,
-                                            ),
-                                          ),
-                                          
-                                          if (response.isNotEmpty)
-                                          ListTile(
-                                            title: Container(
-                                              color: Colors.grey,
-                                              child: Text(
-                                                response,
-                                                style: const TextStyle(
-                                                  fontSize: 14.0,
-                                                  fontStyle: FontStyle.italic,
-                                                  color: Colors.red,
-                                                ),
-                                                textAlign: TextAlign.left,
-                                              ),
-                                            ),
-                                          ),
-                                          
-                                        ],
-                                      );
-                                    });
-                              },
-                            ),
-                          ],
-                        ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  });
+                            })),
                       ),
-                    ),
 
-                    // BOTTOM BAR
-                    SizedBox(
-                      height: 60,
-                      child: BottomAppBar(
-                        color: Colors.black,
+                      // BOTTOM BAR
+                      SizedBox(
+                        height: 60,
+                        child: BottomAppBar(
+                          color: Colors.black,
 
-                        //PLUS ICON
-                        child: Row(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: .5),
-                              child: GestureDetector(
-                                child: Row(
-                                  children: [
-                                    Container(
-                                        height: 30,
-                                        width: 30,
-                                        decoration: BoxDecoration(
-                                            color: const Color.fromARGB(
-                                                255, 52, 51, 51),
-                                            borderRadius:
-                                                BorderRadius.circular(20)),
-                                        child: const Icon(
-                                          Icons.add,
-                                          color: Colors.grey,
-                                          size: 22,
-                                        )),
-                                    const SizedBox(width: 20),
-                                  ],
-                                ),
-                                onTap: () {},
-                              ),
-                            ),
-
-                            //MESSAGE FIELD
-                            Expanded(
-                              child: SizedBox(
-                                height: 35,
-                                child: TextFormField(
-                                  cursorColor: Colors.white,
-                                  controller: _searchController,
-                                  onTap: () {
-                                    _scrollToBottom(); // Trigger scroll to bottom when text field is tapped
-                                  },
-                                  decoration: InputDecoration(
-                                      labelText: 'Message...',
-                                      labelStyle: const TextStyle(
-                                        color: Colors
-                                            .white, // Set the color of the label text here
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderSide: const BorderSide(
-                                            color: Colors.grey),
-                                        borderRadius:
-                                            BorderRadius.circular(20.0),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(20.0),
-                                        borderSide: const BorderSide(
-                                          color: Colors.grey,
-                                        ), // Same color as default
-                                      ),
-                                      contentPadding: const EdgeInsets.only(
-                                          left: 15.0, bottom: 0),
-                                      floatingLabelBehavior:
-                                          FloatingLabelBehavior.never),
-                                ),
-                              ),
-                            ),
-
-                            //QR AND SEARCH BUTTON
-                            GestureDetector(
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 20,
-                                    decoration: const BoxDecoration(),
-                                  ),
-                                  hasText
-                                      ? Container(
-                                          height: 27,
-                                          width: 27,
+                          //PLUS ICON
+                          child: Row(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: .5),
+                                child: GestureDetector(
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                          height: 30,
+                                          width: 30,
                                           decoration: BoxDecoration(
                                               color: const Color.fromARGB(
-                                                  255, 255, 255, 255),
+                                                  255, 52, 51, 51),
                                               borderRadius:
                                                   BorderRadius.circular(20)),
                                           child: const Icon(
-                                            Icons.arrow_upward_outlined,
-                                            size: 19,
-                                            color: Colors.black,
-                                          ),
-                                        )
-                                      : const Icon(
-                                          Icons.qr_code_scanner_rounded,
-                                          size: 25,
-                                          color: Colors.grey,
-                                        ),
-                                ],
+                                            Icons.add,
+                                            color: Colors.grey,
+                                            size: 22,
+                                          )),
+                                      const SizedBox(width: 20),
+                                    ],
+                                  ),
+                                  onTap: () {},
+                                ),
                               ),
-                              onTap: () {
-                                if (hasText) {
-                                  String query = _searchController.text;
-                                  debugPrint('Query being sent: $query');
-                                  _search(query);
-                                  _searchController.clear();
 
-                                  // Send message functionality
-                                } else {}
-                              },
-                            )
-                          ],
+                              //MESSAGE FIELD
+                              Expanded(
+                                child: SizedBox(
+                                  height: 35,
+                                  child: TextFormField(
+                                    cursorColor: Colors.white,
+                                    controller: _searchController,
+                                    onTap: () {
+                                      _scrollToBottom(); // Trigger scroll to bottom when text field is tapped
+                                    },
+                                    decoration: InputDecoration(
+                                        labelText: 'Find Your Drink...',
+                                        labelStyle: const TextStyle(
+                                          color: Colors
+                                              .white, // Set the color of the label text here
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderSide: const BorderSide(
+                                              color: Colors.grey),
+                                          borderRadius:
+                                              BorderRadius.circular(20.0),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20.0),
+                                          borderSide: const BorderSide(
+                                            color: Colors.grey,
+                                          ), // Same color as default
+                                        ),
+                                        contentPadding: const EdgeInsets.only(
+                                            left: 15.0, bottom: 0),
+                                        floatingLabelBehavior:
+                                            FloatingLabelBehavior.never),
+                                  ),
+                                ),
+                              ),
+
+                              //QR AND SEARCH BUTTON
+                              GestureDetector(
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 20,
+                                      decoration: const BoxDecoration(),
+                                    ),
+                                    hasText
+                                        ? Container(
+                                            height: 27,
+                                            width: 27,
+                                            decoration: BoxDecoration(
+                                                color: const Color.fromARGB(
+                                                    255, 255, 255, 255),
+                                                borderRadius:
+                                                    BorderRadius.circular(20)),
+                                            child: const Icon(
+                                              Icons.arrow_upward_outlined,
+                                              size: 19,
+                                              color: Colors.black,
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.qr_code_scanner_rounded,
+                                            size: 25,
+                                            color: Colors.grey,
+                                          ),
+                                  ],
+                                ),
+                                onTap: () {
+                                  if (hasText) {
+                                    String query = _searchController.text;
+                                    debugPrint('Query being sent: $query');
+                                    _search(query);
+                                    _searchController.clear();
+
+                                    // Send message functionality
+                                  } else {}
+                                },
+                              )
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ])),
+                    ])),
+        ),
       ),
     );
   }
@@ -501,10 +533,13 @@ class MenuPageState extends State<MenuPage> {
 
 //EXPANDED IMAGE
 
-  Route _createRoute(Drink drink) {
+  Route _createRoute(Drink drink, Cart cart) {
     return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) =>
-          DrinkFeed(drink: drink),
+      pageBuilder: (context, animation, secondaryAnimation) => DrinkFeed(
+        drink: drink,
+        cart: cart,
+        barId: widget.barId,
+      ),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         var begin = 0.0;
         var end = 1.0;

@@ -27,63 +27,58 @@ class Bar {
     updateNameAndTagMap(drink);
   }
 
-
-
   void updateNameAndTagMap(Drink drink) {
-  nameAndTagMap ??= {};
-  
-  try {
-    // Extract and process the name
-    String name = drink.name.toLowerCase().replaceAll(' ', '');
+    nameAndTagMap ??= {};
 
-    // Extract and process the ingredients as tags
-    for (var ingredient in drink.ingredients) {
-      try {
-        String tag = ingredient.toLowerCase().replaceAll(' ', '');
-        
-        // Ensure no duplicates
-        if (nameAndTagMap?.containsKey(tag) ?? false) {
-          if (!nameAndTagMap![tag]!.contains(drink.id)) {
-            nameAndTagMap?[tag]?.add(drink.id);
+    try {
+      // Extract and process the name
+      String name = drink.name.toLowerCase().replaceAll(' ', '');
+
+      // Extract and process the ingredients as tags
+      for (var ingredient in drink.ingredients) {
+        try {
+          String tag = ingredient.toLowerCase().replaceAll(' ', '');
+
+          // Ensure no duplicates
+          if (nameAndTagMap?.containsKey(tag) ?? false) {
+            if (!nameAndTagMap![tag]!.contains(drink.id)) {
+              nameAndTagMap?[tag]?.add(drink.id);
+            }
+          } else {
+            nameAndTagMap?.putIfAbsent(tag, () => []).add(drink.id);
           }
-        } else {
-          nameAndTagMap?.putIfAbsent(tag, () => []).add(drink.id);
+
+          // debugPrint('Added drink ID ${drink.id} under tag $tag');
+        } catch (e) {
+          debugPrint('Error processing tag for drink ${drink.name}: $e');
         }
-
-        // debugPrint('Added drink ID ${drink.id} under tag $tag');
-      } catch (e) {
-        debugPrint('Error processing tag for drink ${drink.name}: $e');
       }
+
+      // Ensure no duplicates
+      if (nameAndTagMap?.containsKey(name) ?? false) {
+        if (!nameAndTagMap![name]!.contains(drink.id)) {
+          nameAndTagMap?[name]?.add(drink.id);
+        }
+      } else {
+        nameAndTagMap?.putIfAbsent(name, () => []).add(drink.id);
+      }
+
+      // debugPrint('Included drink ID: ${drink.id} under tag $name');
+    } catch (e) {
+      debugPrint('Error processing drink ${drink.name}: $e');
     }
 
-    // Ensure no duplicates
-    if (nameAndTagMap?.containsKey(name) ?? false) {
-      if (!nameAndTagMap![name]!.contains(drink.id)) {
-        nameAndTagMap?[name]?.add(drink.id);
-      }
-    } else {
-      nameAndTagMap?.putIfAbsent(name, () => []).add(drink.id);
-    }
+    // No need to remove duplicates, as duplicates are already prevented
 
-    // debugPrint('Included drink ID: ${drink.id} under tag $name');
-  } catch (e) {
-    debugPrint('Error processing drink ${drink.name}: $e');
+    // Debug statement to show the final nameAndTagMap
+    // debugPrint('Final nameAndTagMap: $nameAndTagMap');
   }
 
-  // No need to remove duplicates, as duplicates are already prevented
-
-  // Debug statement to show the final nameAndTagMap
-  // debugPrint('Final nameAndTagMap: $nameAndTagMap');
-}
-
-
-  
-
-     //GETTER METHODS
+  //GETTER METHODS
 
   Map<String, List<String>>? getNameAndTagMap() {
-      return nameAndTagMap;
-    }
+    return nameAndTagMap;
+  }
 
   String? getName() {
     return name;
@@ -157,7 +152,7 @@ class Bar {
 
   void searchDrinks(String query, User user, String barId) {
     Set<String> filteredIdsSet = {};
-   // List<String> filteredIds = [];
+    user.addQueryToHistory(barId, query);
     query = query.toLowerCase().replaceAll(' ', '');
 
     debugPrint('Search query received: $query');
@@ -173,24 +168,18 @@ class Bar {
     debugPrint(
         'Filtered IDs for query $query: $filteredIds'); // Print the filtered IDs
 
-        if (filteredIds.isEmpty) {
-     Response().addNegativeResponse(user, barId);
+    if (filteredIds.isEmpty) {
+      Response().addNegativeResponse(user, barId);
     } else {
-      Response().addEmptyResponse(user, barId);
+      Response().addPositiveResponse(user, barId);
     }
 
     user.addSearchQuery(barId, query, filteredIds);
+    //user.addQueryToHistory(barId, query);
   }
 
-
-double getDrinkPrice(String drinkId) {
+  double getDrinkPrice(String drinkId) {
     Drink drink = getDrinkById(drinkId);
     return drink.price;
   }
-
-  // Drink getDrinkById(String id) {
-  //   return drinks!.firstWhere((drink) => drink.id == id);
-  // }
-
-
 }

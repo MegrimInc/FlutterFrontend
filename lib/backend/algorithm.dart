@@ -1,5 +1,3 @@
-
-
-class Algorithm  {
+class Algorithm {
   
 }
