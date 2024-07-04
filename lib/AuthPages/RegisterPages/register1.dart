@@ -1,7 +1,6 @@
 import 'package:barzzy_app1/AuthPages/RegisterPages/register2.dart';
 import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
 import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
-import 'package:barzzy_app1/AuthPages/components/squaretile.dart';
 import 'package:flutter/material.dart';
 
 
@@ -38,7 +37,8 @@ class _RegisterPageState extends State<RegisterPage> {
     if( firstName.value.text.isNotEmpty && lastName.value.text.isNotEmpty 
     && firstName.value.text.length < 25 && lastName.value.text.length < 25 
     && validCharacters.hasMatch(firstName.value.text + lastName.value.text) ) {
-// SQL entry
+
+//Store FN/LN in memory and then do the SQL entry later
       Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterPage2()));
       
 

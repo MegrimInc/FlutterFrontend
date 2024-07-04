@@ -1,10 +1,37 @@
+import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
 import 'package:flutter/material.dart';
 
-class RegisterPage2 extends StatelessWidget {
-  const RegisterPage2({super.key});
+class RegisterPage2 extends StatefulWidget {
+  final void Function()? onTap;
+  const RegisterPage2({super.key, this.onTap});  
 
   @override
+  State<RegisterPage2> createState() => _RegisterPageState2();
+}
+
+class _RegisterPageState2 extends State<RegisterPage2> {
+  @override
   Widget build(BuildContext context) {
-    return const Placeholder();
-  }
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Barzzy Terms of Services'),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [ 
+                const SizedBox(height: 100),
+                const Text('Terms Go Here!'),
+                const SizedBox(height: 100),
+                MyButton(text: 'I have read and agree to the Terms of Services', onTap: () {
+                  //sqlentry
+                   Navigator.pop(context);
+                   },),
+        ]),
+
+
+      ),
+      
+    );
+  } 
+
 }
