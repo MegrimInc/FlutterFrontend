@@ -134,13 +134,13 @@ class _DrinkFeedState extends State<DrinkFeed> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            Text(
-                              'Price: \$${widget.drink.price.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                              ),
-                            ),
+                            // Text(
+                            //   'Price: \$${widget.drink.price.toStringAsFixed(2)}',
+                            //   style: const TextStyle(
+                            //     color: Colors.white,
+                            //     fontSize: 18,
+                            //   ),
+                            // ),
                             Text(
                               'ABV: ${widget.drink.alcohol}%',
                               style: const TextStyle(

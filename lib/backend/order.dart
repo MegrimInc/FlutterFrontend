@@ -13,6 +13,7 @@ class Order{
   DateTime date = DateTime.now();
   String? customer;
   Status status = Status.unclaimed;
+  
 
   // Order({this.bar, this.drinks, this.price, this.customer}) {
   //   if (bar != null) {

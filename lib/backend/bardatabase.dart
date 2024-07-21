@@ -1,5 +1,6 @@
+import 'package:barzzy_app1/Backend/response.dart';
+import 'package:barzzy_app1/Backend/user.dart';
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 import 'bar.dart';
 
 class BarDatabase with ChangeNotifier {
@@ -13,19 +14,16 @@ class BarDatabase with ChangeNotifier {
 
   final Map<String, Bar> _bars = {};
 
-  final Uuid _uuid = const Uuid();
+  
  
   // Method to add a new bar, generating an ID for it
-  void addBar(Bar bar) {
-    String newId = _uuid.v4(); // Generate a unique ID
-    _bars[newId] = Bar(
-        name: bar.name, 
-        address: bar.address, 
-        drinks: bar.drinks, 
-        tag: bar.tag,
-        nameAndTagMap: bar.nameAndTagMap);
-    notifyListeners();
-    
+   void addBar(Bar bar) {
+    if (bar.id != null) {
+      _bars[bar.id!] = bar;
+      notifyListeners();
+    } else {
+      debugPrint('Bar ID is null, cannot add to database.');
+    }
   }
 
   // Method to get minimal information necessary for search
@@ -36,34 +34,49 @@ class BarDatabase with ChangeNotifier {
   }
 
 
-
-  void removeBar(String id) {
-    if (_bars.remove(id) != null) {
-      notifyListeners();
-    }
-  }
-
  //Method to get all bar IDs
   List<String> getAllBarIds() {
     return _bars.keys.toList();
   }
 
   
-
 static Bar? getBarById(String id) {
     return _singleton._bars[id];
   }
 
- // Method to get bar and drink IDs
-  static List<String> getBarAndDrinkIds(String barId) {
-    final List<String> drinkIds = [];
-    final Bar? bar = _singleton._bars[barId];
-    if (bar != null) {
-      drinkIds.addAll(bar.drinks!.map((drink) => drink.id));
+
+void searchDrinks(String query, User user, String barId) {
+    Set<String> filteredIdsSet = {};
+    user.addQueryToHistory(barId, query);
+    query = query.toLowerCase().replaceAll(' ', '');
+
+    debugPrint('Search query received: $query');
+
+    // nameAndTagMap?.forEach((key, value) {
+    //   // Check if the lowercase key contains the lowercase query as a substring
+    //   if (key.toLowerCase().contains(query)) {
+    //     filteredIdsSet.addAll(value);
+    //   }
+    // });
+    List<String> filteredIds = filteredIdsSet.toList();
+
+    debugPrint(
+        'Filtered IDs for query $query: $filteredIds'); // Print the filtered IDs
+
+    if (filteredIds.isEmpty) {
+      Response().addNegativeResponse(user, barId);
+    } else {
+      Response().addPositiveResponse(user, barId);
     }
-    drinkIds.insert(0, barId);
-    return drinkIds;
+
+    user.addSearchQuery(barId, query, filteredIds);
+    //user.addQueryToHistory(barId, query);
   }
+
+
+
+
+
 
 
 }

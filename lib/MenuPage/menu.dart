@@ -51,7 +51,6 @@ class MenuPageState extends State<MenuPage> {
     if (currentBar != null) {
       appBarTitle =
           (currentBar!.tag ?? 'Menu Page').replaceAll(' ', '').toLowerCase();
-      // debugPrint('nameAndTagMap contents: ${currentBar!.getNameAndTagMap()}');
     }
     setState(() {
       isLoading = false;
@@ -223,21 +222,15 @@ class MenuPageState extends State<MenuPage> {
                                                   childrenDelegate:
                                                       SliverChildBuilderDelegate(
                                                     (context, index) {
-                                                      final drink = currentBar!
-                                                          .drinks!
-                                                          .firstWhere((d) =>
-                                                              d.id ==
-                                                              drinkIds[index]);
-
+                                                       final drink = currentBar!.drinks![drinkIds[index]]!;
                                                       // DRINK FEED
 
                                                       return GestureDetector(
-                                                        
                                                         onLongPress: () {
                                                           HapticFeedback
                                                               .heavyImpact();
 
-                                                              final cart =
+                                                          final cart =
                                                               Provider.of<Cart>(
                                                                   context,
                                                                   listen:
@@ -248,10 +241,7 @@ class MenuPageState extends State<MenuPage> {
                                                             drink,
                                                             cart,
                                                           ));
-                                                  
-                                                            
                                                         },
-                                                        
                                                         onDoubleTap: () {
                                                           HapticFeedback
                                                               .lightImpact();
@@ -332,19 +322,18 @@ class MenuPageState extends State<MenuPage> {
                                                                       CrossAxisAlignment
                                                                           .start,
                                                                   children: [
-                                                                    for (final ingredient
-                                                                        in drink
-                                                                            .ingredients)
-                                                                      Text(
-                                                                        '`$ingredient',
-                                                                        style: const TextStyle(
-                                                                            fontSize:
-                                                                                12,
-                                                                            fontWeight:
-                                                                                FontWeight.w600,
-                                                                            fontStyle: FontStyle.italic,
-                                                                            color: Colors.white),
-                                                                      ),
+                                                                    Text(
+                                                                      '`${drink.name}',
+                                                                      style: const TextStyle(
+                                                                          fontSize:
+                                                                              12,
+                                                                          fontWeight: FontWeight
+                                                                              .w600,
+                                                                          fontStyle: FontStyle
+                                                                              .italic,
+                                                                          color:
+                                                                              Colors.white),
+                                                                    ),
                                                                   ],
                                                                 ),
                                                               ),
