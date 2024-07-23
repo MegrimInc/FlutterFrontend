@@ -10,12 +10,14 @@ class Response {
     "Whoops, looks like we're fresh out of that. What else can I get you?",
     "Zoinks Scoob! Looks like we have a mystery on our hands. I couldn't find your drink.",
     "ZooooWeeeeMAMA! I couldn't find your drink! If we don't get you one soon I might just have to call the fun police. Let's find you another ASAP."
+   
   ];
 
   static List<String> positiveResponses = [
     "Heres your drink kind sir",
     "Here you are sir",
     "I found you these, anything else I can get you",
+     "Oooo Laaaaaa Laaaaaaaaaaaaa.... you know you dont look that thirsty ill drink those for you"
   ];
 
   static String getRandomNegativeResponse() {

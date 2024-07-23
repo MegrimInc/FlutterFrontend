@@ -9,7 +9,15 @@ class Cart extends ChangeNotifier {
   
   Map<String, Map<String, int>> barCart = {};
   
-  
+   int getTotalDrinkCount() {
+    int total = 0;
+    barCart.forEach((barId, drinks) {
+      drinks.forEach((drinkId, quantity) {
+        total += quantity;
+      });
+    });
+    return total;
+  }
 
   
 

@@ -1,6 +1,7 @@
 import 'package:barzzy_app1/Backend/recommended.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BarHistory with ChangeNotifier {
   final List<String> _tappedBars = [];
@@ -8,6 +9,27 @@ class BarHistory with ChangeNotifier {
   
   Set<String> get allTappedIds => _allTappedIds;
   List<String> get barIds => _tappedBars.toList();
+
+
+
+    BarHistory() {
+    _loadBarHistory();
+  }
+
+  // Method to load bar history from SharedPreferences
+  Future<void> _loadBarHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final barIds = prefs.getStringList('tappedBars') ?? [];
+    _tappedBars.addAll(barIds);
+    _allTappedIds.addAll(barIds);
+    notifyListeners();
+  }
+
+  // Method to save bar history to SharedPreferences
+  Future<void> _saveBarHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('tappedBars', _tappedBars);
+  }
   
 
 
@@ -24,6 +46,7 @@ void reorderList(String selectedBarId) {
     _tappedBars.remove(selectedBarId); 
   }
   _tappedBars.insert(0, selectedBarId); // Move selected ID to the front
+  _saveBarHistory();
   notifyListeners();
 }
 

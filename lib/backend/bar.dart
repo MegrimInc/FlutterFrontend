@@ -1,11 +1,6 @@
 
-
 import 'package:barzzy_app1/Backend/order.dart';
 import 'package:barzzy_app1/Backend/orderque.dart';
-import 'package:barzzy_app1/Backend/response.dart';
-import 'package:barzzy_app1/Backend/user.dart';
-import 'package:flutter/material.dart';
-import 'drink.dart';
 
 class Bar {
   String? id;
@@ -14,7 +9,7 @@ class Bar {
   String? tag;
   String? tagimg;
   String? barimg;
-  Map<String, Drink>? drinks;
+  //Map<String, Drink>? drinks;
   OrderQueue orderQ = OrderQueue(); // Manages order operations
 
   Bar(
@@ -28,10 +23,10 @@ class Bar {
       }
       );
 
-   void addDrink(Drink drink) {
-    drinks ??= <String, Drink>{};
-    drinks![drink.id] = drink;
-  }
+  //  void addDrink(Drink drink) {
+  //   drinks ??= <String, Drink>{};
+  //   drinks![drink.id] = drink;
+  // }
   //GETTER METHODS
 
   String? getName() {
@@ -62,10 +57,10 @@ class Bar {
     return tag;
   }
 
-   // Method to get a drink object by its ID
-  Drink getDrinkById(String id) {
-    return drinks![id]!;
-  }
+  //  // Method to get a drink object by its ID
+  // Drink getDrinkById(String id) {
+  //   return drinks![id]!;
+  // }
 
   // JSON serialization to support saving and loading bar data
   Map<String, dynamic> toJson() {
@@ -73,9 +68,9 @@ class Bar {
      'id': id,
       'name': name,
       'address': address,
-      'tag': tag,
-      'tagimg': tagimg,
-      'barimg': barimg,
+      'barTag': tag,
+      'tagImage': tagimg,
+      'barImage': barimg,
     };
   }
 
@@ -85,37 +80,11 @@ class Bar {
       id: json['id']?.toString(),
       name: json['name'] as String?,
       address: json['address'] as String?,
-      tag: json['tag'] as String?,
-      tagimg: json['tagimg'] as String?,
-      barimg: json['barimg'] as String?,
+      tag: json['barTag'] as String?,
+      tagimg: json['tagImage'] as String?,
+      barimg: json['barImage'] as String?,
     );
   }
 
-  void searchDrinks(String query, User user, String barId) {
-    Set<String> filteredIdsSet = {};
-    user.addQueryToHistory(barId, query);
-    query = query.toLowerCase().replaceAll(' ', '');
 
-    debugPrint('Search query received: $query');
-
-    // nameAndTagMap?.forEach((key, value) {
-    //   // Check if the lowercase key contains the lowercase query as a substring
-    //   if (key.toLowerCase().contains(query)) {
-    //     filteredIdsSet.addAll(value);
-    //   }
-    // });
-    List<String> filteredIds = filteredIdsSet.toList();
-
-    debugPrint(
-        'Filtered IDs for query $query: $filteredIds'); // Print the filtered IDs
-
-    if (filteredIds.isEmpty) {
-      Response().addNegativeResponse(user, barId);
-    } else {
-      Response().addPositiveResponse(user, barId);
-    }
-
-    user.addSearchQuery(barId, query, filteredIds);
-    //user.addQueryToHistory(barId, query);
-  }
 }

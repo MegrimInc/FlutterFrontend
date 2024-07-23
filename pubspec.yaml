@@ -47,6 +47,7 @@ dependencies:
   http: ^1.2.1
   web_socket_channel: ^2.1.0
   mailer: ^5.1.0
+  flutter_spinkit: ^5.0.0 
  
   
 

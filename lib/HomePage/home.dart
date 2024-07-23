@@ -104,13 +104,12 @@ class HomePageState extends State<HomePage> {
                         return GestureDetector(
                             behavior: HitTestBehavior.translucent,
                             onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        MenuPage(barId: barId),
-                                  ),
-                                );
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => MenuPage(barId: barId),
+                                ),
+                              );
                             },
                             child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -124,45 +123,41 @@ class HomePageState extends State<HomePage> {
                                       color: const Color.fromARGB(255, 0, 0, 0),
                                       border: Border.all(
                                         color: isTapped
-                                            ? Colors.white
+                                            ? Colors.transparent
                                             : isRecommended
-                                                ? Colors.green
+                                                ? Colors.transparent
                                                 : Colors.transparent,
                                         width: .5,
                                       ),
                                       borderRadius: BorderRadius.circular(60),
                                     ),
-                                     child:
-                                     ClipRRect(
-                                  borderRadius: BorderRadius.circular(60),
-                                  child: isRecommended
-                                      ? const Padding(
-                                          padding: EdgeInsets.fromLTRB(
-                                              35, 25, 25, 25),
-                                          child: Iconify(
-                                            HeroiconsSolid.search,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : Image.asset(
-                                          'lib/MenuPage/drinkimgs/1.webp',
-                                          fit: BoxFit.cover,
-                                        ),
-                                ),
-                               
-                                    // isRecommended
-                                    //     ? const Padding(
-                                    //         padding: EdgeInsets.fromLTRB(
-                                    //             35, 25, 25, 25),
-                                    //         child: Iconify(
-                                    //           HeroiconsSolid.search,
-                                    //           color: Colors.white,
-                                    //         ),
-                                    //       )
-                                    //     :  Image.asset(
-                                    //       'lib/MenuPage/drinkimgs/1.webp',
-                                    //       fit: BoxFit.cover,
-                                    //     ),
+                                    child: ClipRRect(
+  borderRadius: BorderRadius.circular(60),
+  child: Stack(
+    fit: StackFit.expand,
+    children: [
+      // Always display the image
+      Image.network(
+        bar?.tagimg ?? 'https://www.barzzy.site/images/default.png',
+        fit: BoxFit.cover,
+      ),
+
+      // Conditionally display the icon over the image
+      if (isRecommended)
+        const Padding(
+                                                padding: EdgeInsets.all(20),
+                                                child: Padding(
+                                                  padding: EdgeInsets.fromLTRB(
+                                                      20, 8, 0, 2),
+                                                  child: Iconify(
+                                                    HeroiconsSolid.search,
+                                                    color: Colors.white,
+                                                  ),
+                                                )),
+    ],
+  ),
+),
+
                                   ),
                                   const SizedBox(height: 2),
                                   Text(bar?.tag ?? 'No Tag',
@@ -205,8 +200,7 @@ class HomePageState extends State<HomePage> {
                             icon: const Icon(
                               Icons.history_rounded,
                               size: 28,
-                              color: Colors.grey,
-                            ),
+                              color: Colors.grey                            ),
                             onPressed: () {
                               showBottomSheet(context, barHistory.barIds.first);
                             }),
@@ -231,9 +225,12 @@ class HomePageState extends State<HomePage> {
                   decoration: const BoxDecoration(
                     color: Colors.black,
                   ),
-                  child:  Center(
-                    child: Image.asset('lib/MenuPage/drinkimgs/1.webp'
-                        ),
+                  child: Center(
+                    child: Image.network(
+                      BarDatabase.getBarById(barHistory.barIds.first)?.barimg ??
+                          'https://www.barzzy.site/images/champs/6.png',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
@@ -261,20 +258,20 @@ class HomePageState extends State<HomePage> {
                               TextSpan(
                                 text: 'Open',
                                 style: TextStyle(
-                                    color: Colors.green,
+                                    color: Colors.grey,
                                     fontWeight: FontWeight.bold),
                               ),
                               TextSpan(
                                 text: ' / ',
                                 style: TextStyle(
                                     fontSize: 17.5,
-                                    color: Colors.grey,
+                                    color: Colors.white,
                                     fontWeight: FontWeight.bold),
                               ),
                               TextSpan(
                                 text: 'Closed',
                                 style: TextStyle(
-                                    color: Colors.grey,
+                                    color: Colors.red,
                                     fontWeight: FontWeight.w700),
                               ),
                             ],
@@ -287,6 +284,7 @@ class HomePageState extends State<HomePage> {
                           'Wait: 10 min',
                           style: TextStyle(
                             color: Colors.white,
+                            //fontWeight: FontWeight.bold
                           ),
                         ),
                       ),

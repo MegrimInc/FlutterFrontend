@@ -1,14 +1,16 @@
 class Drink {
   String id;
   String name;
-  double alcohol;
+  String alcohol;
   String image;
-  
+  double price;
+
   Drink(
     this.id,
     this.name,
     this.alcohol,
     this.image,
+    this.price
   );
 
   // Getter methods
@@ -16,7 +18,7 @@ class Drink {
     return name;
   }
 
-  double? getAlcohol() {
+  String? getAlcohol() {
     return alcohol;
   }
 
@@ -27,20 +29,22 @@ class Drink {
   // JSON serialization
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'name': name,
-      'alcohol': alcohol,
-      'image': image,
+      'drinkId': id,
+      'drinkName': name,
+      'alcoholContent': alcohol,
+      'drinkImage': image,
+      'drinkPrice': price
     };
   }
 
   // JSON deserialization
   factory Drink.fromJson(Map<String, dynamic> json) {
     return Drink(
-      json['id'] as String,
-      json['name'] as String,
-      (json['alcohol'] as num).toDouble(),
-      json['image'] as String,
+      json['drinkId'].toString(),
+      json['drinkName'] as String,
+      json['alcoholContent'] as String,
+      json['drinkImage'] as String,
+      json ['drinkPrice'] as double
     );
   }
 }

@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class User extends ChangeNotifier {
   List<MapEntry<String, MapEntry<String, List<String>>>> searchHistory = [];
@@ -7,7 +9,102 @@ class User extends ChangeNotifier {
   Map<String, List<String>> responseHistory = {};
   Map<String, List<String>> queryHistory = {};
 
-  // Add a query to history
+  static const String _searchHistoryKey = 'searchHistory';
+  static const String _allSearchEntriesKey = 'allSearchEntries';
+  static const String _responseHistoryKey = 'responseHistory';
+  static const String _queryHistoryKey = 'queryHistory';
+
+  User() {
+    _loadData();
+  }
+
+  // Load data from SharedPreferences
+  Future<void> _loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Load searchHistory
+    final searchHistoryJson = prefs.getString(_searchHistoryKey);
+    if (searchHistoryJson != null) {
+      final List<dynamic> searchHistoryList = jsonDecode(searchHistoryJson);
+      searchHistory = searchHistoryList.map((entry) {
+        final Map<String, dynamic> mapEntry = entry as Map<String, dynamic>;
+        final barId = mapEntry['barId'] as String;
+        final query = mapEntry['query'] as String;
+        final drinkIds = List<String>.from(mapEntry['drinkIds'] as List<dynamic>);
+        return MapEntry(barId, MapEntry(query, drinkIds));
+      }).toList();
+    }
+
+    // Load allSearchEntries
+    final allSearchEntriesJson = prefs.getString(_allSearchEntriesKey);
+    if (allSearchEntriesJson != null) {
+      final List<dynamic> allSearchEntriesList = jsonDecode(allSearchEntriesJson);
+      allSearchEntries = allSearchEntriesList.map((entry) {
+        final Map<String, dynamic> mapEntry = entry as Map<String, dynamic>;
+        final query = mapEntry['query'] as String;
+        final drinkIds = List<String>.from(mapEntry['drinkIds'] as List<dynamic>);
+        return MapEntry(query, drinkIds);
+      }).toList();
+    }
+
+    // Load responseHistory
+    final responseHistoryJson = prefs.getString(_responseHistoryKey);
+    if (responseHistoryJson != null) {
+      final Map<String, dynamic> responseHistoryMap = jsonDecode(responseHistoryJson);
+      responseHistory = responseHistoryMap.map((key, value) {
+        return MapEntry(key, List<String>.from(value as List<dynamic>));
+      });
+    }
+
+    // Load queryHistory
+    final queryHistoryJson = prefs.getString(_queryHistoryKey);
+    if (queryHistoryJson != null) {
+      final Map<String, dynamic> queryHistoryMap = jsonDecode(queryHistoryJson);
+      queryHistory = queryHistoryMap.map((key, value) {
+        return MapEntry(key, List<String>.from(value as List<dynamic>));
+      });
+    }
+  }
+
+  // Save data to SharedPreferences
+  Future<void> _saveData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Save searchHistory
+    final searchHistoryJson = jsonEncode(searchHistory.map((entry) {
+      return {
+        'barId': entry.key,
+        'query': entry.value.key,
+        'drinkIds': entry.value.value,
+      };
+    }).toList());
+    await prefs.setString(_searchHistoryKey, searchHistoryJson);
+
+    // Save allSearchEntries
+    final allSearchEntriesJson = jsonEncode(allSearchEntries.map((entry) {
+      return {
+        'query': entry.key,
+        'drinkIds': entry.value,
+      };
+    }).toList());
+    await prefs.setString(_allSearchEntriesKey, allSearchEntriesJson);
+
+    // Save responseHistory
+    final responseHistoryJson = jsonEncode(responseHistory.map((key, value) => MapEntry(
+      key,
+      value,
+    )));
+    await prefs.setString(_responseHistoryKey, responseHistoryJson);
+
+    // Save queryHistory
+    final queryHistoryJson = jsonEncode(queryHistory.map((key, value) => MapEntry(
+      key,
+      value,
+    )));
+    await prefs.setString(_queryHistoryKey, queryHistoryJson);
+  }
+
+  // Add a query to history and save it
   void addQueryToHistory(String barId, String query) {
     if (!queryHistory.containsKey(barId)) {
       queryHistory[barId] = [];
@@ -17,9 +114,7 @@ class User extends ChangeNotifier {
     HapticFeedback.mediumImpact();
 
     notifyListeners();
-    debugPrint('Query added to history: $query for Bar ID: $barId');
-    debugPrint(
-        'Current query history for Bar ID $barId: ${queryHistory[barId]}');
+    _saveData(); // Save data after modification
   }
 
   // Retrieve query history for a specific bar
@@ -27,15 +122,13 @@ class User extends ChangeNotifier {
     return queryHistory[barId] ?? [];
   }
 
-// Add a search query and its associated drink IDs to history
-  void addSearchQuery(String barId, String query, List<String> drinkIds) { 
-      searchHistory.add(MapEntry(barId, MapEntry(query, drinkIds)));
-      allSearchEntries.add(MapEntry(query, drinkIds));
+  // Add a search query and its associated drink IDs to history and save it
+  void addSearchQuery(String barId, String query, List<String> drinkIds) {
+    searchHistory.add(MapEntry(barId, MapEntry(query, drinkIds)));
+    allSearchEntries.add(MapEntry(query, drinkIds));
 
-      notifyListeners();
-      debugPrint('Search query added: $query for Bar ID: $barId');
-      debugPrint('Current search history: $searchHistory');
-      debugPrint('All search entries: $allSearchEntries');
+    notifyListeners();
+    _saveData(); // Save data after modification
   }
 
   // Retrieve search history for a specific bar
@@ -51,8 +144,7 @@ class User extends ChangeNotifier {
     return responseHistory[barId] ?? [];
   }
 
-
-// Add a response to the response history for a specific bar character by character
+  // Add a response to the response history for a specific bar character by character
   void addResponseToHistory(String barId, String response) async {
     if (!responseHistory.containsKey(barId)) {
       responseHistory[barId] = [];
@@ -65,6 +157,6 @@ class User extends ChangeNotifier {
       HapticFeedback.mediumImpact();
       notifyListeners();
     }
+    _saveData(); // Save data after modification
   }
-
 }

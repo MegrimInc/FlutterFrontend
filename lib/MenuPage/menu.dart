@@ -4,6 +4,7 @@ import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/OrdersPage/cart.dart';
 import 'package:barzzy_app1/MenuPage/drinkfeed.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
@@ -64,7 +65,8 @@ class MenuPageState extends State<MenuPage> {
       return;
     }
     final user = Provider.of<User>(context, listen: false);
-    currentBar?.searchDrinks(query, user, widget.barId);
+    final barDatabase = Provider.of<BarDatabase>(context, listen: false);
+    barDatabase.searchDrinks(query, user, widget.barId);
     setState(() {
       FocusScope.of(context).unfocus(); // Close keyboard
       _scrollToBottom();
@@ -120,14 +122,21 @@ class MenuPageState extends State<MenuPage> {
 
                             // MENU BUTTON
 
-                            IconButton(
-                              onPressed: () {},
-                              icon: const Icon(
-                                FontAwesomeIcons.penToSquare,
-                                size: 21.5,
-                                color: Colors.grey,
-                              ), // Replace with your desired icon
-                            ),
+                        
+
+                            Consumer<Cart>(
+  builder: (context, cart, _) {
+    bool hasItemsInCart = cart.getTotalDrinkCount() > 0;
+    return IconButton(
+      onPressed: () {},
+      icon: Icon(
+        FontAwesomeIcons.penToSquare,
+        size: 21.25,
+        color: hasItemsInCart ? Colors.white : Colors.grey,
+      ), // Replace with your desired icon
+    );
+  },
+)
                           ],
                         ),
                       ),
@@ -185,18 +194,36 @@ class MenuPageState extends State<MenuPage> {
                                         //DRINK RESULTS AND RESPONSE
                                         Consumer<User>(
                                           builder: (context, user, _) {
+                                            // final searchHistoryEntries = user.getSearchHistory(widget.barId) ?? [];
+                                            // final responseHistory = user.getResponseHistory(widget.barId) ?? [];
                                             final searchHistoryEntries = user
                                                 .getSearchHistory(widget.barId);
                                             final responseHistory =
                                                 user.getResponseHistory(
                                                     widget.barId);
-                                            final entry =
-                                                searchHistoryEntries[index];
-                                            final drinkIds = entry.value;
+                                            final entry = index <
+                                                    searchHistoryEntries.length
+                                                ? searchHistoryEntries[index]
+                                                : null;
+                                            final drinkIds = entry?.value ?? [];
                                             final response =
-                                                responseHistory.length > index
+                                                index < responseHistory.length
                                                     ? responseHistory[index]
                                                     : '';
+
+
+                                            if (entry == null) {
+                                              return const Row( crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  SizedBox(width: 17.5),
+                                                  SpinKitThreeBounce(
+                                                    color: Colors.white,
+                                                    size: 22.5,
+                                                  ),
+                                                ],
+                                              ); // or a loading indicator
+                                            }
+
                                             return Column(
                                               children: [
                                                 GridView.custom(
@@ -222,7 +249,15 @@ class MenuPageState extends State<MenuPage> {
                                                   childrenDelegate:
                                                       SliverChildBuilderDelegate(
                                                     (context, index) {
-                                                       final drink = currentBar!.drinks![drinkIds[index]]!;
+                                                      final barDatabase =
+                                                          Provider.of<
+                                                                  BarDatabase>(
+                                                              context,
+                                                              listen: false);
+                                                      final drink = barDatabase
+                                                          .getDrinkById(
+                                                              drinkIds[index]);
+
                                                       // DRINK FEED
 
                                                       return GestureDetector(
@@ -256,16 +291,15 @@ class MenuPageState extends State<MenuPage> {
                                                           child: Stack(
                                                             children: [
                                                               Positioned.fill(
-                                                                child:
-                                                                    Image.asset(
+                                                                child: Image
+                                                                    .network(
                                                                   drink.image,
                                                                   fit: BoxFit
                                                                       .cover,
                                                                 ),
                                                               ),
-                                                              Positioned(
-                                                                top: 8,
-                                                                right: 8,
+                                                              Positioned.fill(
+                                                                
                                                                 child: Consumer<
                                                                     Cart>(
                                                                   builder:
@@ -282,32 +316,24 @@ class MenuPageState extends State<MenuPage> {
                                                                     if (drinkQuantities >
                                                                         0) {
                                                                       return Container(
-                                                                        padding: const EdgeInsets
-                                                                            .symmetric(
-                                                                            vertical:
-                                                                                4,
-                                                                            horizontal:
-                                                                                8),
                                                                         decoration:
-                                                                            BoxDecoration(
+                                                                            const BoxDecoration(
                                                                           color:
                                                                               Colors.black54,
-                                                                          borderRadius:
-                                                                              BorderRadius.circular(12),
+                                                                          // borderRadius:
+                                                                          //     BorderRadius.circular(12),
                                                                         ),
                                                                         child:
-                                                                            Text(
-                                                                          'x$drinkQuantities',
-                                                                          style:
-                                                                              const TextStyle(
-                                                                            color:
-                                                                                Colors.white,
-                                                                            fontSize:
-                                                                                16,
-                                                                            fontWeight:
-                                                                                FontWeight.bold,
-                                                                          ),
-                                                                        ),
+                                                                            Center(
+                                                                              child: Text(
+                                                                                                                                                          'x$drinkQuantities',
+                                                                                                                                                          style:
+                                                                                const TextStyle(
+                                                                              color: Colors.white54,
+                                                                              fontSize: 40,
+                                                                                                                                                          ),
+                                                                                                                                                        ),
+                                                                            ),
                                                                       );
                                                                     } else {
                                                                       return const SizedBox
@@ -322,17 +348,30 @@ class MenuPageState extends State<MenuPage> {
                                                                       CrossAxisAlignment
                                                                           .start,
                                                                   children: [
-                                                                    Text(
-                                                                      '`${drink.name}',
-                                                                      style: const TextStyle(
-                                                                          fontSize:
-                                                                              12,
-                                                                          fontWeight: FontWeight
-                                                                              .w600,
-                                                                          fontStyle: FontStyle
-                                                                              .italic,
-                                                                          color:
-                                                                              Colors.white),
+                                                                    const SizedBox(
+                                                                        height:
+                                                                            10),
+                                                                    Row(
+                                                                      children: [
+                                                                        Expanded(
+                                                                          child:
+                                                                              Text(
+                                                                            '`${drink.name}',
+                                                                            style: const TextStyle(
+                                                                                fontSize: 13,
+                                                                                fontWeight: FontWeight.w600,
+                                                                                fontStyle: FontStyle.italic,
+                                                                                color: Colors.white),
+                                                                            overflow:
+                                                                                TextOverflow.ellipsis,
+                                                                            maxLines:
+                                                                                1,
+                                                                          ),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                            width:
+                                                                                15)
+                                                                      ],
                                                                     ),
                                                                   ],
                                                                 ),
