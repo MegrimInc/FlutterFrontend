@@ -140,7 +140,6 @@ class BarDatabase with ChangeNotifier {
         Response().addPositiveResponse(user, barId);
       }
 
-      //user.addSearchQuery(barId, query, drinkIds);
     } 
   }
 

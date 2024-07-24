@@ -5,38 +5,33 @@ import 'barhistory.dart';
 
 class Recommended with ChangeNotifier {
   final List<String> _recommendedBars = [];
-  final List<String> _tappedIds = [];
+  String? _currentTappedBarId;
 
   List<String> get barIds => _recommendedBars.toList();
 
-
-  // SET OF IDS THAT SHOULD NOT BE RECOMMENDED 
-  void addTappedId(String barId) {
-    _tappedIds.add(barId);
-    // Use the tapped IDs for filtering the recommended list
-    filterOutTappedBars();
-}
-
-
-// METHOD TO FILTER OUT THE IDS THAT SHOULD NOT BE RECOMMENDED 
-  void filterOutTappedBars() {
-    _recommendedBars.removeWhere((barId) => _tappedIds.contains(barId));
-    //print('Tapped bars to be filtered out: $_tappedIds');
-    notifyListeners();
-    //print('Recommended bars after filtering: $_recommendedBars');
+  void setCurrentTappedBarId(String? barId) {
+    _currentTappedBarId = barId;
   }
-
 
 // RETURNS RECOMMENDED BARS AFTER FILTERING HAS BEEN DONE
   Future<void> fetchRecommendedBars(BuildContext context) async {
+    final barHistory = Provider.of<BarHistory>(context, listen: false);
+    _currentTappedBarId = barHistory.currentTappedBarId;
+    print('Current Tapped Bar ID: $_currentTappedBarId');
+
     // ignore: await_only_futures
-    final allBarIds = await BarDatabase().getAllBarIds(); // Use instance member directly
-    // ignore: use_build_context_synchronously
-    final tappedIds = Provider.of<BarHistory>(context, listen: false).allTappedIds.toList();
-    final recommendedIds = allBarIds.where((id) => !tappedIds.contains(id)).take(5).toList();
+    final allBarIds = await BarDatabase().getAllBarIds();
+
+    // Print all bar IDs before filtering
+    print('All Bar IDs: $allBarIds');
+
+    // Filter out the current tapped bar ID and take the first 5
+    final recommendedIds =
+        allBarIds.where((id) => id != _currentTappedBarId).take(5).toList();
+
+    print('Recommended IDs after filtering: $recommendedIds');
     _recommendedBars.clear(); // Clear the list before adding new bars
     _recommendedBars.addAll(recommendedIds);
-    filterOutTappedBars(); // Apply filtering to ensure no tapped IDs are included
+    notifyListeners();
   }
-
 }

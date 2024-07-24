@@ -1,6 +1,10 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Cache {
+  static final Cache _instance = Cache._internal();
+  factory Cache() => _instance; // Factory constructor to return the same instance
+
+  Cache._internal(); // Private constructor
   static const _drinkIdsKey = 'drinkIds';
 
   // Add a drink ID to the cache

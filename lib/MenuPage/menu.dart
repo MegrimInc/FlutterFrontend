@@ -56,7 +56,8 @@ class MenuPageState extends State<MenuPage> {
     setState(() {
       isLoading = false;
     });
-    await _handleBarTapAndReorder();
+    final barHistory = Provider.of<BarHistory>(context, listen: false);
+  barHistory.setTappedBarId(widget.barId);
   }
 
   void _search(String query) {
@@ -547,17 +548,6 @@ class MenuPageState extends State<MenuPage> {
     );
   }
 
-//SENDS ID TO BAR HISTORY CLASS
-
-  Future<void> _handleBarTapAndReorder() async {
-    await Future.delayed(Duration.zero);
-    // ignore: use_build_context_synchronously
-    final barHistory = Provider.of<BarHistory>(context, listen: false);
-    // ignore: use_build_context_synchronously
-    barHistory.tapBar(widget.barId, context);
-
-    barHistory.reorderList(widget.barId);
-  }
 
 //EXPANDED IMAGE
 

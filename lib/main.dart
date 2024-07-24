@@ -1,25 +1,27 @@
 import 'dart:convert';
-
 import 'package:barzzy_app1/Backend/bar.dart';
+import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/searchengine.dart';
 import 'package:barzzy_app1/Backend/recommended.dart';
 import 'package:barzzy_app1/Backend/tags.dart';
 import 'package:barzzy_app1/Backend/user.dart';
-// import 'package:barzzy_app1/OrdersPage/cart.dart';
-// import 'package:barzzy_app1/test.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:barzzy_app1/Backend/bardatabase.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy_app1/Extra/auth.dart';
 import 'package:barzzy_app1/Backend/barhistory.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:barzzy_app1/Backend/cache.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   BarDatabase barDatabase = BarDatabase();
-
+  Stripe.publishableKey = 'pk_test_51Pdz2ORv9bn5Mu1cyCLYFl9aygTs1VP6vMBfhKwoRldfoxqPmBoXtghmHVrFBe1wbWzfPRc2ok6eAZyJQQkYvKdu008i3gdtg1';
   await sendGetRequest();
   await fetchTags();
+  await updateDrinkDatabase(barDatabase);
 
   runApp(
     MultiProvider(
@@ -103,11 +105,46 @@ Future<void> fetchTags() async {
   }
 }
 
+
+
+Future<void> updateDrinkDatabase(BarDatabase barDatabase) async {
+  final cache = Cache();
+  final cachedDrinkIds = await cache.getDrinkIds();
+
+  for (String drinkId in cachedDrinkIds) {
+    try {
+      final drink = await fetchDrinkDetails(drinkId);
+      barDatabase.addDrink(drink);
+      //debugPrint('Added drink with ID $drinkId to the database');
+    } catch (e) {
+      debugPrint('Error fetching drink details for ID $drinkId: $e');
+    }
+  }
+}
+
+// Fetch drink details from backend
+Future<Drink> fetchDrinkDetails(String drinkId) async {
+  final url = Uri.parse('https://www.barzzy.site/bars/getOneDrink?id=$drinkId');
+  final response = await http.get(url);
+
+  if (response.statusCode == 200) {
+    final jsonResponse = jsonDecode(response.body);
+    return Drink.fromJson(jsonResponse);
+  } else {
+    throw Exception('Failed to load drink details');
+  }
+}
+
+
+
+
 class Barzzy extends StatelessWidget {
   const Barzzy({super.key});
 
   @override
   Widget build(BuildContext context) {
+    Provider.of<BarHistory>(context, listen: false).setContext(context);
+    Provider.of<Recommended>(context, listen: false).fetchRecommendedBars(context);
     return MaterialApp(
       theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,

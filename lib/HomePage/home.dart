@@ -73,12 +73,10 @@ class HomePageState extends State<HomePage> {
 
             //MASTER LIST
 
-            Consumer2<BarHistory, Recommended>(
-              builder: (context, barHistory, recommended, _) {
+            Consumer<Recommended>(
+              builder: (context, recommended, _) {
                 final recommendedIds = recommended.barIds;
-                masterList = [...barHistory.barIds.skip(1), ...recommendedIds]
-                    .take(4)
-                    .toList();
+                masterList = [...recommendedIds].take(4).toList();
 
                 return Padding(
                   padding: const EdgeInsets.only(left: 4.5),
@@ -98,7 +96,7 @@ class HomePageState extends State<HomePage> {
                       itemCount: masterList.length,
                       itemBuilder: (context, index) {
                         final barId = masterList[index];
-                        final isTapped = barHistory.barIds.contains(barId);
+                        //final isTapped = barHistory.barIds.contains(barId);
                         final isRecommended = recommendedIds.contains(barId);
                         final bar = BarDatabase.getBarById(barId);
                         return GestureDetector(
@@ -121,30 +119,23 @@ class HomePageState extends State<HomePage> {
                                         horizontal: 5),
                                     decoration: BoxDecoration(
                                       color: const Color.fromARGB(255, 0, 0, 0),
-                                      border: Border.all(
-                                        color: isTapped
-                                            ? Colors.transparent
-                                            : isRecommended
-                                                ? Colors.transparent
-                                                : Colors.transparent,
-                                        width: .5,
-                                      ),
                                       borderRadius: BorderRadius.circular(60),
                                     ),
                                     child: ClipRRect(
-  borderRadius: BorderRadius.circular(60),
-  child: Stack(
-    fit: StackFit.expand,
-    children: [
-      // Always display the image
-      Image.network(
-        bar?.tagimg ?? 'https://www.barzzy.site/images/default.png',
-        fit: BoxFit.cover,
-      ),
+                                      borderRadius: BorderRadius.circular(60),
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          // Always display the image
+                                          Image.network(
+                                            bar?.tagimg ??
+                                                'https://www.barzzy.site/images/default.png',
+                                            fit: BoxFit.cover,
+                                          ),
 
-      // Conditionally display the icon over the image
-      if (isRecommended)
-        const Padding(
+                                          // Conditionally display the icon over the image
+                                          if (isRecommended)
+                                            const Padding(
                                                 padding: EdgeInsets.all(20),
                                                 child: Padding(
                                                   padding: EdgeInsets.fromLTRB(
@@ -154,10 +145,9 @@ class HomePageState extends State<HomePage> {
                                                     color: Colors.white,
                                                   ),
                                                 )),
-    ],
-  ),
-),
-
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(bar?.tag ?? 'No Tag',
@@ -177,7 +167,7 @@ class HomePageState extends State<HomePage> {
 
             // TOP ROW WITH BAR NAME AND WAIT TIME
 
-            if (barHistory.barIds.isNotEmpty)
+            if (barHistory.currentTappedBarId != null)
               SizedBox(
                 height: 65.5,
                 child: Row(
@@ -186,7 +176,7 @@ class HomePageState extends State<HomePage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 17),
                         child: Text(
-                          BarDatabase.getBarById(barHistory.barIds.first)
+                          BarDatabase.getBarById(barHistory.currentTappedBarId!)
                                   ?.name ??
                               'No Name',
                           style: const TextStyle(
@@ -197,12 +187,11 @@ class HomePageState extends State<HomePage> {
                       Padding(
                         padding: const EdgeInsets.only(right: 2),
                         child: IconButton(
-                            icon: const Icon(
-                              Icons.history_rounded,
-                              size: 28,
-                              color: Colors.grey                            ),
+                            icon: const Icon(Icons.history_rounded,
+                                size: 28, color: Colors.grey),
                             onPressed: () {
-                              showBottomSheet(context, barHistory.barIds.first);
+                              showBottomSheet(
+                                  context, barHistory.currentTappedBarId!);
                             }),
                       ),
                     ]),
@@ -210,13 +199,13 @@ class HomePageState extends State<HomePage> {
 
             // MAIN MOST RECENT BAR
 
-            if (barHistory.barIds.isNotEmpty)
+            if (barHistory.currentTappedBarId != null)
               GestureDetector(
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => MenuPage(
-                      barId: barHistory.barIds.first,
+                      barId: barHistory.currentTappedBarId!,
                     ),
                   ),
                 ),
@@ -227,7 +216,9 @@ class HomePageState extends State<HomePage> {
                   ),
                   child: Center(
                     child: Image.network(
-                      BarDatabase.getBarById(barHistory.barIds.first)?.barimg ??
+                      BarDatabase.getBarById(
+                            barHistory.currentTappedBarId!,
+                          )?.barimg ??
                           'https://www.barzzy.site/images/champs/6.png',
                       fit: BoxFit.cover,
                     ),
@@ -237,11 +228,11 @@ class HomePageState extends State<HomePage> {
 
             //BOTTOM ROW WITH RECENT DRINKS AND WAIT TIME
 
-            if (barHistory.barIds.isNotEmpty)
+            if (barHistory.currentTappedBarId != null)
               GestureDetector(
                 onVerticalDragEnd: (details) {
                   if (details.velocity.pixelsPerSecond.dy < -50) {
-                    showBottomSheet(context, barHistory.barIds.first);
+                    showBottomSheet(context, barHistory.currentTappedBarId!);
                   }
                 },
                 child: Container(

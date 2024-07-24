@@ -1,6 +1,5 @@
+
 import 'package:flutter/material.dart';
-
-
 class TabsPage extends StatefulWidget {
   
 
@@ -20,15 +19,10 @@ class _TabsPageState extends State<TabsPage> {
   void initState() {
     super.initState();
     
-
     
   }
 
-
-
-
-
-
+  
   @override
   Widget build(BuildContext context) {
     return const Scaffold(backgroundColor: Colors.black, 
