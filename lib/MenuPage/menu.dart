@@ -39,34 +39,26 @@ class MenuPageState extends State<MenuPage> {
     super.initState();
 
     _fetchBarData();
-    _searchController.addListener(() {
-      setState(() {
-        hasText = _searchController.text.isNotEmpty;
-      });
-    });
+    _searchController.addListener(_onSearchChanged);
   }
 
   void _onSearchChanged() {
     setState(() {
       hasText = _searchController.text.isNotEmpty;
-      if (hasText) {
-        _updateAutoComplete(_searchController.text);
-      } else {
-        autoCompleteTag = '';
-      }
+      _updateAutoComplete(_searchController.text);
     });
   }
 
   void _updateAutoComplete(String query) {
     final barDatabase = Provider.of<BarDatabase>(context, listen: false);
-    final matchingTags = barDatabase._tags.values
+    final matchingTags = barDatabase.tags.values
         .where((tag) => tag.name.toLowerCase().startsWith(query.toLowerCase()))
         .toList();
 
     if (matchingTags.isNotEmpty) {
       autoCompleteTag = matchingTags.first.name;
     } else {
-      autoCompleteTag = '';
+      autoCompleteTag = query; // Display the user's input if no matching tag
     }
   }
 
@@ -76,7 +68,8 @@ class MenuPageState extends State<MenuPage> {
     currentBar = BarDatabase.getBarById(widget.barId);
     if (currentBar != null) {
       appBarTitle =
-          (currentBar!.tag ?? 'Menu Page').replaceAll(' ', '').toLowerCase();
+          ('*${currentBar!.tag ?? 'Menu Page'}').replaceAll(' ', '').toLowerCase();
+      //appBarTitle = ('*${currentBar!.tag ?? 'Menu Page'}');
     }
     setState(() {
       isLoading = false;
@@ -122,25 +115,28 @@ class MenuPageState extends State<MenuPage> {
                           children: [
                             //BACK ARROW BUTTON
 
-                            IconButton(
-                              icon: const Icon(
-                                Icons.arrow_back,
-                                color: Colors.grey,
-                                size: 29,
+                            Padding(
+                              padding: const EdgeInsets.only(left: 3),
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.arrow_back,
+                                  color: Colors.grey,
+                                  size: 30,
+                                ),
+                                onPressed: () => Navigator.pop(context),
                               ),
-                              onPressed: () => Navigator.pop(context),
                             ),
 
                             // BAR NAME
 
                             Center(
                               child: Padding(
-                                padding: const EdgeInsets.only(left: 5),
+                                padding: const EdgeInsets.only(left: 2.5),
                                 child: Text(
                                   appBarTitle,
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 17,
+                                    fontSize: 16,
                                   ),
                                 ),
                               ),
@@ -148,21 +144,24 @@ class MenuPageState extends State<MenuPage> {
 
                             // MENU BUTTON
 
-                            Consumer<Cart>(
-                              builder: (context, cart, _) {
-                                bool hasItemsInCart =
-                                    cart.getTotalDrinkCount() > 0;
-                                return IconButton(
-                                  onPressed: () {},
-                                  icon: Icon(
-                                    FontAwesomeIcons.penToSquare,
-                                    size: 21.25,
-                                    color: hasItemsInCart
-                                        ? Colors.white
-                                        : Colors.grey,
-                                  ), // Replace with your desired icon
-                                );
-                              },
+                            Padding(
+                              padding: const EdgeInsets.only(right: 3),
+                              child: Consumer<Cart>(
+                                builder: (context, cart, _) {
+                                  bool hasItemsInCart =
+                                      cart.getTotalDrinkCount() > 0;
+                                  return IconButton(
+                                    onPressed: () {},
+                                    icon: Icon(
+                                      FontAwesomeIcons.penToSquare,
+                                      size: 23,
+                                      color: hasItemsInCart
+                                          ? Colors.white
+                                          : Colors.grey,
+                                    ), // Replace with your desired icon
+                                  );
+                                },
+                              ),
                             )
                           ],
                         ),
@@ -204,13 +203,15 @@ class MenuPageState extends State<MenuPage> {
                                                       vertical: 2.5,
                                                       horizontal: 0),
                                                   child: Text(
-                                                    '`$query',
+                                                    '*$query',
                                                     style: const TextStyle(
-                                                      fontSize: 15.0,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Colors.white,
-                                                    ),
+                                                        fontSize: 15.5,
+                                                        //fontWeight:
+                                                           // FontWeight.bold,
+                                                        color: Colors.white,
+                                                        // fontStyle:
+                                                        //     FontStyle.italic
+                                                            ),
                                                   ),
                                                 ),
                                               ),
@@ -386,7 +387,7 @@ class MenuPageState extends State<MenuPage> {
                                                                               Text(
                                                                             '`${drink.name}',
                                                                             style: const TextStyle(
-                                                                                fontSize: 13,
+                                                                                fontSize: 14,
                                                                                 fontWeight: FontWeight.w600,
                                                                                 fontStyle: FontStyle.italic,
                                                                                 color: Colors.white),
@@ -429,10 +430,10 @@ class MenuPageState extends State<MenuPage> {
                                                             vertical: 2.5,
                                                             horizontal: 0),
                                                         child: Text(
-                                                          response,
+                                                         response,
                                                           style:
                                                               const TextStyle(
-                                                            fontSize: 15.0,
+                                                            fontSize: 15.5,
                                                             fontStyle: FontStyle
                                                                 .italic,
                                                             color: Colors.white,
@@ -455,126 +456,165 @@ class MenuPageState extends State<MenuPage> {
 
                       // BOTTOM BAR
                       SizedBox(
-                        height: 60,
+                        height: 70,
                         child: BottomAppBar(
                           color: Colors.black,
 
                           //PLUS ICON
                           child: Row(
                             children: [
-                              Padding(
-                                padding: const EdgeInsets.only(top: .5),
-                                child: GestureDetector(
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                          height: 30,
-                                          width: 30,
-                                          decoration: BoxDecoration(
-                                              color: const Color.fromARGB(
-                                                  255, 52, 51, 51),
-                                              borderRadius:
-                                                  BorderRadius.circular(20)),
-                                          child: const Icon(
-                                            Icons.add,
-                                            color: Colors.grey,
-                                            size: 22,
-                                          )),
-                                      const SizedBox(width: 20),
-                                    ],
-                                  ),
-                                  onTap: () {},
+                              GestureDetector(
+                                child: Row(
+                                  children: [
+                                    Container(
+                                        height: 30,
+                                        width: 30,
+                                        decoration: BoxDecoration(
+                                            color: const Color.fromARGB(
+                                                255, 52, 51, 51),
+                                            borderRadius:
+                                                BorderRadius.circular(20)),
+                                        child: const Icon(
+                                          Icons.add,
+                                          color: Colors.grey,
+                                          size: 22,
+                                        )),
+                                    const SizedBox(width: 20),
+                                  ],
                                 ),
+                                onTap: () {},
                               ),
 
-                              //MESSAGE FIELD
+                         
+
+                              // MESSAGE FIELD
                               Expanded(
                                 child: SizedBox(
                                   height: 35,
-                                  child: TextFormField(
-                                    cursorColor: Colors.white,
-                                    controller: _searchController,
-                                    onTap: () {
-                                      _scrollToBottom(); // Trigger scroll to bottom when text field is tapped
-                                    },
-                                    decoration: InputDecoration(
-                                        labelText: 'Find Your Drink...',
-                                        labelStyle: const TextStyle(
-                                          color: Colors
-                                              .white, // Set the color of the label text here
+                                  child: Stack(
+                                    children: [
+                                      TextFormField(
+                                        cursorColor: Colors.white,
+                                        controller: _searchController,
+                                        onChanged: (text) => _onSearchChanged(),
+                                        onTap: () {
+                                          _scrollToBottom(); // Trigger scroll to bottom when text field is tapped
+                                        },
+                                        style: const TextStyle(
+                                            color: Colors
+                                                .transparent), // Make the TextFormField text transparent
+                                        decoration: InputDecoration(
+                                          labelText: 'I want...',
+                                          labelStyle: const TextStyle(
+                                              color: Colors.white,
+                                              //fontStyle: FontStyle.italic,
+                                              fontSize: 16),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderSide: const BorderSide(
+                                                color: Colors.grey),
+                                            borderRadius:
+                                                BorderRadius.circular(20.0),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20.0),
+                                            borderSide: const BorderSide(
+                                                color: Colors.grey),
+                                          ),
+                                          contentPadding: const EdgeInsets.only(
+                                              left: 15.0, bottom: 0),
+                                          floatingLabelBehavior:
+                                              FloatingLabelBehavior.never,
                                         ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderSide: const BorderSide(
-                                              color: Colors.grey),
-                                          borderRadius:
-                                              BorderRadius.circular(20.0),
+                                      ),
+                                      if (hasText && autoCompleteTag.isNotEmpty)
+                                        Positioned(
+                                          left: 15,
+                                          top: 0,
+                                          bottom: 0,
+                                          child: Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: RichText(
+                                              text: TextSpan(
+                                                children: [
+                                                  TextSpan(
+                                                    text:
+                                                        _searchController.text,
+                                                    style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 17),
+                                                  ),
+                                                  TextSpan(
+                                                    text: autoCompleteTag
+                                                        .substring(
+                                                            _searchController
+                                                                .text.length),
+                                                    style: const TextStyle(
+                                                        color: Colors.grey,
+                                                        fontSize: 17),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
                                         ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(20.0),
-                                          borderSide: const BorderSide(
-                                            color: Colors.grey,
-                                          ), // Same color as default
-                                        ),
-                                        contentPadding: const EdgeInsets.only(
-                                            left: 15.0, bottom: 0),
-                                        floatingLabelBehavior:
-                                            FloatingLabelBehavior.never),
+                                    ],
                                   ),
                                 ),
                               ),
 
                               //QR AND SEARCH BUTTON
                               GestureDetector(
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 20,
-                                        decoration: const BoxDecoration(),
-                                      ),
-                                      hasText
-                                          ? Container(
-                                              height: 27,
-                                              width: 27,
-                                              decoration: BoxDecoration(
-                                                  color: const Color.fromARGB(
-                                                      255, 255, 255, 255),
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          20)),
-                                              child: const Icon(
-                                                Icons.arrow_upward_outlined,
-                                                size: 19,
-                                                color: Colors.black,
-                                              ),
-                                            )
-                                          : const Icon(
-                                              Icons.qr_code_scanner_rounded,
-                                              size: 25,
-                                              color: Colors.grey,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 19,
+                                      decoration: const BoxDecoration(),
+                                    ),
+                                    hasText
+                                        ? Container(
+                                            height: 27,
+                                            width: 27,
+                                            decoration: BoxDecoration(
+                                                color: const Color.fromARGB(
+                                                    255, 255, 255, 255),
+                                                borderRadius:
+                                                    BorderRadius.circular(20)),
+                                            child: const Icon(
+                                              Icons.arrow_upward_outlined,
+                                              size: 19,
+                                              color: Colors.black,
                                             ),
-                                    ],
-                                  ),
-                                  // onTap: () {
-                                  //   if (hasText) {
-                                  //     String query = _searchController.text;
-                                  //     debugPrint('Query being sent: $query');
-                                  //     _search(query);
-                                  //     _searchController.clear();
-
-                                  //     // Send message functionality
-                                  //   }
-                                  // },
-                                  onTap: () {
-                                    if (hasText) {
-                                      String query = autoCompleteTag.isNotEmpty
-                                          ? autoCompleteTag
-                                          : _searchController.text;
-                                      debugPrint('Query being sent: $query');
-                                      _search(query);
-                                      _searchController.clear();
-                                    }
-                                  })
+                                          ) :
+                                        // : const FaIcon(
+                                        //     FontAwesomeIcons.shapes,
+                                        //     size: 22,
+                                        //     color: Colors.white,
+                                            
+                                        //   ),
+                                        const Padding(
+                                          padding:  EdgeInsets.only(bottom: 7),
+                                          child:  Text('{ }', 
+                                          style: TextStyle(
+                                            fontSize: 25
+                                          )
+                                          ),
+                                        )
+                                  ],
+                                ),
+                                onTap: () {
+                                  if (hasText) {
+                                    String query = autoCompleteTag.isNotEmpty
+                                        ? autoCompleteTag
+                                        : _searchController.text;
+                                    debugPrint('Query being sent: $query');
+                                    _search(query);
+                                    _searchController.clear();
+                                    autoCompleteTag =
+                                        ''; // Clear autoCompleteTag after search
+                                  }
+                                },
+                              )
                             ],
                           ),
                         ),

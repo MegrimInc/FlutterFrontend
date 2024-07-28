@@ -18,9 +18,11 @@ class BarDatabase with ChangeNotifier {
   BarDatabase._internal();
 
   final Map<String, Bar> _bars = {};
-  final Map<String, Tag> _tags = {};
+  final Map<String, Tag> tags = {};
   final Map<String, Drink> _drinks = {};
   final Cache _cache = Cache();
+
+  
 
   // Method to add a new bar, generating an ID for it
   void addBar(Bar bar) {
@@ -39,7 +41,7 @@ class BarDatabase with ChangeNotifier {
 
 // Method to add a new tag
   void addTag(Tag tag) {
-    _tags[tag.id] = tag;
+    tags[tag.id] = tag;
     //debugPrint('Adding tag - ID: ${tag.id}, Name: ${tag.name}');
     notifyListeners();
   }
@@ -113,7 +115,7 @@ class BarDatabase with ChangeNotifier {
     debugPrint('Search query received: $query');
 
     // Iterate over each tag in _tags to find matches
-    _tags.forEach((id, tag) {
+    tags.forEach((id, tag) {
       if (tag.name.toLowerCase().contains(query)) {
         debugPrint('Tag matches query - ID: $id, Name: ${tag.name}');
         filteredIdsSet.addAll([id]);
