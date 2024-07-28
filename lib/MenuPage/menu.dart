@@ -32,6 +32,7 @@ class MenuPageState extends State<MenuPage> {
   bool hasText = false;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+  String autoCompleteTag = '';
 
   @override
   void initState() {
@@ -43,6 +44,30 @@ class MenuPageState extends State<MenuPage> {
         hasText = _searchController.text.isNotEmpty;
       });
     });
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      hasText = _searchController.text.isNotEmpty;
+      if (hasText) {
+        _updateAutoComplete(_searchController.text);
+      } else {
+        autoCompleteTag = '';
+      }
+    });
+  }
+
+  void _updateAutoComplete(String query) {
+    final barDatabase = Provider.of<BarDatabase>(context, listen: false);
+    final matchingTags = barDatabase._tags.values
+        .where((tag) => tag.name.toLowerCase().startsWith(query.toLowerCase()))
+        .toList();
+
+    if (matchingTags.isNotEmpty) {
+      autoCompleteTag = matchingTags.first.name;
+    } else {
+      autoCompleteTag = '';
+    }
   }
 
   //LOADS DRINK IN
@@ -57,7 +82,7 @@ class MenuPageState extends State<MenuPage> {
       isLoading = false;
     });
     final barHistory = Provider.of<BarHistory>(context, listen: false);
-  barHistory.setTappedBarId(widget.barId);
+    barHistory.setTappedBarId(widget.barId);
   }
 
   void _search(String query) {
@@ -123,21 +148,22 @@ class MenuPageState extends State<MenuPage> {
 
                             // MENU BUTTON
 
-                        
-
                             Consumer<Cart>(
-  builder: (context, cart, _) {
-    bool hasItemsInCart = cart.getTotalDrinkCount() > 0;
-    return IconButton(
-      onPressed: () {},
-      icon: Icon(
-        FontAwesomeIcons.penToSquare,
-        size: 21.25,
-        color: hasItemsInCart ? Colors.white : Colors.grey,
-      ), // Replace with your desired icon
-    );
-  },
-)
+                              builder: (context, cart, _) {
+                                bool hasItemsInCart =
+                                    cart.getTotalDrinkCount() > 0;
+                                return IconButton(
+                                  onPressed: () {},
+                                  icon: Icon(
+                                    FontAwesomeIcons.penToSquare,
+                                    size: 21.25,
+                                    color: hasItemsInCart
+                                        ? Colors.white
+                                        : Colors.grey,
+                                  ), // Replace with your desired icon
+                                );
+                              },
+                            )
                           ],
                         ),
                       ),
@@ -212,9 +238,10 @@ class MenuPageState extends State<MenuPage> {
                                                     ? responseHistory[index]
                                                     : '';
 
-
                                             if (entry == null) {
-                                              return const Row( crossAxisAlignment: CrossAxisAlignment.start,
+                                              return const Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   SizedBox(width: 17.5),
                                                   SpinKitThreeBounce(
@@ -300,7 +327,6 @@ class MenuPageState extends State<MenuPage> {
                                                                 ),
                                                               ),
                                                               Positioned.fill(
-                                                                
                                                                 child: Consumer<
                                                                     Cart>(
                                                                   builder:
@@ -326,15 +352,16 @@ class MenuPageState extends State<MenuPage> {
                                                                         ),
                                                                         child:
                                                                             Center(
-                                                                              child: Text(
-                                                                                                                                                          'x$drinkQuantities',
-                                                                                                                                                          style:
+                                                                          child:
+                                                                              Text(
+                                                                            'x$drinkQuantities',
+                                                                            style:
                                                                                 const TextStyle(
                                                                               color: Colors.white54,
                                                                               fontSize: 40,
-                                                                                                                                                          ),
-                                                                                                                                                        ),
                                                                             ),
+                                                                          ),
+                                                                        ),
                                                                       );
                                                                     } else {
                                                                       return const SizedBox
@@ -499,45 +526,55 @@ class MenuPageState extends State<MenuPage> {
 
                               //QR AND SEARCH BUTTON
                               GestureDetector(
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 20,
-                                      decoration: const BoxDecoration(),
-                                    ),
-                                    hasText
-                                        ? Container(
-                                            height: 27,
-                                            width: 27,
-                                            decoration: BoxDecoration(
-                                                color: const Color.fromARGB(
-                                                    255, 255, 255, 255),
-                                                borderRadius:
-                                                    BorderRadius.circular(20)),
-                                            child: const Icon(
-                                              Icons.arrow_upward_outlined,
-                                              size: 19,
-                                              color: Colors.black,
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 20,
+                                        decoration: const BoxDecoration(),
+                                      ),
+                                      hasText
+                                          ? Container(
+                                              height: 27,
+                                              width: 27,
+                                              decoration: BoxDecoration(
+                                                  color: const Color.fromARGB(
+                                                      255, 255, 255, 255),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          20)),
+                                              child: const Icon(
+                                                Icons.arrow_upward_outlined,
+                                                size: 19,
+                                                color: Colors.black,
+                                              ),
+                                            )
+                                          : const Icon(
+                                              Icons.qr_code_scanner_rounded,
+                                              size: 25,
+                                              color: Colors.grey,
                                             ),
-                                          )
-                                        : const Icon(
-                                            Icons.qr_code_scanner_rounded,
-                                            size: 25,
-                                            color: Colors.grey,
-                                          ),
-                                  ],
-                                ),
-                                onTap: () {
-                                  if (hasText) {
-                                    String query = _searchController.text;
-                                    debugPrint('Query being sent: $query');
-                                    _search(query);
-                                    _searchController.clear();
+                                    ],
+                                  ),
+                                  // onTap: () {
+                                  //   if (hasText) {
+                                  //     String query = _searchController.text;
+                                  //     debugPrint('Query being sent: $query');
+                                  //     _search(query);
+                                  //     _searchController.clear();
 
-                                    // Send message functionality
-                                  } else {}
-                                },
-                              )
+                                  //     // Send message functionality
+                                  //   }
+                                  // },
+                                  onTap: () {
+                                    if (hasText) {
+                                      String query = autoCompleteTag.isNotEmpty
+                                          ? autoCompleteTag
+                                          : _searchController.text;
+                                      debugPrint('Query being sent: $query');
+                                      _search(query);
+                                      _searchController.clear();
+                                    }
+                                  })
                             ],
                           ),
                         ),
@@ -547,7 +584,6 @@ class MenuPageState extends State<MenuPage> {
       ),
     );
   }
-
 
 //EXPANDED IMAGE
 

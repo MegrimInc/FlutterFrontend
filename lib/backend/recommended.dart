@@ -17,19 +17,19 @@ class Recommended with ChangeNotifier {
   Future<void> fetchRecommendedBars(BuildContext context) async {
     final barHistory = Provider.of<BarHistory>(context, listen: false);
     _currentTappedBarId = barHistory.currentTappedBarId;
-    print('Current Tapped Bar ID: $_currentTappedBarId');
+    //print('Current Tapped Bar ID: $_currentTappedBarId');
 
     // ignore: await_only_futures
     final allBarIds = await BarDatabase().getAllBarIds();
 
     // Print all bar IDs before filtering
-    print('All Bar IDs: $allBarIds');
+    //print('All Bar IDs: $allBarIds');
 
     // Filter out the current tapped bar ID and take the first 5
     final recommendedIds =
         allBarIds.where((id) => id != _currentTappedBarId).take(5).toList();
 
-    print('Recommended IDs after filtering: $recommendedIds');
+    //print('Recommended IDs after filtering: $recommendedIds');
     _recommendedBars.clear(); // Clear the list before adding new bars
     _recommendedBars.addAll(recommendedIds);
     notifyListeners();
