@@ -116,7 +116,7 @@ class MenuPageState extends State<MenuPage> {
                             //BACK ARROW BUTTON
 
                             Padding(
-                              padding: const EdgeInsets.only(left: 3),
+                              padding: const EdgeInsets.only(left: 1.5),
                               child: IconButton(
                                 icon: const Icon(
                                   Icons.arrow_back,
@@ -131,7 +131,7 @@ class MenuPageState extends State<MenuPage> {
 
                             Center(
                               child: Padding(
-                                padding: const EdgeInsets.only(left: 2.5),
+                                padding: const EdgeInsets.only(left: 1),
                                 child: Text(
                                   appBarTitle,
                                   style: const TextStyle(
@@ -145,7 +145,7 @@ class MenuPageState extends State<MenuPage> {
                             // MENU BUTTON
 
                             Padding(
-                              padding: const EdgeInsets.only(right: 3),
+                              padding: const EdgeInsets.only(right: 1),
                               child: Consumer<Cart>(
                                 builder: (context, cart, _) {
                                   bool hasItemsInCart =
@@ -154,7 +154,7 @@ class MenuPageState extends State<MenuPage> {
                                     onPressed: () {},
                                     icon: Icon(
                                       FontAwesomeIcons.penToSquare,
-                                      size: 23,
+                                      size: 22.5,
                                       color: hasItemsInCart
                                           ? Colors.white
                                           : Colors.grey,
@@ -387,7 +387,7 @@ class MenuPageState extends State<MenuPage> {
                                                                               Text(
                                                                             '`${drink.name}',
                                                                             style: const TextStyle(
-                                                                                fontSize: 14,
+                                                                                fontSize: 13,
                                                                                 fontWeight: FontWeight.w600,
                                                                                 fontStyle: FontStyle.italic,
                                                                                 color: Colors.white),
@@ -456,7 +456,7 @@ class MenuPageState extends State<MenuPage> {
 
                       // BOTTOM BAR
                       SizedBox(
-                        height: 70,
+                        height: 67,
                         child: BottomAppBar(
                           color: Colors.black,
 
@@ -596,7 +596,7 @@ class MenuPageState extends State<MenuPage> {
                                           padding:  EdgeInsets.only(bottom: 7),
                                           child:  Text('{ }', 
                                           style: TextStyle(
-                                            fontSize: 25
+                                            fontSize: 24
                                           )
                                           ),
                                         )
