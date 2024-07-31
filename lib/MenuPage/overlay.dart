@@ -11,11 +11,13 @@ import 'package:animated_text_kit/animated_text_kit.dart';
 class HistorySheet extends StatefulWidget {
   final String barId;
   final VoidCallback onClose;
+  final Cart cart;
 
   const HistorySheet({
     super.key,
     required this.barId,
     required this.onClose,
+    required this.cart
   });
 
   @override
@@ -59,20 +61,25 @@ class HistorySheetState extends State<HistorySheet>
   }
 
   void _navigateToResults(BuildContext context, String query) {
-  final user = Provider.of<User>(context, listen: false);
-  final drinkIds = user.getSearchHistory(widget.barId)
-      .firstWhere((entry) => entry.key == query)
-      .value;
+    final user = Provider.of<User>(context, listen: false);
+    final drinkIds = user
+        .getSearchHistory(widget.barId)
+        .firstWhere((entry) => entry.key == query)
+        .value;
 
-     final cart = Provider.of<Cart>(context, listen: false);
 
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => Results(drinkIds: drinkIds, barId: widget.barId, cart: cart),
-    ),
-  );
-}
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Results(
+          drinkIds: drinkIds,
+          barId: widget.barId,
+          cart: widget.cart
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Fetch the user instance from Provider
@@ -91,7 +98,7 @@ class HistorySheetState extends State<HistorySheet>
             BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 7, sigmaY: 7),
               child: Container(
-                color: Colors.transparent,
+                color: Colors.black45,
               ),
             ),
             // Display recent queries
