@@ -4,14 +4,9 @@ class Drink {
   String alcohol;
   String image;
   double price;
+  final List<String> tagId;
 
-  Drink(
-    this.id,
-    this.name,
-    this.alcohol,
-    this.image,
-    this.price
-  );
+  Drink(this.id, this.name, this.alcohol, this.image, this.price, this.tagId);
 
   // Getter methods
   String? getName() {
@@ -33,18 +28,21 @@ class Drink {
       'drinkName': name,
       'alcoholContent': alcohol,
       'drinkImage': image,
-      'drinkPrice': price
+      'drinkPrice': price,
+      'drinkTags': tagId
     };
   }
 
   // JSON deserialization
   factory Drink.fromJson(Map<String, dynamic> json) {
     return Drink(
-      json['drinkId'].toString(),
-      json['drinkName'] as String,
-      json['alcoholContent'] as String,
-      json['drinkImage'] as String,
-      json ['drinkPrice'] as double
-    );
+        json['drinkId'].toString(),
+        json['drinkName'] as String,
+        json['alcoholContent'] as String,
+        json['drinkImage'] as String,
+        json['drinkPrice'] as double,
+        (json['drinkTags'] as List<dynamic>)
+            .map((tag) => tag.toString())
+            .toList());
   }
 }

@@ -154,9 +154,24 @@ class User extends ChangeNotifier {
     for (int i = 0; i < response.length; i++) {
       await Future.delayed(const Duration(milliseconds: 15)); // Adjust the delay as needed
       responseHistory[barId]![responseHistory[barId]!.length - 1] += response[i];
+      //print("addResponseToHistory: Adding character '${response[i]}' to response history for barId $barId");
+
       HapticFeedback.mediumImpact();
       notifyListeners();
     }
     _saveData(); // Save data after modification
+  }
+
+
+  void clearAllHistories() async {
+    responseHistory.clear();
+    searchHistory.clear();
+    queryHistory.clear();
+
+    // Notify listeners to update the UI
+    notifyListeners();
+
+    // Save the cleared state to SharedPreferences
+   
   }
 }

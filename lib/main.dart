@@ -116,6 +116,7 @@ Future<void> updateDrinkDatabase(BarDatabase barDatabase) async {
       final drink = await fetchDrinkDetails(drinkId);
       barDatabase.addDrink(drink);
       //debugPrint('Added drink with ID $drinkId to the database');
+      
     } catch (e) {
       debugPrint('Error fetching drink details for ID $drinkId: $e');
     }
@@ -129,6 +130,7 @@ Future<Drink> fetchDrinkDetails(String drinkId) async {
 
   if (response.statusCode == 200) {
     final jsonResponse = jsonDecode(response.body);
+    debugPrint('Decoded JSON response: ${jsonResponse.toString()}');
     return Drink.fromJson(jsonResponse);
   } else {
     throw Exception('Failed to load drink details');
