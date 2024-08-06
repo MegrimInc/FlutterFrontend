@@ -49,6 +49,7 @@ dependencies:
   mailer: ^5.1.0
   flutter_spinkit: ^5.0.0 
   get: ^4.6.5
+  mobile_scanner: ^5.1.1
  
  
   

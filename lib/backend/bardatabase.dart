@@ -136,11 +136,7 @@ class BarDatabase with ChangeNotifier {
       List<String> drinkIds = ids.toList();
       user.addSearchQuery(barId, query, drinkIds);
 
-      // if (drinkIds.isEmpty) {
-      //   Response().addNegativeResponse(user, barId);
-      // } else {
-      //   Response().addPositiveResponse(user, barId);
-      // }
+    user.setLastSearch(barId, query, drinkIds);
 
       if (drinkIds.isEmpty) {
     Response().addNegativeResponse(user, barId, query);
@@ -149,5 +145,8 @@ class BarDatabase with ChangeNotifier {
   }
 
     } 
+
+
+   
   }
 

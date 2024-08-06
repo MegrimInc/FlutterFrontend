@@ -5,6 +5,7 @@ import 'package:barzzy_app1/Backend/searchengine.dart';
 import 'package:barzzy_app1/Backend/recommended.dart';
 import 'package:barzzy_app1/Backend/tags.dart';
 import 'package:barzzy_app1/Backend/user.dart';
+import 'package:barzzy_app1/QrPage/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:barzzy_app1/Backend/bardatabase.dart';
@@ -14,14 +15,41 @@ import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:barzzy_app1/Backend/cache.dart';
 
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   BarDatabase barDatabase = BarDatabase();
+//   Stripe.publishableKey = 'pk_test_51Pdz2ORv9bn5Mu1cyCLYFl9aygTs1VP6vMBfhKwoRldfoxqPmBoXtghmHVrFBe1wbWzfPRc2ok6eAZyJQQkYvKdu008i3gdtg1';
+//   await sendGetRequest();
+//   await fetchTags();
+//   await updateDrinkDatabase(barDatabase);
+
+//   runApp(
+//     MultiProvider(
+//       providers: [
+//         ChangeNotifierProvider(create: (context) => barDatabase),
+//         ChangeNotifierProvider(create: (context) => BarHistory()),
+//         ChangeNotifierProvider(create: (context) => Recommended()),
+//         ChangeNotifierProvider(create: (context) => User()),
+//         ProxyProvider<BarDatabase, SearchService>(
+//           update: (_, barDatabase, __) => SearchService(barDatabase),
+//         )
+//       ],
+//       child: const Barzzy(),
+//     ),
+//   );
+// }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   BarDatabase barDatabase = BarDatabase();
-  Stripe.publishableKey = 'pk_test_51Pdz2ORv9bn5Mu1cyCLYFl9aygTs1VP6vMBfhKwoRldfoxqPmBoXtghmHVrFBe1wbWzfPRc2ok6eAZyJQQkYvKdu008i3gdtg1';
+  Stripe.publishableKey = 'your_stripe_key_here';
   await sendGetRequest();
   await fetchTags();
   await updateDrinkDatabase(barDatabase);
+  final user = User();
+  await user.init(); // Ensure User is fully initialized
+
+ 
 
   runApp(
     MultiProvider(
@@ -29,10 +57,10 @@ void main() async {
         ChangeNotifierProvider(create: (context) => barDatabase),
         ChangeNotifierProvider(create: (context) => BarHistory()),
         ChangeNotifierProvider(create: (context) => Recommended()),
-        ChangeNotifierProvider(create: (context) => User()),
+        ChangeNotifierProvider(create: (context) => user),
         ProxyProvider<BarDatabase, SearchService>(
           update: (_, barDatabase, __) => SearchService(barDatabase),
-        )
+        ),
       ],
       child: const Barzzy(),
     ),
@@ -105,8 +133,6 @@ Future<void> fetchTags() async {
   }
 }
 
-
-
 Future<void> updateDrinkDatabase(BarDatabase barDatabase) async {
   final cache = Cache();
   final cachedDrinkIds = await cache.getDrinkIds();
@@ -116,7 +142,6 @@ Future<void> updateDrinkDatabase(BarDatabase barDatabase) async {
       final drink = await fetchDrinkDetails(drinkId);
       barDatabase.addDrink(drink);
       //debugPrint('Added drink with ID $drinkId to the database');
-      
     } catch (e) {
       debugPrint('Error fetching drink details for ID $drinkId: $e');
     }
@@ -137,16 +162,15 @@ Future<Drink> fetchDrinkDetails(String drinkId) async {
   }
 }
 
-
-
-
 class Barzzy extends StatelessWidget {
   const Barzzy({super.key});
 
   @override
   Widget build(BuildContext context) {
     Provider.of<BarHistory>(context, listen: false).setContext(context);
-    Provider.of<Recommended>(context, listen: false).fetchRecommendedBars(context);
+    Provider.of<Recommended>(context, listen: false)
+        .fetchRecommendedBars(context);
+    cameraControllerSingleton.initialize();
     return MaterialApp(
       theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,

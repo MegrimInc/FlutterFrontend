@@ -8,14 +8,18 @@ class User extends ChangeNotifier {
   List<MapEntry<String, List<String>>> allSearchEntries = [];
   Map<String, List<String>> responseHistory = {};
   Map<String, List<String>> queryHistory = {};
+  Map<String, MapEntry<String, List<String>>> lastSearch = {};
 
   static const String _searchHistoryKey = 'searchHistory';
   static const String _allSearchEntriesKey = 'allSearchEntries';
   static const String _responseHistoryKey = 'responseHistory';
   static const String _queryHistoryKey = 'queryHistory';
+  static const String _lastSearchesKey = 'lastSearch';
 
-  User() {
-    _loadData();
+  // Separate init method for explicit initialization
+  Future<void> init() async {
+    await _loadData(); // Load user data, preferences, etc.
+    notifyListeners(); // Notify listeners if anything changes
   }
 
   // Load data from SharedPreferences
@@ -30,7 +34,8 @@ class User extends ChangeNotifier {
         final Map<String, dynamic> mapEntry = entry as Map<String, dynamic>;
         final barId = mapEntry['barId'] as String;
         final query = mapEntry['query'] as String;
-        final drinkIds = List<String>.from(mapEntry['drinkIds'] as List<dynamic>);
+        final drinkIds =
+            List<String>.from(mapEntry['drinkIds'] as List<dynamic>);
         return MapEntry(barId, MapEntry(query, drinkIds));
       }).toList();
     }
@@ -38,11 +43,13 @@ class User extends ChangeNotifier {
     // Load allSearchEntries
     final allSearchEntriesJson = prefs.getString(_allSearchEntriesKey);
     if (allSearchEntriesJson != null) {
-      final List<dynamic> allSearchEntriesList = jsonDecode(allSearchEntriesJson);
+      final List<dynamic> allSearchEntriesList =
+          jsonDecode(allSearchEntriesJson);
       allSearchEntries = allSearchEntriesList.map((entry) {
         final Map<String, dynamic> mapEntry = entry as Map<String, dynamic>;
         final query = mapEntry['query'] as String;
-        final drinkIds = List<String>.from(mapEntry['drinkIds'] as List<dynamic>);
+        final drinkIds =
+            List<String>.from(mapEntry['drinkIds'] as List<dynamic>);
         return MapEntry(query, drinkIds);
       }).toList();
     }
@@ -50,7 +57,8 @@ class User extends ChangeNotifier {
     // Load responseHistory
     final responseHistoryJson = prefs.getString(_responseHistoryKey);
     if (responseHistoryJson != null) {
-      final Map<String, dynamic> responseHistoryMap = jsonDecode(responseHistoryJson);
+      final Map<String, dynamic> responseHistoryMap =
+          jsonDecode(responseHistoryJson);
       responseHistory = responseHistoryMap.map((key, value) {
         return MapEntry(key, List<String>.from(value as List<dynamic>));
       });
@@ -64,9 +72,22 @@ class User extends ChangeNotifier {
         return MapEntry(key, List<String>.from(value as List<dynamic>));
       });
     }
+
+    // Load lastSearches
+    final lastSearchesJson = prefs.getString(_lastSearchesKey);
+    if (lastSearchesJson != null) {
+      final Map<String, dynamic> lastSearchesMap = jsonDecode(lastSearchesJson);
+      lastSearch = lastSearchesMap.map((key, value) {
+        final query = value['query'] as String;
+        final drinkIds = List<String>.from(value['drinkIds'] as List<dynamic>);
+        return MapEntry(key, MapEntry(query, drinkIds));
+      });
+    }
+
+    notifyListeners();
   }
 
-  // Save data to SharedPreferences
+// Save data to SharedPreferences
   Future<void> _saveData() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -90,18 +111,30 @@ class User extends ChangeNotifier {
     await prefs.setString(_allSearchEntriesKey, allSearchEntriesJson);
 
     // Save responseHistory
-    final responseHistoryJson = jsonEncode(responseHistory.map((key, value) => MapEntry(
-      key,
-      value,
-    )));
+    final responseHistoryJson =
+        jsonEncode(responseHistory.map((key, value) => MapEntry(
+              key,
+              value,
+            )));
     await prefs.setString(_responseHistoryKey, responseHistoryJson);
 
     // Save queryHistory
-    final queryHistoryJson = jsonEncode(queryHistory.map((key, value) => MapEntry(
-      key,
-      value,
-    )));
+    final queryHistoryJson =
+        jsonEncode(queryHistory.map((key, value) => MapEntry(
+              key,
+              value,
+            )));
     await prefs.setString(_queryHistoryKey, queryHistoryJson);
+
+    // Save lastSearches
+    final lastSearchesJson = jsonEncode(lastSearch.map((key, value) => MapEntry(
+          key,
+          {
+            'query': value.key,
+            'drinkIds': value.value,
+          },
+        )));
+    await prefs.setString(_lastSearchesKey, lastSearchesJson);
   }
 
   // Add a query to history and save it
@@ -152,8 +185,10 @@ class User extends ChangeNotifier {
     responseHistory[barId]!.add(''); // Start with an empty response
 
     for (int i = 0; i < response.length; i++) {
-      await Future.delayed(const Duration(milliseconds: 15)); // Adjust the delay as needed
-      responseHistory[barId]![responseHistory[barId]!.length - 1] += response[i];
+      await Future.delayed(
+          const Duration(milliseconds: 15)); // Adjust the delay as needed
+      responseHistory[barId]![responseHistory[barId]!.length - 1] +=
+          response[i];
       //print("addResponseToHistory: Adding character '${response[i]}' to response history for barId $barId");
 
       HapticFeedback.mediumImpact();
@@ -162,16 +197,27 @@ class User extends ChangeNotifier {
     _saveData(); // Save data after modification
   }
 
-
   void clearAllHistories() async {
     responseHistory.clear();
     searchHistory.clear();
     queryHistory.clear();
+    lastSearch.clear();
 
     // Notify listeners to update the UI
     notifyListeners();
 
     // Save the cleared state to SharedPreferences
-   
+  }
+
+  // Add or update the last search for a specific bar
+  void setLastSearch(String barId, String query, List<String> drinkIds) {
+    lastSearch[barId] = MapEntry(query, drinkIds);
+    notifyListeners();
+    _saveData();
+  }
+
+  // Retrieve the last search for a specific bar
+  MapEntry<String, List<String>>? getLastSearch(String barId) {
+    return lastSearch[barId];
   }
 }

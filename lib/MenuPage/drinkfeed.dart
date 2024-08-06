@@ -49,9 +49,9 @@ class _DrinkFeedState extends State<DrinkFeed> {
 
             if (dy.abs() > swipeThreshold) {
               if (dy < 0) {
-                widget.cart.addDrink(widget.barId, widget.drink.id);
+                widget.cart.addDrink(widget.drink.id);
               } else if (dy > 0) {
-                widget.cart.removeDrink(widget.barId, widget.drink.id);
+                widget.cart.removeDrink(widget.drink.id);
               }
             }
           },
@@ -69,7 +69,7 @@ class _DrinkFeedState extends State<DrinkFeed> {
                 child: Consumer<Cart>(
                   builder: (context, cart, _) {
                     int drinkQuantities =
-                        cart.getDrinkQuantity(widget.barId, widget.drink.id);
+                        cart.getDrinkQuantity(widget.drink.id);
                 
                     // Only render the container if drinkQuantities is greater than 0
                     if (drinkQuantities > 0) {
@@ -113,13 +113,13 @@ class _DrinkFeedState extends State<DrinkFeed> {
                         onPressed: () {
                           // Increment drink quantity
 
-                          widget.cart.addDrink(widget.barId, widget.drink.id);
+                          widget.cart.addDrink( widget.drink.id);
                         },
                         child: InkWell(
                           splashColor: Colors.transparent, // Remove splash effect
                           highlightColor: Colors.transparent, // Remove highlight effect
                           onTap: () {
-                            widget.cart.addDrink(widget.barId, widget.drink.id);
+                            widget.cart.addDrink(widget.drink.id);
                           },
                           child: const Icon(
                             Icons.add,
@@ -145,13 +145,13 @@ class _DrinkFeedState extends State<DrinkFeed> {
                           // Decrement drink quantity
 
                           widget.cart
-                              .removeDrink(widget.barId, widget.drink.id);
+                              .removeDrink(widget.drink.id);
                         },
                         child: InkWell(
                           splashColor: Colors.transparent, // Remove splash effect
                           highlightColor: Colors.transparent, // Remove highlight effect
                           onTap: () {
-                            widget.cart.removeDrink(widget.barId, widget.drink.id);
+                            widget.cart.removeDrink(widget.drink.id);
                           },
                           child: const Icon(
                             Icons.remove,

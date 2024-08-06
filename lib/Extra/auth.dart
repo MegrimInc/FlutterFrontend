@@ -1,29 +1,29 @@
-// ignore: unused_import
 import 'package:barzzy_app1/HomePage/home.dart';
-import 'package:barzzy_app1/NotificationsPage/notifications.dart';
 import 'package:barzzy_app1/OrdersPage/orders.dart';
 import 'package:barzzy_app1/ProfilePage/profile.dart';
+import 'package:barzzy_app1/QrPage/qr.dart';
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 
 class AuthPage extends StatefulWidget {
-  const AuthPage({super.key,});
+  const AuthPage({super.key});
 
   @override
   State<AuthPage> createState() => _AuthPageState();
 }
 
 class _AuthPageState extends State<AuthPage> {
-  late int _selectedIndex;
+  int _selectedIndex = 0;
+  late MobileScannerController _cameraController;
   late List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
-    _selectedIndex = 0;
+    _cameraController = MobileScannerController(); // Initialize here
     _initPages();
   }
 
@@ -31,16 +31,24 @@ class _AuthPageState extends State<AuthPage> {
     _pages = [
       const HomePage(),
       const OrdersPage(),
+      QrPage(cameraController: _cameraController),
       const ProfilePage(),
-      const NotificationsPage(),
     ];
   }
 
   @override
+  void dispose() {
+    _cameraController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // User is logged in, display the main content
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
@@ -95,9 +103,9 @@ class _AuthPageState extends State<AuthPage> {
               ),
             ),
             GButton(
-              icon: Icons.person,
-              iconSize: 24.88,
-              text: 'Me',
+              icon: Icons.qr_code,
+              iconSize: 23.7,
+              text: 'QR',
               iconActiveColor: Colors.white,
               textStyle: GoogleFonts.sourceSans3(
                   fontSize: 15,
@@ -107,9 +115,9 @@ class _AuthPageState extends State<AuthPage> {
                       : Colors.grey),
             ),
             GButton(
-              icon: Icons.notifications_active,
-              iconSize: 22.15,
-              text: 'Notifications',
+              icon: Icons.person,
+              iconSize: 25.88,
+              text: 'Me',
               iconActiveColor: Colors.white,
               textStyle: GoogleFonts.sourceSans3(
                   fontSize: 15,
@@ -118,7 +126,6 @@ class _AuthPageState extends State<AuthPage> {
                       ? const Color.fromARGB(255, 255, 255, 255)
                       : Colors.grey),
             ),
-            
           ],
         ),
       ),

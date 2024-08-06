@@ -127,7 +127,12 @@ class MenuPageState extends State<MenuPage>
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => Cart(),
+      //create: (context) => Cart(),
+      create: (context) {
+      Cart cart = Cart();
+      cart.setBar(widget.barId); // Set the bar ID for the cart
+      return cart;
+    },
       child: Scaffold(
         backgroundColor: Colors.black,
         body: GestureDetector(
@@ -355,7 +360,8 @@ class MenuPageState extends State<MenuPage>
                                           HapticFeedback.lightImpact();
                                           Provider.of<Cart>(context,
                                                   listen: false)
-                                              .addDrink(widget.barId, drink.id);
+                                              .addDrink(drink.id);
+                                              FocusScope.of(context).unfocus();
                                         },
                                         child: ClipRRect(
                                           child: Stack(
@@ -371,7 +377,7 @@ class MenuPageState extends State<MenuPage>
                                                   builder: (context, cart, _) {
                                                     int drinkQuantities =
                                                         cart.getDrinkQuantity(
-                                                            widget.barId,
+                                                            
                                                             drink.id);
 
                                                     // Only render the container if drinkQuantities is greater than 0
@@ -512,69 +518,80 @@ class MenuPageState extends State<MenuPage>
 
               // MESSAGE FIELD
               Expanded(
-                child: SizedBox(
-                  height: 35,
-                  child: Stack(
-                    children: [
-                      TextFormField(
-                        cursorColor: Colors.white,
-                        controller: _searchController,
-                        onChanged: (text) => _onSearchChanged(),
-                        onTap: () {
-                          _scrollToBottom(); // Trigger scroll to bottom when text field is tapped
-                        },
-                        style: const TextStyle(
-                            color: Colors
-                                .transparent), // Make the TextFormField text transparent
-                        decoration: InputDecoration(
-                          labelText: 'I want...',
-                          labelStyle: const TextStyle(
-                              color: Colors.white,
-                              //fontStyle: FontStyle.italic,
-                              fontSize: 16),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: const BorderSide(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20.0),
-                            borderSide: const BorderSide(color: Colors.grey),
-                          ),
-                          contentPadding:
-                              const EdgeInsets.only(left: 15.0, bottom: 0),
-                          floatingLabelBehavior: FloatingLabelBehavior.never,
-                        ),
-                      ),
-                      if (hasText && autoCompleteTag.isNotEmpty)
-                        Positioned(
-                          left: 15,
-                          top: 0,
-                          bottom: 0,
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: RichText(
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: _searchController.text,
-                                    style: const TextStyle(
-                                        color: Colors.white, fontSize: 17),
-                                  ),
-                                  TextSpan(
-                                    text: autoCompleteTag.substring(
-                                        _searchController.text.length),
-                                    style: const TextStyle(
-                                        color: Colors.grey, fontSize: 17),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+  child: SizedBox(
+    height: 35,
+    child: Stack(
+      children: [
+        Consumer<Cart>(
+          builder: (context, cart, _) {
+            // Determine the label text based on the cart's state
+            String labelText;
+            if (cart.getTotalDrinkCount() > 0) {
+              double totalPrice = cart.calculateTotalPrice();
+              labelText = 'Your Total Is: \$${totalPrice.toStringAsFixed(2)}';
+            } else {
+              labelText = 'I want...';
+            }
+
+            return TextFormField(
+              cursorColor: Colors.white,
+              controller: _searchController,
+              onChanged: (text) => _onSearchChanged(),
+              onTap: () {
+                _scrollToBottom(); // Trigger scroll to bottom when text field is tapped
+              },
+              style: const TextStyle(
+                  color: Colors
+                      .transparent), // Make the TextFormField text transparent
+              decoration: InputDecoration(
+                labelText: labelText,
+                labelStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(20.0),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20.0),
+                  borderSide: const BorderSide(color: Colors.grey),
+                ),
+                contentPadding: const EdgeInsets.only(left: 15.0, bottom: 0),
+                floatingLabelBehavior: FloatingLabelBehavior.never,
+              ),
+            );
+          },
+        ),
+        if (hasText && autoCompleteTag.isNotEmpty)
+          Positioned(
+            left: 15,
+            top: 0,
+            bottom: 0,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: _searchController.text,
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 17),
+                    ),
+                    TextSpan(
+                      text: autoCompleteTag.substring(
+                          _searchController.text.length),
+                      style: const TextStyle(
+                          color: Colors.grey, fontSize: 17),
+                    ),
+                  ],
                 ),
               ),
+            ),
+          ),
+      ],
+    ),
+  ),
+),
 
               //QR AND SEARCH BUTTON
               GestureDetector(
