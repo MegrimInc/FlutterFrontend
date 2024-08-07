@@ -7,6 +7,7 @@ import 'package:barzzy_app1/Backend/tags.dart';
 import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/QrPage/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:mailer/smtp_server.dart';
 import 'package:provider/provider.dart';
 import 'package:barzzy_app1/Backend/bardatabase.dart';
 import 'package:http/http.dart' as http;
@@ -39,7 +40,41 @@ import 'package:barzzy_app1/Backend/cache.dart';
 //   );
 // }
 
-void main() async {
+void main() async { 
+print("current date: ${DateTime.now()}");
+
+/*print("attempting email send");
+  var rng = Random();
+  String verificationCode = rng.nextInt(9).toString() + rng.nextInt(9).toString() + rng.nextInt(9).toString() + rng.nextInt(9).toString() + rng.nextInt(9).toString() + rng.nextInt(9).toString();
+print("verification code genned: $verificationCode");
+  final smtpServer = SmtpServer("email-smtp.us-east-1.amazonaws.com", port: 25, username: "AKIARKMXJUVKGK3ZC6FH", password: "BJ0EwGiCXsXWcZT2QSI5eR+5yFzbimTnquszEXPaEXsd");
+print("SMTP SERVER CREATED");
+  final username = "donotreply@barzzy.site";
+  final msg = Message()
+  ..from = Address(username, 'Barzzy Official')
+  ..recipients.add(Address('chidereyaogan@gmail.com'))
+  ..subject = 'Barzzy Email Verification Code | ${DateTime.now()}'
+  ..text = 'Your verification code is: $verificationCode';
+print('Message generated');
+  try {
+    final sendReport = await send(msg, smtpServer);
+print('Message sent: ' + sendReport.toString());
+  } on MailerException catch (e) {
+print('Message not sent. mailerexception msg: ' + e.message);
+    for (var p in e.problems) {
+print('Problem: ${p.code}: ${p.msg}');
+    }
+    } catch (e, stackTrace) {
+    print('An error occurred: ${e.toString()}');
+    print('Stack trace: ${stackTrace.toString()}');
+  }
+
+print("email send attempt done");
+*/
+
+final test = HttpService();
+print(test.hello());
+
   WidgetsFlutterBinding.ensureInitialized();
   BarDatabase barDatabase = BarDatabase();
   Stripe.publishableKey = 'your_stripe_key_here';

@@ -7,8 +7,7 @@ import 'package:flutter/material.dart';
 
 
 class RegisterPage extends StatefulWidget {
-  final Function()? onTap;
-  const RegisterPage({super.key, required this.onTap});  
+  const RegisterPage({super.key});  
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -22,6 +21,11 @@ class _RegisterPageState extends State<RegisterPage> {
   final firstName = TextEditingController();
 
   final lastName = TextEditingController();
+
+
+  final email = TextEditingController();
+
+    final password = TextEditingController();
 
   //SIGN USER IN
 
@@ -114,6 +118,18 @@ class _RegisterPageState extends State<RegisterPage> {
                 obscureText: true),
             const SizedBox(height: 10),
 
+
+            MyTextField(
+                labeltext: 'Enter Email Address',
+                controller: email,
+                obscureText: true),
+            const SizedBox(height: 10),
+
+            MyTextField(
+                labeltext: 'Create Password',
+                controller: password,
+                obscureText: true),
+            const SizedBox(height: 10),
 
 
 
