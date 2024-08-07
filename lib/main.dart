@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:barzzy_app1/AuthPages/RegisterPages/httpservicev2.dart';
 import 'package:barzzy_app1/Backend/bar.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/searchengine.dart';
@@ -72,8 +73,10 @@ print('Problem: ${p.code}: ${p.msg}');
 print("email send attempt done");
 */
 
+/*
 final test = HttpService();
 print(test.hello());
+*/
 
   WidgetsFlutterBinding.ensureInitialized();
   BarDatabase barDatabase = BarDatabase();
