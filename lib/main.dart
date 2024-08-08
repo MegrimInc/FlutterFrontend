@@ -205,7 +205,7 @@ class Barzzy extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
-      home: loggedInAlready ? const HomePage() : LoginPage(onTap: () => {})//Make it so that when bars sign in, they get sent to
+      home: loggedInAlready ? const AuthPage() : LoginPage(onTap: () => {})//Make it so that when bars sign in, they get sent to
       //home: const AuthPage(),
     );
   }

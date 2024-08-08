@@ -12,6 +12,7 @@ class Order {
   int orderId;
   Int userId;
   double price;
+  
  
 
   Order(this.barId, this.orderId, this.userId, this.price, );
