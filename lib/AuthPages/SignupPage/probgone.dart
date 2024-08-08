@@ -3,7 +3,6 @@
 
 import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
 import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
-import 'package:barzzy_app1/AuthPages/components/squaretile.dart';
 import 'package:flutter/material.dart';
 
 
@@ -129,18 +128,7 @@ void invalidEmailorPassword() {
             ),
             const SizedBox(height: 30),
 
-            // GOOGLE + APPLE + GMAIL SIGN IN
 
-            const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              // google button
-              SquareTile(imagePath: 'lib/components/images/google.png'),
-              SizedBox(width: 10),
-
-              // apple button
-              SquareTile(imagePath: 'lib/components/images/apple.png'),
-              SizedBox(width: 10),
-
-            ]),
             const SizedBox(height: 45),
 
             // NOT A MEMBER REGISTER NOW

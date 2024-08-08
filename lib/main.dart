@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:barzzy_app1/AuthPages/LoginPage/login.dart';
+
 import 'package:barzzy_app1/AuthPages/RegisterPages/httpservicev2.dart';
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Backend/bar.dart';
@@ -8,6 +8,7 @@ import 'package:barzzy_app1/Backend/searchengine.dart';
 import 'package:barzzy_app1/Backend/recommended.dart';
 import 'package:barzzy_app1/Backend/tags.dart';
 import 'package:barzzy_app1/Backend/user.dart';
+import 'package:barzzy_app1/BarPages/OrderDisplay.dart';
 import 'package:barzzy_app1/HomePage/home.dart';
 import 'package:barzzy_app1/QrPage/camera.dart';
 import 'package:flutter/material.dart';
@@ -66,6 +67,40 @@ print(test.hello());
   WidgetsFlutterBinding.ensureInitialized();
   final loginCache3 = LoginCache();
   bool loggedInAlready = await loginCache3.getSignedIn() /* && HTTP REQUEST*/;
+  final url = Uri.parse('http://34.230.32.169:8080/signup/login');
+  final initPW = await loginCache3.getPW();
+  final initEmail = await loginCache3.getEmail();
+
+  // Create the request body
+  final requestBody = jsonEncode({
+    'email': initEmail,
+    'password': initPW
+  });
+  bool httprequest = false;
+  // Send the POST request
+  final response = await http.post(
+    url,
+    headers: {
+      'Content-Type': 'application/json', // Specify that the body is JSON
+    },
+    body: requestBody,
+  );
+  // Check the response
+  if (response.statusCode == 200) {
+    print('Init Request successful');
+    print('Init Response body: ${response.body}');
+    if( int.parse(response.body) != 0) httprequest = true;
+  } else {
+    print('Init Request failed with status: ${response.statusCode}');
+    print('Init Response body: ${response.body}');
+  }
+
+  final uid = await loginCache3.getUID();
+  final isBar = uid < 0;
+
+  loggedInAlready = loggedInAlready && httprequest;
+
+
   BarDatabase barDatabase = BarDatabase();
   //Stripe.publishableKey = 'your_stripe_key_here';
   await sendGetRequest();
@@ -87,7 +122,7 @@ print(test.hello());
           update: (_, barDatabase, __) => SearchService(barDatabase),
         ),
       ],
-      child: Barzzy(loggedInAlready: loggedInAlready,),
+      child: Barzzy(loggedInAlready: loggedInAlready, isBar: isBar),
     ),
   );
 }
@@ -193,7 +228,8 @@ Future<Drink> fetchDrinkDetails(String drinkId) async {
 
 class Barzzy extends StatelessWidget {
   final bool loggedInAlready;
-  const Barzzy({super.key, required this.loggedInAlready});
+  final bool isBar;
+  const Barzzy({super.key, required this.loggedInAlready, required this.isBar});
 
   @override
   Widget build(BuildContext context) {
@@ -205,7 +241,7 @@ class Barzzy extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
-      home: loggedInAlready ? const AuthPage() : LoginPage(onTap: () => {})//Make it so that when bars sign in, they get sent to
+      home: loggedInAlready ? (isBar ? const OrderDisplay() : const AuthPage()) : LoginPage(onTap: () => {})//Make it so that when bars sign in, they get sent to
       //home: const AuthPage(),
     );
   }

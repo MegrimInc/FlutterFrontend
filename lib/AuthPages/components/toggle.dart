@@ -1,5 +1,5 @@
-import 'package:barzzy_app1/AuthPages/LoginPage/login.dart';
-import 'package:barzzy_app1/AuthPages/SignupPage/signup.dart';
+import 'package:barzzy_app1/AuthPages/RegisterPages/login.dart';
+import 'package:barzzy_app1/AuthPages/SignupPage/probgone.dart';
 
 import 'package:flutter/material.dart';
 

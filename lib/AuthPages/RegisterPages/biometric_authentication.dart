@@ -58,13 +58,13 @@ class _BiometricAuthenticationState extends State<BiometricAuthentication> {
                 ? (const Text("Authentication successful!!!"))
                 : (TextButton(
                     onPressed: authenticateUser,
-                    child: const Text(
-                      "Authenticate now!",
-                      style: TextStyle(color: Colors.white),
-                    ),
                     style: ButtonStyle(
                       backgroundColor: WidgetStateProperty.all<Color>(
                           Colors.lightBlueAccent),
+                    ),
+                    child: const Text(
+                      "Authenticate now!",
+                      style: TextStyle(color: Colors.white),
                     ),
                   )),
           ],

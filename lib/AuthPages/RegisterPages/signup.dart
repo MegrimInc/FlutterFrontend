@@ -1,14 +1,17 @@
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy_app1/AuthPages/RegisterPages/register2.dart';
+import 'package:barzzy_app1/AuthPages/RegisterPages/tos.dart';
 import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
 import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 
 
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});  
+  final Function()? onTap;
+
+  const RegisterPage({super.key, this.onTap});  
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -56,11 +59,6 @@ class _RegisterPageState extends State<RegisterPage> {
     } else {
       invalidCredentialsMessage();
     }
-
-
-    
-
-    
   }
 
   //INVALID CREDENTIALS POP UP
@@ -70,9 +68,9 @@ class _RegisterPageState extends State<RegisterPage> {
         context: context,
         builder: (context) {
           return const AlertDialog(
-            backgroundColor: Color.fromARGB(255, 255, 190, 68),
+            backgroundColor: Colors.grey,
           title: Center(child: 
-          Text('Invalid name. Please check your fields.', 
+          Text('Invalid. Please check your fields.', 
           style:TextStyle(color: Color.fromARGB(255, 30, 30, 30),
           fontWeight: FontWeight.bold,) )));
         });
@@ -94,17 +92,27 @@ class _RegisterPageState extends State<RegisterPage> {
     });
 
     return Scaffold(
-        backgroundColor: const Color.fromARGB(255, 15, 15, 15),
+        backgroundColor: Colors.black,
         body: SafeArea(
             child: Center(
                 child: SingleChildScrollView(
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const SizedBox(height: 75),
+            const SizedBox(height: 50),
 
-            // ICONS: NEEDS TO BE CHANGED TO BARZZY LOGO
-            const Icon(Icons.abc_outlined,
-                size: 100, color: Color.fromARGB(255, 15, 15, 15)),
-            const SizedBox(height: 100),
+            
+
+            Center(
+              child: Text(
+                'B A R Z Z Y',
+                style: GoogleFonts.megrim(
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  fontSize: 35,
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 100),
 
             
 
@@ -140,10 +148,27 @@ class _RegisterPageState extends State<RegisterPage> {
 
 
 
-            MyButton(text: 'Next Step', onTap: registerNames,), const SizedBox(height: 25),
+            MyButton(text: 'Signup', onTap: registerNames,), const SizedBox(height: 25),
             
-            const SizedBox(height: 30),
-            const SizedBox(height: 50),
+           
+            const SizedBox(height: 45),
+
+          
+
+            // NOT A MEMBER REGISTER NOW
+
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const Text('Already have an account?',
+                  style: TextStyle(color: Color.fromARGB(255, 255, 255, 255))),
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: widget.onTap,
+                child: const Text('Login',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold)),
+              ),
+            ])
 
           ]),
         ))));

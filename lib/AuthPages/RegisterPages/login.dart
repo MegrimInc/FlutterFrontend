@@ -2,18 +2,18 @@
 
 
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy_app1/AuthPages/RegisterPages/register1.dart';
+import 'package:barzzy_app1/AuthPages/RegisterPages/signup.dart';
 import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
 import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
-import 'package:barzzy_app1/AuthPages/components/squaretile.dart';
-import 'package:barzzy_app1/HomePage/home.dart';
+import 'package:barzzy_app1/Extra/auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 
 class LoginPage extends StatefulWidget {
   
   final Function()? onTap;
-  LoginPage({super.key, required this.onTap});  
+  const LoginPage({super.key, required this.onTap});  
 
   //final loginCache2 = LoginCache();
 
@@ -33,8 +33,18 @@ class _LoginPageState extends State<LoginPage> {
   final passwordController = TextEditingController();
 
 
-  void goRegister() async {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterPage()));
+
+ void goRegister() async {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RegisterPage(
+          onTap: () {
+            Navigator.pop(context); // This will pop the RegisterPage and go back to the LoginPage
+          },
+        ),
+      ),
+    );
   }
 
 
@@ -59,7 +69,7 @@ class _LoginPageState extends State<LoginPage> {
     //loginCache2.setSignedIn(true);
     //loginCache2.setEmail(email);
     //loginCache2.setPassword(password);
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AuthPage()));
     
 
     } else {
@@ -77,7 +87,7 @@ class _LoginPageState extends State<LoginPage> {
         context: context,
         builder: (context) {
           return const AlertDialog(
-            backgroundColor: Color.fromARGB(255, 255, 190, 68),
+            backgroundColor: Colors.grey,
           title: Center(child: 
           Text('Looks like you may have typed in the wrong email or password. Please try again!', 
           style:TextStyle(color: Color.fromARGB(255, 30, 30, 30),
@@ -104,17 +114,25 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     return Scaffold(
-        backgroundColor: const Color.fromARGB(255, 15, 15, 15),
+        backgroundColor: Colors.black,
         body: SafeArea(
             child: Center(
                 child: SingleChildScrollView(
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const SizedBox(height: 75),
+            const SizedBox(height: 15),
 
-            // ICONS: NEEDS TO BE CHANGED TO BARZZY LOGO
-            const Icon(Icons.abc_outlined,
-                size: 100, color: Color.fromARGB(255, 15, 15, 15)),
-            const SizedBox(height: 100),
+            Center(
+              child: Text(
+                'B A R Z Z Y',
+                style: GoogleFonts.megrim(
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  fontSize: 35,
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 125),
 
             
 
@@ -154,17 +172,7 @@ class _LoginPageState extends State<LoginPage> {
             
             const SizedBox(height: 30),
 
-            // GOOGLE + APPLE + GMAIL SIGN IN
-
-            const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              // google button
-              SquareTile(imagePath: 'lib/components/images/google.png'),
-              SizedBox(width: 10),
-
-              // apple button
-              SquareTile(imagePath: 'lib/components/images/apple.png'),
-              SizedBox(width: 10),
-            ]),
+           
             const SizedBox(height: 50),
 
             // NOT A MEMBER REGISTER NOW
@@ -175,9 +183,9 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(width: 4),
               GestureDetector(
                 onTap: goRegister,
-                child: const Text('Register Now',
+                child: const Text('Register',
                     style: TextStyle(
-                        color: Color.fromARGB(255, 255, 172, 19),
+                        color: Colors.white,
                         fontWeight: FontWeight.bold)),
               ),
             ])

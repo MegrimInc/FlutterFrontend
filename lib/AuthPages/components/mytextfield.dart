@@ -40,7 +40,7 @@ class MyTextField extends StatelessWidget {
                 obscureText: obscureText,
                 style:
                     const TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
-                cursorColor: const Color.fromARGB(255, 255, 172, 19),
+                cursorColor: Colors.white,
                 focusNode: focusNode,
                 decoration: InputDecoration(
                   contentPadding:
@@ -53,7 +53,7 @@ class MyTextField extends StatelessWidget {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(5),
                     borderSide: const BorderSide(
-                        color: Color.fromARGB(255, 255, 172, 19)),
+                        color: Colors.white),
                   ),
                   fillColor: focused
                       ? const Color.fromARGB(255, 15, 15, 15)
