@@ -1,3 +1,4 @@
+import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/AuthPages/RegisterPages/register2.dart';
 import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
 import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
@@ -43,6 +44,12 @@ class _RegisterPageState extends State<RegisterPage> {
     && validCharacters.hasMatch(firstName.value.text + lastName.value.text) ) {
 
 //Store FN/LN in memory and then do the SQL entry later
+      final loginCache2 = LoginCache();
+      loginCache2.setEmail(email.value.text);
+      loginCache2.setFN(firstName.value.text);
+      loginCache2.setPW(password.value.text);
+      loginCache2.setLN(lastName.value.text);
+      loginCache2.setSignedIn(true);
       Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterPage2()));
       
 

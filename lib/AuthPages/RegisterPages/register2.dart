@@ -1,4 +1,5 @@
 import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
+import 'package:barzzy_app1/HomePage/home.dart';
 import 'package:flutter/material.dart';
 
 class RegisterPage2 extends StatefulWidget {
@@ -23,8 +24,8 @@ class _RegisterPageState2 extends State<RegisterPage2> {
                 const Text('Terms Go Here!'),
                 const SizedBox(height: 100),
                 MyButton(text: 'I have read and agree to the Terms of Services', onTap: () {
-                  //sqlentry
-                   Navigator.pop(context);
+                    
+                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
                    },),
         ]),
 

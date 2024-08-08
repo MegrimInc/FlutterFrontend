@@ -1,11 +1,14 @@
 import 'dart:convert';
+import 'package:barzzy_app1/AuthPages/LoginPage/login.dart';
 import 'package:barzzy_app1/AuthPages/RegisterPages/httpservicev2.dart';
+import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Backend/bar.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/searchengine.dart';
 import 'package:barzzy_app1/Backend/recommended.dart';
 import 'package:barzzy_app1/Backend/tags.dart';
 import 'package:barzzy_app1/Backend/user.dart';
+import 'package:barzzy_app1/HomePage/home.dart';
 import 'package:barzzy_app1/QrPage/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:mailer/smtp_server.dart';
@@ -14,32 +17,9 @@ import 'package:barzzy_app1/Backend/bardatabase.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy_app1/Extra/auth.dart';
 import 'package:barzzy_app1/Backend/barhistory.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
+//import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:barzzy_app1/Backend/cache.dart';
 
-// void main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   BarDatabase barDatabase = BarDatabase();
-//   Stripe.publishableKey = 'pk_test_51Pdz2ORv9bn5Mu1cyCLYFl9aygTs1VP6vMBfhKwoRldfoxqPmBoXtghmHVrFBe1wbWzfPRc2ok6eAZyJQQkYvKdu008i3gdtg1';
-//   await sendGetRequest();
-//   await fetchTags();
-//   await updateDrinkDatabase(barDatabase);
-
-//   runApp(
-//     MultiProvider(
-//       providers: [
-//         ChangeNotifierProvider(create: (context) => barDatabase),
-//         ChangeNotifierProvider(create: (context) => BarHistory()),
-//         ChangeNotifierProvider(create: (context) => Recommended()),
-//         ChangeNotifierProvider(create: (context) => User()),
-//         ProxyProvider<BarDatabase, SearchService>(
-//           update: (_, barDatabase, __) => SearchService(barDatabase),
-//         )
-//       ],
-//       child: const Barzzy(),
-//     ),
-//   );
-// }
 
 void main() async { 
 print("current date: ${DateTime.now()}");
@@ -78,9 +58,16 @@ final test = HttpService();
 print(test.hello());
 */
 
+
+
+
+
+
   WidgetsFlutterBinding.ensureInitialized();
+  final loginCache3 = LoginCache();
+  bool loggedInAlready = await loginCache3.getSignedIn() /* && HTTP REQUEST*/;
   BarDatabase barDatabase = BarDatabase();
-  Stripe.publishableKey = 'your_stripe_key_here';
+  //Stripe.publishableKey = 'your_stripe_key_here';
   await sendGetRequest();
   await fetchTags();
   await updateDrinkDatabase(barDatabase);
@@ -100,10 +87,12 @@ print(test.hello());
           update: (_, barDatabase, __) => SearchService(barDatabase),
         ),
       ],
-      child: const Barzzy(),
+      child: Barzzy(loggedInAlready: loggedInAlready,),
     ),
   );
 }
+
+
 
 Future<void> sendGetRequest() async {
   try {
@@ -175,6 +164,7 @@ Future<void> updateDrinkDatabase(BarDatabase barDatabase) async {
   final cache = Cache();
   final cachedDrinkIds = await cache.getDrinkIds();
 
+
   for (String drinkId in cachedDrinkIds) {
     try {
       final drink = await fetchDrinkDetails(drinkId);
@@ -200,20 +190,23 @@ Future<Drink> fetchDrinkDetails(String drinkId) async {
   }
 }
 
+
 class Barzzy extends StatelessWidget {
-  const Barzzy({super.key});
+  final bool loggedInAlready;
+  const Barzzy({super.key, required this.loggedInAlready});
 
   @override
   Widget build(BuildContext context) {
     Provider.of<BarHistory>(context, listen: false).setContext(context);
     Provider.of<Recommended>(context, listen: false)
         .fetchRecommendedBars(context);
+        
     cameraControllerSingleton.initialize();
     return MaterialApp(
       theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
-      //home: Testing()
-      home: const AuthPage(),
+      home: loggedInAlready ? const HomePage() : LoginPage(onTap: () => {})//Make it so that when bars sign in, they get sent to
+      //home: const AuthPage(),
     );
   }
 }
