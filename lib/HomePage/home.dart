@@ -8,6 +8,10 @@ import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:barzzy_app1/Backend/recommended.dart';
 import 'package:barzzy_app1/MenuPage/menu.dart';
 import '../Backend/bardatabase.dart';
+import 'package:barzzy_app1/backend/Registration/sendemail.dart';
+import 'package:barzzy_app1/AuthPages/RegisterPages/httpservicev2.dart';
+import 'dart:convert';
+import 'package:http/http.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

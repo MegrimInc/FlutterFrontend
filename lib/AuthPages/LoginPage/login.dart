@@ -1,15 +1,22 @@
 // ignore_for_file: use_build_context_synchronously
 
 
+import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy_app1/AuthPages/RegisterPages/register1.dart';
 import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
 import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
 import 'package:barzzy_app1/AuthPages/components/squaretile.dart';
+import 'package:barzzy_app1/HomePage/home.dart';
 import 'package:flutter/material.dart';
 
 
 class LoginPage extends StatefulWidget {
+  
   final Function()? onTap;
-  const LoginPage({super.key, required this.onTap});  
+  LoginPage({super.key, required this.onTap});  
+
+  //final loginCache2 = LoginCache();
+
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -18,9 +25,18 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   // TEXT EDITING CONTROLLERS
 
+
+  
+
   final emailController = TextEditingController();
 
   final passwordController = TextEditingController();
+
+
+  void goRegister() async {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterPage()));
+  }
+
 
   //SIGN USER IN
 
@@ -28,13 +44,28 @@ class _LoginPageState extends State<LoginPage> {
 
     //SHOW LOADING CIRCLE
 
-    showDialog(
+    /*showDialog(
         context: context,
         builder: (context) {
           return const Center(child: CircularProgressIndicator(color: Color.fromARGB(255, 255, 255, 255)));
-        });
+        });*/
 
-    //TRY SIGN IN
+    //Send HTTP Request to server
+    bool signIn = true;
+
+    //signIn = http.parse(uri)
+
+    if(/* Get HTTP request back*/ signIn == true) {
+    //loginCache2.setSignedIn(true);
+    //loginCache2.setEmail(email);
+    //loginCache2.setPassword(password);
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
+    
+
+    } else {
+      invalidCredentialsMessage();
+    }
+    
 
     
   }
@@ -56,10 +87,13 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loginCache2 = LoginCache();
     final FocusNode emailFocusNode = FocusNode();
     final FocusNode passwordFocusNode = FocusNode();
     final ValueNotifier<bool> isEmailFocused = ValueNotifier<bool>(false);
     final ValueNotifier<bool> isPasswordFocused = ValueNotifier<bool>(false);
+
+
 
     emailFocusNode.addListener(() {
       isEmailFocused.value = emailFocusNode.hasFocus;
@@ -87,7 +121,7 @@ class _LoginPageState extends State<LoginPage> {
             // USER/EMAIL TEXTFIELD
 
             MyTextField(
-              labeltext: 'Email / Phone Number',
+              labeltext: 'Email',
               controller: emailController,
               obscureText: false,
             ),
@@ -140,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
                   style: TextStyle(color: Color.fromARGB(255, 255, 255, 255))),
               const SizedBox(width: 4),
               GestureDetector(
-                onTap: widget.onTap,
+                onTap: goRegister,
                 child: const Text('Register Now',
                     style: TextStyle(
                         color: Color.fromARGB(255, 255, 172, 19),

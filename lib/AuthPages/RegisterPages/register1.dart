@@ -1,3 +1,4 @@
+import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/AuthPages/RegisterPages/register2.dart';
 import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
 import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
@@ -7,8 +8,7 @@ import 'package:flutter/material.dart';
 
 
 class RegisterPage extends StatefulWidget {
-  final Function()? onTap;
-  const RegisterPage({super.key, required this.onTap});  
+  const RegisterPage({super.key});  
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -22,6 +22,11 @@ class _RegisterPageState extends State<RegisterPage> {
   final firstName = TextEditingController();
 
   final lastName = TextEditingController();
+
+
+  final email = TextEditingController();
+
+    final password = TextEditingController();
 
   //SIGN USER IN
 
@@ -39,6 +44,12 @@ class _RegisterPageState extends State<RegisterPage> {
     && validCharacters.hasMatch(firstName.value.text + lastName.value.text) ) {
 
 //Store FN/LN in memory and then do the SQL entry later
+      final loginCache2 = LoginCache();
+      loginCache2.setEmail(email.value.text);
+      loginCache2.setFN(firstName.value.text);
+      loginCache2.setPW(password.value.text);
+      loginCache2.setLN(lastName.value.text);
+      loginCache2.setSignedIn(true);
       Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterPage2()));
       
 
@@ -114,6 +125,18 @@ class _RegisterPageState extends State<RegisterPage> {
                 obscureText: true),
             const SizedBox(height: 10),
 
+
+            MyTextField(
+                labeltext: 'Enter Email Address',
+                controller: email,
+                obscureText: true),
+            const SizedBox(height: 10),
+
+            MyTextField(
+                labeltext: 'Create Password',
+                controller: password,
+                obscureText: true),
+            const SizedBox(height: 10),
 
 
 
