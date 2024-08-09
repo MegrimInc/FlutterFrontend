@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy_app1/Extra/auth.dart';
+import 'package:barzzy_app1/Extra/bottombar.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +38,7 @@ class _RegisterPageState2 extends State<RegisterPage2> {
       if (response.statusCode == 200) {
         print('TOS Request successful');
         print('TOS Response body: ${response.body}');
+         loginCache8.setSignedIn(true);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const AuthPage()),

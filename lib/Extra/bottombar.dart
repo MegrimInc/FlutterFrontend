@@ -9,21 +9,23 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 
 class AuthPage extends StatefulWidget {
-  const AuthPage({super.key});
+  final int selectedTab;
+  const AuthPage({super.key, this.selectedTab = 0});
 
   @override
-  State<AuthPage> createState() => _AuthPageState();
+  AuthPageState createState() => AuthPageState();
 }
 
-class _AuthPageState extends State<AuthPage> {
-  int _selectedIndex = 0;
+class AuthPageState extends State<AuthPage> {
+  late int _selectedIndex;
   late MobileScannerController _cameraController;
   late List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
-    _cameraController = MobileScannerController(); // Initialize here
+    _selectedIndex = widget.selectedTab;
+    _cameraController = MobileScannerController(); 
     _initPages();
   }
 
@@ -59,7 +61,7 @@ class _AuthPageState extends State<AuthPage> {
         color: Colors.black,
         border: Border(
             top: BorderSide(
-                color: Color.fromARGB(255, 126, 126, 126), width: .075)),
+                color: Color.fromARGB(255, 126, 126, 126), width: .08)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 3),

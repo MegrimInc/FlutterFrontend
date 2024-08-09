@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-//import 'package:barzzy_app1/AuthPages/RegisterPages/httpservicev2.dart';
-import 'package:barzzy_app1/AuthPages/RegisterPages/login.dart';
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/AuthPages/components/toggle.dart';
 import 'package:barzzy_app1/Backend/bar.dart';
@@ -11,38 +9,38 @@ import 'package:barzzy_app1/Backend/recommended.dart';
 import 'package:barzzy_app1/Backend/tags.dart';
 import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/BarPages/orderdisplay.dart';
-//import 'package:barzzy_app1/HomePage/home.dart';
+import 'package:barzzy_app1/Extra/bottombar.dart';
+import 'package:barzzy_app1/Extra/sessionid.dart';
 import 'package:barzzy_app1/QrPage/camera.dart';
-import 'package:barzzy_app1/TabsPage/tabs.dart';
 import 'package:flutter/material.dart';
-//import 'package:mailer/smtp_server.dart';
 import 'package:provider/provider.dart';
 import 'package:barzzy_app1/Backend/bardatabase.dart';
 import 'package:http/http.dart' as http;
-import 'package:barzzy_app1/Extra/auth.dart';
 import 'package:barzzy_app1/Backend/barhistory.dart';
-//import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:barzzy_app1/Backend/cache.dart';
+import 'package:barzzy_app1/OrdersPage/tab.dart';
 
 void main() async {
   debugPrint("Application starting...");
   print("current date: ${DateTime.now()}");
 
-
-
-
   WidgetsFlutterBinding.ensureInitialized();
-  final loginCache3 = LoginCache();
+  final loginCache = LoginCache();
+  await loginCache.clearAll();
 
+  final userProvider = UserProvider(); // Create UserProvider instance
 
-debugPrint("CLEARING CACHE");
-loginCache3.setSignedIn(false);
+  // Load initial userId if available
+  final userId = await loginCache.getUID();
+  if (userId != 0) {
+    userProvider.setUserId(userId);
+  }
 
-
-  bool loggedInAlready = await loginCache3.getSignedIn();
+  bool loggedInAlready = true;
+  await loginCache.getSignedIn() /* && HTTP REQUEST*/;
   final url = Uri.parse('https://www.barzzy.site/signup/login');
-  final initPW = await loginCache3.getPW();
-  final initEmail = await loginCache3.getEmail();
+  final initPW = await loginCache.getPW();
+  final initEmail = await loginCache.getEmail();
 
   // Create the request body
   final requestBody = jsonEncode({'email': initEmail, 'password': initPW});
@@ -65,10 +63,12 @@ loginCache3.setSignedIn(false);
     print('Init Response body: ${response.body}');
   }
 
-  final uid = await loginCache3.getUID();
+  final uid = await loginCache.getUID();
   final isBar = uid < 0;
+  debugPrint("User ID: $uid, isBar: $isBar");
 
   loggedInAlready = loggedInAlready && httprequest;
+  debugPrint("Final loggedInAlready after request: $loggedInAlready");
 
   BarDatabase barDatabase = BarDatabase();
   //Stripe.publishableKey = 'your_stripe_key_here';
@@ -84,6 +84,7 @@ loginCache3.setSignedIn(false);
         ChangeNotifierProvider(create: (context) => barDatabase),
         ChangeNotifierProvider(create: (context) => BarHistory()),
         ChangeNotifierProvider(create: (context) => Recommended()),
+        ChangeNotifierProvider(create: (context) => Hierarchy(userProvider.userId ?? 0)),
         ChangeNotifierProvider(create: (context) => user),
         ProxyProvider<BarDatabase, SearchService>(
           update: (_, barDatabase, __) => SearchService(barDatabase),
@@ -201,11 +202,31 @@ class Barzzy extends StatelessWidget {
         .fetchRecommendedBars(context);
 
     cameraControllerSingleton.initialize();
+
+    // Decide the initial route
+    final String initialRoute;
+    if (!loggedInAlready) {
+      initialRoute = '/login';
+    } else if (isBar) {
+      initialRoute = '/bar';
+    } else {
+      initialRoute = '/auth';
+    }
+
     return MaterialApp(
       theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
-      home: loggedInAlready ? (isBar ? const OrderDisplay() : const AuthPage()) : const LoginOrRegisterPage()//Make it so that when bars sign in, they get sent to
-      
+      //home: loggedInAlready ? (isBar ? const OrderDisplay() : const AuthPage()) : const LoginOrRegisterPage()//Make it so that when bars sign in, they get sent to
+      initialRoute: initialRoute, // Set the initial route based on the logic
+      routes: {
+        '/auth': (context) =>
+            const AuthPage(), // Your main app page for non-bar users
+        '/bar': (context) => const OrderDisplay(), // Orders page for bar users
+        '/login': (context) =>
+            const LoginOrRegisterPage(), // Login or Register page
+        '/orders': (context) => const AuthPage(selectedTab: 1),
+        // Add other routes here if needed
+      },
     );
   }
 }

@@ -3,11 +3,14 @@ import 'package:barzzy_app1/AuthPages/RegisterPages/tos.dart';
 
 import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
 import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
+import 'package:barzzy_app1/Extra/sessionid.dart';
 
 import 'package:flutter/material.dart';
 
 import 'package:http/http.dart' as http;
-import 'dart:convert'; // For jsonEncode
+import 'dart:convert';
+
+import 'package:provider/provider.dart'; // For jsonEncode
 
 class RegisterPage11 extends StatefulWidget {
   final void Function()? onTap;
@@ -55,7 +58,11 @@ class _RegisterPageState11 extends State<RegisterPage11> {
         incorrect();
       } else if (uid > 0) {
         final loginCache4 = LoginCache();
-        loginCache4.setSignedIn(true);
+        loginCache4.setUID(uid);
+         // Update the UserProvider with the new userId
+      // ignore: use_build_context_synchronously
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      userProvider.setUserId(uid);
         Navigator.pushReplacement(context,
             MaterialPageRoute(builder: (context) => const RegisterPage2()));
       } else {
@@ -73,11 +80,11 @@ class _RegisterPageState11 extends State<RegisterPage11> {
         context: context,
         builder: (context) {
           return const AlertDialog(
-              backgroundColor: Color.fromARGB(255, 255, 190, 68),
+              backgroundColor: Colors.white,
               title: Center(
-                  child: Text('Incorrect.',
+                  child: Text('Incorrect...',
                       style: TextStyle(
-                        color: Color.fromARGB(255, 30, 30, 30),
+                        color: Colors.black,
                         fontWeight: FontWeight.bold,
                       ))));
         });
@@ -88,11 +95,11 @@ class _RegisterPageState11 extends State<RegisterPage11> {
         context: context,
         builder: (context) {
           return const AlertDialog(
-              backgroundColor: Color.fromARGB(255, 255, 190, 68),
+              backgroundColor: Colors.white,
               title: Center(
-                  child: Text('Something went wrong. Please try again later.',
+                  child: Text('Incorrect Code...',
                       style: TextStyle(
-                        color: Color.fromARGB(255, 30, 30, 30),
+                        color: Colors.black,
                         fontWeight: FontWeight.bold,
                       ))));
         });
@@ -114,7 +121,7 @@ class _RegisterPageState11 extends State<RegisterPage11> {
     });
 
     return Scaffold(
-        backgroundColor: const Color.fromARGB(255, 15, 15, 15),
+        backgroundColor: Colors.black,
         body: SafeArea(
             child: Center(
                 child: SingleChildScrollView(
@@ -135,7 +142,7 @@ class _RegisterPageState11 extends State<RegisterPage11> {
             ),
 
             MyButton(
-              text: 'Check code',
+              text: 'Confirm',
               onTap: attemptVerification,
             ),
             const SizedBox(height: 25),

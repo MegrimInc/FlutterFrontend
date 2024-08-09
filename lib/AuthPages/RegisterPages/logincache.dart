@@ -13,6 +13,12 @@ class LoginCache {
   static const _signedIn = 'signedIn';
   static const _uid2 = 'UID2';
 
+  // Method to clear all data from SharedPreferences
+  Future<void> clearAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+  }
+
   Future<void> setUID(int str) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_uid2, str);

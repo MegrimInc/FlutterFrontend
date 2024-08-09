@@ -9,7 +9,7 @@ import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
 import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
 
 import 'package:barzzy_app1/BarPages/OrderDisplay.dart';
-import 'package:barzzy_app1/Extra/auth.dart';
+import 'package:barzzy_app1/Extra/bottombar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -42,16 +42,13 @@ class _LoginPageState extends State<LoginPage> {
   //SIGN USER IN
 
   void signUserIn() async {
-
-
   final cacher = LoginCache();
-  
-    
   final url = Uri.parse('https://www.barzzy.site/signup/login');
   final requestBody = jsonEncode({
     'email': emailController.value.text,
     'password': passwordController.value.text
   });
+  
   final response = await http.post(
     url,
     headers: {
@@ -59,38 +56,54 @@ class _LoginPageState extends State<LoginPage> {
     },
     body: requestBody,
   );
+
   if (response.statusCode == 200) {
     print('login Request successful');
     print('login Response body: ${response.body}');
+
     try {
-      if( int.parse(response.body) > 0 ) {
+      // Added this: Parse the response body as an integer
+      int responseValue = int.parse(response.body);
+
+      // Added this: Proper integer comparison
+      if (responseValue > 0) {
+        cacher.setEmail(emailController.value.text);
+        cacher.setPW(passwordController.value.text);
+        cacher.setSignedIn(true);
+        cacher.setUID(responseValue);
+
+        debugPrint("UserLogin");
+        // Navigate to AuthPage if responseValue is greater than 0
+        Navigator.pushReplacement(
+          context, 
+          MaterialPageRoute(builder: (context) => const AuthPage())
+        );
+      } else {
+        debugPrint("BarLogin");
 
         cacher.setEmail(emailController.value.text);
         cacher.setPW(passwordController.value.text);
         cacher.setSignedIn(true);
-        cacher.setUID(int.parse(response.body));
-      
-debugPrint("UserLogin");
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AuthPage()));
-        } else {
-debugPrint("BarLogin");
+        cacher.setUID(responseValue);
 
-        cacher.setEmail(emailController.value.text);
-        cacher.setPW(passwordController.value.text);
-        cacher.setSignedIn(true);
-        cacher.setUID(int.parse(response.body));
-
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const OrderDisplay()));
-        }
-      } catch ( e ) {
-       failure();
-  }
+        // Navigate to OrderDisplay if responseValue is 0 or negative
+        Navigator.pushReplacement(
+          context, 
+          MaterialPageRoute(builder: (context) => const OrderDisplay())
+        );
+      }
+    } catch (e) {
+      // Handle any parsing or other errors
+      debugPrint('Error: $e');
+      failure();
+    }
   } else {
     print('login Request failed with status: ${response.statusCode}');
     print('login Response body: ${response.body}');
     invalidCredentialsMessage();
   }
 }
+
 
 
     void failure() {
@@ -123,7 +136,6 @@ debugPrint("BarLogin");
 
   @override
   Widget build(BuildContext context) {
-    final loginCache2 = LoginCache();
     final FocusNode emailFocusNode = FocusNode();
     final FocusNode passwordFocusNode = FocusNode();
     final ValueNotifier<bool> isEmailFocused = ValueNotifier<bool>(false);

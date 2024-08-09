@@ -1,10 +1,10 @@
 import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/user.dart';
-
 import 'package:barzzy_app1/MenuPage/overlay.dart';
-import 'package:barzzy_app1/OrdersPage/cart.dart';
+import 'package:barzzy_app1/MenuPage/cart.dart';
 import 'package:barzzy_app1/MenuPage/drinkfeed.dart';
+import 'package:barzzy_app1/OrdersPage/tab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -42,9 +42,9 @@ class MenuPageState extends State<MenuPage>
 
   @override
   void initState() {
-  super.initState();
-  _fetchBarData();
-  _searchController.addListener(_onSearchChanged);
+    super.initState();
+    _fetchBarData();
+    _searchController.addListener(_onSearchChanged);
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
@@ -55,8 +55,6 @@ class MenuPageState extends State<MenuPage>
       curve: Curves.easeInOut,
     );
   }
-
-  
 
   void _onSearchChanged() {
     setState(() {
@@ -124,69 +122,114 @@ class MenuPageState extends State<MenuPage>
     });
   }
 
+  void _placeOrder(BuildContext context) {
+    final barId = int.parse(widget.barId); // Convert barId to int
+
+    // Access the Cart and Hierarchy providers
+    final cart = Provider.of<Cart>(context, listen: false);
+    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+
+    // Convert the drink IDs in the cart to a Set<int>
+    final drinkIds = cart.barCart.keys.map((id) => int.parse(id)).toSet();
+
+    // Debug print to confirm method call
+    debugPrint('Calling addOrder with barId: $barId, drinkIds: $drinkIds');
+
+    // Call the addOrder method, passing the barId and drinkIds
+    hierarchy.addOrder(barId, hierarchy.userId, drinkIds);
+    print('are you working');
+
+    // Optionally, show a confirmation message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Order placed successfully!')),
+    );
+
+    // Clear the cart after placing the order
+    //cart.barCart.clear();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       //create: (context) => Cart(),
       create: (context) {
-      Cart cart = Cart();
-      cart.setBar(widget.barId); // Set the bar ID for the cart
-      return cart;
-    },
+        Cart cart = Cart();
+        cart.setBar(widget.barId); // Set the bar ID for the cart
+        return cart;
+      },
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: GestureDetector(
-          onHorizontalDragUpdate: (details) {
-            // Handle horizontal drag update here
-            if (details.primaryDelta! > 0) {
-              // Swiping to the right
-            }
-          },
-          child: SafeArea(
-            child: Stack(
-              children: [
-        
-        
-                  // Main content
-                _buildMainContent(),
-                
-                // Overlay content
-                if (_showOverlay)
-                  AnimatedBuilder(
-                    animation: _animation,
-                    builder: (context, child) {
-                      return Transform(
-                        transform: Matrix4.identity()
-                          ..scale(_animation.value)
-                          ..translate(
-                            -1.0 *
-                                MediaQuery.of(context).size.width /
-                                2 *
-                                (1 - _animation.value),
-                            MediaQuery.of(context).size.height *
-                                (1 - _animation.value),
-                          ),
-                        alignment: Alignment.bottomLeft,
-                        child: FadeTransition(
-                          opacity: _animation,
-                          child: child,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              // Main content
+              _buildMainContent(),
+
+              //ORDER SWIPE
+
+              Consumer<Cart>(
+                builder: (context, cart, _) {
+                  // Check if there are items in the cart
+                  if (cart.getTotalDrinkCount() > 0) {
+                    return Positioned(
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 12.5, // Adjust this width as needed
+                      child: GestureDetector(
+                        onHorizontalDragUpdate: (details) {
+                          if (details.primaryDelta! < 0) {
+                            // Swiping left from the right edge
+                            navigateToOrdersPage(context);
+                            _placeOrder(context);
+                          }
+                        },
+                        child: Container(
+                          color: Colors.red, // Invisible swipe area
                         ),
+                      ),
+                    );
+                  } else {
+                    return const SizedBox
+                        .shrink(); // Render an empty widget if the cart is empty
+                  }
+                },
+              ),
+
+              // Overlay content
+              if (_showOverlay)
+                AnimatedBuilder(
+                  animation: _animation,
+                  builder: (context, child) {
+                    return Transform(
+                      transform: Matrix4.identity()
+                        ..scale(_animation.value)
+                        ..translate(
+                          -1.0 *
+                              MediaQuery.of(context).size.width /
+                              2 *
+                              (1 - _animation.value),
+                          MediaQuery.of(context).size.height *
+                              (1 - _animation.value),
+                        ),
+                      alignment: Alignment.bottomLeft,
+                      child: FadeTransition(
+                        opacity: _animation,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Consumer<Cart>(
+                    builder: (context, cart, _) {
+                      return HistorySheet(
+                        barId: widget.barId,
+                        onClose: _hideOverlayWidget,
+                        cart: cart,
                       );
                     },
-                    child: Consumer<Cart>(
-                      builder: (context, cart, _) {
-                        return HistorySheet(
-                          barId: widget.barId,
-                          onClose: _hideOverlayWidget,
-                          cart: cart,
-                        );
-                      },
-                    ),
                   ),
-        
-        
-              ],
-            ),
+                ),
+            ],
           ),
         ),
       ),
@@ -361,7 +404,7 @@ class MenuPageState extends State<MenuPage>
                                           Provider.of<Cart>(context,
                                                   listen: false)
                                               .addDrink(drink.id);
-                                              FocusScope.of(context).unfocus();
+                                          FocusScope.of(context).unfocus();
                                         },
                                         child: ClipRRect(
                                           child: Stack(
@@ -377,7 +420,6 @@ class MenuPageState extends State<MenuPage>
                                                   builder: (context, cart, _) {
                                                     int drinkQuantities =
                                                         cart.getDrinkQuantity(
-                                                            
                                                             drink.id);
 
                                                     // Only render the container if drinkQuantities is greater than 0
@@ -498,7 +540,11 @@ class MenuPageState extends State<MenuPage>
                   width: 50,
                   height: 50,
                   child: Padding(
-                    padding: const EdgeInsets.only(top: 7, bottom: 7, right: 20, ),
+                    padding: const EdgeInsets.only(
+                      top: 7,
+                      bottom: 7,
+                      right: 20,
+                    ),
                     child: Container(
                         decoration: BoxDecoration(
                             color: const Color.fromARGB(255, 52, 51, 51),
@@ -511,6 +557,7 @@ class MenuPageState extends State<MenuPage>
                   ),
                 ),
                 onTap: () {
+                  _scrollToBottom();
                   _showOverlayWidget();
                   FocusScope.of(context).unfocus();
                 },
@@ -518,93 +565,96 @@ class MenuPageState extends State<MenuPage>
 
               // MESSAGE FIELD
               Expanded(
-  child: SizedBox(
-    height: 35,
-    child: Stack(
-      children: [
-        Consumer<Cart>(
-          builder: (context, cart, _) {
-            // Determine the label text based on the cart's state
-            String labelText;
-            if (cart.getTotalDrinkCount() > 0) {
-              double totalPrice = cart.calculateTotalPrice();
-              labelText = 'Your Total Is: \$${totalPrice.toStringAsFixed(2)}';
-            } else {
-              labelText = 'I want...';
-            }
+                child: SizedBox(
+                  height: 35,
+                  child: Stack(
+                    children: [
+                      Consumer<Cart>(
+                        builder: (context, cart, _) {
+                          // Determine the label text based on the cart's state
+                          String labelText;
+                          if (cart.getTotalDrinkCount() > 0) {
+                            double totalPrice = cart.calculateTotalPrice();
+                            labelText =
+                                'Your Total Is: \$${totalPrice.toStringAsFixed(2)}';
+                          } else {
+                            labelText = 'I want...';
+                          }
 
-            return TextFormField(
-              cursorColor: Colors.white,
-              controller: _searchController,
-              onChanged: (text) => _onSearchChanged(),
-              onTap: () {
-                _scrollToBottom(); // Trigger scroll to bottom when text field is tapped
-              },
-              style: const TextStyle(
-                  color: Colors
-                      .transparent), // Make the TextFormField text transparent
-              decoration: InputDecoration(
-                labelText: labelText,
-                labelStyle: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(20.0),
+                          return TextFormField(
+                            cursorColor: Colors.white,
+                            controller: _searchController,
+                            onChanged: (text) => _onSearchChanged(),
+                            onTap: () {
+                              _scrollToBottom(); // Trigger scroll to bottom when text field is tapped
+                            },
+                            style: const TextStyle(
+                                color: Colors
+                                    .transparent), // Make the TextFormField text transparent
+                            decoration: InputDecoration(
+                              labelText: labelText,
+                              labelStyle: const TextStyle(
+                                  color: Colors.white, fontSize: 16),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide:
+                                    const BorderSide(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(20.0),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(20.0),
+                                borderSide:
+                                    const BorderSide(color: Colors.grey),
+                              ),
+                              contentPadding:
+                                  const EdgeInsets.only(left: 15.0, bottom: 0),
+                              floatingLabelBehavior:
+                                  FloatingLabelBehavior.never,
+                            ),
+                          );
+                        },
+                      ),
+                      if (hasText && autoCompleteTag.isNotEmpty)
+                        Positioned(
+                          left: 15,
+                          top: 0,
+                          bottom: 0,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: _searchController.text,
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 17),
+                                  ),
+                                  TextSpan(
+                                    text: autoCompleteTag.substring(
+                                        _searchController.text.length),
+                                    style: const TextStyle(
+                                        color: Colors.grey, fontSize: 17),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20.0),
-                  borderSide: const BorderSide(color: Colors.grey),
-                ),
-                contentPadding: const EdgeInsets.only(left: 15.0, bottom: 0),
-                floatingLabelBehavior: FloatingLabelBehavior.never,
               ),
-            );
-          },
-        ),
-        if (hasText && autoCompleteTag.isNotEmpty)
-          Positioned(
-            left: 15,
-            top: 0,
-            bottom: 0,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: _searchController.text,
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 17),
-                    ),
-                    TextSpan(
-                      text: autoCompleteTag.substring(
-                          _searchController.text.length),
-                      style: const TextStyle(
-                          color: Colors.grey, fontSize: 17),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-      ],
-    ),
-  ),
-),
 
               //QR AND SEARCH BUTTON
               GestureDetector(
                 child: hasText
                     ? Container(
-                      color: Colors.transparent,
-                      height: 50, 
-                      width: 50,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 21.0, top: 7.5, bottom: 7.5),
-                        child: Container(
-                            
-                           
+                        color: Colors.transparent,
+                        height: 50,
+                        width: 50,
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                              left: 21.0, top: 7.5, bottom: 7.5),
+                          child: Container(
                             decoration: BoxDecoration(
                                 color: const Color.fromARGB(255, 255, 255, 255),
                                 borderRadius: BorderRadius.circular(20)),
@@ -614,21 +664,22 @@ class MenuPageState extends State<MenuPage>
                               color: Colors.black,
                             ),
                           ),
-                      ),
-                    )
+                        ),
+                      )
                     : Container(
-                      color: Colors.transparent,
-                      height: 50,
-                      width: 50,
-                      child: const Padding(
-                        padding: EdgeInsets.only(left: 21, top: 7.5, bottom: 7.5),
-                        child:  FaIcon(
+                        color: Colors.transparent,
+                        height: 50,
+                        width: 50,
+                        child: const Padding(
+                          padding:
+                              EdgeInsets.only(left: 21, top: 7.5, bottom: 7.5),
+                          child: FaIcon(
                             FontAwesomeIcons.arrowsRotate,
                             size: 25.5,
                             color: Colors.white,
                           ),
+                        ),
                       ),
-                    ),
                 onTap: () {
                   if (hasText) {
                     String query = autoCompleteTag.isNotEmpty
@@ -676,6 +727,10 @@ class MenuPageState extends State<MenuPage>
         );
       },
     );
+  }
+
+  void navigateToOrdersPage(BuildContext context) {
+    Navigator.pushNamed(context, '/orders');
   }
 
   void _scrollToBottom() {
