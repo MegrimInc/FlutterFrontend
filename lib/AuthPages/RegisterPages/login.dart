@@ -10,6 +10,7 @@ import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
 
 import 'package:barzzy_app1/BarPages/OrderDisplay.dart';
 import 'package:barzzy_app1/Extra/auth.dart';
+import 'package:barzzy_app1/HomePage/home.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -42,6 +43,9 @@ class _LoginPageState extends State<LoginPage> {
   //SIGN USER IN
 
   void signUserIn() async {
+
+
+    final cacher = LoginCache();
     
   final url = Uri.parse('https://www.barzzy.site/signup/login');
   final requestBody = jsonEncode({
@@ -58,18 +62,33 @@ class _LoginPageState extends State<LoginPage> {
   if (response.statusCode == 200) {
     print('login Request successful');
     print('login Response body: ${response.body}');
-    if( int.parse(response.body) != 0) {
-    } else if (int.parse(response.body) > 0) {
-      //Cache email password set login to true set email id
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AuthPage()));
-    } else {
-      //Cache email password set login to true set email id
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const OrderDisplay()));
-    }
+    try {
+      if( int.parse(response.body) > 0 ) {
+
+        cacher.setEmail(emailController.value.text);
+        cacher.setPW(passwordController.value.text);
+        cacher.setSignedIn(true);
+        cacher.setUID(int.parse(response.body));
+      
+debugPrint("UserLogin");
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AuthPage()));
+        } else {
+debugPrint("BarLogin");
+
+        cacher.setEmail(emailController.value.text);
+        cacher.setPW(passwordController.value.text);
+        cacher.setSignedIn(true);
+        cacher.setUID(int.parse(response.body));
+
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const OrderDisplay()));
+        }
+      } catch ( e ) {
+       failure();
+  }
   } else {
     print('login Request failed with status: ${response.statusCode}');
     print('login Response body: ${response.body}');
-    failure();
+    invalidCredentialsMessage();
   }
 }
 
