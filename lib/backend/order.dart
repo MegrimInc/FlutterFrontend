@@ -31,9 +31,6 @@ class Order {
   //Getter methods
 
 
-  
-
-
   double? getPrice() {
     return price;
   }
