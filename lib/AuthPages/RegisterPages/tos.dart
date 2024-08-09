@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Extra/auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
@@ -16,9 +17,11 @@ class _RegisterPageState2 extends State<RegisterPage2> {
   void acceptTOS() async {
     final url = Uri.parse('https://www.barzzy.site/signup/accept-tos');
 
+    final loginCache8 = LoginCache();
+    final tosEmail = await loginCache8.getEmail();
     // Create the request body
     final requestBody = jsonEncode({
-      'email': 'testuser@example.com',
+      'email': tosEmail,
     });
 
     try {

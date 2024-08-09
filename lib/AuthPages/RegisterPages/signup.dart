@@ -40,12 +40,6 @@ class _RegisterPageState extends State<RegisterPage> {
   void registerNames() async {
 
 
-    showDialog(
-        context: context,
-        builder: (context) {
-          return const Center(child: CircularProgressIndicator(color: Color.fromARGB(255, 255, 255, 255)));
-        });
-
     if( firstName.value.text.isNotEmpty && lastName.value.text.isNotEmpty 
     && firstName.value.text.length < 25 && lastName.value.text.length < 25 
     && validCharacters.hasMatch(firstName.value.text + lastName.value.text) ) {
@@ -82,8 +76,8 @@ final url = Uri.parse('https://www.barzzy.site/signup/register');
       invalidEmail();
     }
   } else {
-    print('Request failed with status: ${response.statusCode}');
-    print('Response body: ${response.body}');
+    print('01Request failed with status: ${response.statusCode}');
+    print('01Response body: ${response.body}');
     failure();
 
   }      
@@ -189,14 +183,14 @@ final url = Uri.parse('https://www.barzzy.site/signup/register');
             MyTextField(
                 labeltext: 'Enter Last Name',
                 controller: lastName,
-                obscureText: true),
+                obscureText: false),
             const SizedBox(height: 10),
 
 
             MyTextField(
                 labeltext: 'Enter Email Address',
                 controller: email,
-                obscureText: true),
+                obscureText: false),
             const SizedBox(height: 10),
 
             MyTextField(

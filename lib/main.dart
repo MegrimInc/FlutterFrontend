@@ -28,10 +28,18 @@ void main() async {
   debugPrint("Application starting...");
   print("current date: ${DateTime.now()}");
 
+
+
+
   WidgetsFlutterBinding.ensureInitialized();
   final loginCache3 = LoginCache();
-  bool loggedInAlready =
-      true; await loginCache3.getSignedIn() /* && HTTP REQUEST*/;
+
+
+debugPrint("CLEARING CACHE");
+loginCache3.setSignedIn(false);
+
+
+  bool loggedInAlready = await loginCache3.getSignedIn();
   final url = Uri.parse('https://www.barzzy.site/signup/login');
   final initPW = await loginCache3.getPW();
   final initEmail = await loginCache3.getEmail();
