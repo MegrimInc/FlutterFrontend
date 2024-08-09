@@ -10,7 +10,6 @@ import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
 
 import 'package:barzzy_app1/BarPages/OrderDisplay.dart';
 import 'package:barzzy_app1/Extra/auth.dart';
-import 'package:barzzy_app1/HomePage/home.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
