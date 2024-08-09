@@ -1,5 +1,7 @@
+import 'dart:convert';
+import 'package:barzzy_app1/Extra/auth.dart';
+import 'package:http/http.dart' as http;
 import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
-import 'package:barzzy_app1/HomePage/home.dart';
 import 'package:flutter/material.dart';
 
 class RegisterPage2 extends StatefulWidget {
@@ -10,6 +12,63 @@ class RegisterPage2 extends StatefulWidget {
 }
 
 class _RegisterPageState2 extends State<RegisterPage2> {
+
+  void acceptTOS() async {
+    final url = Uri.parse('https://www.barzzy.site/signup/accept-tos');
+
+    // Create the request body
+    final requestBody = jsonEncode({
+      'email': 'testuser@example.com',
+    });
+
+    try {
+      // Send the POST request
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json', // Specify that the body is JSON
+        },
+        body: requestBody,
+      );
+
+      // Check the response
+      if (response.statusCode == 200) {
+        print('TOS Request successful');
+        print('TOS Response body: ${response.body}');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AuthPage()),
+        );
+      } else {
+        print('TOS Request failed with status: ${response.statusCode}');
+        print('TOS Response body: ${response.body}');
+      }
+    } catch (e) {
+      print('Error: $e');
+      failure();
+    }
+  }
+
+  void failure() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return const AlertDialog(
+          backgroundColor: Color.fromARGB(255, 255, 190, 68),
+          title: Center(
+            child: Text(
+              'Something went wrong. Please try again later.',
+              style: TextStyle(
+                color: Color.fromARGB(255, 30, 30, 30),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,7 +93,7 @@ class _RegisterPageState2 extends State<RegisterPage2> {
               const SizedBox(height: 25),
 
               // Centered Title
-              Center(
+              const Center(
                 child: Text(
                   '1. Introduction\n',
                   style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
@@ -46,7 +105,7 @@ class _RegisterPageState2 extends State<RegisterPage2> {
               ),
 
               // Centered Title
-              Center(
+              const Center(
                 child: Text(
                   '2. Eligibility\n',
                   style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
@@ -58,7 +117,7 @@ class _RegisterPageState2 extends State<RegisterPage2> {
               ),
 
               // Centered Title
-              Center(
+              const Center(
                 child: Text(
                   '3. Services Provided\n',
                   style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
@@ -77,7 +136,7 @@ class _RegisterPageState2 extends State<RegisterPage2> {
               MyButton(
                 text: 'I have read and agree to the Terms of Services',
                 onTap: () {
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
+                  acceptTOS();
                 },
               ),
             ],

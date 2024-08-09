@@ -1,5 +1,6 @@
 import 'package:barzzy_app1/AuthPages/RegisterPages/login.dart';
-import 'package:barzzy_app1/AuthPages/SignupPage/probgone.dart';
+import 'package:barzzy_app1/AuthPages/RegisterPages/signup.dart';
+
 
 import 'package:flutter/material.dart';
 
@@ -26,11 +27,11 @@ class _LoginOrRegistrationPageState extends State<LoginOrRegisterPage> {
   @override
   Widget build(BuildContext context) {
     if (showLoginPage) {
-      return LoginPage(
+      return RegisterPage(
         onTap: togglePages,
       );
     } else {
-      return RegisterPage(onTap: togglePages,);
+      return LoginPage(onTap: togglePages,);
     }
   }
 }

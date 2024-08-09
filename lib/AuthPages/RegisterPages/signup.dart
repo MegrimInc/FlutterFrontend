@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'package:barzzy_app1/AuthPages/RegisterPages/verification.dart';
+import 'package:http/http.dart' as http;
+
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy_app1/AuthPages/RegisterPages/tos.dart';
+
 import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
 import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
 import 'package:flutter/material.dart';
@@ -46,31 +50,86 @@ class _RegisterPageState extends State<RegisterPage> {
     && firstName.value.text.length < 25 && lastName.value.text.length < 25 
     && validCharacters.hasMatch(firstName.value.text + lastName.value.text) ) {
 
-//Store FN/LN in memory and then do the SQL entry later
       final loginCache2 = LoginCache();
       loginCache2.setEmail(email.value.text);
       loginCache2.setFN(firstName.value.text);
       loginCache2.setPW(password.value.text);
       loginCache2.setLN(lastName.value.text);
       loginCache2.setSignedIn(true);
-      Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterPage2()));
-      
+
+final url = Uri.parse('https://www.barzzy.site/signup/register');
+  // Create the request body
+  final requestBody = jsonEncode({
+    'email': email.value.text,
+  });
+  // Send the POST request
+  final response = await http.post(
+    url,
+    headers: {
+      'Content-Type': 'application/json', // Specify that the body is JSON
+    },
+    body: requestBody,
+  );
+  // Check the response
+  if (response.statusCode == 200) {
+    print('Request successful');
+    print('Response body: ${response.body}');
+    if(response.body == "sent email") {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterPage11(message: "Sent verification email.")));
+    } else if(response.body == "Re-sent email") {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterPage11(message: "Re-sent verification email.")));
+    } else {
+      invalidEmail();
+    }
+  } else {
+    print('Request failed with status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    failure();
+
+  }      
 
     } else {
       invalidCredentialsMessage();
     }
   }
 
+    void failure() {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return const AlertDialog(
+            backgroundColor: Colors.white,
+          title: Center(child: 
+          Text('Something went wrong. Please try again later.', 
+          style:TextStyle(color: Color.fromARGB(255, 30, 30, 30),
+          fontWeight: FontWeight.bold,) )));
+        });
+  }
+
+    void invalidEmail() {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return const AlertDialog(
+            backgroundColor: Colors.white,
+          title: Center(child: 
+          Text('Invalid email. Please try again.', 
+          style:TextStyle(color: Color.fromARGB(255, 30, 30, 30),
+          fontWeight: FontWeight.bold,) )));
+        });
+  }
+
   //INVALID CREDENTIALS POP UP
+  
 
   void invalidCredentialsMessage() {
     showDialog(
         context: context,
         builder: (context) {
           return const AlertDialog(
-            backgroundColor: Colors.grey,
+            backgroundColor: Colors.white,
           title: Center(child: 
-          Text('Invalid. Please check your fields.', 
+          Text('Invalid input. Please check your fields.', 
           style:TextStyle(color: Color.fromARGB(255, 30, 30, 30),
           fontWeight: FontWeight.bold,) )));
         });

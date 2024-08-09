@@ -1,18 +1,21 @@
 import 'dart:convert';
 
-import 'package:barzzy_app1/AuthPages/RegisterPages/httpservicev2.dart';
+//import 'package:barzzy_app1/AuthPages/RegisterPages/httpservicev2.dart';
+import 'package:barzzy_app1/AuthPages/RegisterPages/login.dart';
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy_app1/AuthPages/components/toggle.dart';
 import 'package:barzzy_app1/Backend/bar.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/searchengine.dart';
 import 'package:barzzy_app1/Backend/recommended.dart';
 import 'package:barzzy_app1/Backend/tags.dart';
 import 'package:barzzy_app1/Backend/user.dart';
-import 'package:barzzy_app1/BarPages/OrderDisplay.dart';
-import 'package:barzzy_app1/HomePage/home.dart';
+import 'package:barzzy_app1/BarPages/orderdisplay.dart';
+//import 'package:barzzy_app1/HomePage/home.dart';
 import 'package:barzzy_app1/QrPage/camera.dart';
+import 'package:barzzy_app1/TabsPage/tabs.dart';
 import 'package:flutter/material.dart';
-import 'package:mailer/smtp_server.dart';
+//import 'package:mailer/smtp_server.dart';
 import 'package:provider/provider.dart';
 import 'package:barzzy_app1/Backend/bardatabase.dart';
 import 'package:http/http.dart' as http;
@@ -21,61 +24,20 @@ import 'package:barzzy_app1/Backend/barhistory.dart';
 //import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:barzzy_app1/Backend/cache.dart';
 
-
-void main() async { 
-print("current date: ${DateTime.now()}");
-
-/*print("attempting email send");
-  var rng = Random();
-  String verificationCode = rng.nextInt(9).toString() + rng.nextInt(9).toString() + rng.nextInt(9).toString() + rng.nextInt(9).toString() + rng.nextInt(9).toString() + rng.nextInt(9).toString();
-print("verification code genned: $verificationCode");
-  final smtpServer = SmtpServer("email-smtp.us-east-1.amazonaws.com", port: 25, username: "AKIARKMXJUVKGK3ZC6FH", password: "BJ0EwGiCXsXWcZT2QSI5eR+5yFzbimTnquszEXPaEXsd");
-print("SMTP SERVER CREATED");
-  final username = "donotreply@barzzy.site";
-  final msg = Message()
-  ..from = Address(username, 'Barzzy Official')
-  ..recipients.add(Address('chidereyaogan@gmail.com'))
-  ..subject = 'Barzzy Email Verification Code | ${DateTime.now()}'
-  ..text = 'Your verification code is: $verificationCode';
-print('Message generated');
-  try {
-    final sendReport = await send(msg, smtpServer);
-print('Message sent: ' + sendReport.toString());
-  } on MailerException catch (e) {
-print('Message not sent. mailerexception msg: ' + e.message);
-    for (var p in e.problems) {
-print('Problem: ${p.code}: ${p.msg}');
-    }
-    } catch (e, stackTrace) {
-    print('An error occurred: ${e.toString()}');
-    print('Stack trace: ${stackTrace.toString()}');
-  }
-
-print("email send attempt done");
-*/
-
-/*
-final test = HttpService();
-print(test.hello());
-*/
-
-
-
-
-
+void main() async {
+  debugPrint("Application starting...");
+  print("current date: ${DateTime.now()}");
 
   WidgetsFlutterBinding.ensureInitialized();
   final loginCache3 = LoginCache();
-  bool loggedInAlready = await loginCache3.getSignedIn() /* && HTTP REQUEST*/;
-  final url = Uri.parse('http://34.230.32.169:8080/signup/login');
+  bool loggedInAlready =
+      true; await loginCache3.getSignedIn() /* && HTTP REQUEST*/;
+  final url = Uri.parse('https://www.barzzy.site/signup/login');
   final initPW = await loginCache3.getPW();
   final initEmail = await loginCache3.getEmail();
 
   // Create the request body
-  final requestBody = jsonEncode({
-    'email': initEmail,
-    'password': initPW
-  });
+  final requestBody = jsonEncode({'email': initEmail, 'password': initPW});
   bool httprequest = false;
   // Send the POST request
   final response = await http.post(
@@ -89,7 +51,7 @@ print(test.hello());
   if (response.statusCode == 200) {
     print('Init Request successful');
     print('Init Response body: ${response.body}');
-    if( int.parse(response.body) != 0) httprequest = true;
+    if (int.parse(response.body) != 0) httprequest = true;
   } else {
     print('Init Request failed with status: ${response.statusCode}');
     print('Init Response body: ${response.body}');
@@ -100,7 +62,6 @@ print(test.hello());
 
   loggedInAlready = loggedInAlready && httprequest;
 
-
   BarDatabase barDatabase = BarDatabase();
   //Stripe.publishableKey = 'your_stripe_key_here';
   await sendGetRequest();
@@ -108,8 +69,6 @@ print(test.hello());
   await updateDrinkDatabase(barDatabase);
   final user = User();
   await user.init(); // Ensure User is fully initialized
-
- 
 
   runApp(
     MultiProvider(
@@ -126,8 +85,6 @@ print(test.hello());
     ),
   );
 }
-
-
 
 Future<void> sendGetRequest() async {
   try {
@@ -199,7 +156,6 @@ Future<void> updateDrinkDatabase(BarDatabase barDatabase) async {
   final cache = Cache();
   final cachedDrinkIds = await cache.getDrinkIds();
 
-
   for (String drinkId in cachedDrinkIds) {
     try {
       final drink = await fetchDrinkDetails(drinkId);
@@ -225,7 +181,6 @@ Future<Drink> fetchDrinkDetails(String drinkId) async {
   }
 }
 
-
 class Barzzy extends StatelessWidget {
   final bool loggedInAlready;
   final bool isBar;
@@ -236,13 +191,13 @@ class Barzzy extends StatelessWidget {
     Provider.of<BarHistory>(context, listen: false).setContext(context);
     Provider.of<Recommended>(context, listen: false)
         .fetchRecommendedBars(context);
-        
+
     cameraControllerSingleton.initialize();
     return MaterialApp(
       theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
-      home: loggedInAlready ? (isBar ? const OrderDisplay() : const AuthPage()) : LoginPage(onTap: () => {})//Make it so that when bars sign in, they get sent to
-      //home: const AuthPage(),
+      home: loggedInAlready ? (isBar ? const OrderDisplay() : const AuthPage()) : const LoginOrRegisterPage()//Make it so that when bars sign in, they get sent to
+      
     );
   }
 }

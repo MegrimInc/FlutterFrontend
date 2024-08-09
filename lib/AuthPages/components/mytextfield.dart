@@ -48,7 +48,9 @@ class MyTextField extends StatelessWidget {
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(5),
                     borderSide: const BorderSide(
-                        color: Color.fromARGB(255, 30, 30, 30)),
+                        color: Color.fromARGB(255, 60, 60, 60)
+                        //color: Colors.black
+                        ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(5),
@@ -56,7 +58,7 @@ class MyTextField extends StatelessWidget {
                         color: Colors.white),
                   ),
                   fillColor: focused
-                      ? const Color.fromARGB(255, 15, 15, 15)
+                      ? Colors.black
                       : const Color.fromARGB(255, 60, 60, 60),
                   filled: true,
                 ),

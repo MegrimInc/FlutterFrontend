@@ -5,7 +5,7 @@ class HttpService {
 
 Future<void> hello() async {
 print("start parse");
-  final temp = Uri.parse('http://10.155.32.54:8080/hello');
+  final temp = Uri.parse('https://www.barzzy.site/hello');
   String temp2 = temp.toString();
 print("finish parse, start http.get $temp2");
   final response = await http.get(temp);

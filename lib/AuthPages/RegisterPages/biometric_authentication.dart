@@ -4,8 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:local_auth/error_codes.dart' as local_auth_error;
 
 class BiometricAuthentication extends StatefulWidget {
-  const BiometricAuthentication({Key? key, required this.appBarTitle})
-      : super(key: key);
+  const BiometricAuthentication({super.key, required this.appBarTitle});
 
   final String appBarTitle;
 

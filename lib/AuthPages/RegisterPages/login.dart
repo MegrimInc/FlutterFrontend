@@ -1,13 +1,18 @@
 // ignore_for_file: use_build_context_synchronously
 
 
+import 'dart:convert';
+
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy_app1/AuthPages/RegisterPages/signup.dart';
+
 import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
 import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
+
+import 'package:barzzy_app1/BarPages/OrderDisplay.dart';
 import 'package:barzzy_app1/Extra/auth.dart';
-import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart';
 
 
 class LoginPage extends StatefulWidget {
@@ -34,50 +39,52 @@ class _LoginPageState extends State<LoginPage> {
 
 
 
- void goRegister() async {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => RegisterPage(
-          onTap: () {
-            Navigator.pop(context); // This will pop the RegisterPage and go back to the LoginPage
-          },
-        ),
-      ),
-    );
-  }
-
-
   //SIGN USER IN
 
   void signUserIn() async {
+    
+  final url = Uri.parse('https://www.barzzy.site/signup/login');
+  final requestBody = jsonEncode({
+    'email': emailController.value.text,
+    'password': passwordController.value.text
+  });
+  final response = await http.post(
+    url,
+    headers: {
+      'Content-Type': 'application/json', // Specify that the body is JSON
+    },
+    body: requestBody,
+  );
+  if (response.statusCode == 200) {
+    print('login Request successful');
+    print('login Response body: ${response.body}');
+    if( int.parse(response.body) != 0) {
+    } else if (int.parse(response.body) > 0) {
+      //Cache email password set login to true set email id
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AuthPage()));
+    } else {
+      //Cache email password set login to true set email id
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const OrderDisplay()));
+    }
+  } else {
+    print('login Request failed with status: ${response.statusCode}');
+    print('login Response body: ${response.body}');
+    failure();
+  }
+}
 
-    //SHOW LOADING CIRCLE
 
-    /*showDialog(
+    void failure() {
+    showDialog(
         context: context,
         builder: (context) {
-          return const Center(child: CircularProgressIndicator(color: Color.fromARGB(255, 255, 255, 255)));
-        });*/
-
-    //Send HTTP Request to server
-    bool signIn = true;
-
-    //signIn = http.parse(uri)
-
-    if(/* Get HTTP request back*/ signIn == true) {
-    //loginCache2.setSignedIn(true);
-    //loginCache2.setEmail(email);
-    //loginCache2.setPassword(password);
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AuthPage()));
-    
-
-    } else {
-      invalidCredentialsMessage();
-    }
-    
-
-    
+          return const AlertDialog(
+            backgroundColor: Colors.white,
+          title: Center(child: 
+          Text('Oopsies. Looks like something went wrong. Please try again.', 
+          style:TextStyle(color: Color.fromARGB(255, 30, 30, 30),
+          fontWeight: FontWeight.bold,) )));
+        });
   }
 
   //INVALID CREDENTIALS POP UP
@@ -87,7 +94,7 @@ class _LoginPageState extends State<LoginPage> {
         context: context,
         builder: (context) {
           return const AlertDialog(
-            backgroundColor: Colors.grey,
+            backgroundColor: Colors.white,
           title: Center(child: 
           Text('Looks like you may have typed in the wrong email or password. Please try again!', 
           style:TextStyle(color: Color.fromARGB(255, 30, 30, 30),
@@ -182,7 +189,7 @@ class _LoginPageState extends State<LoginPage> {
                   style: TextStyle(color: Color.fromARGB(255, 255, 255, 255))),
               const SizedBox(width: 4),
               GestureDetector(
-                onTap: goRegister,
+                onTap: widget.onTap,
                 child: const Text('Register',
                     style: TextStyle(
                         color: Colors.white,

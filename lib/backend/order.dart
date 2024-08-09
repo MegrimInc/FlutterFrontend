@@ -1,18 +1,16 @@
 // ignore_for_file: prefer_initializing_formals
 
 
-import 'dart:ffi';
 
-import 'package:barzzy_app1/Backend/drink.dart';
 
 import 'status.dart';
 
 class Order {
   int barId;
   int orderId;
-  Int userId;
+  int userId;
   double price;
-  
+
  
 
   Order(this.barId, this.orderId, this.userId, this.price, );
@@ -20,17 +18,21 @@ class Order {
 
   Status status = Status.unclaimed;
 
-  // Order({this.bar, this.drinks, this.price, this.customer}) {
-  //   if (bar != null) {
-  //     // Add this order to the queue of orders for that particular bar
-  //     orderNumber = bar!.placeOrder(this);
-  //   }
-  // }
+  // Factory constructor for creating an Order from JSON data
+  factory Order.fromJson(Map<String, dynamic> json) {
+    return Order(
+      json['barId'] as int,
+      json['orderId'] as int,
+      json['userId'] as int, // Changed from Int to int
+      (json['price'] as num).toDouble(), // Convert num to double
+    );
+  }
 
   //Getter methods
 
 
   
+
 
   double? getPrice() {
     return price;
