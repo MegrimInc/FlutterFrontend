@@ -1,6 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class LoginCache {
+class LoginCache  with ChangeNotifier {
   static final LoginCache _instance = LoginCache._internal();
   factory LoginCache() =>
       _instance; // Factory constructor to return the same instance

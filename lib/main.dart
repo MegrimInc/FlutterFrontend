@@ -10,8 +10,8 @@ import 'package:barzzy_app1/Backend/recommended.dart';
 import 'package:barzzy_app1/Backend/tags.dart';
 import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/BarPages/orderdisplay.dart';
-import 'package:barzzy_app1/Extra/bottombar.dart';
-import 'package:barzzy_app1/Extra/sessionid.dart';
+import 'package:barzzy_app1/Local/bottombar.dart';
+import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
 import 'package:barzzy_app1/QrPage/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -19,22 +19,15 @@ import 'package:barzzy_app1/Backend/bardatabase.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:barzzy_app1/Backend/cache.dart';
-import 'package:barzzy_app1/OrdersPage/tab.dart';
 
 void main() async {
   debugPrint("current date: ${DateTime.now()}");
 
   WidgetsFlutterBinding.ensureInitialized();
   final loginCache = LoginCache();
-  await loginCache.clearAll();
+  // await loginCache.clearAll();
 
-  final userProvider = UserProvider(); // Create UserProvider instance
 
-  // Load initial userId if available
-  final userId = await loginCache.getUID();
-  if (userId != 0) {
-    userProvider.setUserId(userId);
-  }
 
   bool loggedInAlready = true;
   await loginCache.getSignedIn() /* && HTTP REQUEST*/;
@@ -84,7 +77,8 @@ void main() async {
         ChangeNotifierProvider(create: (context) => barDatabase),
         ChangeNotifierProvider(create: (context) => BarHistory()),
         ChangeNotifierProvider(create: (context) => Recommended()),
-        ChangeNotifierProvider(create: (context) => Hierarchy(userProvider.userId ?? 0)),
+        ChangeNotifierProvider(create: (context) => Hierarchy()),
+        ChangeNotifierProvider(create: (_) => LoginCache()),
         ChangeNotifierProvider(create: (context) => user),
         ProxyProvider<BarDatabase, SearchService>(
           update: (_, barDatabase, __) => SearchService(barDatabase),

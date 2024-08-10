@@ -2,7 +2,7 @@
 
 import 'dart:convert';
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy_app1/Extra/bottombar.dart';
+import 'package:barzzy_app1/Local/bottombar.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
@@ -28,11 +28,11 @@ class _RegisterPageState2 extends State<RegisterPage2> {
       final maxScroll = _scrollController.position.maxScrollExtent;
       final currentScroll = _scrollController.position.pixels;
 
-      print('Current Scroll Position: $currentScroll');
-      print('Max Scroll Extent: $maxScroll');
+      // print('Current Scroll Position: $currentScroll');
+      // print('Max Scroll Extent: $maxScroll');
 
       if (currentScroll >= maxScroll) {
-        print('Scrolled to the end of the page');
+        // print('Scrolled to the end of the page');
         setState(() {
           _isAtEndOfPage = true;
         });

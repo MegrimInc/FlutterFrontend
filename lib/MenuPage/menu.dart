@@ -1,10 +1,13 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/MenuPage/overlay.dart';
 import 'package:barzzy_app1/MenuPage/cart.dart';
 import 'package:barzzy_app1/MenuPage/drinkfeed.dart';
-import 'package:barzzy_app1/OrdersPage/tab.dart';
+import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -122,10 +125,10 @@ class MenuPageState extends State<MenuPage>
     });
   }
 
-  void _placeOrder(BuildContext context) {
+  void _placeOrder(BuildContext context) async {
+    final loginCache = Provider.of<LoginCache>(context, listen: false);
+    final userId = await loginCache.getUID();
     final barId = int.parse(widget.barId); // Convert barId to int
-
-    // Access the Cart and Hierarchy providers
     final cart = Provider.of<Cart>(context, listen: false);
     final hierarchy = Provider.of<Hierarchy>(context, listen: false);
 
@@ -136,7 +139,7 @@ class MenuPageState extends State<MenuPage>
     debugPrint('Calling addOrder with barId: $barId, drinkIds: $drinkIds');
 
     // Call the addOrder method, passing the barId and drinkIds
-    hierarchy.addOrder(barId, hierarchy.userId, drinkIds);
+    hierarchy.addOrder(barId, userId, drinkIds);
   
 
     // Optionally, show a confirmation message

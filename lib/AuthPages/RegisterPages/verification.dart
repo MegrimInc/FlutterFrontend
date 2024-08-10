@@ -4,11 +4,10 @@ import 'dart:ui';
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/AuthPages/RegisterPages/tos.dart';
 import 'package:barzzy_app1/AuthPages/components/keypad.dart';
-import 'package:barzzy_app1/Extra/sessionid.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:provider/provider.dart';
+
 
 class RegisterPage11 extends StatefulWidget {
   final String message;
@@ -80,10 +79,6 @@ class _RegisterPageState11 extends State<RegisterPage11>
         loginCache4.setUID(uid);
         Navigator.pushReplacement(context,
             MaterialPageRoute(builder: (context) => const RegisterPage2()));
-
-        
-        final userProvider = Provider.of<UserProvider>(context, listen: false);
-        userProvider.setUserId(uid);
       }
     } else {
       debugPrint('Request failed with status: ${response.statusCode}');
