@@ -65,10 +65,10 @@ class Hierarchy with ChangeNotifier {
     );
 
     if (response.statusCode == 200) {
-      print('Order sent successfully: ${response.body}');
+      debugPrint('Order sent successfully: ${response.body}');
     } else {
-      print('Failed to send order: ${response.statusCode}');
-      print('Response: ${response.body}');
+      debugPrint('Failed to send order: ${response.statusCode}');
+      debugPrint('Response: ${response.body}');
     }
   }
 

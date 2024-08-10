@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
+
 import 'package:barzzy_app1/AuthPages/components/toggle.dart';
 import 'package:barzzy_app1/Backend/bar.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
@@ -21,8 +22,7 @@ import 'package:barzzy_app1/Backend/cache.dart';
 import 'package:barzzy_app1/OrdersPage/tab.dart';
 
 void main() async {
-  debugPrint("Application starting...");
-  print("current date: ${DateTime.now()}");
+  debugPrint("current date: ${DateTime.now()}");
 
   WidgetsFlutterBinding.ensureInitialized();
   final loginCache = LoginCache();
@@ -55,12 +55,12 @@ void main() async {
   );
   // Check the response
   if (response.statusCode == 200) {
-    print('Init Request successful');
-    print('Init Response body: ${response.body}');
+    debugPrint('Init Request successful');
+   debugPrint('Init Response body: ${response.body}');
     if (int.parse(response.body) != 0) httprequest = true;
   } else {
-    print('Init Request failed with status: ${response.statusCode}');
-    print('Init Response body: ${response.body}');
+    debugPrint('Init Request failed with status: ${response.statusCode}');
+    debugPrint('Init Response body: ${response.body}');
   }
 
   final uid = await loginCache.getUID();
@@ -218,6 +218,7 @@ class Barzzy extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       //home: loggedInAlready ? (isBar ? const OrderDisplay() : const AuthPage()) : const LoginOrRegisterPage()//Make it so that when bars sign in, they get sent to
       initialRoute: initialRoute, // Set the initial route based on the logic
+      
       routes: {
         '/auth': (context) =>
             const AuthPage(), // Your main app page for non-bar users

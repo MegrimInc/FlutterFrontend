@@ -58,8 +58,8 @@ class _LoginPageState extends State<LoginPage> {
   );
 
   if (response.statusCode == 200) {
-    print('login Request successful');
-    print('login Response body: ${response.body}');
+    debugPrint('login Request successful');
+    debugPrint('login Response body: ${response.body}');
 
     try {
       // Added this: Parse the response body as an integer
@@ -98,8 +98,8 @@ class _LoginPageState extends State<LoginPage> {
       failure();
     }
   } else {
-    print('login Request failed with status: ${response.statusCode}');
-    print('login Response body: ${response.body}');
+    debugPrint('login Request failed with status: ${response.statusCode}');
+    debugPrint('login Response body: ${response.body}');
     invalidCredentialsMessage();
   }
 }

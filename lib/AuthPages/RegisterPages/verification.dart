@@ -1,37 +1,56 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'dart:ui';
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/AuthPages/RegisterPages/tos.dart';
-
-import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
-import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
+import 'package:barzzy_app1/AuthPages/components/keypad.dart';
 import 'package:barzzy_app1/Extra/sessionid.dart';
-
 import 'package:flutter/material.dart';
-
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
-import 'package:provider/provider.dart'; // For jsonEncode
+import 'package:provider/provider.dart';
 
 class RegisterPage11 extends StatefulWidget {
-  final void Function()? onTap;
   final String message;
+  final void Function()? hideOverlay;
+  final VoidCallback? onResend;
 
-  const RegisterPage11({super.key, this.onTap, required this.message});
+  const RegisterPage11({
+    super.key,
+    required this.message,
+    this.hideOverlay,
+    this.onResend,
+  });
 
   @override
   State<RegisterPage11> createState() => _RegisterPageState11();
 }
 
-class _RegisterPageState11 extends State<RegisterPage11> {
+class _RegisterPageState11 extends State<RegisterPage11>
+    with SingleTickerProviderStateMixin {
   final verificationCode = TextEditingController();
   final loginCache4 = LoginCache();
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+
+    _animationController.forward();
+  }
 
   void attemptVerification() async {
-    // Define the URL
     final url = Uri.parse('https://www.barzzy.site/signup/verify');
-
-
-    // Create the request body
     final requestBody = jsonEncode({
       'email': await loginCache4.getEmail(),
       'verificationCode': verificationCode.value.text,
@@ -51,105 +70,126 @@ class _RegisterPageState11 extends State<RegisterPage11> {
 
     // Check the response
     if (response.statusCode == 200) {
-      print('Request successful');
-      print('Response body: ${response.body}');
+      debugPrint('Request successful');
+      debugPrint('Response body: ${response.body}');
       int uid = int.parse(response.body);
       if (uid == 0) {
         incorrect();
       } else if (uid > 0) {
         final loginCache4 = LoginCache();
         loginCache4.setUID(uid);
-         // Update the UserProvider with the new userId
-      // ignore: use_build_context_synchronously
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      userProvider.setUserId(uid);
         Navigator.pushReplacement(context,
             MaterialPageRoute(builder: (context) => const RegisterPage2()));
-      } else {
-        failure();
+
+        
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        userProvider.setUserId(uid);
       }
     } else {
-      print('Request failed with status: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      debugPrint('Request failed with status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
       failure();
+      setState(() {
+          verificationCode.clear();
+        });
     }
-  }
-
-  void incorrect() {
-    showDialog(
-        context: context,
-        builder: (context) {
-          return const AlertDialog(
-              backgroundColor: Colors.white,
-              title: Center(
-                  child: Text('Incorrect...',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                      ))));
-        });
-  }
-
-  void failure() {
-    showDialog(
-        context: context,
-        builder: (context) {
-          return const AlertDialog(
-              backgroundColor: Colors.white,
-              title: Center(
-                  child: Text('Incorrect Code...',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                      ))));
-        });
   }
 
   @override
   Widget build(BuildContext context) {
-    final FocusNode firstNameNode = FocusNode();
-    final FocusNode lastNameNode = FocusNode();
-    final ValueNotifier<bool> isFirstNameFocused = ValueNotifier<bool>(false);
-    final ValueNotifier<bool> isLastNameFocused = ValueNotifier<bool>(false);
-
-    firstNameNode.addListener(() {
-      isFirstNameFocused.value = firstNameNode.hasFocus;
-    });
-
-    lastNameNode.addListener(() {
-      isLastNameFocused.value = lastNameNode.hasFocus;
-    });
-
     return Scaffold(
-        backgroundColor: Colors.black,
-        body: SafeArea(
-            child: Center(
-                child: SingleChildScrollView(
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const SizedBox(height: 75),
-
-            // ICONS: NEEDS TO BE CHANGED TO BARZZY LOGO
-            const Icon(Icons.abc_outlined,
-                size: 100, color: Color.fromARGB(255, 15, 15, 15)),
-            const SizedBox(height: 100),
-
-            // USER/EMAIL TEXTFIELD
-
-            MyTextField(
-              labeltext: widget.message,
-              controller: verificationCode,
-              obscureText: false,
+      backgroundColor: const Color.fromARGB(147, 0, 0, 0),
+      body: GestureDetector(
+        onTap: widget.hideOverlay,
+        child: Stack(
+          children: [
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0),
+              child: Container(
+                color: Colors.transparent,
+              ),
             ),
+            SafeArea(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 75),
+                    Text(
+                      widget.message,
+                      style: const TextStyle(fontSize: 18, color: Colors.white),
+                    ),
+                    const SizedBox(height: 50),
 
-            MyButton(
-              text: 'Confirm',
-              onTap: attemptVerification,
+                    // Display the IOS-style Keypad
+                    AnimatedBuilder(
+                      animation: _animation,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: _animation.value,
+                          child: FadeTransition(
+                            opacity: _animation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: IOSStyleKeypad(
+                        controller: verificationCode,
+                        onCompleted: (code) {
+                          attemptVerification();
+                        },
+                         onResend: widget.onResend,
+                      ),
+                    )
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 25),
+          ],
+        ),
+      ),
+    );
+  }
 
-            const SizedBox(height: 30),
-            const SizedBox(height: 50),
-          ]),
-        ))));
+  void incorrect() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return const AlertDialog(
+          backgroundColor: Colors.white,
+          title: Center(
+            child: Text('Incorrect...',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                )),
+          ),
+        );
+      },
+    );
+  }
+
+  void failure() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return const AlertDialog(
+          backgroundColor: Colors.white,
+          title: Center(
+            child: Text('Incorrect Code...',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                )),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 }

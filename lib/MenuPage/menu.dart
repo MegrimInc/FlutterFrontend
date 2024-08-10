@@ -137,7 +137,7 @@ class MenuPageState extends State<MenuPage>
 
     // Call the addOrder method, passing the barId and drinkIds
     hierarchy.addOrder(barId, hierarchy.userId, drinkIds);
-    print('are you working');
+  
 
     // Optionally, show a confirmation message
     ScaffoldMessenger.of(context).showSnackBar(
