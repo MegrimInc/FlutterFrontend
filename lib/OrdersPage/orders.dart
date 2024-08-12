@@ -1,3 +1,4 @@
+/*
 import 'dart:convert';
 import 'package:barzzy_app1/AuthPages/RegisterPages/verification.dart';
 import 'package:barzzy_app1/backend/drink.dart';
@@ -134,8 +135,29 @@ class _OrdersPageState extends State<OrdersPage> {
     }
   }
 
-  void _handleLogout() {
-    print('Logout action triggered');
+  Future<void> _handleLogout() async {
+    if (readyOrders.isEmpty && claimedOrders.isEmpty) {
+      // Perform logout operation here
+      print('Logout action triggered');
+      // Simulate logout process (replace with actual logout code)
+      final response = await http.post(
+        Uri.parse('https://www.barzzy.site/signup/logout'), // Example URL
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': 'placeholder@example.com',
+          'password': 'placeholderPassword',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Handle successful logout if needed
+        print('Logout successful');
+      } else {
+        _showAlert('Failed to log out. Please try again.', isError: true);
+      }
+    } else {
+      _showAlert('Cannot log out with orders still present.', isError: true);
+    }
   }
 
   void _toggleBarStatus() {
@@ -300,6 +322,23 @@ class _OrdersPageState extends State<OrdersPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: GestureDetector(
+              onTap: _handleLogout, // Updated to call _handleLogout
+              child: Container(
+                padding: EdgeInsets.all(12.0),
+                decoration: BoxDecoration(
+                  color: Colors.red, // Assuming Logout button is red
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: const Text(
+                  'Logout',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: GestureDetector(
               onTap: _toggleBarStatus,
               child: Container(
                 padding: EdgeInsets.all(12.0),
@@ -407,3 +446,5 @@ class _OrdersPageState extends State<OrdersPage> {
     );
   }
 }
+
+*/
