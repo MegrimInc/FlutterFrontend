@@ -6,94 +6,109 @@ import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class Hierarchy with ChangeNotifier {
-  static const _tabKey = 'tabs';
-  Set<Map<String, dynamic>> _orders = {}; // Use a Set to ensure uniqueness
+  static const _orderKey = 'orders';
+   Map<int, Map<String, String>> _orders = {};
   WebSocketChannel? _channel;
 
   Hierarchy() {
     _loadOrders();
   }
 
-  Future<void> _loadOrders() async {
+   Future<void> _loadOrders() async {
     final prefs = await SharedPreferences.getInstance();
-    final orders = prefs.getStringList(_tabKey) ?? [];
-    _orders = orders
-        .map((order) => jsonDecode(order) as Map<String, dynamic>)
-        .toSet(); // Cast to Map<String, dynamic> and convert to Set
+    final orders = prefs.getString(_orderKey) ?? '{}';
+    final Map<String, dynamic> decodedOrders = jsonDecode(orders);
+    _orders = decodedOrders.map((key, value) => MapEntry(int.parse(key), Map<String, String>.from(value)));
     notifyListeners();
   }
 
-  Future<void> addOrder(int barId, int userId, Set<int> drinkIds) async {
-    // Generate a UUID for the orderId
-    final orderId = const Uuid().v4();
+  Future<bool> addOrder(int barId, int userId, Map<int, int> drinkQuantities) async {
+  //Check if there's already an order for this barId
+  if (_orders.containsKey(barId)) {
+    debugPrint('Order already exists for barId: $barId');
+    return false; // Prevent placing another order at the same bar
+  }
 
-    // Create the order
+  // Generate a UUID for the orderId
+  final orderId = const Uuid().v4();
+
+
+
+  // Convert drinkQuantities to use string keys
+    final Map<String, int> stringKeyedDrinkQuantities = 
+      drinkQuantities.map((key, value) => MapEntry(key.toString(), value));
+
     final Map<String, dynamic> order = {
       'barId': barId,
       'userId': userId,
       'orderId': orderId,
-      'drinkIds': drinkIds.toList(),
+      'drinkQuantities': stringKeyedDrinkQuantities,
     };
 
-    // Store the order locally
-    _orders.add(order);
+
+
+  // Send the order to the server
+  final success = await _sendOrderToServer(order);
+
+  if (success) {
+    // Establish WebSocket connection after successful order submission
+    _establishWebSocketConnection(barId, userId, orderId);
+
+    // Store the order locally only if the server response is successful
+    _orders[barId] = {
+      'userId': userId.toString(),
+      'orderId': orderId,
+    };
     await _saveOrders();
-    debugPrint('hello lets see this not work');
-
-    // Send the order to the server
-    final success = await _sendOrderToServer(order);
-
-    if (success) {
-      // Establish WebSocket connection after successful order submission
-      _establishWebSocketConnection(barId, userId, orderId);
-    }
+    return true;
+  } 
+  else {
+    return false;
   }
+}
 
-  Future<void> _saveOrders() async {
-    final prefs = await SharedPreferences.getInstance();
-    final orders = _orders.map((order) => jsonEncode(order)).toList();
-    await prefs.setStringList(_tabKey, orders);
-  }
 
   Future<bool> _sendOrderToServer(Map<String, dynamic> order) async {
-    final url = Uri.parse('https://www.barzzy.site/hierarchy/create');
+  final url = Uri.parse('https://www.barzzy.site/hierarchy/create');
 
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(order),
-      );
+  try {
 
-      if (response.statusCode == 200) {
-        debugPrint('Order sent successfully: ${response.body}');
-        return true; // Return true if the order was successfully sent
-      } else {
-        debugPrint('Failed to send order: ${response.statusCode}');
-        debugPrint('Response: ${response.body}');
-        return false; // Return false if the order failed to send
-      }
-    } catch (e) {
-      debugPrint('Error sending order: $e');
-      return false; // Return false if there was an error in sending the order
+
+   
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(order)
+    );
+
+    debugPrint('Response status code: ${response.statusCode}');
+    debugPrint('Response body: ${response.body}');
+
+    // Check the response status and body
+    if (response.statusCode == 200) {
+      debugPrint('Order sent successfully: ${response.body}');
+      return true;
+    } else {
+      debugPrint('Failed to send order: ${response.statusCode}');
+      debugPrint('Response: ${response.body}');
+      return false;
     }
+  } catch (e) {
+    debugPrint('Error sending order: $e');
+    return false;
   }
+}
+
 
   void _establishWebSocketConnection(int barId, int userId, String orderId) {
-    final wsUrl = Uri.parse('wss://www.barzzy.site/ws/hierarchy');
+    final wsUrl = Uri.parse('wss://www.barzzy.site/ws/hierarchy?barId=$barId&userId=$userId&orderId=$orderId');
+
 
     // Establish WebSocket connection
     _channel = WebSocketChannel.connect(wsUrl);
-
-    // Send initial message with identifiers
-    final message = jsonEncode({
-      'barId': barId,
-      'userId': userId,
-      'orderId': orderId,
-    });
-    _channel?.sink.add(message);
 
     // Listen for updates from the server
     _channel?.stream.listen((data) {
@@ -129,14 +144,21 @@ class Hierarchy with ChangeNotifier {
     super.dispose();
   }
 
-  Set<Map<String, dynamic>> getOrders() {
+  Future<void> clearOrders() async {
+  _orders.clear(); // Clear the in-memory orders
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove(_orderKey); // Remove the orders from SharedPreferences
+  debugPrint('Orders after clearing: $_orders'); // Confirm orders are cleared
+  notifyListeners(); // Notify listeners to update the UI
+}
+
+  Map<int, Map<String, String>> getOrders() {
     return _orders;
   }
 
-  Future<void> clearOrders() async {
-    _orders.clear();
+ Future<void> _saveOrders() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tabKey);
-    notifyListeners();
+    await prefs.setString(_orderKey, jsonEncode(_orders));
   }
+ 
 }
