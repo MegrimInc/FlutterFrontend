@@ -1,21 +1,26 @@
+
+// ignore_for_file: use_build_context_synchronously, file_names
+
 import 'package:barzzy_app1/OrdersPage/ordersv2-1.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert'; // For decoding JSON
 
 class BartenderIDScreen extends StatefulWidget {
+  const BartenderIDScreen({super.key});
+
   @override
-  _BartenderIDScreenState createState() => _BartenderIDScreenState();
+  BartenderIDScreenState createState() => BartenderIDScreenState();
 }
 
-class _BartenderIDScreenState extends State<BartenderIDScreen> {
+class BartenderIDScreenState extends State<BartenderIDScreen> {
   final TextEditingController _controller = TextEditingController();
   
   Future<void> _handleSubmit() async {
     if (_controller.text.isNotEmpty) {
       final String bartenderID = _controller.text;
-      final String email = 'placeholder@example.com'; // Placeholder email
-      final String password = 'placeholderPassword'; // Placeholder password
+      const String email = 'placeholder@example.com'; // Placeholder email
+      const String password = 'placeholderPassword'; // Placeholder password
 
       final Uri url = Uri.parse('https://www.barzzy.site/signup/bartenderIDLogin');
 
@@ -60,7 +65,7 @@ class _BartenderIDScreenState extends State<BartenderIDScreen> {
     } else {
       // Show a SnackBar with an error message if the text field is empty
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Please fill in the BartenderID text field.'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
@@ -74,31 +79,31 @@ class _BartenderIDScreenState extends State<BartenderIDScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Bartender ID Entry'),
+        title: const Text('Bartender ID Entry'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            const Text(
               'Enter Bartender ID',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             TextField(
               controller: _controller,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 hintText: 'Enter alphanumeric code',
               ),
               keyboardType: TextInputType.text,
               textInputAction: TextInputAction.done,
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _handleSubmit,
-              child: Text('Submit'),
+              child: const Text('Submit'),
             ),
           ],
         ),
