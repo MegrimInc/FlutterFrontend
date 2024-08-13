@@ -1,5 +1,5 @@
 import 'dart:ui';
-import 'package:barzzy_app1/Backend/bardatabase.dart';
+import 'package:barzzy_app1/Backend/localdatabase.dart';
 import 'package:barzzy_app1/MenuPage/cart.dart';
 import 'package:flutter/material.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
@@ -73,14 +73,14 @@ class HistorySheetState extends State<HistorySheet>
   // Delay the search operation by 500 milliseconds
   Future.delayed(const Duration(milliseconds: 250), () {
     final user = Provider.of<User>(context, listen: false);
-    final barDatabase = Provider.of<BarDatabase>(context, listen: false);
+    final barDatabase = Provider.of<LocalDatabase>(context, listen: false);
     barDatabase.searchDrinks(normalizedQuery, user, widget.barId);
   });
 }
 
   @override
 Widget build(BuildContext context) {
-  final barDatabase = Provider.of<BarDatabase>(context, listen: false);
+  final barDatabase = Provider.of<LocalDatabase>(context, listen: false);
   final user = Provider.of<User>(context);
   final lastSearch = user.getLastSearch(widget.barId);
   final drinkNames = lastSearch?.value.map((id) {

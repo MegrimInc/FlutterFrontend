@@ -1,4 +1,4 @@
-import 'package:barzzy_app1/Backend/bardatabase.dart';
+import 'package:barzzy_app1/Backend/localdatabase.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'barhistory.dart';
@@ -20,7 +20,7 @@ class Recommended with ChangeNotifier {
     //print('Current Tapped Bar ID: $_currentTappedBarId');
 
     // ignore: await_only_futures
-    final allBarIds = await BarDatabase().getAllBarIds();
+    final allBarIds = await LocalDatabase().getAllBarIds();
 
     // Print all bar IDs before filtering
     //print('All Bar IDs: $allBarIds');

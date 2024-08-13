@@ -14,7 +14,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../Backend/bar.dart';
-import '../Backend/bardatabase.dart';
+import '../Backend/localdatabase.dart';
 import 'package:flutter/services.dart';
 
 class MenuPage extends StatefulWidget {
@@ -67,7 +67,7 @@ class MenuPageState extends State<MenuPage>
   }
 
   void _updateAutoComplete(String query) {
-    final barDatabase = Provider.of<BarDatabase>(context, listen: false);
+    final barDatabase = Provider.of<LocalDatabase>(context, listen: false);
     final matchingTags = barDatabase.tags.values
         .where((tag) => tag.name.toLowerCase().startsWith(query.toLowerCase()))
         .toList();
@@ -82,7 +82,7 @@ class MenuPageState extends State<MenuPage>
   //LOADS DRINK IN
 
   Future<void> _fetchBarData() async {
-    currentBar = BarDatabase.getBarById(widget.barId);
+    currentBar = LocalDatabase.getBarById(widget.barId);
     if (currentBar != null) {
       appBarTitle = ('*${currentBar!.tag ?? 'Menu Page'}')
           .replaceAll(' ', '')
@@ -102,7 +102,7 @@ class MenuPageState extends State<MenuPage>
       return;
     }
     final user = Provider.of<User>(context, listen: false);
-    final barDatabase = Provider.of<BarDatabase>(context, listen: false);
+    final barDatabase = Provider.of<LocalDatabase>(context, listen: false);
     barDatabase.searchDrinks(query, user, widget.barId);
     setState(() {
       FocusScope.of(context).unfocus(); // Close keyboard
@@ -381,7 +381,7 @@ class MenuPageState extends State<MenuPage>
                                   childrenDelegate: SliverChildBuilderDelegate(
                                     (context, index) {
                                       final barDatabase =
-                                          Provider.of<BarDatabase>(context,
+                                          Provider.of<LocalDatabase>(context,
                                               listen: false);
                                       final drink = barDatabase
                                           .getDrinkById(drinkIds[index]);
