@@ -30,6 +30,7 @@ class _OrdersPageState extends State<OrdersPage> {
   int bartenderCount = 1; // Number of bartenders
   int bartenderNumber = 2; // Set to bartenderCount + 1
   bool disabledTerminal = false; // Tracks if terminal is disabled
+  bool barOpenStatus = false; // Track if bar is open or closed
 
   void _updateLists() {
     // Sort `allOrders` by timestamp, older orders first
@@ -267,7 +268,7 @@ class _OrdersPageState extends State<OrdersPage> {
     switch (order.orderState) {
       case 'ready':
         return widget.bartenderID == order.claimer ? Colors.green : Colors.orange;
-      case 'unclaimed':
+      case '':
         return Colors.yellow;
       case 'claimed':
         return widget.bartenderID == order.claimer ? Colors.lightBlueAccent : Colors.red;
@@ -275,6 +276,15 @@ class _OrdersPageState extends State<OrdersPage> {
         return Colors.grey; // Default border color if the state is unknown
     }
   }
+
+  void _toggleBarStatus() {
+    setState(() {
+      barOpenStatus = !barOpenStatus;
+    }); // ONLY CHANGE BASED ON HTTP
+    
+    debugPrint('Bar status toggled. New status: ${barOpenStatus ? "Open" : "Closed"}');();
+  }
+
 
   @override
   void initState() {
@@ -316,6 +326,21 @@ class _OrdersPageState extends State<OrdersPage> {
               _showRedistributeDialog();
             },
           ),
+          GestureDetector(
+            onLongPress: _toggleBarStatus, // Handle long press
+            child: Container(
+              color: barOpenStatus ? Colors.red : Colors.green,
+              child: Center(
+                child: Text(
+                  barOpenStatus ? "Close Bar" : "Open Bar",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          )
         ],
       ),
       body: Stack(
