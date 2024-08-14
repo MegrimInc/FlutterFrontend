@@ -219,9 +219,9 @@ class Barzzy extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
-      home: OrdersPage(bartenderID: "test"),
+      // home: OrdersPage(bartenderID: "test"),
       //ALREADY COMMENTED home: loggedInAlready ? (isBar ? const OrderDisplay() : const AuthPage()) : const LoginOrRegisterPage()//Make it so that when bars sign in, they get sent to
-      //initialRoute: initialRoute, // Set the initial route based on the logic
+      initialRoute: initialRoute, // Set the initial route based on the logic
       
       routes: {
         '/auth': (context) =>

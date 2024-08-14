@@ -737,6 +737,8 @@ class MenuPageState extends State<MenuPage>
     );
   }
 
+ 
+
   void navigateToOrdersPage(BuildContext context) {
   Navigator.of(context).pushNamedAndRemoveUntil('/orders', (Route<dynamic> route) => false);
 }

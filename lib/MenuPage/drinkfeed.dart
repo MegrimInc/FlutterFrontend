@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -20,40 +22,106 @@ class DrinkFeed extends StatefulWidget {
   DrinkFeedState createState() => DrinkFeedState();
 }
 
-class DrinkFeedState extends State<DrinkFeed> {
+class DrinkFeedState extends State<DrinkFeed> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _blurAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _blurAnimation = Tween<double>(begin: 20.0, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: widget.cart,
       child: Scaffold(
-        body: Stack(
-          children: [
-            // Background
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.indigo.shade900,
-                    Colors.purple.shade900,
+        body: GestureDetector(
+          onTap: () {
+            Navigator.of(context).pop();
+            FocusScope.of(context).unfocus();
+          },
+          child: Stack(
+            children: [
+              // Full-screen background image with blur effect
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, child) {
+                    return Stack(
+                      children: [
+                        Image.network(
+                          widget.drink.image,
+                          fit: BoxFit.cover,
+                          height: double.infinity,
+                          width: double.infinity,
+                        ),
+                        BackdropFilter(
+                          filter: ImageFilter.blur(
+                            sigmaX: _blurAnimation.value,
+                            sigmaY: _blurAnimation.value,
+                          ),
+                          child: Container(
+                            color: Colors.black.withOpacity(0.2),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              // Gradient overlay for better readability
+              FadeTransition(
+                opacity: _opacityAnimation,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.black.withOpacity(0.2),
+                        Colors.black.withOpacity(0.2),
+                        Colors.grey.withOpacity(0.2),
+                      ],
+                      stops: const [0.0, 0.5, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              // Content
+              SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildHeader(context),
+                    Expanded(child: _buildDrinkInfo(context)),
+                    _buildBottomBar(context),
                   ],
                 ),
               ),
-            ),
-            
-            // Content
-            SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildHeader(context),
-                  Expanded(child: _buildDrinkInfo(context)),
-                  _buildBottomBar(context),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -66,17 +134,15 @@ class DrinkFeedState extends State<DrinkFeed> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+            icon: const Icon(Icons.close, color: Colors.white),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          Consumer<Cart>(
-            builder: (context, cart, _) => Text(
-              'In Cart: ${cart.getDrinkQuantity(widget.drink.id)}',
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
+          const Text(
+            '1 of 1',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 19,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -89,11 +155,6 @@ class DrinkFeedState extends State<DrinkFeed> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircleAvatar(
-            radius: 100,
-            backgroundImage: NetworkImage(widget.drink.image),
-          ),
-          const SizedBox(height: 24),
           Text(
             widget.drink.name,
             style: GoogleFonts.playfairDisplay(
@@ -165,7 +226,7 @@ class DrinkFeedState extends State<DrinkFeed> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildActionButton(Icons.remove, () => widget.cart.removeDrink(widget.drink.id)),
+          const Spacer(),
           Consumer<Cart>(
             builder: (context, cart, _) => Text(
               '${cart.getDrinkQuantity(widget.drink.id)}',
@@ -176,21 +237,9 @@ class DrinkFeedState extends State<DrinkFeed> {
               ),
             ),
           ),
-          _buildActionButton(Icons.add, () => widget.cart.addDrink(widget.drink.id)),
+          const Spacer(),
         ],
       ),
-    );
-  }
-
-  Widget _buildActionButton(IconData icon, VoidCallback onPressed) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
-        shape: const CircleBorder(),
-        padding: const EdgeInsets.all(16),
-      ),
-      child: Icon(icon, color: Colors.indigo.shade900),
     );
   }
 }
