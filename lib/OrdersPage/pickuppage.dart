@@ -43,7 +43,8 @@ class PickupPageState extends State<PickupPage> {
               return Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Card(
-                  color: Colors.grey[900],
+                 color: Colors.grey[900],
+                 
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(

@@ -1,223 +1,196 @@
-import 'package:barzzy_app1/Backend/drink.dart';
-import 'package:barzzy_app1/MenuPage/cart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:barzzy_app1/Backend/drink.dart';
+import 'package:barzzy_app1/MenuPage/cart.dart';
 
 class DrinkFeed extends StatefulWidget {
   final Drink drink;
   final Cart cart;
   final String barId;
- 
 
   const DrinkFeed({
     super.key,
     required this.drink,
     required this.cart,
     required this.barId,
-   
   });
 
   @override
-  State<DrinkFeed> createState() => _DrinkFeedState();
+  DrinkFeedState createState() => DrinkFeedState();
 }
 
-class _DrinkFeedState extends State<DrinkFeed> {
-  Offset? _startPosition;
-  static const double swipeThreshold = 50.0;
-
+class DrinkFeedState extends State<DrinkFeed> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: widget.cart,
       child: Scaffold(
-        body: GestureDetector(
-          onTap: () {
-            Navigator.of(context).pop();
-            FocusScope.of(context).unfocus();
-          },
-          onPanStart: (details) {
-            _startPosition = details.globalPosition;
-          },
-          onPanUpdate: (details) {
-            // Optionally track the swipe progress here
-          },
-          onPanEnd: (details) {
-            if (_startPosition == null) return;
-
-            final Offset endPosition = details.globalPosition;
-            final double dy = endPosition.dy - _startPosition!.dy;
-
-            if (dy.abs() > swipeThreshold) {
-              if (dy < 0) {
-                widget.cart.addDrink(widget.drink.id);
-              } else if (dy > 0) {
-                widget.cart.removeDrink(widget.drink.id);
-              }
-            }
-          },
-          
-          child: Stack(
-            children: [
-
-              Positioned.fill(
-                child: Image.network(
-                  widget.drink.image,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Positioned.fill(
-                child: Consumer<Cart>(
-                  builder: (context, cart, _) {
-                    int drinkQuantities =
-                        cart.getDrinkQuantity(widget.drink.id);
-                
-                    // Only render the container if drinkQuantities is greater than 0
-                    if (drinkQuantities > 0) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'x$drinkQuantities',
-                            style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 140,
-                                fontWeight: FontWeight.w200),
-                          ),
-                        ),
-                      );
-                    } else {
-                      return const SizedBox
-                          .shrink(); // Render an empty widget if drinkQuantities is 0
-                    }
-                  },
-                ),
-              ),
-              Positioned(
-                bottom: 250,
-                right: 1,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    SizedBox(
-                      height: 75,
-                      width: 75,
-                      child: FloatingActionButton(
-                         elevation: 0, // Remove elevation shadow
-          highlightElevation: 0, // Remove highlight elevation shadow
-          focusElevation: 0, // Remove focus elevation shadow
-                        backgroundColor: Colors.transparent,
-                        heroTag: 'add_button',
-                        onPressed: () {
-                          // Increment drink quantity
-
-                          widget.cart.addDrink( widget.drink.id);
-                        },
-                        child: InkWell(
-                          splashColor: Colors.transparent, // Remove splash effect
-                          highlightColor: Colors.transparent, // Remove highlight effect
-                          onTap: () {
-                            widget.cart.addDrink(widget.drink.id);
-                          },
-                          child: const Icon(
-                            Icons.add,
-                            color: Colors.white,
-                            size: 45,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 25,
-                    ),
-                    SizedBox(
-                      height: 75,
-                      width: 75,
-                      child: FloatingActionButton(
-                         elevation: 0, // Remove elevation shadow
-          highlightElevation: 0, // Remove highlight elevation shadow
-          focusElevation: 0, // Remove focus elevation shadow
-                        backgroundColor: Colors.transparent,
-                        heroTag: 'remove_button',
-                        onPressed: () {
-                          // Decrement drink quantity
-
-                          widget.cart
-                              .removeDrink(widget.drink.id);
-                        },
-                        child: InkWell(
-                          splashColor: Colors.transparent, // Remove splash effect
-                          highlightColor: Colors.transparent, // Remove highlight effect
-                          onTap: () {
-                            widget.cart.removeDrink(widget.drink.id);
-                          },
-                          child: const Icon(
-                            Icons.remove,
-                            color: Colors.white,
-                            size: 45,
-                          ),
-                        ),
-                      ),
-                    ),
+        body: Stack(
+          children: [
+            // Background
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.indigo.shade900,
+                    Colors.purple.shade900,
                   ],
                 ),
               ),
-              Positioned(
-                top: 50,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  //color: Colors.black.withOpacity(0.5),
-                  padding: const EdgeInsets.fromLTRB(16.0, 13.0, 16.0, 16.0),
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '`${widget.drink.name}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontStyle: FontStyle.italic,
-                            fontWeight: FontWeight.bold,
-                ),
-                        ),
-                        const Spacer(),
-                        
-                        Padding(
-                          padding: const EdgeInsets.only(left: 3, right: 3),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                            
-                              Text(
-                                'ABV: ${widget.drink.alcohol}%',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                ),
-                              ),
-                              Text(
-                            '\$${widget.drink.price.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                            ),
-                          ),
-                                             
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height:20)
-                      ]),
-                ),
-              )
-            ],
-          ),
+            ),
+            
+            // Content
+            SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildHeader(context),
+                  Expanded(child: _buildDrinkInfo(context)),
+                  _buildBottomBar(context),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          Consumer<Cart>(
+            builder: (context, cart, _) => Text(
+              'In Cart: ${cart.getDrinkQuantity(widget.drink.id)}',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrinkInfo(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 100,
+            backgroundImage: NetworkImage(widget.drink.image),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            widget.drink.name,
+            style: GoogleFonts.playfairDisplay(
+              color: Colors.white,
+              fontSize: 36,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'ABV: ${widget.drink.alcohol}%',
+            style: GoogleFonts.poppins(
+              color: Colors.white70,
+              fontSize: 20,
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildPriceInfo(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriceInfo() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildPriceCard('Regular', widget.drink.price),
+        const SizedBox(width: 16),
+        _buildPriceCard('Happy Hour', widget.drink.happyhourprice, isHappyHour: true),
+      ],
+    );
+  }
+
+  Widget _buildPriceCard(String label, double price, {bool isHappyHour = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isHappyHour ? Colors.amber : Colors.white24,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              color: isHappyHour ? Colors.black : Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            '\$${price.toStringAsFixed(2)}',
+            style: GoogleFonts.poppins(
+              color: isHappyHour ? Colors.black : Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildActionButton(Icons.remove, () => widget.cart.removeDrink(widget.drink.id)),
+          Consumer<Cart>(
+            builder: (context, cart, _) => Text(
+              '${cart.getDrinkQuantity(widget.drink.id)}',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          _buildActionButton(Icons.add, () => widget.cart.addDrink(widget.drink.id)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(IconData icon, VoidCallback onPressed) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.white,
+        shape: const CircleBorder(),
+        padding: const EdgeInsets.all(16),
+      ),
+      child: Icon(icon, color: Colors.indigo.shade900),
     );
   }
 }
