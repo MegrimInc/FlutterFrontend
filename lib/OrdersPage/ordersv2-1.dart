@@ -24,6 +24,9 @@ class _OrdersPageState extends State<OrdersPage> {
 
   List<Order> displayList = [];
 
+//TESTING VARIABLE
+  bool testing = true;
+
   bool filterUnique = true;
   bool filterHideReady = false;
   bool priorityFilterShowReady = false;
@@ -253,26 +256,118 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 
   // Placeholder functions
-  void _executeFunctionForUnclaimed() {
-    debugPrint('Placeholder function executed for unclaimed order');
+  void _executeFunctionForUnclaimed(Order order) {
+    setState(() {
+      //Notify server of claimed
+      order.claimer = widget.bartenderID;
+    });
+    _updateLists();
   }
 
-  void _executeFunctionForReady() {
-    debugPrint('Placeholder function executed for ready order');
+  void _executeFunctionForClaimed(Order order) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Order #${order.orderId}'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                setState(() {
+
+                  //Notify Server of cancel
+                  order.claimer = '';
+                });
+                Navigator.of(context).pop();
+                _updateLists();
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text(
+                'Return',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  //notify server of ready
+                  order.orderState = 'ready';
+                });
+                Navigator.of(context).pop();
+                _updateLists();
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
+              child: const Text(
+                'Ready',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
-  void _executeFunctionForClaimedAndReady() {
-    debugPrint('Placeholder function executed for claimed and ready order');
+  void _executeFunctionForClaimedAndReady(Order order) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Order #${order.orderId}'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  //Notify Server of cancelled
+                  allOrders.remove(order);
+                });
+                Navigator.of(context).pop();
+                _updateLists();
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  //Notify Server of delivered
+                  allOrders.remove(order);
+                });
+                Navigator.of(context).pop();
+                _updateLists();
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
+              child: const Text(
+                'Delivered',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
+
 
   void _onOrderTap(Order order) {
     if (order.claimer.isEmpty) {
-      _executeFunctionForUnclaimed();
+      _executeFunctionForUnclaimed(order);
     } else if (order.claimer == widget.bartenderID) {
       if (order.orderState == 'ready') {
-        _executeFunctionForClaimedAndReady();
+        _executeFunctionForClaimedAndReady(order);
       } else {
-        _executeFunctionForReady();
+        _executeFunctionForClaimed(order);
       }
     }
   }
