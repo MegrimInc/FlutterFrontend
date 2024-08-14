@@ -1,5 +1,3 @@
-
-
 class Order {
   int barId;
   int orderId;

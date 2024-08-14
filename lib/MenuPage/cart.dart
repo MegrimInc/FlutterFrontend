@@ -1,5 +1,5 @@
 import 'package:barzzy_app1/Backend/bar.dart';
-import 'package:barzzy_app1/Backend/bardatabase.dart';
+import 'package:barzzy_app1/Backend/localdatabase.dart';
 import 'package:flutter/material.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 
@@ -25,9 +25,9 @@ class Cart extends ChangeNotifier {
       return;
     }
 
-    Bar? bar = BarDatabase.getBarById(barId!);
+    Bar? bar = LocalDatabase.getBarById(barId!);
     if (bar != null) {
-      BarDatabase().getDrinkById(drinkId);
+      LocalDatabase().getDrinkById(drinkId);
       barCart.update(drinkId, (quantity) => quantity + 1, ifAbsent: () => 1);
       debugPrint('Drink with ID $drinkId added to the cart.');
       notifyListeners();
@@ -63,7 +63,7 @@ class Cart extends ChangeNotifier {
    double calculateTotalPrice() {
     double total = 0.0;
     barCart.forEach((drinkId, quantity) {
-      Drink? drink = BarDatabase().getDrinkById(drinkId);
+      Drink? drink = LocalDatabase().getDrinkById(drinkId);
       total += drink.price * quantity;
       debugPrint('Drink ID: $drinkId, Price: ${drink.price}, Quantity: $quantity, Subtotal: ${drink.price * quantity}');
         });

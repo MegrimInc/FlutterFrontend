@@ -1,12 +1,12 @@
-import 'package:barzzy_app1/Backend/bardatabase.dart';
+import 'package:barzzy_app1/Backend/localdatabase.dart';
 
 class SearchService {
-  final BarDatabase barDatabase;
+  final LocalDatabase localDatabase;
 
-  SearchService(this.barDatabase);
+  SearchService(this.localDatabase);
 
   Map<String, Map<String, String>> searchBars(String searchText) {
-    var bars = barDatabase.getSearchableBarInfo(); // Get minimal data for search
+    var bars = localDatabase.getSearchableBarInfo(); // Get minimal data for search
     if (searchText.isEmpty) {
       return {};
     }

@@ -1,6 +1,4 @@
 
-import 'package:barzzy_app1/Backend/order.dart';
-
 class Bar {
   String? id;
   String? name;
@@ -8,6 +6,8 @@ class Bar {
   String? tag;
   String? tagimg;
   String? barimg;
+  String? openhours;
+  
 
   Bar(
       {
@@ -16,30 +16,21 @@ class Bar {
       this.address,
       this.tag,
       this.tagimg,
-      this.barimg
+      this.barimg,
+      this.openhours
       }
       );
 
-  //  void addDrink(Drink drink) {
-  //   drinks ??= <String, Drink>{};
-  //   drinks![drink.id] = drink;
-  // }
+  
   //GETTER METHODS
 
   String? getName() {
     return name;
   }
 
-
-
   String? gettag() {
     return tag;
   }
-
-  //  // Method to get a drink object by its ID
-  // Drink getDrinkById(String id) {
-  //   return drinks![id]!;
-  // }
 
   // JSON serialization to support saving and loading bar data
   Map<String, dynamic> toJson() {
@@ -50,6 +41,8 @@ class Bar {
       'barTag': tag,
       'tagImage': tagimg,
       'barImage': barimg,
+      'openHours': openhours
+      
     };
   }
 
@@ -62,6 +55,7 @@ class Bar {
       tag: json['barTag'] as String?,
       tagimg: json['tagImage'] as String?,
       barimg: json['barImage'] as String?,
+      openhours: json['openHours'] as String?,
     );
   }
 

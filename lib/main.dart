@@ -10,17 +10,18 @@ import 'package:barzzy_app1/Backend/recommended.dart';
 import 'package:barzzy_app1/Backend/tags.dart';
 import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/BarPages/orderdisplay.dart';
-import 'package:barzzy_app1/Local/bottombar.dart';
+import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
 import 'package:barzzy_app1/OrdersPage/ordersv2-0.dart';
 import 'package:barzzy_app1/OrdersPage/ordersv2-1.dart';
 import 'package:barzzy_app1/QrPage/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:barzzy_app1/Backend/bardatabase.dart';
+import 'package:barzzy_app1/Backend/localdatabase.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:barzzy_app1/Backend/cache.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   debugPrint("current date: ${DateTime.now()}");
@@ -29,7 +30,7 @@ void main() async {
   final loginCache = LoginCache();
   // await loginCache.clearAll();
 
-
+  await printStoredOrders();
 
   bool loggedInAlready = true;
   await loginCache.getSignedIn() /* && HTTP REQUEST*/;
@@ -65,8 +66,7 @@ void main() async {
   loggedInAlready = loggedInAlready && httprequest;
   debugPrint("Final loggedInAlready after request: $loggedInAlready");
 
-  BarDatabase barDatabase = BarDatabase();
-  //Stripe.publishableKey = 'your_stripe_key_here';
+  LocalDatabase barDatabase = LocalDatabase();
   await sendGetRequest();
   await fetchTags();
   await updateDrinkDatabase(barDatabase);
@@ -82,13 +82,20 @@ void main() async {
         ChangeNotifierProvider(create: (context) => Hierarchy()),
         ChangeNotifierProvider(create: (_) => LoginCache()),
         ChangeNotifierProvider(create: (context) => user),
-        ProxyProvider<BarDatabase, SearchService>(
-          update: (_, barDatabase, __) => SearchService(barDatabase),
+        ProxyProvider<LocalDatabase, SearchService>(
+          update: (_, localDatabase, __) => SearchService(localDatabase),
         ),
       ],
       child: Barzzy(loggedInAlready: loggedInAlready, isBar: isBar),
     ),
   );
+}
+
+// Method to print orders stored in SharedPreferences
+Future<void> printStoredOrders() async {
+  final prefs = await SharedPreferences.getInstance();
+  final orders = prefs.getString('orders') ?? '{}';
+  debugPrint('Orders stored in SharedPreferences: $orders');
 }
 
 Future<void> sendGetRequest() async {
@@ -105,9 +112,9 @@ Future<void> sendGetRequest() async {
       // Decode and print formatted JSON
       final List<dynamic> jsonResponse = jsonDecode(response.body);
       //final jsonResponse = jsonDecode(response.body);
-      //debugPrint('Decoded JSON response: ${jsonResponse.toString()}');
+      debugPrint('Decoded JSON response: ${jsonResponse.toString()}');
 
-      BarDatabase barDatabase = BarDatabase();
+      LocalDatabase barDatabase = LocalDatabase();
       for (var barJson in jsonResponse) {
         Bar bar = Bar.fromJson(barJson);
         // debugPrint('Parsed Bar Name: ${bar.name}');
@@ -139,7 +146,7 @@ Future<void> fetchTags() async {
       //debugPrint('Decoded JSON tags response: ${jsonResponse.toString()}');
 
       // Get the singleton instance of BarDatabase
-      BarDatabase barDatabase = BarDatabase();
+     LocalDatabase barDatabase = LocalDatabase();
 
       // Process each tag from the JSON response
       for (var tagJson in jsonResponse) {
@@ -157,7 +164,7 @@ Future<void> fetchTags() async {
   }
 }
 
-Future<void> updateDrinkDatabase(BarDatabase barDatabase) async {
+Future<void> updateDrinkDatabase(LocalDatabase barDatabase) async {
   final cache = Cache();
   final cachedDrinkIds = await cache.getDrinkIds();
 

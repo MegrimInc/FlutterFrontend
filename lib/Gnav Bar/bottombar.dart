@@ -1,5 +1,5 @@
 import 'package:barzzy_app1/HomePage/home.dart';
-import 'package:barzzy_app1/OrdersPage/ordersv2-1.dart';
+import 'package:barzzy_app1/OrdersPage/pickuppage.dart';
 import 'package:barzzy_app1/ProfilePage/profile.dart';
 import 'package:barzzy_app1/QrPage/qr.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +32,7 @@ class AuthPageState extends State<AuthPage> {
   void _initPages() {
     _pages = [
       const HomePage(),
-      const OrdersPage(bartenderID: '?',),
+      const PickupPage(),
       QrPage(cameraController: _cameraController),
       const ProfilePage(),
     ];

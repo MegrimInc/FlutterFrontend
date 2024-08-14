@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:barzzy_app1/Backend/recommended.dart';
 import 'package:barzzy_app1/MenuPage/menu.dart';
-import '../Backend/bardatabase.dart';
+import '../Backend/localdatabase.dart';
 
 
 class HomePage extends StatefulWidget {
@@ -99,7 +99,7 @@ class HomePageState extends State<HomePage> {
                         final barId = masterList[index];
                         //final isTapped = barHistory.barIds.contains(barId);
                         final isRecommended = recommendedIds.contains(barId);
-                        final bar = BarDatabase.getBarById(barId);
+                        final bar = LocalDatabase.getBarById(barId);
                         return GestureDetector(
                             behavior: HitTestBehavior.translucent,
                             onTap: () {
@@ -177,7 +177,7 @@ class HomePageState extends State<HomePage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 17),
                         child: Text(
-                          BarDatabase.getBarById(barHistory.currentTappedBarId!)
+                          LocalDatabase.getBarById(barHistory.currentTappedBarId!)
                                   ?.name ??
                               'No Name',
                           style: const TextStyle(
@@ -217,7 +217,7 @@ class HomePageState extends State<HomePage> {
                   ),
                   child: Center(
                     child: Image.network(
-                      BarDatabase.getBarById(
+                      LocalDatabase.getBarById(
                             barHistory.currentTappedBarId!,
                           )?.barimg ??
                           'https://www.barzzy.site/images/champs/6.png',
@@ -244,32 +244,15 @@ class HomePageState extends State<HomePage> {
                     children: [
                       Padding(
                         padding: const EdgeInsets.only(left: 17),
-                        child: RichText(
-                          text: const TextSpan(
-                            children: [
-                              TextSpan(
-                                text: 'Open',
-                                style: TextStyle(
-                                    color: Colors.grey,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              TextSpan(
-                                text: ' / ',
-                                style: TextStyle(
-                                    fontSize: 17.5,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              TextSpan(
-                                text: 'Closed',
-                                style: TextStyle(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.w700),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                        child: Text(
+              LocalDatabase.getBarById(barHistory.currentTappedBarId!)
+                      ?.openhours ?? 'No Hours Available',
+              style: const TextStyle(
+                color: Colors.white,
+                //fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
                       const Padding(
                         padding: EdgeInsets.only(right: 17),
                         child: Text(

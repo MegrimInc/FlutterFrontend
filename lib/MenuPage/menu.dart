@@ -14,7 +14,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../Backend/bar.dart';
-import '../Backend/bardatabase.dart';
+import '../Backend/localdatabase.dart';
 import 'package:flutter/services.dart';
 
 class MenuPage extends StatefulWidget {
@@ -67,7 +67,7 @@ class MenuPageState extends State<MenuPage>
   }
 
   void _updateAutoComplete(String query) {
-    final barDatabase = Provider.of<BarDatabase>(context, listen: false);
+    final barDatabase = Provider.of<LocalDatabase>(context, listen: false);
     final matchingTags = barDatabase.tags.values
         .where((tag) => tag.name.toLowerCase().startsWith(query.toLowerCase()))
         .toList();
@@ -82,7 +82,7 @@ class MenuPageState extends State<MenuPage>
   //LOADS DRINK IN
 
   Future<void> _fetchBarData() async {
-    currentBar = BarDatabase.getBarById(widget.barId);
+    currentBar = LocalDatabase.getBarById(widget.barId);
     if (currentBar != null) {
       appBarTitle = ('*${currentBar!.tag ?? 'Menu Page'}')
           .replaceAll(' ', '')
@@ -102,7 +102,7 @@ class MenuPageState extends State<MenuPage>
       return;
     }
     final user = Provider.of<User>(context, listen: false);
-    final barDatabase = Provider.of<BarDatabase>(context, listen: false);
+    final barDatabase = Provider.of<LocalDatabase>(context, listen: false);
     barDatabase.searchDrinks(query, user, widget.barId);
     setState(() {
       FocusScope.of(context).unfocus(); // Close keyboard
@@ -126,30 +126,29 @@ class MenuPageState extends State<MenuPage>
   }
 
   void _placeOrder(BuildContext context) async {
-    final loginCache = Provider.of<LoginCache>(context, listen: false);
-    final userId = await loginCache.getUID();
-    final barId = int.parse(widget.barId); // Convert barId to int
-    final cart = Provider.of<Cart>(context, listen: false);
-    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+  final loginCache = Provider.of<LoginCache>(context, listen: false);
+  final userId = await loginCache.getUID();
+  final barId = int.parse(widget.barId); // Convert barId to int
+  final cart = Provider.of<Cart>(context, listen: false);
+  final hierarchy = Provider.of<Hierarchy>(context, listen: false);
 
-    // Convert the drink IDs in the cart to a Set<int>
-    final drinkIds = cart.barCart.keys.map((id) => int.parse(id)).toSet();
+  // Convert the drink IDs in the cart to a Map<int, int> where key is drinkId and value is quantity
+  final drinkQuantities = cart.barCart.map((key, value) => MapEntry(int.parse(key), value));
 
-    // Debug print to confirm method call
-    debugPrint('Calling addOrder with barId: $barId, drinkIds: $drinkIds');
+  // Debug print to confirm method call
+  debugPrint('Calling addOrder with barId: $barId, drinkQuantities: $drinkQuantities');
 
-    // Call the addOrder method, passing the barId and drinkIds
-    hierarchy.addOrder(barId, userId, drinkIds);
-  
+  // Call the addOrder method, passing the barId, userId, and drinkQuantities
+  await hierarchy.addOrder(barId, userId, drinkQuantities);
 
-    // Optionally, show a confirmation message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Order placed successfully!')),
-    );
+  // Optionally, show a confirmation message
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Order placed successfully!')),
+  );
 
-    // Clear the cart after placing the order
-    //cart.barCart.clear();
-  }
+  // Clear the cart after placing the order (uncomment if you want to clear it)
+  //cart.barCart.clear();
+}
 
   @override
   Widget build(BuildContext context) {
@@ -382,7 +381,7 @@ class MenuPageState extends State<MenuPage>
                                   childrenDelegate: SliverChildBuilderDelegate(
                                     (context, index) {
                                       final barDatabase =
-                                          Provider.of<BarDatabase>(context,
+                                          Provider.of<LocalDatabase>(context,
                                               listen: false);
                                       final drink = barDatabase
                                           .getDrinkById(drinkIds[index]);

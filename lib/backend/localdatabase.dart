@@ -8,14 +8,14 @@ import 'bar.dart';
 import 'tags.dart';
 import 'package:barzzy_app1/Backend/cache.dart';
 
-class BarDatabase with ChangeNotifier {
-  static final BarDatabase _singleton = BarDatabase._internal();
+class LocalDatabase with ChangeNotifier {
+  static final LocalDatabase _singleton = LocalDatabase._internal();
 
-  factory BarDatabase() {
+  factory LocalDatabase() {
     return _singleton;
   }
 
-  BarDatabase._internal();
+  LocalDatabase._internal();
 
   final Map<String, Bar> _bars = {};
   final Map<String, Tag> tags = {};
