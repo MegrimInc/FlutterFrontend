@@ -389,8 +389,8 @@ class _OrdersPageState extends State<OrdersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Center(
-          child: const Text('Orders'),
+        title: const Center(
+          child: Text('Orders'),
         ),
         leading: Row(
           mainAxisSize: MainAxisSize.min,
@@ -463,7 +463,7 @@ class _OrdersPageState extends State<OrdersPage> {
                             children: <Widget>[
                               Text(
                                 '#${order.orderId}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -479,7 +479,7 @@ class _OrdersPageState extends State<OrdersPage> {
                               const SizedBox(height: 4),
                               Text(
                                 '\$${order.price.toStringAsFixed(2)}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 32,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -495,7 +495,7 @@ class _OrdersPageState extends State<OrdersPage> {
                               const SizedBox(height: 8),
                               Text(
                                 '@${order.userId}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 16,
                                   color: Colors.white,
                                   shadows: [
@@ -520,7 +520,7 @@ class _OrdersPageState extends State<OrdersPage> {
                               return ListTile(
                                 title: Text(
                                   drinkName,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     shadows: [
                                       Shadow(
@@ -547,7 +547,7 @@ class _OrdersPageState extends State<OrdersPage> {
                         child: Center(
                           child: Text(
                             order.claimer,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 16,
                               color: Colors.white,
                               shadows: [
