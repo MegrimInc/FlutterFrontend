@@ -1,4 +1,4 @@
-import 'status.dart'; // Update with your actual import path
+
 
 class Order {
   int barId;
@@ -67,5 +67,5 @@ class Order {
   double? getPrice() {
     return price;
   }
-  
+
 }

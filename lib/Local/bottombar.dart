@@ -1,5 +1,4 @@
 import 'package:barzzy_app1/HomePage/home.dart';
-import 'package:barzzy_app1/OrdersPage/orders.dart';
 import 'package:barzzy_app1/OrdersPage/ordersv2-1.dart';
 import 'package:barzzy_app1/ProfilePage/profile.dart';
 import 'package:barzzy_app1/QrPage/qr.dart';

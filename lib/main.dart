@@ -12,6 +12,8 @@ import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/BarPages/orderdisplay.dart';
 import 'package:barzzy_app1/Local/bottombar.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
+import 'package:barzzy_app1/OrdersPage/ordersv2-0.dart';
+import 'package:barzzy_app1/OrdersPage/ordersv2-1.dart';
 import 'package:barzzy_app1/QrPage/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -210,8 +212,9 @@ class Barzzy extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
-      //home: loggedInAlready ? (isBar ? const OrderDisplay() : const AuthPage()) : const LoginOrRegisterPage()//Make it so that when bars sign in, they get sent to
-      initialRoute: initialRoute, // Set the initial route based on the logic
+      home: OrdersPage(bartenderID: "test"),
+      //ALREADY COMMENTED home: loggedInAlready ? (isBar ? const OrderDisplay() : const AuthPage()) : const LoginOrRegisterPage()//Make it so that when bars sign in, they get sent to
+      //initialRoute: initialRoute, // Set the initial route based on the logic
       
       routes: {
         '/auth': (context) =>

@@ -1,6 +1,5 @@
 
 import 'package:barzzy_app1/Backend/order.dart';
-import 'package:barzzy_app1/Backend/orderque.dart';
 
 class Bar {
   String? id;
@@ -9,8 +8,6 @@ class Bar {
   String? tag;
   String? tagimg;
   String? barimg;
-  //Map<String, Drink>? drinks;
-  OrderQueue orderQ = OrderQueue(); // Manages order operations
 
   Bar(
       {
@@ -33,25 +30,7 @@ class Bar {
     return name;
   }
 
-  OrderQueue getOrderQueue() {
-    return orderQ;
-  }
 
-  Order? getOrder(int orderNum) {
-    return orderQ.getOrder(orderNum);
-  }
-
-  int placeOrder(Order order) {
-    return orderQ.placeOrder(order);
-  }
-
-  int getTotalOrders() {
-    return orderQ.getTotalOrders();
-  }
-
-  void displayOrdersAsList() {
-    orderQ.displayOrdersAsList();
-  }
 
   String? gettag() {
     return tag;

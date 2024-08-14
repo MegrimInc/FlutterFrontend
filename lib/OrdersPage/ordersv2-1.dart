@@ -1,4 +1,4 @@
-// ignore_for_file: file_names
+import 'dart:async'; // Import the async package for Timer
 
 import 'package:flutter/material.dart';
 import 'package:barzzy_app1/backend/order.dart';
@@ -14,12 +14,12 @@ class OrdersPage extends StatefulWidget {
 
 class _OrdersPageState extends State<OrdersPage> {
   List<Order> allOrders = [
-    Order(1, 101, 202, 19.0, ['Coke', 'Pepsi'], 'claimed', 'Bartender A', DateTime.now().millisecondsSinceEpoch - 5000),
-    Order(2, 102, 203, 29.0, ['Sprite', 'Fanta'], 'claimed', 'Bartender B', DateTime.now().millisecondsSinceEpoch - 10000),
-    Order(3, 103, 204, 39.0, ['Water', 'Juice'], 'claimed', 'Bartender C', DateTime.now().millisecondsSinceEpoch - 15000),
-    Order(4, 201, 205, 19.0, ['Test', 'Two'], 'ready', 'Bartender D', DateTime.now().millisecondsSinceEpoch - 20000),
-    Order(5, 202, 206, 29.0, ['Three', 'Is'], 'ready', 'Bartender E', DateTime.now().millisecondsSinceEpoch - 25000),
-    Order(6, 203, 207, 39.0, ['This', 'Working'], 'ready', 'Bartender F', DateTime.now().millisecondsSinceEpoch - 30000),
+    Order(1, 101, 202, 19.0, ['Coke', 'Pepsi', 'one', 'two', 'three', 'four'], 'unclaimed', '', DateTime.now().millisecondsSinceEpoch + 100),
+    Order(2, 102, 203, 29.0, ['Sprite', 'Fanta'], 'unclaimed', '', DateTime.now().millisecondsSinceEpoch - 200000),
+    Order(3, 103, 204, 39.0, ['Water', 'Juice'], 'claimed', 'Z', DateTime.now().millisecondsSinceEpoch - 300000),
+    Order(4, 201, 205, 19.0, ['Test', 'Two'], 'unclaimed', '', DateTime.now().millisecondsSinceEpoch - 400000),
+    Order(5, 202, 206, 29.0, ['Three', 'Is'], 'claimed', 'test', DateTime.now().millisecondsSinceEpoch - 800000),
+    Order(6, 203, 207, 39.0, ['This', 'Working'], 'ready', 'test', DateTime.now().millisecondsSinceEpoch),
   ];
 
   List<Order> displayList = [];
@@ -31,6 +31,30 @@ class _OrdersPageState extends State<OrdersPage> {
   int bartenderNumber = 2; // Set to bartenderCount + 1
   bool disabledTerminal = false; // Tracks if terminal is disabled
   bool barOpenStatus = false; // Track if bar is open or closed
+
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize filters and bartender number
+    filterUnique = true;
+    filterHideReady = true;
+    bartenderNumber = 0;
+    bartenderCount = 1;
+    _updateLists();
+
+    // Start a timer to update the list every 30 seconds
+    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _updateLists();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel(); // Cancel the timer when the widget is disposed
+    super.dispose();
+  }
 
   void _updateLists() {
     // Sort `allOrders` by timestamp, older orders first
@@ -99,10 +123,13 @@ class _OrdersPageState extends State<OrdersPage> {
     setState(() {
       bartenderNumber = bartenderCount;
       filterUnique = true;
-      filterHideReady = false;
+      filterHideReady = true;
       priorityFilterShowReady = false;
       disabledTerminal = true;
     });
+
+    // Refresh the list after disabling the terminal
+    _updateLists();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -120,15 +147,6 @@ class _OrdersPageState extends State<OrdersPage> {
         ),
       ),
     );
-  }
-
-  void _logout() {
-    if (allOrders.any((order) => order.claimer == widget.bartenderID)) {
-      _showAlert('You still have claimed orders!');
-    } else {
-      // Perform logout functionality
-      debugPrint('Logout function called');
-    }
   }
 
   void _showFilterMenu() {
@@ -193,6 +211,14 @@ class _OrdersPageState extends State<OrdersPage> {
     );
   }
 
+  void _toggleBarStatus() {
+    setState(() {
+      barOpenStatus = !barOpenStatus;
+    }); // ONLY CHANGE BASED ON HTTP
+    
+    debugPrint('Bar status toggled. New status: ${barOpenStatus ? "Open" : "Closed"}');();
+  }
+
   void _showRedistributeDialog() {
     showDialog(
       context: context,
@@ -218,11 +244,7 @@ class _OrdersPageState extends State<OrdersPage> {
               onPressed: () {
                 // Placeholder logic for submit button
               },
-              onLongPress: () {
-                // Logic for long press to submit
-                // Placeholder for submit button long press
-              },
-              child: const Text('Submit'),
+              child: const Text('Redistribute'),
             ),
           ],
         );
@@ -257,61 +279,34 @@ class _OrdersPageState extends State<OrdersPage> {
 
   Color _getOrderTintColor(Order order) {
     final ageInSeconds = order.getAge();
-    if (order.orderState == 'ready') return Colors.green;
-    if (ageInSeconds <= 180) return Colors.white; // 0-3 minutes old
-    if (ageInSeconds <= 300) return Colors.yellow[100]!; // 3-5 minutes old
-    if (ageInSeconds <= 600) return Colors.orange[100]!; // 5-10 minutes old
-    return Colors.red[100]!; // Over 10 minutes old
-  }
-
-  Color _getBorderColor(Order order) {
-    switch (order.orderState) {
-      case 'ready':
-        return widget.bartenderID == order.claimer ? Colors.green : Colors.orange;
-      case '':
-        return Colors.yellow;
-      case 'claimed':
-        return widget.bartenderID == order.claimer ? Colors.lightBlueAccent : Colors.red;
-      default:
-        return Colors.grey; // Default border color if the state is unknown
-    }
-  }
-
-  void _toggleBarStatus() {
-    setState(() {
-      barOpenStatus = !barOpenStatus;
-    }); // ONLY CHANGE BASED ON HTTP
     
-    debugPrint('Bar status toggled. New status: ${barOpenStatus ? "Open" : "Closed"}');();
-  }
-
-
-  @override
-  void initState() {
-    super.initState();
-    // GET allOrders
-    // Initialize filters and bartender number
-    filterUnique = true;
-    filterHideReady = false;
-    _updateLists();
+    // Debug print to show age and orderId
+    debugPrint('Order ID: ${order.orderId}, Age: $ageInSeconds seconds');
+    
+    if (order.orderState == 'ready') return Colors.green;
+    if (ageInSeconds <= 180) return Colors.yellow[200]!; // 0-3 minutes old
+    if (ageInSeconds <= 300) return Colors.orange[200]!; // 3-5 minutes old
+    if (ageInSeconds <= 600) return Colors.orange[500]!; // 5-10 minutes old
+    return Colors.red[700]!; // Over 10 minutes old
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Orders'),
+        title: Center(
+          child: const Text('Orders'),
+        ),
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              icon: const Icon(Icons.cancel),
-              onPressed: _disableTerminal,
+            Flexible(
+              child: IconButton(
+                icon: const Icon(Icons.cancel),
+                onPressed: _disableTerminal,
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.exit_to_app),
-              onPressed: _logout,
-            ),
+            // Removed the IconButton for Logout
           ],
         ),
         actions: [
@@ -340,7 +335,8 @@ class _OrdersPageState extends State<OrdersPage> {
                 ),
               ),
             ),
-          )
+          ),
+          const SizedBox(width: 16), // Add space between the last action and the edge
         ],
       ),
       body: Stack(
@@ -349,7 +345,6 @@ class _OrdersPageState extends State<OrdersPage> {
             itemCount: displayList.length,
             itemBuilder: (context, index) {
               final order = displayList[index];
-              final borderColor = _getBorderColor(order);
               final tintColor = _getOrderTintColor(order);
 
               return InkWell(
@@ -371,14 +366,52 @@ class _OrdersPageState extends State<OrdersPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
-                              Text('#${order.orderId}',
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              Text(
+                                '#${order.orderId}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black,
+                                      offset: Offset(1.0, 1.0),
+                                      blurRadius: 1.0,
+                                    ),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(height: 4),
-                              Text('\$${order.price.toStringAsFixed(2)}',
-                                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+                              Text(
+                                '\$${order.price.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black,
+                                      offset: Offset(1.0, 1.0),
+                                      blurRadius: 1.0,
+                                    ),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(height: 8),
-                              Text('@${order.userId}',
-                                  style: const TextStyle(fontSize: 16)),
+                              Text(
+                                '@${order.userId}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black,
+                                      offset: Offset(1.0, 1.0),
+                                      blurRadius: 1.0,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -390,7 +423,19 @@ class _OrdersPageState extends State<OrdersPage> {
                           child: Column(
                             children: order.name.map((drinkName) {
                               return ListTile(
-                                title: Text(drinkName),
+                                title: Text(
+                                  drinkName,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black,
+                                        offset: Offset(1.0, 1.0),
+                                        blurRadius: 1.0,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                                 contentPadding: EdgeInsets.zero,
                               );
                             }).toList(),
@@ -401,12 +446,24 @@ class _OrdersPageState extends State<OrdersPage> {
                         width: 100, // Adjust width as needed
                         padding: const EdgeInsets.all(8.0),
                         decoration: BoxDecoration(
-                          border: Border.all(color: borderColor, width: 2),
+                          border: Border.all(color: Colors.black, width: 2), // Static black border
                           borderRadius: BorderRadius.circular(8.0),
                         ),
                         child: Center(
-                          child: Text(order.claimer,
-                              style: TextStyle(fontSize: 16, color: borderColor)),
+                          child: Text(
+                            order.claimer,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black,
+                                  offset: Offset(1.0, 1.0),
+                                  blurRadius: 1.0,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ],

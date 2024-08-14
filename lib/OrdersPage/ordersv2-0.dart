@@ -1,9 +1,13 @@
+import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy_app1/AuthPages/components/toggle.dart';
 import 'package:barzzy_app1/OrdersPage/ordersv2-1.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert'; // For decoding JSON
 
 class BartenderIDScreen extends StatefulWidget {
+  const BartenderIDScreen({super.key});
+
   @override
   _BartenderIDScreenState createState() => _BartenderIDScreenState();
 }
@@ -12,10 +16,11 @@ class _BartenderIDScreenState extends State<BartenderIDScreen> {
   final TextEditingController _controller = TextEditingController();
   
   Future<void> _handleSubmit() async {
+    final loginData = LoginCache();
     if (_controller.text.isNotEmpty) {
       final String bartenderID = _controller.text;
-      final String email = 'placeholder@example.com'; // Placeholder email
-      final String password = 'placeholderPassword'; // Placeholder password
+      final String email = await loginData.getEmail();
+      final String password = await loginData.getPW();
 
       final Uri url = Uri.parse('https://www.barzzy.site/signup/bartenderIDLogin');
 
@@ -43,7 +48,7 @@ class _BartenderIDScreenState extends State<BartenderIDScreen> {
           // Handle response error (status code other than 200)
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to submit data. Status code: ${response.statusCode}'),
+              content: Text('Failed to make a connection to the server. Status code: ${response.statusCode}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -60,7 +65,7 @@ class _BartenderIDScreenState extends State<BartenderIDScreen> {
     } else {
       // Show a SnackBar with an error message if the text field is empty
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Please fill in the BartenderID text field.'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
@@ -70,35 +75,60 @@ class _BartenderIDScreenState extends State<BartenderIDScreen> {
     }
   }
 
+  void _logout() {
+    final loginData = LoginCache();
+    loginData.setEmail("");
+    loginData.setPW("");
+    loginData.setSignedIn(false);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const LoginOrRegisterPage(),
+            ),
+          );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Logged out successfully.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Bartender ID Entry'),
+        title: const Text('Bartender ID Entry'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.exit_to_app),
+            onPressed: _logout,
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            const Text(
               'Enter Bartender ID',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             TextField(
               controller: _controller,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 hintText: 'Enter alphanumeric code',
               ),
               keyboardType: TextInputType.text,
               textInputAction: TextInputAction.done,
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _handleSubmit,
-              child: Text('Submit'),
+              child: const Text('Submit'),
             ),
           ],
         ),
