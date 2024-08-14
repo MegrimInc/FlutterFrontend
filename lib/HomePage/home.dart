@@ -256,7 +256,7 @@ class HomePageState extends State<HomePage> {
                       const Padding(
                         padding: EdgeInsets.only(right: 17),
                         child: Text(
-                          'Wait: 10 min',
+                          'Floor: 1/1',
                           style: TextStyle(
                             color: Colors.white,
                             //fontWeight: FontWeight.bold

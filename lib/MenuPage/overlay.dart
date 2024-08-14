@@ -93,13 +93,14 @@ Widget build(BuildContext context) {
 
   return Scaffold(
     backgroundColor: Colors.transparent,
+    //backgroundColor: Colors.black.withOpacity(0.5),
     body: GestureDetector(
       onTap: _closeSheet,
       child: Stack(
         children: [
           // Blurred background
           BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 7, sigmaY: 7),
+            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
             child: Container(
               color: Colors.transparent,
             ),
@@ -107,8 +108,8 @@ Widget build(BuildContext context) {
 
 
          Positioned(
-              top: 35, // Distance from the top of the screen
-              right: 25, // Distance from the right side of the screen
+              top: 20, // Distance from the top of the screen
+              right: 20, // Distance from the right side of the screen
               child: FadeTransition(
                 opacity: _fadeAnimation,
                 child: drinkNames.isEmpty
@@ -116,7 +117,7 @@ Widget build(BuildContext context) {
                         '0 of 0',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 30,
+                          fontSize: 21,
                           fontStyle: FontStyle.italic,
                         ),
                       )
@@ -130,7 +131,7 @@ Widget build(BuildContext context) {
                             '${currentPage + 1} of $pageCount',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 30,
+                              fontSize: 21,
                               fontStyle: FontStyle.italic,
                             ),
                           );
@@ -142,7 +143,7 @@ Widget build(BuildContext context) {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-             
+
               
       
               Expanded(

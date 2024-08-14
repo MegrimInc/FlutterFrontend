@@ -9,10 +9,10 @@ class BartenderIDScreen extends StatefulWidget {
   const BartenderIDScreen({super.key});
 
   @override
-  _BartenderIDScreenState createState() => _BartenderIDScreenState();
+  BartenderIDScreenState createState() => BartenderIDScreenState();
 }
 
-class _BartenderIDScreenState extends State<BartenderIDScreen> {
+class BartenderIDScreenState extends State<BartenderIDScreen> {
   final TextEditingController _controller = TextEditingController();
   
   Future<void> _handleSubmit() async {

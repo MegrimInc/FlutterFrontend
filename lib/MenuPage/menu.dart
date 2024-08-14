@@ -4,6 +4,7 @@ import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/user.dart';
+import 'package:barzzy_app1/MenuPage/loading.dart';
 import 'package:barzzy_app1/MenuPage/overlay.dart';
 import 'package:barzzy_app1/MenuPage/cart.dart';
 import 'package:barzzy_app1/MenuPage/drinkfeed.dart';
@@ -12,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../Backend/bar.dart';
 import '../Backend/localdatabase.dart';
@@ -125,7 +127,7 @@ class MenuPageState extends State<MenuPage>
     });
   }
 
-  void _placeOrder(BuildContext context) async {
+  void _submitOrder(BuildContext context) async {
   final loginCache = Provider.of<LoginCache>(context, listen: false);
   final userId = await loginCache.getUID();
   final barId = int.parse(widget.barId); // Convert barId to int
@@ -135,19 +137,34 @@ class MenuPageState extends State<MenuPage>
   // Convert the drink IDs in the cart to a Map<int, int> where key is drinkId and value is quantity
   final drinkQuantities = cart.barCart.map((key, value) => MapEntry(int.parse(key), value));
 
-  // Debug print to confirm method call
-  debugPrint('Calling addOrder with barId: $barId, drinkQuantities: $drinkQuantities');
-
   // Call the addOrder method, passing the barId, userId, and drinkQuantities
-  await hierarchy.addOrder(barId, userId, drinkQuantities);
+  bool success = await hierarchy.addOrder(barId, userId, drinkQuantities);
 
-  // Optionally, show a confirmation message
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Order placed successfully!')),
-  );
-
-  // Clear the cart after placing the order (uncomment if you want to clear it)
-  //cart.barCart.clear();
+  if (success) {
+    Navigator.pop(context); // Close the LoadingOverlay
+    navigateToOrdersPage(context); // Navigate to the orders page
+  } else {
+    Navigator.pop(context); // Close the LoadingOverlay
+    ScaffoldMessenger.of(context).showSnackBar(
+  SnackBar(
+    content: const Text(
+      'Order already in progress. Please complete your order...',
+      textAlign: TextAlign.center,  // Center the text
+      style: TextStyle(
+        color: Colors.white ,        // Change the text color to white
+        fontSize: 16,               // Adjust the font size if needed
+      ),
+    ),
+    backgroundColor: Colors.grey[900],  // Set the background color to black
+    behavior: SnackBarBehavior.floating, // Makes the SnackBar float above the content
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(10), // Rounded corners
+    ),
+    margin: const EdgeInsets.all(10), // Margin around the SnackBar
+    duration: const Duration(seconds: 3), // Adjust the display duration if needed
+  ),
+);
+  }
 }
 
   @override
@@ -170,33 +187,39 @@ class MenuPageState extends State<MenuPage>
               //ORDER SWIPE
 
               Consumer<Cart>(
-                builder: (context, cart, _) {
-                  // Check if there are items in the cart
-                  if (cart.getTotalDrinkCount() > 0) {
-                    return Positioned(
-                      right: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 12.5, // Adjust this width as needed
-                      child: GestureDetector(
-                        onHorizontalDragUpdate: (details) {
-                          if (details.primaryDelta! < 0) {
-                            // Swiping left from the right edge
-                            navigateToOrdersPage(context);
-                            _placeOrder(context);
-                          }
-                        },
-                        child: Container(
-                          color: Colors.red, // Invisible swipe area
-                        ),
-                      ),
-                    );
-                  } else {
-                    return const SizedBox
-                        .shrink(); // Render an empty widget if the cart is empty
-                  }
-                },
-              ),
+  builder: (context, cart, _) {
+    // Check if there are items in the cart
+    if (cart.getTotalDrinkCount() > 0) {
+      return Positioned(
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 12.5, // Adjust this width as needed
+        child: GestureDetector(
+          onHorizontalDragUpdate: (details) {
+            if (details.primaryDelta! < 0) {
+              // Swiping left from the right edge
+              Navigator.of(context).push(
+                PageRouteBuilder(
+                  opaque: false, // Set to false to allow the background to be visible
+                  pageBuilder: (context, _, __) => const LoadingOverlay(),
+                ),
+              );
+
+              // Start the order submission process
+              _submitOrder(context);
+            }
+          },
+          child: Container(
+            color: Colors.transparent, // Invisible swipe area
+          ),
+        ),
+      );
+    } else {
+      return const SizedBox.shrink(); // Render an empty widget if the cart is empty
+    }
+  },
+),
 
               // Overlay content
               if (_showOverlay)
@@ -319,13 +342,13 @@ class MenuPageState extends State<MenuPage>
                                       vertical: 2.5, horizontal: 0),
                                   child: Text(
                                     '*$query',
-                                    style: const TextStyle(
+                                    style: GoogleFonts.poppins(
                                       fontSize: 15.5,
                                       //fontWeight:
                                       // FontWeight.bold,
                                       color: Colors.white,
-                                      // fontStyle:
-                                      //     FontStyle.italic
+                                      fontStyle:
+                                          FontStyle.italic
                                     ),
                                   ),
                                 ),
@@ -462,22 +485,16 @@ class MenuPageState extends State<MenuPage>
                                                       children: [
                                                         Expanded(
                                                           child: Text(
-                                                            '`${drink.name}',
-                                                            style: const TextStyle(
-                                                                fontSize: 13,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                                fontStyle:
-                                                                    FontStyle
-                                                                        .italic,
-                                                                color: Colors
-                                                                    .white),
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
-                                                            maxLines: 1,
-                                                          ),
+  '`${drink.name}',
+  style: const TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    fontStyle: FontStyle.italic,
+    color: Colors.white,
+  ),
+  overflow: TextOverflow.ellipsis,
+  maxLines: 1,
+),
                                                         ),
                                                         const SizedBox(
                                                             width: 15)
@@ -506,14 +523,18 @@ class MenuPageState extends State<MenuPage>
                                             vertical: 2.5, horizontal: 0),
                                         child: Text(
                                           response,
-                                          style: const TextStyle(
-                                            fontSize: 15.5,
-                                            fontStyle: FontStyle.italic,
-                                            color: Colors.white,
-                                          ),
+                                          style: GoogleFonts.poppins(
+    fontSize: 15.5,
+    fontStyle: FontStyle.italic,
+    color: Colors.white,
+  ),
+  overflow: TextOverflow.ellipsis,
+  maxLines: 1,
+), 
                                         ),
                                       ),
-                                    ),
+                                  
+                                    
                                     const SizedBox(width: 50),
                                   ],
                                 ),
@@ -565,55 +586,40 @@ class MenuPageState extends State<MenuPage>
                 },
               ),
 
-              // MESSAGE FIELD
+             // MESSAGE FIELD
               Expanded(
                 child: SizedBox(
                   height: 35,
                   child: Stack(
                     children: [
-                      Consumer<Cart>(
-                        builder: (context, cart, _) {
-                          // Determine the label text based on the cart's state
-                          String labelText;
-                          if (cart.getTotalDrinkCount() > 0) {
-                            double totalPrice = cart.calculateTotalPrice();
-                            labelText =
-                                'Your Total Is: \$${totalPrice.toStringAsFixed(2)}';
-                          } else {
-                            labelText = 'I want...';
-                          }
-
-                          return TextFormField(
-                            cursorColor: Colors.white,
-                            controller: _searchController,
-                            onChanged: (text) => _onSearchChanged(),
-                            onTap: () {
-                              _scrollToBottom(); // Trigger scroll to bottom when text field is tapped
-                            },
-                            style: const TextStyle(
-                                color: Colors
-                                    .transparent), // Make the TextFormField text transparent
-                            decoration: InputDecoration(
-                              labelText: labelText,
-                              labelStyle: const TextStyle(
-                                  color: Colors.white, fontSize: 16),
-                              enabledBorder: OutlineInputBorder(
-                                borderSide:
-                                    const BorderSide(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(20.0),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20.0),
-                                borderSide:
-                                    const BorderSide(color: Colors.grey),
-                              ),
-                              contentPadding:
-                                  const EdgeInsets.only(left: 15.0, bottom: 0),
-                              floatingLabelBehavior:
-                                  FloatingLabelBehavior.never,
-                            ),
-                          );
+                      TextFormField(
+                        cursorColor: Colors.white,
+                        controller: _searchController,
+                        onChanged: (text) => _onSearchChanged(),
+                        onTap: () {
+                          _scrollToBottom(); // Trigger scroll to bottom when text field is tapped
                         },
+                        style: const TextStyle(
+                            color: Colors
+                                .transparent), // Make the TextFormField text transparent
+                        decoration: InputDecoration(
+                          labelText: 'I want...',
+                          labelStyle: const TextStyle(
+                              color: Colors.white,
+                              //fontStyle: FontStyle.italic,
+                              fontSize: 16),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(20.0),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                            borderSide: const BorderSide(color: Colors.grey),
+                          ),
+                          contentPadding:
+                              const EdgeInsets.only(left: 15.0, bottom: 0),
+                          floatingLabelBehavior: FloatingLabelBehavior.never,
+                        ),
                       ),
                       if (hasText && autoCompleteTag.isNotEmpty)
                         Positioned(
@@ -646,7 +652,7 @@ class MenuPageState extends State<MenuPage>
                 ),
               ),
 
-              //QR AND SEARCH BUTTON
+              //RECENT AND SEARCH BUTTON
               GestureDetector(
                 child: hasText
                     ? Container(
@@ -732,8 +738,10 @@ class MenuPageState extends State<MenuPage>
   }
 
   void navigateToOrdersPage(BuildContext context) {
-    Navigator.pushNamed(context, '/orders');
-  }
+  Navigator.of(context).pushNamedAndRemoveUntil('/orders', (Route<dynamic> route) => false);
+}
+
+
 
   void _scrollToBottom() {
     _scrollController.animateTo(
