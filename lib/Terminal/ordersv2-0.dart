@@ -13,6 +13,7 @@ class BartenderIDScreen extends StatefulWidget {
 }
 
 class BartenderIDScreenState extends State<BartenderIDScreen> {
+  bool testing = true;
   final TextEditingController _controller = TextEditingController();
   
   Future<void> _handleSubmit() async {
@@ -33,17 +34,16 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
           }),
         );
 
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 || testing == true) {
           // Parse the response if needed
-          final responseData = jsonDecode(response.body);
+          final responseData = testing ? 'test' : jsonDecode(response.body);
 
           // Navigate to OrdersPage and pass the bartenderID
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => OrdersPage(bartenderID: bartenderID),
-            ),
-          );
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => OrdersPage(bartenderID: bartenderID)),
+      (Route<dynamic> route) => false, // Remove all previous routes
+    );
         } else {
           // Handle response error (status code other than 200)
           ScaffoldMessenger.of(context).showSnackBar(
@@ -80,12 +80,11 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
     loginData.setEmail("");
     loginData.setPW("");
     loginData.setSignedIn(false);
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const LoginOrRegisterPage(),
-            ),
-          );
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => LoginOrRegisterPage()),
+      (Route<dynamic> route) => false, // Remove all previous routes
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Logged out successfully.'),

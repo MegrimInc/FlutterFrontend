@@ -1,5 +1,6 @@
 import 'dart:async'; // Import the async package for Timer
 
+import 'package:barzzy_app1/Terminal/ordersv2-0.dart';
 import 'package:flutter/material.dart';
 import 'package:barzzy_app1/backend/order.dart';
 
@@ -33,7 +34,7 @@ class _OrdersPageState extends State<OrdersPage> {
   int bartenderCount = 1; // Number of bartenders
   int bartenderNumber = 2; // Set to bartenderCount + 1
   bool disabledTerminal = false; // Tracks if terminal is disabled
-  bool barOpenStatus = false; // Track if bar is open or closed
+  bool barOpenStatus = true; // Track if bar is open or closed
 
   Timer? _timer;
 
@@ -59,44 +60,54 @@ class _OrdersPageState extends State<OrdersPage> {
     super.dispose();
   }
 
-  void _updateLists() {
-    // Sort `allOrders` by timestamp, older orders first
-    allOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+void _updateLists() {
+  // Sort `allOrders` by timestamp, older orders first
+  allOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-    List<Order> claimedByBartender = [];
-    List<Order> notClaimedByBartender = [];
+  List<Order> claimedByBartender = [];
+  List<Order> notClaimedByBartender = [];
 
-    // Separate orders based on whether they are claimed by the bartender
-    for (var order in allOrders) {
-      if (widget.bartenderID == order.claimer) {
-        claimedByBartender.add(order);
-      } else {
-        notClaimedByBartender.add(order);
-      }
-    }
-
-    // Combine the lists: orders claimed by bartender first, then the rest
-    displayList = claimedByBartender + notClaimedByBartender;
-
-    if (priorityFilterShowReady) {
-      displayList = displayList.where((order) => (order.orderId % bartenderCount) == bartenderNumber).toList();
-      displayList = displayList.where((order) => order.orderState == 'ready').toList();
+  // Separate orders based on whether they are claimed by the bartender
+  for (var order in allOrders) {
+    if (widget.bartenderID == order.claimer) {
+      claimedByBartender.add(order);
     } else {
-      if (filterUnique) {
-        displayList = displayList.where((order) =>
-          order.claimer == widget.bartenderID || 
-          (order.claimer.isEmpty && (order.orderId % bartenderCount) == bartenderNumber)
-        ).toList();      
-      }
+      notClaimedByBartender.add(order);
+    }
+  }
 
-      if (filterHideReady) {
-        displayList = displayList.where((order) => order.orderState != 'ready').toList();
-      }
+  // Combine the lists: orders claimed by bartender first, then the rest
+  displayList = claimedByBartender + notClaimedByBartender;
+
+  if (priorityFilterShowReady) {
+    displayList = displayList.where((order) => (order.orderId % bartenderCount) == bartenderNumber).toList();
+    displayList = displayList.where((order) => order.orderState == 'ready').toList();
+  } else {
+    if (filterUnique) {
+      displayList = displayList.where((order) =>
+        order.claimer == widget.bartenderID || 
+        (order.claimer.isEmpty && (order.orderId % bartenderCount) == bartenderNumber)
+      ).toList();      
     }
 
-    // Update state to refresh the UI
-    setState(() {});
+    if (filterHideReady) {
+      displayList = displayList.where((order) => order.orderState != 'ready').toList();
+    }
   }
+
+  // Check if terminal is disabled and no orders are claimed by the bartender
+  if (disabledTerminal && !allOrders.any((order) => order.claimer == widget.bartenderID)) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => BartenderIDScreen()),
+      (Route<dynamic> route) => false, // Remove all previous routes
+    );
+  }
+
+  // Update state to refresh the UI
+  setState(() {});
+}
+
 
   void _showAlert(String message) {
     showDialog(
@@ -126,7 +137,7 @@ class _OrdersPageState extends State<OrdersPage> {
     setState(() {
       bartenderNumber = bartenderCount;
       filterUnique = true;
-      filterHideReady = true;
+      filterHideReady = false;
       priorityFilterShowReady = false;
       disabledTerminal = true;
     });
@@ -152,75 +163,100 @@ class _OrdersPageState extends State<OrdersPage> {
     );
   }
 
-  void _showFilterMenu() {
-    showMenu(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        MediaQuery.of(context).size.width - 150,
-        kToolbarHeight,
-        0.0,
-        0.0,
+void _showFilterMenu() {
+  showMenu(
+    context: context,
+    position: RelativeRect.fromLTRB(
+      MediaQuery.of(context).size.width - 150,
+      kToolbarHeight,
+      0.0,
+      0.0,
+    ),
+    items: [
+      PopupMenuItem(
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Row(
+              children: [
+                Checkbox(
+                  value: filterUnique,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      filterUnique = value ?? false;
+                      _updateLists(); // Apply filters when changed
+                    });
+                  },
+                ),
+                const Text('Your Orders Only'),
+              ],
+            );
+          },
+        ),
       ),
-      items: [
-        PopupMenuItem(
-          child: Row(
-            children: [
-              Checkbox(
-                value: filterUnique,
-                onChanged: (bool? value) {
-                  setState(() {
-                    filterUnique = value ?? false;
-                    _updateLists(); // Apply filters when changed
-                  });
-                },
-              ),
-              const Text('Unique Orders'),
-            ],
-          ),
+      PopupMenuItem(
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Row(
+              children: [
+                Checkbox(
+                  value: filterHideReady,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      filterHideReady = value ?? false;
+                      _updateLists(); // Apply filters when changed
+                    });
+                  },
+                ),
+                const Text('Hide Ready Orders'),
+              ],
+            );
+          },
         ),
-        PopupMenuItem(
-          child: Row(
-            children: [
-              Checkbox(
-                value: filterHideReady,
-                onChanged: (bool? value) {
-                  setState(() {
-                    filterHideReady = value ?? false;
-                    _updateLists(); // Apply filters when changed
-                  });
-                },
-              ),
-              const Text('Hide Ready Orders'),
-            ],
-          ),
+      ),
+      PopupMenuItem(
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Row(
+              children: [
+                Checkbox(
+                  value: priorityFilterShowReady,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      priorityFilterShowReady = value ?? false;
+                      _updateLists(); // Apply filters when changed
+                    });
+                  },
+                ),
+                const Text('[Override] Ready-Only'),
+              ],
+            );
+          },
         ),
-        PopupMenuItem(
-          child: Row(
-            children: [
-              Checkbox(
-                value: priorityFilterShowReady,
-                onChanged: (bool? value) {
-                  setState(() {
-                    priorityFilterShowReady = value ?? false;
-                    _updateLists(); // Apply filters when changed
-                  });
-                },
-              ),
-              const Text('[Override] Show Ready Orders Only'),
-            ],
-          ),
-        ),
-      ],
+      ),
+    ],
+  );
+}
+
+
+void _toggleBarStatus() {
+  if (!barOpenStatus && allOrders.isNotEmpty) {
+    // If the bar is currently closed and there are still orders, show a Snackbar and do not open the bar.
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Cannot re-open the bar while there are unfulfilled orders!"),
+        duration: Duration(seconds: 3),
+      ),
     );
+    return; // Exit the function without changing the barOpenStatus
   }
 
-  void _toggleBarStatus() {
-    setState(() {
-      barOpenStatus = !barOpenStatus;
-    }); // ONLY CHANGE BASED ON HTTP
-    
-    debugPrint('Bar status toggled. New status: ${barOpenStatus ? "Open" : "Closed"}');();
-  }
+  setState(() {
+    barOpenStatus = !barOpenStatus;
+  });
+
+  debugPrint('Bar status toggled. New status: ${barOpenStatus ? "Open" : "Closed"}');
+}
+
 
   void _showRedistributeDialog() {
     showDialog(
@@ -264,100 +300,148 @@ class _OrdersPageState extends State<OrdersPage> {
     _updateLists();
   }
 
-  void _executeFunctionForClaimed(Order order) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Order #${order.orderId}'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                setState(() {
+void _executeFunctionForClaimed(Order order) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(
+          'Order #${order.orderId}',
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold), // Larger title
+        ),
+        content: Container(
+          height: 200, // Increase the height of the dialog
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              const Spacer(), // Space at the top
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        // Notify server of cancel
+                        order.claimer = '';
+                      });
+                      Navigator.of(context).pop();
+                      _updateLists();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 32), // Double the vertical padding
+                    ),
+                    child: const Text(
+                      'Return',
+                      style: TextStyle(fontSize: 20, color: Colors.white), // Larger text
+                    ),
+                  ),
+                  const SizedBox(width: 20), // Add horizontal space between buttons
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        // Notify server of ready
+                        order.orderState = 'ready';
+                      });
+                      Navigator.of(context).pop();
+                      _updateLists();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 32), // Double the vertical padding
+                    ),
+                    child: const Text(
+                      'Ready',
+                      style: TextStyle(fontSize: 20, color: Colors.white), // Larger text
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(), // Space at the bottom
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
 
-                  //Notify Server of cancel
-                  order.claimer = '';
-                });
-                Navigator.of(context).pop();
-                _updateLists();
-              },
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              child: const Text(
-                'Return',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  //notify server of ready
-                  order.orderState = 'ready';
-                });
-                Navigator.of(context).pop();
-                _updateLists();
-              },
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.green,
-              ),
-              child: const Text(
-                'Ready',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
-  void _executeFunctionForClaimedAndReady(Order order) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Order #${order.orderId}'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  //Notify Server of cancelled
-                  allOrders.remove(order);
-                });
-                Navigator.of(context).pop();
-                _updateLists();
-              },
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.red,
+
+void _executeFunctionForClaimedAndReady(Order order) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(
+          'Order #${order.orderId}',
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold), // Larger title
+        ),
+        content: Container(
+          height: 200, // Increase the height of the dialog
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              const Spacer(), // Space at the top
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        // Notify server of cancelled
+                        allOrders.remove(order);
+                      });
+                      Navigator.of(context).pop();
+                      _updateLists();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 32), // Double the vertical padding
+                    ),
+                    child: const Text(
+                      'Cancelled',
+                      style: TextStyle(fontSize: 20, color: Colors.white), // Larger text
+                    ),
+                  ),
+                  const SizedBox(width: 30), // Increased horizontal space between buttons
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        // Notify server of delivered
+                        allOrders.remove(order);
+                      });
+                      Navigator.of(context).pop();
+                      _updateLists();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 32), // Double the vertical padding
+                    ),
+                    child: const Text(
+                      'Delivered',
+                      style: TextStyle(fontSize: 20, color: Colors.white), // Larger text
+                    ),
+                  ),
+                ],
               ),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  //Notify Server of delivered
-                  allOrders.remove(order);
-                });
-                Navigator.of(context).pop();
-                _updateLists();
-              },
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.green,
-              ),
-              child: const Text(
-                'Delivered',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+              const Spacer(), // Space at the bottom
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+
+
+
+
 
 
   void _onOrderTap(Order order) {
@@ -377,6 +461,9 @@ class _OrdersPageState extends State<OrdersPage> {
     
     // Debug print to show age and orderId
     debugPrint('Order ID: ${order.orderId}, Age: $ageInSeconds seconds');
+    if (order.claimer != '' && order.claimer != widget.bartenderID ) {
+      return Colors.grey[700]!;
+    }
     
     if (order.orderState == 'ready') return Colors.green;
     if (ageInSeconds <= 180) return Colors.yellow[200]!; // 0-3 minutes old
@@ -385,7 +472,7 @@ class _OrdersPageState extends State<OrdersPage> {
     return Colors.red[700]!; // Over 10 minutes old
   }
 
-  @override
+ @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -422,7 +509,7 @@ class _OrdersPageState extends State<OrdersPage> {
               color: barOpenStatus ? Colors.red : Colors.green,
               child: Center(
                 child: Text(
-                  barOpenStatus ? "Close Bar" : "Open Bar",
+                  barOpenStatus ? "[HOLD] Close Bar" : "[HOlD] Open Bar",
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -537,27 +624,63 @@ class _OrdersPageState extends State<OrdersPage> {
                           ),
                         ),
                       ),
-                      Container(
-                        width: 100, // Adjust width as needed
-                        padding: const EdgeInsets.all(8.0),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black, width: 2), // Static black border
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        child: Center(
-                          child: Text(
-                            order.claimer,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black,
-                                  offset: Offset(1.0, 1.0),
-                                  blurRadius: 1.0,
+                      // Container for claimer text box
+                      Expanded(
+                        flex: 1,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: double.infinity, // Full width of the available space
+                                padding: const EdgeInsets.all(8.0),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.black, width: 2), // Static black border
+                                  borderRadius: BorderRadius.circular(8.0),
                                 ),
-                              ],
-                            ),
+                                child: Center(
+                                  child: Text(
+                                    order.claimer,
+                                    style: TextStyle(
+                                      fontSize: 24, // Increased font size
+                                      color: Colors.white,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black,
+                                          offset: Offset(1.0, 1.0),
+                                          blurRadius: 1.0,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8), // Space between text box and timer
+                              Center(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.timer, color: Colors.white),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _formatDuration(order.getAge()),
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black,
+                                            offset: Offset(1.0, 1.0),
+                                            blurRadius: 1.0,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -567,22 +690,45 @@ class _OrdersPageState extends State<OrdersPage> {
               );
             },
           ),
-          Positioned(
-            bottom: 16.0,
-            left: 16.0,
-            child: Text(
-              'Bartender ID: ${widget.bartenderID}',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-                backgroundColor: Colors.white,
+ Positioned(
+          bottom: 16.0,
+          left: 16.0,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Bartender ID: ${widget.bartenderID}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                  backgroundColor: Colors.white,
+                ),
               ),
-            ),
+              const SizedBox(height: 4),
+              Text(
+                'Active Terminals: $bartenderCount',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+            ],
           ),
+        ),
         ],
       ),
     );
   }
+
+  String _formatDuration(int seconds) {
+    final Duration duration = Duration(seconds: seconds);
+    final int hours = duration.inHours;
+    final int minutes = duration.inMinutes % 60;
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+  }
+
 }
 
