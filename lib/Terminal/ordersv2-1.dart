@@ -1,4 +1,6 @@
 import 'dart:async'; // Import the async package for Timer
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:barzzy_app1/Terminal/ordersv2-0.dart';
 import 'package:flutter/material.dart';
@@ -6,8 +8,10 @@ import 'package:barzzy_app1/backend/order.dart';
 
 class OrdersPage extends StatefulWidget {
   final String bartenderID; // Bartender ID parameter
+  final int barID;
+  final WebSocket socket;
 
-  const OrdersPage({super.key, required this.bartenderID});
+  const OrdersPage({Key? key, required this.bartenderID, required this.barID, required this.socket}) : super(key: key);
 
   @override
   State<OrdersPage> createState() => _OrdersPageState();
@@ -258,38 +262,40 @@ void _toggleBarStatus() {
 }
 
 
-  void _showRedistributeDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext context) {
-        final TextEditingController bartenderIdController = TextEditingController();
+void _refresh() {
+  allOrders.clear();
+  displayList.clear();
+  
+  // Send a 'refresh' action to the server via WebSocket
+  widget.socket.add(
+    jsonEncode({
+      'action': 'refresh',
+      'barID': widget.barID,
+    }),
+  );
 
-        return AlertDialog(
-          title: const Text('Redistribute Other Bartender'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: bartenderIdController,
-                decoration: const InputDecoration(
-                  labelText: 'Other Bartender ID',
-                ),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                // Placeholder logic for submit button
-              },
-              child: const Text('Redistribute'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // Listen for the response from the server
+  widget.socket.listen((event) {
+    // Parse the JSON response from the server
+    final Map<String, dynamic> response = jsonDecode(event);
+    
+    // Check if the response contains a list of orders
+    if (response.containsKey('orders')) {
+      final List<dynamic> ordersJson = response['orders'];
+      
+      // Convert JSON to Order objects and update allOrders
+      setState(() {
+        allOrders = ordersJson.map((json) => Order.fromJson(json)).toList();
+      });
+
+      // Update the displayList based on the new allOrders
+      _updateLists();
+    }
+  });
+
+  // Update the state to refresh the UI
+  setState(() {});
+}
 
   // Placeholder functions
   void _executeFunctionForUnclaimed(Order order) {
@@ -500,7 +506,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
             icon: const Icon(Icons.sync),
             color: Colors.red,
             onPressed: () {
-              _showRedistributeDialog();
+              _refresh();
             },
           ),
           GestureDetector(

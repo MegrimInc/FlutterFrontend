@@ -10,6 +10,7 @@ import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
 
 import 'package:barzzy_app1/BarPages/OrderDisplay.dart';
 import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
+import 'package:barzzy_app1/Terminal/ordersv2-0.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -89,7 +90,7 @@ class _LoginPageState extends State<LoginPage> {
         // Navigate to OrderDisplay if responseValue is 0 or negative
         Navigator.pushReplacement(
           context, 
-          MaterialPageRoute(builder: (context) => const OrderDisplay())
+          MaterialPageRoute(builder: (context) => const BartenderIDScreen())
         );
       }
     } catch (e) {

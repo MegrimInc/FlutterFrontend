@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/AuthPages/components/toggle.dart';
 import 'package:barzzy_app1/Terminal/ordersv2-1.dart';
@@ -17,63 +19,79 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
   final TextEditingController _controller = TextEditingController();
   
   Future<void> _handleSubmit() async {
-    final loginData = LoginCache();
-    if (_controller.text.isNotEmpty) {
-      final String bartenderID = _controller.text;
-      final String email = await loginData.getEmail();
-      final String password = await loginData.getPW();
+  final loginData = LoginCache();
+  final negativeBarID = await loginData.getUID();
+  final barId = -1 * negativeBarID;
 
-      final Uri url = Uri.parse('https://www.barzzy.site/signup/bartenderIDLogin');
+  if (_controller.text.isNotEmpty) {
+    final String bartenderID = _controller.text;
+    final url = 'wss://www.barzzy.site/ws/bartenders';
 
-      try {
-        final response = await http.get(
-          url.replace(queryParameters: {
-            'bartenderID': bartenderID,
-            'email': email,
-            'password': password,
-          }),
-        );
+    try {
+      // Attempt to open a WebSocket connection
+      final WebSocket socket = await WebSocket.connect(url);
+      debugPrint('Connected to WebSocket at $url');
 
-        if (response.statusCode == 200 || testing == true) {
-          // Parse the response if needed
-          final responseData = testing ? 'test' : jsonDecode(response.body);
+      // Send a message to initialize the bartender session
+      final Map<String, dynamic> bartenderLogin = {'action': 'initialize', 'barID': barId, 'bartenderID': bartenderID};
+      socket.add(jsonEncode(bartenderLogin));
+      
+      // Listen for messages
+      socket.listen((message) {
+        debugPrint('Received: $message');
 
-          // Navigate to OrdersPage and pass the bartenderID
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => OrdersPage(bartenderID: bartenderID)),
-      (Route<dynamic> route) => false, // Remove all previous routes
-    );
-        } else {
-          // Handle response error (status code other than 200)
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to make a connection to the server. Status code: ${response.statusCode}'),
-              backgroundColor: Colors.red,
-            ),
+        // Handle the response from the server
+        if (message.contains("Initialization successful")) {
+          // Navigate to OrdersPage and pass the bartenderID if successful
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => OrdersPage(bartenderID: bartenderID, barID: barId, socket: socket,)),
+            (Route<dynamic> route) => false, // Remove all previous routes
           );
+        } else {
+          // Show an alert dialog if the response is unsuccessful
+          _showAlertDialog(context, "Error", "Failed to initialize: $message");
         }
-      } catch (e) {
-        // Handle network or other errors
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('An error occurred: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } else {
-      // Show a SnackBar with an error message if the text field is empty
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in the BartenderID text field.'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 3),
-        ),
-      );
+      });
+
+    } catch (e) {
+      // Handle the error
+      print('Failed to connect to WebSocket: $e');
+      _showAlertDialog(context, "Connection Error", "Could not connect to the server. Please try again.");
     }
+  } else {
+    // Show a SnackBar with an error message if the text field is empty
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please fill in the BartenderID text field.'),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 3),
+      ),
+    );
   }
+}
+
+void _showAlertDialog(BuildContext context, String title, String content) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: <Widget>[
+          TextButton(
+            child: const Text("OK"),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   void _logout() {
     final loginData = LoginCache();
