@@ -84,13 +84,13 @@ void _updateLists() {
   displayList = claimedByBartender + notClaimedByBartender;
 
   if (priorityFilterShowReady) {
-    displayList = displayList.where((order) => (order.orderId % bartenderCount) == bartenderNumber).toList();
+    displayList = displayList.where((order) => (order.userId % bartenderCount) == bartenderNumber).toList();
     displayList = displayList.where((order) => order.orderState == 'ready').toList();
   } else {
     if (filterUnique) {
       displayList = displayList.where((order) =>
         order.claimer == widget.bartenderID || 
-        (order.claimer.isEmpty && (order.orderId % bartenderCount) == bartenderNumber)
+        (order.claimer.isEmpty && (order.userId % bartenderCount) == bartenderNumber)
       ).toList();      
     }
 
