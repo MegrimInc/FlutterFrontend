@@ -128,44 +128,72 @@ class MenuPageState extends State<MenuPage>
   }
 
   void _submitOrder(BuildContext context) async {
-  final loginCache = Provider.of<LoginCache>(context, listen: false);
-  final userId = await loginCache.getUID();
-  final barId = int.parse(widget.barId); // Convert barId to int
-  final cart = Provider.of<Cart>(context, listen: false);
-  final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+    final loginCache = Provider.of<LoginCache>(context, listen: false);
+    final userId = await loginCache.getUID();
+    final barId = int.parse(widget.barId);
+    final cart = Provider.of<Cart>(context, listen: false);
+    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
 
-  // Convert the drink IDs in the cart to a Map<int, int> where key is drinkId and value is quantity
-  final drinkQuantities = cart.barCart.map((key, value) => MapEntry(int.parse(key), value));
+    final drinkQuantities =
+        cart.barCart.map((key, value) => MapEntry(int.parse(key), value));
 
-  // Call the addOrder method, passing the barId, userId, and drinkQuantities
-  bool success = await hierarchy.addOrder(barId, userId, drinkQuantities);
+    try {
+      // Show loading overlay
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          opaque: false,
+          pageBuilder: (context, _, __) => const LoadingOverlay(),
+        ),
+      );
 
-  if (success) {
-    Navigator.pop(context); // Close the LoadingOverlay
-    navigateToOrdersPage(context); // Navigate to the orders page
-  } else {
-    Navigator.pop(context); // Close the LoadingOverlay
-    ScaffoldMessenger.of(context).showSnackBar(
-  SnackBar(
-    content: const Text(
-      'Order already in progress. Please complete your order...',
-      textAlign: TextAlign.center,  // Center the text
-      style: TextStyle(
-        color: Colors.white ,        // Change the text color to white
-        fontSize: 16,               // Adjust the font size if needed
-      ),
-    ),
-    backgroundColor: Colors.grey[900],  // Set the background color to black
-    behavior: SnackBarBehavior.floating, // Makes the SnackBar float above the content
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(10), // Rounded corners
-    ),
-    margin: const EdgeInsets.all(10), // Margin around the SnackBar
-    duration: const Duration(seconds: 3), // Adjust the display duration if needed
-  ),
-);
+      // Attempt to establish WebSocket connection and process order
+      final result = await hierarchy.establishWebSocketConnection(
+          barId, userId, drinkQuantities);
+
+      // Always pop the loading overlay
+      Navigator.pop(context);
+
+      if (result.success) {
+        if (result.message.startsWith("Order processed:")) {
+          // Order was successful
+          navigateToOrdersPage(context);
+        } else {
+          // Unexpected success message
+          _showSnackBar(context, result.message);
+        }
+      } else {
+        // WebSocket connection failed or order was not processed
+        // Display the exact message received from the WebSocket
+        _showSnackBar(context, result.message);
+      }
+    } catch (e) {
+      // Handle any unexpected errors
+      Navigator.pop(context); // Ensure loading overlay is closed
+      _showSnackBar(context, "An unexpected error occurred. Please try again.");
+    }
   }
-}
+
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+          ),
+        ),
+        backgroundColor: Colors.grey[900],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        margin: const EdgeInsets.all(10),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -187,39 +215,34 @@ class MenuPageState extends State<MenuPage>
               //ORDER SWIPE
 
               Consumer<Cart>(
-  builder: (context, cart, _) {
-    // Check if there are items in the cart
-    if (cart.getTotalDrinkCount() > 0) {
-      return Positioned(
-        right: 0,
-        top: 0,
-        bottom: 0,
-        width: 12.5, // Adjust this width as needed
-        child: GestureDetector(
-          onHorizontalDragUpdate: (details) {
-            if (details.primaryDelta! < 0) {
-              // Swiping left from the right edge
-              Navigator.of(context).push(
-                PageRouteBuilder(
-                  opaque: false, // Set to false to allow the background to be visible
-                  pageBuilder: (context, _, __) => const LoadingOverlay(),
-                ),
-              );
+                builder: (context, cart, _) {
+                  // Check if there are items in the cart
+                  if (cart.getTotalDrinkCount() > 0) {
+                    return Positioned(
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 12.5, // Adjust this width as needed
+                      child: GestureDetector(
+                        onHorizontalDragUpdate: (details) {
+                          if (details.primaryDelta! < 0) {
+                            // Swiping left from the right edge
 
-              // Start the order submission process
-              _submitOrder(context);
-            }
-          },
-          child: Container(
-            color: Colors.transparent, // Invisible swipe area
-          ),
-        ),
-      );
-    } else {
-      return const SizedBox.shrink(); // Render an empty widget if the cart is empty
-    }
-  },
-),
+                            // Start the order submission process
+                            _submitOrder(context);
+                          }
+                        },
+                        child: Container(
+                          color: Colors.transparent, // Invisible swipe area
+                        ),
+                      ),
+                    );
+                  } else {
+                    return const SizedBox
+                        .shrink(); // Render an empty widget if the cart is empty
+                  }
+                },
+              ),
 
               // Overlay content
               if (_showOverlay)
@@ -343,13 +366,11 @@ class MenuPageState extends State<MenuPage>
                                   child: Text(
                                     '*$query',
                                     style: GoogleFonts.poppins(
-                                      fontSize: 15.5,
-                                      //fontWeight:
-                                      // FontWeight.bold,
-                                      color: Colors.white,
-                                      fontStyle:
-                                          FontStyle.italic
-                                    ),
+                                        fontSize: 15.5,
+                                        //fontWeight:
+                                        // FontWeight.bold,
+                                        color: Colors.white,
+                                        fontStyle: FontStyle.italic),
                                   ),
                                 ),
                               ),
@@ -485,16 +506,24 @@ class MenuPageState extends State<MenuPage>
                                                       children: [
                                                         Expanded(
                                                           child: Text(
-  '`${drink.name}',
-  style: const TextStyle(
-    fontSize: 13,
-    fontWeight: FontWeight.w600,
-    fontStyle: FontStyle.italic,
-    color: Colors.white,
-  ),
-  overflow: TextOverflow.ellipsis,
-  maxLines: 1,
-),
+                                                            '`${drink.name}',
+                                                            style:
+                                                                const TextStyle(
+                                                              fontSize: 13,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontStyle:
+                                                                  FontStyle
+                                                                      .italic,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            maxLines: 1,
+                                                          ),
                                                         ),
                                                         const SizedBox(
                                                             width: 15)
@@ -524,17 +553,15 @@ class MenuPageState extends State<MenuPage>
                                         child: Text(
                                           response,
                                           style: GoogleFonts.poppins(
-    fontSize: 15.5,
-    fontStyle: FontStyle.italic,
-    color: Colors.white,
-  ),
-  overflow: TextOverflow.ellipsis,
-  maxLines: 1,
-), 
+                                            fontSize: 15.5,
+                                            fontStyle: FontStyle.italic,
+                                            color: Colors.white,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
                                         ),
                                       ),
-                                  
-                                    
+                                    ),
                                     const SizedBox(width: 50),
                                   ],
                                 ),
@@ -586,7 +613,7 @@ class MenuPageState extends State<MenuPage>
                 },
               ),
 
-             // MESSAGE FIELD
+              // MESSAGE FIELD
               Expanded(
                 child: SizedBox(
                   height: 35,
@@ -737,13 +764,10 @@ class MenuPageState extends State<MenuPage>
     );
   }
 
- 
-
   void navigateToOrdersPage(BuildContext context) {
-  Navigator.of(context).pushNamedAndRemoveUntil('/orders', (Route<dynamic> route) => false);
-}
-
-
+    Navigator.of(context)
+        .pushNamedAndRemoveUntil('/orders', (Route<dynamic> route) => false);
+  }
 
   void _scrollToBottom() {
     _scrollController.animateTo(
