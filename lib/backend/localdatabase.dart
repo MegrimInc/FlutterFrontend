@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:barzzy_app1/Backend/activeorder.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/response.dart';
@@ -21,8 +22,18 @@ class LocalDatabase with ChangeNotifier {
   final Map<String, Tag> tags = {};
   final Map<String, Drink> _drinks = {};
   final Cache _cache = Cache();
+  final Map<String, CustomerOrder> _barOrders = {};
 
-  
+
+   void addOrUpdateOrderForBar(CustomerOrder order) {
+    _barOrders[order.barId] = order;
+    notifyListeners();
+  }
+
+  CustomerOrder? getOrderForBar(String barId) {
+    return _barOrders[barId];
+  }
+
 
   // Method to add a new bar, generating an ID for it
   void addBar(Bar bar) {
@@ -98,7 +109,7 @@ class LocalDatabase with ChangeNotifier {
       } else {
         debugPrint(
             'Failed to load drinks. Status code: ${response.statusCode}');
-      } 
+      }
     } catch (e) {
       // Handle any errors during the request
       debugPrint('Error fetching drinks: $e');
@@ -129,24 +140,19 @@ class LocalDatabase with ChangeNotifier {
 
     // Fetch drinks for each tag ID
     for (String tagId in filteredIds) {
-       Set<String> returnedids = await fetchDrinksByTag(barId, tagId);
-       ids.addAll(returnedids);
+      Set<String> returnedids = await fetchDrinksByTag(barId, tagId);
+      ids.addAll(returnedids);
     }
 
-      List<String> drinkIds = ids.toList();
-      user.addSearchQuery(barId, query, drinkIds);
+    List<String> drinkIds = ids.toList();
+    user.addSearchQuery(barId, query, drinkIds);
 
     user.setLastSearch(barId, query, drinkIds);
 
-      if (drinkIds.isEmpty) {
-    Response().addNegativeResponse(user, barId, query);
-  } else {
-    Response().addPositiveResponse(user, barId, drinkIds.length, query);
+    if (drinkIds.isEmpty) {
+      Response().addNegativeResponse(user, barId, query);
+    } else {
+      Response().addPositiveResponse(user, barId, drinkIds.length, query);
+    }
   }
-
-    } 
-
-
-   
-  }
-
+}
