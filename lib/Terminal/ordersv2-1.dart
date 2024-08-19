@@ -1,5 +1,5 @@
 import 'dart:async'; // Import the async package for Timer
-import 'dart:convert';
+import 'dart:convert'; //TODO check bar is active 
 import 'dart:io';
 
 import 'package:barzzy_app1/Terminal/ordersv2-0.dart';
@@ -56,6 +56,79 @@ class _OrdersPageState extends State<OrdersPage> {
     _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
       _updateLists();
     });
+
+
+  // Listen for the response from the server
+  widget.socket.listen((event) {
+  // Parse the JSON response from the server
+  final Map<String, dynamic> response = jsonDecode(event);
+
+
+
+  // Check which key is present in the response and handle accordingly
+  switch (response.keys.first) {
+    case 'error':
+      // Use _showErrorSnackbar to display the error message
+      _showErrorSnackbar(response['error']);
+      break;
+
+    case 'orders':
+      final List<dynamic> ordersJson = response['orders'];
+      
+      // Convert JSON to Order objects and update allOrders
+      final incomingOrders = ordersJson.map((json) => Order.fromJson(json)).toList();
+      for (Order incomingOrder in incomingOrders) {
+        // Check if the order exists in allOrders
+        int index = allOrders.indexWhere((order) => order.orderId == incomingOrder.orderId);
+        
+        if (index != -1) {
+          // If it exists, replace the old order
+          allOrders[index] = incomingOrder;
+        } else {
+          // If it doesn't exist, add the new order to allOrders
+          allOrders.add(incomingOrder);
+        }
+      }
+      setState(() {
+        // Update the displayList based on the new allOrders
+        _updateLists();
+      });
+      break;
+
+    case 'barStatus':
+       // Update barOpenStatus and refresh UI
+        setState(() {
+          barOpenStatus = response['barStatus'];
+        });
+        break;
+
+    case 'disableTerminal':
+        _disableTerminal();
+        break;
+
+    case 'updateTerminal':
+        // Update local values and refresh UI
+        setState(() {
+          bartenderCount = response['bartenderCount'];
+          bartenderNumber = response['bartenderNumber'];
+        });
+        break;
+
+    default:
+      print("Unknown key received in WebSocket message: ${response.keys.first}");
+  }
+},
+    onError: (error) {
+      // Handle WebSocket errors
+      _handleWebSocketError(error);
+    },
+    onDone: () {
+      // Handle WebSocket termination
+      print('WebSocket connection closed');
+      _handleWebSocketTermination(); // Call the function when the WebSocket is terminated
+    },
+    cancelOnError: true, // Optionally, cancel the listener on error
+  );
   }
 
   @override
@@ -254,11 +327,22 @@ void _toggleBarStatus() {
     return; // Exit the function without changing the barOpenStatus
   }
 
-  setState(() {
-    barOpenStatus = !barOpenStatus;
-  });
+  widget.socket.add(
+  json.encode({
+    'action': barOpenStatus ? 'close' : 'open',
+  }),
+  );
 
   debugPrint('Bar status toggled. New status: ${barOpenStatus ? "Open" : "Closed"}');
+}
+
+void _showErrorSnackbar(String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      duration: Duration(seconds: 3),
+    ),
+  );
 }
 
 
@@ -273,37 +357,21 @@ void _refresh() {
       'barID': widget.barID,
     }),
   );
-
-  // Listen for the response from the server
-  widget.socket.listen((event) {
-    // Parse the JSON response from the server
-    final Map<String, dynamic> response = jsonDecode(event);
-    
-    // Check if the response contains a list of orders
-    if (response.containsKey('orders')) {
-      final List<dynamic> ordersJson = response['orders'];
-      
-      // Convert JSON to Order objects and update allOrders
-      setState(() {
-        allOrders = ordersJson.map((json) => Order.fromJson(json)).toList();
-      });
-
-      // Update the displayList based on the new allOrders
-      _updateLists();
-    }
-  });
-
-  // Update the state to refresh the UI
-  setState(() {});
+  setState((){});
 }
 
-  // Placeholder functions
   void _executeFunctionForUnclaimed(Order order) {
-    setState(() {
-      //Notify server of claimed
-      order.claimer = widget.bartenderID;
-    });
-    _updateLists();
+    // Construct the message
+    final claimRequest = {
+      'action': 'claim',
+      'bartenderID': widget.bartenderID,
+      'orderID': order.orderId,
+      'barID': order.barId,
+    };
+
+    // Send the message via WebSocket
+    widget.socket.add(jsonEncode(claimRequest));
+    debugPrint("attempting claim");
   }
 
 void _executeFunctionForClaimed(Order order) {
@@ -326,12 +394,14 @@ void _executeFunctionForClaimed(Order order) {
                 children: [
                   ElevatedButton(
                     onPressed: () {
-                      setState(() {
-                        // Notify server of cancel
-                        order.claimer = '';
-                      });
+                      widget.socket.add(
+                        json.encode({
+                          'action': 'unclaim',
+                          'bartenderID': widget.bartenderID,
+                          'orderID': order.orderId,
+                        }),
+                      );
                       Navigator.of(context).pop();
-                      _updateLists();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
@@ -339,19 +409,22 @@ void _executeFunctionForClaimed(Order order) {
                           horizontal: 32, vertical: 32), // Double the vertical padding
                     ),
                     child: const Text(
-                      'Return',
+                      'Unclaim',
                       style: TextStyle(fontSize: 20, color: Colors.white), // Larger text
                     ),
                   ),
                   const SizedBox(width: 20), // Add horizontal space between buttons
                   ElevatedButton(
                     onPressed: () {
-                      setState(() {
-                        // Notify server of ready
-                        order.status = 'ready';
-                      });
+                      
+                      widget.socket.add(
+                        json.encode({
+                          'action': 'ready',
+                          'bartenderID': widget.bartenderID,
+                          'orderID': order.orderId,
+                        }),
+                      );
                       Navigator.of(context).pop();
-                      _updateLists();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
@@ -396,12 +469,14 @@ void _executeFunctionForClaimedAndReady(Order order) {
                 children: [
                   ElevatedButton(
                     onPressed: () {
-                      setState(() {
-                        // Notify server of cancelled
-                        allOrders.remove(order);
-                      });
+                      widget.socket.add(
+                        json.encode({
+                          'action': 'cancel',
+                          'bartenderID': widget.bartenderID,
+                          'orderID': order.orderId,
+                        }),
+                      );
                       Navigator.of(context).pop();
-                      _updateLists();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
@@ -416,12 +491,14 @@ void _executeFunctionForClaimedAndReady(Order order) {
                   const SizedBox(width: 30), // Increased horizontal space between buttons
                   ElevatedButton(
                     onPressed: () {
-                      setState(() {
-                        // Notify server of delivered
-                        allOrders.remove(order);
-                      });
+                      widget.socket.add(
+                        json.encode({
+                          'action': 'deliver',
+                          'bartenderID': widget.bartenderID,
+                          'orderID': order.orderId,
+                        }),
+                      );
                       Navigator.of(context).pop();
-                      _updateLists();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
@@ -491,7 +568,14 @@ void _executeFunctionForClaimedAndReady(Order order) {
             Flexible(
               child: IconButton(
                 icon: const Icon(Icons.cancel),
-                onPressed: _disableTerminal,
+                onPressed: () {
+                      widget.socket.add(
+                        json.encode({
+                          'action': 'disableTerminal',
+                          'bartenderID': widget.bartenderID,
+                        }),
+                      );
+                } 
               ),
             ),
             // Removed the IconButton for Logout
@@ -734,6 +818,14 @@ void _executeFunctionForClaimedAndReady(Order order) {
     final int hours = duration.inHours;
     final int minutes = duration.inMinutes % 60;
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+  }
+  
+  
+  
+  void _handleWebSocketError(error) { //TODO
+  }
+  
+  void _handleWebSocketTermination() {//TODO
   }
 
 }
