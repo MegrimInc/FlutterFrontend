@@ -1,6 +1,7 @@
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../Backend/localdatabase.dart';
 
 class PickupPage extends StatefulWidget {
   const PickupPage({super.key});
@@ -16,7 +17,7 @@ class PickupPageState extends State<PickupPage> {
       backgroundColor: const Color.fromARGB(255, 0, 0, 0),
       appBar: AppBar(
         title: const Text('Orders Page'),
-         backgroundColor: Colors.black,
+        backgroundColor: Colors.black,
         surfaceTintColor: Colors.transparent,
       ),
       body: Consumer<Hierarchy>(
@@ -32,46 +33,44 @@ class PickupPageState extends State<PickupPage> {
             );
           }
 
-          final reversedOrderKeys = orders.keys.toList().reversed.toList();
+          final reversedOrderKeys = orders.reversed.toList();
 
           return PageView.builder(
             itemCount: reversedOrderKeys.length,
             itemBuilder: (context, index) {
-              final barId = reversedOrderKeys[index];
-              final order = orders[barId];
+             final barId = reversedOrderKeys[index].toString();
+              final localDatabase = LocalDatabase();
+
+              // Fetch the bar, order, and drink data
+              final bar = LocalDatabase.getBarById(barId);
+              final order = localDatabase.getOrderForBar(barId);
+
+              if (bar == null || order == null) {
+                return const Center(
+                  child: Text(
+                    'Data not found.',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                );
+              }
+
+              final drinkQuantities = order.drinkQuantities;
 
               return Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Card(
-                 color: Colors.grey[900],
-                 
+                  color: Colors.grey[900],
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Bar ID: $barId',
+                          'Bar: ${bar.getName() ?? 'Unknown'}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'User ID: ${order?['userId']}',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 18,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Order ID: ${order?['orderId']}',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 18,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -84,25 +83,39 @@ class PickupPageState extends State<PickupPage> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        // Display drink quantities
-                        ...?order?['drinkQuantities']?.entries.map((entry) {
+                        // Display drink quantities and names
+                        ...drinkQuantities.entries.map((entry) {
+                          final drink = localDatabase.getDrinkById(entry.key);
+
+
+
+                         
                           return Text(
-                            'Drink ID: ${entry.key} - Quantity: ${entry.value}',
+                            'Drink: ${drink.getName() ?? 'Unknown'} - Quantity: ${entry.value}',
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 16,
                             ),
                           );
-                        }).toList(),
+                        }),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Total Price: \$${order.getPrice()?.toStringAsFixed(2) ?? '0.00'}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const Spacer(),
-                        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Unclaimed'),
+                            const Text('Unclaimed',
+                                style: TextStyle(color: Colors.white)),
                             ElevatedButton(
                               onPressed: () {
-                                final hierarchy = Provider.of<Hierarchy>(context, listen: false);
-                                hierarchy.clearExpiredOrders(); 
-                                _clearOrders(context);// Call the clearExpiredOrders method
+                                // Implement cancel functionality here
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
@@ -120,16 +133,8 @@ class PickupPageState extends State<PickupPage> {
           );
         },
       ),
-      
     );
   }
 
-  void _clearOrders(BuildContext context) {
-    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
-    hierarchy.clearOrders();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('All orders cleared!')),
-    );
-    setState(() {}); // Refresh the UI after clearing orders
-  }
+  
 }
