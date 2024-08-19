@@ -4,7 +4,7 @@ class Order {
   int userId;
   double price;
   List<String> name;
-  String orderState;
+  String status;
   String claimer;
   int timestamp; // Add timestamp field to store milliseconds since epoch
 
@@ -14,7 +14,7 @@ class Order {
     this.userId,
     this.price,
     this.name,
-    this.orderState,
+    this.status,
     this.claimer,
     this.timestamp, // Initialize timestamp in the constructor
   );
@@ -28,7 +28,7 @@ class Order {
       json['userId'] as int,
       (json['price'] as num).toDouble(),
       List<String>.from(json['name'] as List), // Parse 'name' from JSON
-      json['orderState'] as String, // Parse 'orderState' from JSON
+      json['status'] as String, // Parse 'orderState' from JSON
       json['claimer'] as String, // Parse 'claimer' from JSON
       json['timestamp'] as int, // Parse 'timestamp' from JSON
     );
@@ -42,7 +42,7 @@ class Order {
       'userId': userId,
       'price': price,
       'name': name,
-      'orderState': orderState,
+      'status': status,
       'claimer': claimer,
       'timestamp': timestamp,
     };

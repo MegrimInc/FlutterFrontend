@@ -85,7 +85,7 @@ void _updateLists() {
 
   if (priorityFilterShowReady) {
     displayList = displayList.where((order) => (order.userId % bartenderCount) == bartenderNumber).toList();
-    displayList = displayList.where((order) => order.orderState == 'ready').toList();
+    displayList = displayList.where((order) => order.status == 'ready').toList();
   } else {
     if (filterUnique) {
       displayList = displayList.where((order) =>
@@ -95,7 +95,7 @@ void _updateLists() {
     }
 
     if (filterHideReady) {
-      displayList = displayList.where((order) => order.orderState != 'ready').toList();
+      displayList = displayList.where((order) => order.status != 'ready').toList();
     }
   }
 
@@ -348,7 +348,7 @@ void _executeFunctionForClaimed(Order order) {
                     onPressed: () {
                       setState(() {
                         // Notify server of ready
-                        order.orderState = 'ready';
+                        order.status = 'ready';
                       });
                       Navigator.of(context).pop();
                       _updateLists();
@@ -454,7 +454,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
     if (order.claimer.isEmpty) {
       _executeFunctionForUnclaimed(order);
     } else if (order.claimer == widget.bartenderID) {
-      if (order.orderState == 'ready') {
+      if (order.status == 'ready') {
         _executeFunctionForClaimedAndReady(order);
       } else {
         _executeFunctionForClaimed(order);
@@ -471,7 +471,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
       return Colors.grey[700]!;
     }
     
-    if (order.orderState == 'ready') return Colors.green;
+    if (order.status == 'ready') return Colors.green;
     if (ageInSeconds <= 180) return Colors.yellow[200]!; // 0-3 minutes old
     if (ageInSeconds <= 300) return Colors.orange[200]!; // 3-5 minutes old
     if (ageInSeconds <= 600) return Colors.orange[500]!; // 5-10 minutes old
