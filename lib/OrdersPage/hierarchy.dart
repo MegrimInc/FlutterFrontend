@@ -1,241 +1,104 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:barzzy_app1/Backend/activeorder.dart';
 import 'package:flutter/foundation.dart';
-import 'package:ntp/ntp.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
-import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
+import '../Backend/localdatabase.dart';
 
-class Hierarchy with ChangeNotifier {
-  static const _orderKey = 'orders';
-  Map<int, Map<String, dynamic>> _orders = {};
-  WebSocketChannel? _channel;
+class WebSocketResult {
+  final bool success;
+  final String message;
 
-  Hierarchy() {
-    _loadOrders();
-    notifyListeners();
-  }
-
-  Future<void> _loadOrders() async {
-  final prefs = await SharedPreferences.getInstance();
-  final orders = prefs.getString(_orderKey) ?? '{}';
-  debugPrint('Loaded orders from SharedPreferences: $orders');
-  final Map<String, dynamic> decodedOrders = jsonDecode(orders);
-  _orders = decodedOrders.map((key, value) =>
-      MapEntry(int.parse(key), Map<String, dynamic>.from(value.map((k, v) => 
-        MapEntry(k, v is String && v.startsWith('{') && v.endsWith('}') ? 
-          jsonDecode(v) : v)))));
-  debugPrint('Decoded orders: $_orders');
-  notifyListeners();
+  WebSocketResult(this.success, this.message);
 }
 
-  Future<bool> addOrder(
-      int barId, int userId, Map<int, int> drinkQuantities) async {
-    //Check if there's already an order for this barId
-    if (_orders.containsKey(barId)) {
-      debugPrint('Order already exists for barId: $barId');
-      return false; // Prevent placing another order at the same bar
-    }
+class Hierarchy with ChangeNotifier {
+  final List<int> _activeorders = [];
+  WebSocketChannel? _channel;
 
-    // Generate a UUID for the orderId
-    final orderId = const Uuid().v4().replaceAll('-', '_');
-
-    // Convert drinkQuantities to use string keys
-    final Map<String, int> stringKeyedDrinkQuantities =
-        drinkQuantities.map((key, value) => MapEntry(key.toString(), value));
-
-    final Map<String, dynamic> order = {
-      'barId': barId,
-      'userId': userId,
-      'orderId': orderId,
-      'drinkQuantities': stringKeyedDrinkQuantities,
+  Future<WebSocketResult> establishWebSocketConnection(int barId, int userId, Map<int, int> drinkQuantities) async {
+  final List<Map<String, dynamic>> drinksList = drinkQuantities.entries.map((entry) {
+    return {
+      'drinkId': entry.key,
+      'quantity': entry.value,
     };
+  }).toList();
 
-    // Send the order to the server
-    final success = await _sendOrderToServer(order);
+  final Map<String, dynamic> order = {
+    'barId': barId,
+    'userId': userId,
+    'drinks': drinksList,
+  };
 
-    if (success) {
-      // Establish WebSocket connection after successful order submission
-      _establishWebSocketConnection(barId, userId, orderId);
+  final wsUrl = Uri.parse('wss://www.barzzy.site/ws/orders');
 
-      // Get the current time from NTP
-      DateTime ntpTime = await NTP.now();
-
-      // Add the `created_at` field with the NTP time (UTC)
-      final Map<String, dynamic> orderWithStatusAndTimestamp = Map.from(order)
-        ..['status'] = null
-        ..['claimer'] = null
-        ..['created_at'] = ntpTime.toIso8601String();
-
-      // Store the order locally only if the server response is successful
-      _orders[barId] = orderWithStatusAndTimestamp;
-      await _saveOrders();
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  Future<bool> _sendOrderToServer(Map<String, dynamic> order) async {
-    final url = Uri.parse('https://www.barzzy.site/hierarchy/create');
-
-    try {
-      final response = await http.post(url,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode(order));
-
-      debugPrint('Response status code: ${response.statusCode}');
-      debugPrint('Response body: ${response.body}');
-
-      // Check the response status and body
-      if (response.statusCode == 200) {
-        debugPrint('Order sent successfully: ${response.body}');
-        return true;
-      } else {
-        debugPrint('Failed to send order: ${response.statusCode}');
-        debugPrint('Response: ${response.body}');
-        return false;
-      }
-    } catch (e) {
-      debugPrint('Error sending order: $e');
-      return false;
-    }
-  }
-
-  void _establishWebSocketConnection(int barId, int userId, String orderId) {
-    final wsUrl = Uri.parse(
-        'wss://www.barzzy.site/ws/hierarchy?barId=$barId&userId=$userId&orderId=$orderId');
-
-    // Establish WebSocket connection
+  try {
     _channel = WebSocketChannel.connect(wsUrl);
 
-    // Listen for updates from the server
-    _channel?.stream.listen((data) {
-      debugPrint('Received WebSocket message: $data');
+    final completer = Completer<WebSocketResult>();
+    String lastMessage = ""; // Store the last received message
 
-      // Handle the update (e.g., parse the message and update UI or notify listeners)
+    _channel?.sink.add(jsonEncode(order));
+
+    _channel?.stream.listen((data) async {
+      debugPrint('Received WebSocket message: $data');
+      lastMessage = data; // Update the last received message
+
       final response = jsonDecode(data);
-      _handleOrderUpdate(response);
+      final result = await _handleOrderResponse(response);
+
+      completer.complete(result);
     }, onError: (error) {
       debugPrint('WebSocket error: $error');
+      completer.complete(WebSocketResult(false, "Connection error: $error"));
     }, onDone: () {
       debugPrint('WebSocket connection closed');
+      if (!completer.isCompleted) {
+        // Use the last received message if available, otherwise use a generic message
+        completer.complete(WebSocketResult(false, lastMessage.isNotEmpty ? lastMessage : "Connection closed unexpectedly"));
+      }
     });
+
+    return completer.future;
+  } catch (e) {
+    return WebSocketResult(false, "Failed to connect: ${e.toString()}");
+  }
+}
+
+
+  Future<WebSocketResult> _handleOrderResponse(Map<String, dynamic> response) async {
+    final String messageType = response['messageType']?.toString() ?? 'unknown';
+    final String message = response['message']?.toString() ?? 'No message';
+
+    debugPrint('Order response received: $messageType, message: $message');
+
+    if (messageType == 'success') {
+      final orderData = response['data'];
+      debugPrint('Order data extracted: $orderData');
+
+      final order = CustomerOrder.fromJson(orderData);
+      debugPrint('Order object created: ${order.toJson()}');
+
+      // Add or update the order in LocalDatabase
+      LocalDatabase().addOrUpdateOrderForBar(order);
+       _activeorders.add(orderData['barId']);
+
+      notifyListeners();
+      return WebSocketResult(true, "Order processed: $message");
+    } else {
+      debugPrint('Order response indicates failure: $message');
+      return WebSocketResult(false, message);
+    }
   }
 
-  void _handleOrderUpdate(Map<String, dynamic> response) {
-    final barId = response['barId'];
-    final orderId = response['orderId'];
-    final newStatus = response['status'];
-    final newClaimer = response['claimer'];
-
-    debugPrint('Updating order for barId: $barId with new status: $newStatus');
-
-    // Ensure drinkQuantities is properly handled
-    final drinkQuantities = Map<String, int>.from(response['drinkQuantities']);
-
-    // Update the order in the _orders map
-    if (_orders.containsKey(barId)) {
-      // Preserve the existing order details and update the status
-      final existingOrder = _orders[barId];
-      _orders[barId] = {
-        'barId': existingOrder?['barId']?.toString(),
-        'userId': existingOrder?['userId']?.toString(),
-        'orderId': existingOrder?['orderId'],
-        'status': newStatus,
-        'claimer': newClaimer,
-        'created_at':
-            existingOrder?['created_at'], // Preserve the created_at timestamp
-        'drinkQuantities': drinkQuantities,
-      };
-      debugPrint('Order after update: ${_orders[barId]}');
-      notifyListeners(); // Notify listeners to update the UI
-      _saveOrders();
-    } else {
-      debugPrint('No existing order found for barId: $barId');
-    }
-
-    debugPrint('Order $orderId updated to status $newStatus');
+ List<int> getOrders() {
+    return _activeorders;
   }
 
   @override
   void dispose() {
-    // Close WebSocket connection when no longer needed
     _channel?.sink.close();
     super.dispose();
-  }
-
-  Future<void> clearOrders() async {
-    _orders.clear(); // Clear the in-memory orders
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_orderKey); // Remove the orders from SharedPreferences
-    debugPrint('Orders after clearing: $_orders'); // Confirm orders are cleared
-    notifyListeners(); // Notify listeners to update the UI
-    await _saveOrders();
-  }
-
-  Map<int, Map<String, dynamic>> getOrders() {
-    return _orders;
-  }
-
-  Future<void> _saveOrders() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-
-    // Ensure all nested maps handle null values appropriately
-    final sanitizedOrders = _orders.map((key, value) => MapEntry(
-          key.toString(), // Convert key to string
-          value.map((nestedKey, nestedValue) => MapEntry(
-                nestedKey,
-                nestedValue is Map ? 
-                  json.encode(nestedValue) : // Encode nested maps
-                  nestedValue?.toString() ?? '', // Convert other values to string or use empty string for null
-              )),
-        ));
-
-    // Convert the sanitized orders to JSON string
-    final ordersJson = jsonEncode(sanitizedOrders);
-
-    // Print the orders being saved
-    debugPrint('Saving orders to SharedPreferences: $ordersJson');
-
-    // Save the orders to SharedPreferences
-    await prefs.setString(_orderKey, ordersJson);
-    debugPrint('Orders successfully saved to SharedPreferences');
-  } catch (e) {
-    debugPrint('Error in _saveOrders: $e');
-  }
-}
-
-
-
-  Future<void> clearExpiredOrders() async {
-    final DateTime now = await NTP.now(); // Get the current time from NTP
-    bool hasCleared = false;
-
-    _orders.removeWhere((barId, order) {
-      final DateTime createdAt = DateTime.parse(order['created_at']);
-      final Duration difference = now.difference(createdAt);
-
-      debugPrint('Current NTP time: $now');
-      debugPrint('Order created_at time: $createdAt');
-      debugPrint('Time difference in seconds: ${difference.inSeconds}');
-
-      // Temporarily set expiration time to 10 seconds for testing
-      if (difference.inHours >= 24) {
-        hasCleared = true;
-        debugPrint(
-            'Order for barId: $barId is older than 24 hours and will be removed.');
-        return true;
-      }
-      return false;
-    });
-
-    if (hasCleared) {
-      await _saveOrders(); // Save the updated orders after removal
-      notifyListeners(); // Notify listeners to update the UI
-    }
   }
 }
