@@ -11,7 +11,7 @@ class OrdersPage extends StatefulWidget {
   final int barID;
   final WebSocket socket;
 
-  const OrdersPage({Key? key, required this.bartenderID, required this.barID, required this.socket}) : super(key: key);
+  const OrdersPage({super.key, required this.bartenderID, required this.barID, required this.socket});
 
   @override
   State<OrdersPage> createState() => _OrdersPageState();
@@ -76,7 +76,7 @@ class _OrdersPageState extends State<OrdersPage> {
       _showErrorSnackbar("Connection terminated by the server");
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => BartenderIDScreen()),
+        MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
         (Route<dynamic> route) => false, // Remove all previous routes
       );
       
@@ -127,7 +127,7 @@ class _OrdersPageState extends State<OrdersPage> {
         break;
 
     default:
-      print("Unknown key received in WebSocket message: ${response.keys.first}");
+      debugPrint("Unknown key received in WebSocket message: ${response.keys.first}");
   }
 },
     onError: (error) {
@@ -136,7 +136,7 @@ class _OrdersPageState extends State<OrdersPage> {
     },
     onDone: () {
       // Handle WebSocket termination
-      print('WebSocket connection closed');
+      debugPrint('WebSocket connection closed');
       _handleWebSocketTermination(); // Call the function when the WebSocket is terminated
     },
     cancelOnError: true, // Optionally, cancel the listener on error
@@ -188,7 +188,7 @@ void _updateLists() {
   if (disabledTerminal && !allOrders.any((order) => order.claimer == widget.bartenderID)) {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => BartenderIDScreen()),
+      MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
       (Route<dynamic> route) => false, // Remove all previous routes
     );
   }
@@ -352,7 +352,7 @@ void _showErrorSnackbar(String message) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(message),
-      duration: Duration(seconds: 3),
+      duration: const Duration(seconds: 3),
     ),
   );
 }
@@ -572,8 +572,8 @@ void _executeFunctionForClaimedAndReady(Order order) {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Center(
-          child: const Text('Orders'),
+        title: const Center(
+          child: Text('Orders'),
         ),
         leading: Row(
           mainAxisSize: MainAxisSize.min,
@@ -653,7 +653,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
                             children: <Widget>[
                               Text(
                                 '#${order.orderId}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -669,7 +669,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
                               const SizedBox(height: 4),
                               Text(
                                 '\$${order.price.toStringAsFixed(2)}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 32,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -685,7 +685,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
                               const SizedBox(height: 8),
                               Text(
                                 '@${order.userId}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 16,
                                   color: Colors.white,
                                   shadows: [
@@ -710,7 +710,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
                               return ListTile(
                                 title: Text(
                                   drinkName,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     shadows: [
                                       Shadow(
@@ -745,7 +745,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
                                 child: Center(
                                   child: Text(
                                     order.claimer,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 24, // Increased font size
                                       color: Colors.white,
                                       shadows: [
@@ -764,11 +764,11 @@ void _executeFunctionForClaimedAndReady(Order order) {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.timer, color: Colors.white),
+                                    const Icon(Icons.timer, color: Colors.white),
                                     const SizedBox(width: 8),
                                     Text(
                                       _formatDuration(order.getAge()),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 16,
                                         color: Colors.white,
                                         shadows: [
