@@ -72,6 +72,16 @@ class _OrdersPageState extends State<OrdersPage> {
       _showErrorSnackbar(response['error']);
       break;
 
+    case 'terminate':
+      _showErrorSnackbar("Connection terminated by the server");
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => BartenderIDScreen()),
+        (Route<dynamic> route) => false, // Remove all previous routes
+      );
+      
+      break;
+
     case 'orders':
       final List<dynamic> ordersJson = response['orders'];
       
@@ -84,9 +94,11 @@ class _OrdersPageState extends State<OrdersPage> {
         if (index != -1) {
           // If it exists, replace the old order
           allOrders[index] = incomingOrder;
+          if( allOrders[index].status == 'delivered' || allOrders[index].status == 'canceled') allOrders.remove(allOrders[index]);
         } else {
           // If it doesn't exist, add the new order to allOrders
-          allOrders.add(incomingOrder);
+          if( allOrders[index].status != 'delivered' && allOrders[index].status != 'canceled') allOrders.add(incomingOrder);
+                    
         }
       }
       setState(() {
@@ -146,9 +158,9 @@ void _updateLists() {
 
   // Separate orders based on whether they are claimed by the bartender
   for (var order in allOrders) {
-    if (widget.bartenderID == order.claimer) {
+    if (widget.bartenderID == order.claimer && order.status != 'claimed' && order.status != 'delivered') {
       claimedByBartender.add(order);
-    } else {
+    } else if (order.status != 'claimed' && order.status != 'delivered') {
       notClaimedByBartender.add(order);
     }
   }
@@ -399,6 +411,7 @@ void _executeFunctionForClaimed(Order order) {
                           'action': 'unclaim',
                           'bartenderID': widget.bartenderID,
                           'orderID': order.orderId,
+                          'barID': order.barId,
                         }),
                       );
                       Navigator.of(context).pop();
