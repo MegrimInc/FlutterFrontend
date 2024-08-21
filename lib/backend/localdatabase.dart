@@ -8,15 +8,23 @@ import 'package:flutter/material.dart';
 import 'bar.dart';
 import 'tags.dart';
 import 'package:barzzy_app1/Backend/cache.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalDatabase with ChangeNotifier {
   static final LocalDatabase _singleton = LocalDatabase._internal();
+  static const String _orderPrefsKey = 'orders';
 
   factory LocalDatabase() {
     return _singleton;
   }
 
-  LocalDatabase._internal();
+  LocalDatabase._internal() {
+    // Automatically load orders when the class is instantiated
+    loadOrdersFromSharedPreferences();
+  }
+
+
+  
 
   final Map<String, Bar> _bars = {};
   final Map<String, Tag> tags = {};
@@ -25,9 +33,34 @@ class LocalDatabase with ChangeNotifier {
   final Map<String, CustomerOrder> _barOrders = {};
 
 
-   void addOrUpdateOrderForBar(CustomerOrder order) {
+   void addOrUpdateOrderForBar(CustomerOrder order) async {
     _barOrders[order.barId] = order;
+     await _saveOrdersToSharedPreferences(); 
     notifyListeners();
+  }
+
+  
+
+   // Method to save all orders to SharedPreferences
+  Future<void> _saveOrdersToSharedPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final orderMap = _barOrders.map((barId, order) => MapEntry(barId, jsonEncode(order.toJson())));
+    await prefs.setString(_orderPrefsKey, jsonEncode(orderMap));
+  }
+
+  // Method to load orders from SharedPreferences
+  Future<void> loadOrdersFromSharedPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final orderMapString = prefs.getString(_orderPrefsKey);
+
+    if (orderMapString != null) {
+      final Map<String, dynamic> orderMap = jsonDecode(orderMapString);
+      orderMap.forEach((barId, orderJson) {
+        _barOrders[barId] = CustomerOrder.fromJson(jsonDecode(orderJson));
+        debugPrint('Loaded order for barId: $barId, Order: ${_barOrders[barId]}');
+      });
+      notifyListeners();
+    }
   }
 
   CustomerOrder? getOrderForBar(String barId) {
