@@ -11,7 +11,7 @@ import 'package:barzzy_app1/Backend/tags.dart';
 import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/BarPages/orderdisplay.dart';
 import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
-import 'package:barzzy_app1/OrdersPage/websocket.dart';
+import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
 import 'package:barzzy_app1/Terminal/ordersv2-0.dart';
 import 'package:barzzy_app1/Terminal/ordersv2-1.dart';
 import 'package:barzzy_app1/QrPage/camera.dart';
