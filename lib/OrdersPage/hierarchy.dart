@@ -20,7 +20,7 @@ class Hierarchy extends ChangeNotifier {
 
   // Establish a WebSocket connection with exponential backoff
   void connect(BuildContext context) {
-    if (_chgiannel == null) {
+    if (_channel == null) {
       // Ensure there's no existing connection
       try {
         _channel =
