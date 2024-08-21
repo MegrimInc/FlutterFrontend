@@ -1,104 +1,185 @@
+import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy_app1/Backend/activeorder.dart';
+import 'package:barzzy_app1/Backend/localdatabase.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:async';
 import 'dart:convert';
-import 'package:barzzy_app1/Backend/activeorder.dart';
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-import '../Backend/localdatabase.dart';
 
-class WebSocketResult {
-  final bool success;
-  final String message;
-
-  WebSocketResult(this.success, this.message);
-}
-
-class Hierarchy with ChangeNotifier {
-  final List<int> _activeorders = [];
+class Hierarchy extends ChangeNotifier {
+  final String url = 'wss://www.barzzy.site/ws/orders';
   WebSocketChannel? _channel;
+  int _reconnectAttempts = 0;
+  final LocalDatabase localDatabase;
+  final List<String> _createdOrderBarIds = [];
+  bool _isConnected = false;
 
-  Future<WebSocketResult> establishWebSocketConnection(int barId, int userId, Map<int, int> drinkQuantities) async {
-  final List<Map<String, dynamic>> drinksList = drinkQuantities.entries.map((entry) {
-    return {
-      'drinkId': entry.key,
-      'quantity': entry.value,
-    };
-  }).toList();
+  Hierarchy(BuildContext context)
+      : localDatabase = Provider.of<LocalDatabase>(context, listen: false);
 
-  final Map<String, dynamic> order = {
-    'barId': barId,
-    'userId': userId,
-    'drinks': drinksList,
-  };
+  // Establish a WebSocket connection with exponential backoff
+  void connect(BuildContext context) {
+    if (_channel == null) {
+      // Ensure there's no existing connection
+      try {
+        _channel =
+            WebSocketChannel.connect(Uri.parse(url)); // Attempt to connect
+        _channel!.stream.listen(
+          (message) {
+            if (_reconnectAttempts > 0) {
+              debugPrint(
+                  'Connection successful. Resetting reconnect attempts.');
+              _reconnectAttempts =
+                  0; // Reset the reconnect attempts on successful connection
+            }
 
-  final wsUrl = Uri.parse('wss://www.barzzy.site/ws/orders');
+            _isConnected = true;
 
-  try {
-    _channel = WebSocketChannel.connect(wsUrl);
+            debugPrint('Received: $message');
+            notifyListeners(); // Notify listeners of new messages
 
-    final completer = Completer<WebSocketResult>();
-    String lastMessage = ""; // Store the last received message
+            // Here you process the received message
+            try {
+              // Parse the incoming message as JSON
+              final decodedMessage = jsonDecode(message);
 
-    _channel?.sink.add(jsonEncode(order));
+              // Extract the messageType from the decoded JSON
+              final String messageType = decodedMessage['messageType'];
 
-    _channel?.stream.listen((data) async {
-      debugPrint('Received WebSocket message: $data');
-      lastMessage = data; // Update the last received message
+              switch (messageType) {
+                case 'ping':
+                  debugPrint('Ping received, sending refresh message.');
+                  _sendRefreshMessage(context); // Handle the ping message
+                  break;
 
-      final response = jsonDecode(data);
-      final result = await _handleOrderResponse(response);
+                case 'refresh':
+                  debugPrint('Refresh response received.');
+                  // Handle the refresh response if needed
+                  // You can also extract the 'data' from the message and use it as needed
+                  final data = decodedMessage['data'];
+                  _createOrderResponse(data);
+                  break;
 
-      completer.complete(result);
-    }, onError: (error) {
-      debugPrint('WebSocket error: $error');
-      completer.complete(WebSocketResult(false, "Connection error: $error"));
-    }, onDone: () {
-      debugPrint('WebSocket connection closed');
-      if (!completer.isCompleted) {
-        // Use the last received message if available, otherwise use a generic message
-        completer.complete(WebSocketResult(false, lastMessage.isNotEmpty ? lastMessage : "Connection closed unexpectedly"));
+                case 'create':
+                  debugPrint('Create response received.');
+                  final data = decodedMessage['data'];
+                  _createOrderResponse(
+                      data); // Trigger the createOrderResponse method
+                  break;
+
+                default:
+                  debugPrint('Unknown message type: $messageType');
+                  // Handle any other message types or log an error
+                  break;
+              }
+            } catch (e) {
+              debugPrint('Error processing message: $e');
+            }
+          },
+          onError: (error) {
+            debugPrint('WebSocket error: $error');
+            // Optional: Handle diagnostics here, but don't assume the connection is closed
+          },
+          onDone: () {
+            debugPrint(
+                'WebSocket connection closed. Close code: ${_channel!.closeCode}, reason: ${_channel!.closeReason}');
+            debugPrint('WebSocket connection closed');
+            _isConnected = false;
+            _attemptReconnect(
+                context); // Handle connection loss and attempt reconnection
+            notifyListeners();
+          },
+        );
+      } catch (e) {
+        // Catch any errors during connection
+        debugPrint('Failed to connect: $e');
+        _isConnected = false;
+        _attemptReconnect(
+            context); // Attempt reconnection on connection failure
       }
-    });
-
-    return completer.future;
-  } catch (e) {
-    return WebSocketResult(false, "Failed to connect: ${e.toString()}");
-  }
-}
-
-
-  Future<WebSocketResult> _handleOrderResponse(Map<String, dynamic> response) async {
-    final String messageType = response['messageType']?.toString() ?? 'unknown';
-    final String message = response['message']?.toString() ?? 'No message';
-
-    debugPrint('Order response received: $messageType, message: $message');
-
-    if (messageType == 'success') {
-      final orderData = response['data'];
-      debugPrint('Order data extracted: $orderData');
-
-      final order = CustomerOrder.fromJson(orderData);
-      debugPrint('Order object created: ${order.toJson()}');
-
-      // Add or update the order in LocalDatabase
-      LocalDatabase().addOrUpdateOrderForBar(order);
-       _activeorders.add(orderData['barId']);
-
-      notifyListeners();
-      return WebSocketResult(true, "Order processed: $message");
-    } else {
-      debugPrint('Order response indicates failure: $message');
-      return WebSocketResult(false, message);
     }
   }
 
- List<int> getOrders() {
-    return _activeorders;
+  // Attempt to reconnect with exponential backoff
+  void _attemptReconnect(BuildContext context) {
+    _reconnectAttempts++;
+    int delay = (1 <<
+        (_reconnectAttempts -
+            1)); // Exponential backoff: 1, 2, 4, 8, etc. seconds
+    debugPrint(
+        'Scheduling reconnect attempt $_reconnectAttempts in $delay seconds.');
+
+    Future.delayed(Duration(seconds: delay), () {
+      debugPrint('Attempting to reconnect... (Attempt $_reconnectAttempts)');
+      _channel = null; // Ensure _channel is null before reconnecting
+      connect(context); // Re-attempt the connection
+    });
   }
 
-  @override
-  void dispose() {
-    _channel?.sink.close();
-    super.dispose();
+  // Send the "refresh" message over the WebSocket connection
+
+  void _sendRefreshMessage(BuildContext context) async {
+    final loginCache = Provider.of<LoginCache>(context, listen: false);
+    final userId = await loginCache.getUID();
+
+    try {
+      if (_channel != null) {
+        final message = {
+          "action": "refresh",
+          "userId": userId,
+        };
+        final jsonMessage =
+            jsonEncode(message); // Use jsonEncode for proper JSON formatting
+        debugPrint('Sending refresh message: $jsonMessage');
+        _channel!.sink.add(jsonMessage); // Send the JSON encoded string
+        debugPrint('Refresh message sent.');
+      } else {
+        debugPrint(
+            'Failed to send refresh message: WebSocket is not connected');
+      }
+    } catch (e) {
+      debugPrint('Error while sending message: $e');
+    }
   }
+
+// Method to send an order
+  void createOrder(Map<String, dynamic> order) {
+    try {
+      if (_channel != null) {
+        final jsonOrder = jsonEncode(order); // Convert the order to JSON
+        debugPrint('Sending create order: $jsonOrder');
+        _channel!.sink.add(jsonOrder); // Send the order over WebSocket
+        debugPrint('Order sent.');
+      } else {
+        debugPrint('Failed to send order: WebSocket is not connected');
+      }
+    } catch (e) {
+      debugPrint('Error while sending order: $e');
+    }
+  }
+
+  // Method to handle create order responses
+  void _createOrderResponse(Map<String, dynamic> data) {
+    try {
+      // Create a CustomerOrder object using the data from the response
+      final customerOrder = CustomerOrder.fromJson(data);
+      debugPrint('CustomerOrder created: $customerOrder');
+
+      localDatabase.addOrUpdateOrderForBar(customerOrder);
+      _createdOrderBarIds.add(customerOrder.barId);
+      // Print statement to confirm addition
+      debugPrint(
+          'CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
+    } catch (e) {
+      debugPrint('Error while creating CustomerOrder: $e');
+    }
+  }
+
+  // Method to retrieve the list of barIds for created orders
+  List<String> getOrders() {
+    return _createdOrderBarIds;
+  }
+
+  bool get isConnected => _isConnected;
 }
