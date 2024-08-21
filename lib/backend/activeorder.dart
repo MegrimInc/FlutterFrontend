@@ -1,158 +1,71 @@
-import 'dart:convert';
-import 'package:barzzy_app1/Backend/activeorder.dart';
-import 'package:http/http.dart' as http;
-import 'package:barzzy_app1/Backend/drink.dart';
-import 'package:barzzy_app1/Backend/response.dart';
-import 'package:barzzy_app1/Backend/user.dart';
 import 'package:flutter/material.dart';
-import 'bar.dart';
-import 'tags.dart';
-import 'package:barzzy_app1/Backend/cache.dart';
 
-class LocalDatabase with ChangeNotifier {
-  static final LocalDatabase _singleton = LocalDatabase._internal();
+class CustomerOrder {
+  String barId;
+  int userId;
+  double price;
+  Map<String, int> drinkQuantities; // Map<String, int> for drink quantities
+  String status;
+  String claimer;
+  String timestamp;
 
-  factory LocalDatabase() {
-    return _singleton;
-  }
+  CustomerOrder(
+    this.barId,
+    this.userId,
+    this.price,
+    this.drinkQuantities, 
+    this.status,
+    this.claimer,
+    this.timestamp,
+  );
 
-  LocalDatabase._internal();
+  // Factory constructor for creating an Order from JSON data
+  factory CustomerOrder.fromJson(Map<String, dynamic> json) {
+    debugPrint('Parsing JSON data: $json');
 
-  final Map<String, Bar> _bars = {};
-  final Map<String, Tag> tags = {};
-  final Map<String, Drink> _drinks = {};
-  final Cache _cache = Cache();
-  final Map<String, CustomerOrder> _barOrders = {};
-
-
-   void addOrUpdateOrderForBar(CustomerOrder order) {
-    _barOrders[order.barId] = order;
-    notifyListeners();
-  }
-
-  CustomerOrder? getOrderForBar(String barId) {
-    return _barOrders[barId];
-  }
-
-
-  // Method to add a new bar, generating an ID for it
-  void addBar(Bar bar) {
-    if (bar.id != null) {
-      _bars[bar.id!] = bar;
-      notifyListeners();
-    } else {
-      debugPrint('Bar ID is null, cannot add to database.');
-    }
-  }
-
-  void addDrink(Drink drink) {
-    _drinks[drink.id] = drink;
-    notifyListeners();
-  }
-
-// Method to add a new tag
-  void addTag(Tag tag) {
-    tags[tag.id] = tag;
-    //debugPrint('Adding tag - ID: ${tag.id}, Name: ${tag.name}');
-    notifyListeners();
-  }
-
-  // Method to get minimal information necessary for search
-  Map<String, Map<String, String>> getSearchableBarInfo() {
-    return _bars.map((id, bar) =>
-        MapEntry(id, {'name': bar.name ?? '', 'address': bar.address ?? ''}));
-  }
-
-  //Method to get all bar IDs
-  List<String> getAllBarIds() {
-    return _bars.keys.toList();
-  }
-
-  static Bar? getBarById(String id) {
-    return _singleton._bars[id];
-  }
-
-  Drink getDrinkById(String id) {
-    return _drinks[id]!;
-  }
-
-  Future<Set<String>> fetchDrinksByTag(String barId, String tagId) async {
-    // Define the endpoint URL
-    final url = Uri.parse(
-        'https://www.barzzy.site/bars/getDrinks?categoryId=$tagId&barId=$barId');
-
-    Set<String> drinkIds = {};
-
-    try {
-      // Make the GET request
-      final response = await http.get(url);
-
-      // Check if the request was successful
-      if (response.statusCode == 200) {
-        // Parse the JSON response
-        final List<dynamic> jsonResponse = jsonDecode(response.body);
-        debugPrint('Drinks data received: $jsonResponse');
-
-        for (var drinkJson in jsonResponse) {
-          Drink drink = Drink.fromJson(drinkJson);
-          // debugPrint('Parsed Bar Name: ${bar.name}');
-          // debugPrint('Parsed Bar Image: ${bar.barimg}');
-          // debugPrint('Parsed Tag Image: ${bar.tagimg}');
-          addDrink(drink);
-          drinkIds.add(drink.id);
-        }
-
-        // Add fetched drink IDs to cache
-        for (var drinkId in drinkIds) {
-          await _cache.addDrinkId(drinkId);
-        }
-      } else {
-        debugPrint(
-            'Failed to load drinks. Status code: ${response.statusCode}');
+    final Map<String, int> drinkQuantities = {}; // Initialize the Map<String, int>
+    
+    if (json['drinks'] != null) {
+      debugPrint('Parsing drink quantities...');
+      for (var item in json['drinks']) {
+        final String drinkId = item['id'].toString(); // Convert drinkId to String
+        final int quantity = item['quantity'] as int;
+        debugPrint('Parsing drink ID: $drinkId, quantity: $quantity');
+        drinkQuantities[drinkId] = quantity; // Store in the Map<String, int>
       }
-    } catch (e) {
-      // Handle any errors during the request
-      debugPrint('Error fetching drinks: $e');
     }
-    return drinkIds;
+
+    return CustomerOrder(
+      json['barId'].toString(), // Convert barId to String
+      json['userId'] as int, 
+      (json['price'] as num).toDouble(),
+      drinkQuantities, // Use parsed drink quantities
+      json['status'] as String,
+      json['claimer'] as String,
+      json['timestamp'] as String,
+    );
   }
 
-  void searchDrinks(String query, User user, String barId) async {
-    user.addQueryToHistory(barId, query);
-    Set<String> filteredIdsSet = {};
-    Set<String> ids = {};
-    query = query.toLowerCase().replaceAll(' ', '');
+  // Method to convert Order to JSON
+  Map<String, dynamic> toJson() {
+    // Convert drink quantities to a list of maps
+    final List<Map<String, dynamic>> drinkQuantitiesList = drinkQuantities.entries
+        .map((entry) => {'id': entry.key, 'quantity': entry.value})
+        .toList();
 
-    debugPrint('Search query received: $query');
+    return {
+      'barId': barId,
+      'userId': userId,
+      'price': price,
+      'drinks': drinkQuantitiesList,
+      'status': status,
+      'claimer': claimer,
+      'timestamp': timestamp,
+    };
+  }
 
-    // Iterate over each tag in _tags to find matches
-    tags.forEach((id, tag) {
-      if (tag.name.toLowerCase().contains(query)) {
-        debugPrint('Tag matches query - ID: $id, Name: ${tag.name}');
-        filteredIdsSet.addAll([id]);
-      }
-    });
-
-    List<String> filteredIds = filteredIdsSet.toList();
-
-    debugPrint(
-        'Filtered IDs for query $query: $filteredIds'); // Print the filtered IDs
-
-    // Fetch drinks for each tag ID
-    for (String tagId in filteredIds) {
-      Set<String> returnedids = await fetchDrinksByTag(barId, tagId);
-      ids.addAll(returnedids);
-    }
-
-    List<String> drinkIds = ids.toList();
-    user.addSearchQuery(barId, query, drinkIds);
-
-    user.setLastSearch(barId, query, drinkIds);
-
-    if (drinkIds.isEmpty) {
-      Response().addNegativeResponse(user, barId, query);
-    } else {
-      Response().addPositiveResponse(user, barId, drinkIds.length, query);
-    }
+  // Getter methods
+  double? getPrice() {
+    return price;
   }
 }
