@@ -11,7 +11,7 @@ import 'package:barzzy_app1/Backend/tags.dart';
 import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/BarPages/orderdisplay.dart';
 import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
-import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
+import 'package:barzzy_app1/OrdersPage/websocket.dart';
 import 'package:barzzy_app1/Terminal/ordersv2-0.dart';
 import 'package:barzzy_app1/Terminal/ordersv2-1.dart';
 import 'package:barzzy_app1/QrPage/camera.dart';
@@ -21,7 +21,7 @@ import 'package:barzzy_app1/Backend/localdatabase.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:barzzy_app1/Backend/cache.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
 
 void main() async {
   debugPrint("current date: ${DateTime.now()}");
@@ -30,7 +30,7 @@ void main() async {
   final loginCache = LoginCache();
   // await loginCache.clearAll();
 
-  await printStoredOrders();
+  
 
   bool loggedInAlready = true;
   await loginCache.getSignedIn() /* && HTTP REQUEST*/;
@@ -79,7 +79,7 @@ void main() async {
         ChangeNotifierProvider(create: (context) => barDatabase),
         ChangeNotifierProvider(create: (context) => BarHistory()),
         ChangeNotifierProvider(create: (context) => Recommended()),
-        ChangeNotifierProvider(create: (context) => Hierarchy()),
+        ChangeNotifierProvider(create: (context) => Hierarchy(context)),
         ChangeNotifierProvider(create: (_) => LoginCache()),
         ChangeNotifierProvider(create: (context) => user),
         ProxyProvider<LocalDatabase, SearchService>(
@@ -91,12 +91,7 @@ void main() async {
   );
 }
 
-// Method to print orders stored in SharedPreferences
-Future<void> printStoredOrders() async {
-  final prefs = await SharedPreferences.getInstance();
-  final orders = prefs.getString('orders') ?? '{}';
-  debugPrint('Orders stored in SharedPreferences: $orders');
-}
+
 
 Future<void> sendGetRequest() async {
   try {

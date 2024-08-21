@@ -1,5 +1,7 @@
+import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/HomePage/bottomsheet.dart';
 import 'package:barzzy_app1/HomePage/hometopicons.dart';
+import 'package:barzzy_app1/OrdersPage/websocket.dart';
 import 'package:flutter/material.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/heroicons_solid.dart';
@@ -20,12 +22,19 @@ class HomePage extends StatefulWidget {
 class HomePageState extends State<HomePage> {
   List<String> masterList = [];
   List<String> tappedIds = [];
+ 
 
   @override
   void initState() {
     super.initState();
+    _connect();
     _updateMasterList();
   }
+
+  Future<void> _connect() async {
+  final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+  hierarchy.connect(context);  // No need to await since it returns void
+}
 
   void _updateMasterList() async {
     final recommended = Provider.of<Recommended>(context, listen: false);
