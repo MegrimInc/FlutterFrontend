@@ -192,7 +192,7 @@ class MenuPageState extends State<MenuPage>
                             // Swiping left from the right edge
                             // Start the order submission process
                             _submitOrder(context);
-                            print('hey are you working');
+                            
                           }
                         },
                         child: Container(

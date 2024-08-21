@@ -56,7 +56,7 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
 
     } catch (e) {
       // Handle the error
-      print('Failed to connect to WebSocket: $e');
+      debugPrint('Failed to connect to WebSocket: $e');
       _showAlertDialog(context, "Connection Error", "Could not connect to the server. Please try again.");
     }
   } else {
@@ -100,7 +100,7 @@ void _showAlertDialog(BuildContext context, String title, String content) {
     loginData.setSignedIn(false);
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => LoginOrRegisterPage()),
+      MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
       (Route<dynamic> route) => false, // Remove all previous routes
     );
     ScaffoldMessenger.of(context).showSnackBar(
@@ -118,7 +118,7 @@ void _showAlertDialog(BuildContext context, String title, String content) {
         title: const Text('Bartender ID Entry'),
         actions: [
           IconButton(
-            icon: Icon(Icons.exit_to_app),
+            icon: const Icon(Icons.exit_to_app),
             onPressed: _logout,
           ),
         ],
