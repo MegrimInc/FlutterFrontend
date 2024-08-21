@@ -4,11 +4,11 @@ import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/user.dart';
-import 'package:barzzy_app1/MenuPage/loading.dart';
+
 import 'package:barzzy_app1/MenuPage/overlay.dart';
 import 'package:barzzy_app1/MenuPage/cart.dart';
 import 'package:barzzy_app1/MenuPage/drinkfeed.dart';
-import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
+import 'package:barzzy_app1/OrdersPage/websocket.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -128,72 +128,35 @@ class MenuPageState extends State<MenuPage>
   }
 
   void _submitOrder(BuildContext context) async {
-    final loginCache = Provider.of<LoginCache>(context, listen: false);
-    final userId = await loginCache.getUID();
-    final barId = int.parse(widget.barId);
-    final cart = Provider.of<Cart>(context, listen: false);
-    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+  final loginCache = Provider.of<LoginCache>(context, listen: false);
+  final userId = await loginCache.getUID();
+  final cart = Provider.of<Cart>(context, listen: false);
+  final hierarchy = Provider.of<Hierarchy>(context, listen: false);
 
-    final drinkQuantities =
-        cart.barCart.map((key, value) => MapEntry(int.parse(key), value));
+  final barId = widget.barId;
 
-    try {
-      // Show loading overlay
-      Navigator.of(context).push(
-        PageRouteBuilder(
-          opaque: false,
-          pageBuilder: (context, _, __) => const LoadingOverlay(),
-        ),
-      );
+  // Create the drink quantities list
+  final drinkQuantities = cart.barCart.entries.map((entry) {
+    return {
+      'drinkId': int.parse(entry.key),
+      'quantity': entry.value,
+    };
+  }).toList();
 
-      // Attempt to establish WebSocket connection and process order
-      final result = await hierarchy.establishWebSocketConnection(
-          barId, userId, drinkQuantities);
+  // Construct the order object
+  final order = {
+    "action": "create",
+    "barId": barId,
+    "userId": userId,
+    "drinks": drinkQuantities,
+  };
 
-      // Always pop the loading overlay
-      Navigator.pop(context);
+  // Pass the order object to the createOrder method
+  hierarchy.createOrder(order);
 
-      if (result.success) {
-        if (result.message.startsWith("Order processed:")) {
-          // Order was successful
-          navigateToOrdersPage(context);
-        } else {
-          // Unexpected success message
-          _showSnackBar(context, result.message);
-        }
-      } else {
-        // WebSocket connection failed or order was not processed
-        // Display the exact message received from the WebSocket
-        _showSnackBar(context, result.message);
-      }
-    } catch (e) {
-      // Handle any unexpected errors
-      Navigator.pop(context); // Ensure loading overlay is closed
-      _showSnackBar(context, "An unexpected error occurred. Please try again.");
-    }
-  }
-
-  void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-          ),
-        ),
-        backgroundColor: Colors.grey[900],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        margin: const EdgeInsets.all(10),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
+  // Navigate to orders page or perform other actions as needed
+  navigateToOrdersPage(context);
+}
 
   @override
   Widget build(BuildContext context) {
@@ -224,16 +187,16 @@ class MenuPageState extends State<MenuPage>
                       bottom: 0,
                       width: 12.5, // Adjust this width as needed
                       child: GestureDetector(
-                        onHorizontalDragUpdate: (details) {
-                          if (details.primaryDelta! < 0) {
+                        onHorizontalDragEnd: (details) {
+                          if (details.velocity.pixelsPerSecond.dx < -50) {
                             // Swiping left from the right edge
-
                             // Start the order submission process
                             _submitOrder(context);
+                            print('hey are you working');
                           }
                         },
                         child: Container(
-                          color: Colors.transparent, // Invisible swipe area
+                          color: Colors.red, // Invisible swipe area
                         ),
                       ),
                     );
