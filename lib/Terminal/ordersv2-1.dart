@@ -10,9 +10,7 @@ class OrdersPage extends StatefulWidget {
   final String bartenderID; // Bartender ID parameter
   final int barID;
 
-  const OrdersPage({Key? key, required this.bartenderID, required this.barID, }) : super(key: key);
-
-  
+  const OrdersPage({super.key, required this.bartenderID, required this.barID, required this.socket});
 
   @override
   State<OrdersPage> createState() => _OrdersPageState();
@@ -103,7 +101,7 @@ debugPrint('Received: $event');
       _showErrorSnackbar("Connection terminated by the server: new connection inbound");
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => BartenderIDScreen()),
+        MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
         (Route<dynamic> route) => false, // Remove all previous routes
       );
         if (socket != null) {
@@ -158,7 +156,7 @@ debugPrint('Received: $event');
         break;
 
     default:
-      print("Unknown key received in WebSocket message: ${response.keys.first}");
+      debugPrint("Unknown key received in WebSocket message: ${response.keys.first}");
   }
 },
     onError: (error) {
@@ -233,7 +231,7 @@ void _updateLists() {
      
       Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => BartenderIDScreen()),
+      MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
       (Route<dynamic> route) => false, // Remove all previous routes
     );
 
@@ -400,7 +398,7 @@ void _showErrorSnackbar(String message) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(message),
-      duration: Duration(seconds: 3),
+      duration: const Duration(seconds: 3),
     ),
   );
 }
@@ -628,8 +626,8 @@ void _executeFunctionForClaimedAndReady(Order order) {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Center(
-          child: const Text('Orders'),
+        title: const Center(
+          child: Text('Orders'),
         ),
         leading: Row(
           mainAxisSize: MainAxisSize.min,
@@ -727,7 +725,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
                               const SizedBox(height: 4),
                               Text(
                                 '\$${order.price.toStringAsFixed(2)}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 32,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -743,7 +741,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
                               const SizedBox(height: 8),
                               Text(
                                 '@${order.userId}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 16,
                                   color: Colors.white,
                                   shadows: [
@@ -768,7 +766,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
                               return ListTile(
                                 title: Text(
                                   drinkName,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     shadows: [
                                       Shadow(
@@ -803,7 +801,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
                                 child: Center(
                                   child: Text(
                                     order.claimer,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 24, // Increased font size
                                       color: Colors.white,
                                       shadows: [
@@ -822,11 +820,11 @@ void _executeFunctionForClaimedAndReady(Order order) {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.timer, color: Colors.white),
+                                    const Icon(Icons.timer, color: Colors.white),
                                     const SizedBox(width: 8),
                                     Text(
                                       _formatDuration(order.getAge()),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 16,
                                         color: Colors.white,
                                         shadows: [
