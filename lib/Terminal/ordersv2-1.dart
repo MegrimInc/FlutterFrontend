@@ -9,9 +9,10 @@ import 'package:barzzy_app1/backend/order.dart';
 class OrdersPage extends StatefulWidget {
   final String bartenderID; // Bartender ID parameter
   final int barID;
-  final WebSocket socket;
 
-  const OrdersPage({Key? key, required this.bartenderID, required this.barID, required this.socket}) : super(key: key);
+  const OrdersPage({Key? key, required this.bartenderID, required this.barID, }) : super(key: key);
+
+  
 
   @override
   State<OrdersPage> createState() => _OrdersPageState();
@@ -19,12 +20,12 @@ class OrdersPage extends StatefulWidget {
 
 class _OrdersPageState extends State<OrdersPage> {
   List<Order> allOrders = [
-    Order(1, 101, 202, 19.0, ['Coke', 'Pepsi', 'one', 'two', 'three', 'four'], 'unclaimed', '', DateTime.now().millisecondsSinceEpoch + 100),
-    Order(2, 102, 203, 29.0, ['Sprite', 'Fanta'], 'unclaimed', '', DateTime.now().millisecondsSinceEpoch - 200000),
-    Order(3, 103, 204, 39.0, ['Water', 'Juice'], 'claimed', 'Z', DateTime.now().millisecondsSinceEpoch - 300000),
-    Order(4, 201, 205, 19.0, ['Test', 'Two'], 'unclaimed', '', DateTime.now().millisecondsSinceEpoch - 400000),
-    Order(5, 202, 206, 29.0, ['Three', 'Is'], 'claimed', 'test', DateTime.now().millisecondsSinceEpoch - 800000),
-    Order(6, 203, 207, 39.0, ['This', 'Working'], 'ready', 'test', DateTime.now().millisecondsSinceEpoch),
+    Order(1, 101, 202,  ['Coke', 'Pepsi', 'one', 'two', 'three', 'four'], 'unclaimed', '', DateTime.now().millisecondsSinceEpoch + 100),
+    Order(2, 102, 203,  ['Sprite', 'Fanta'], 'unclaimed', '', DateTime.now().millisecondsSinceEpoch - 200000),
+    Order(3, 103, 204,  ['Water', 'Juice'], 'claimed', 'Z', DateTime.now().millisecondsSinceEpoch - 300000),
+    Order(4, 201, 205,  ['Test', 'Two'], 'unclaimed', '', DateTime.now().millisecondsSinceEpoch - 400000),
+    Order(5, 202, 206, ['Three', 'Is'], 'claimed', 'test', DateTime.now().millisecondsSinceEpoch - 800000),
+    Order(6, 203, 207, ['This', 'Working'], 'ready', 'test', DateTime.now().millisecondsSinceEpoch),
   ];
 
   List<Order> displayList = [];
@@ -39,17 +40,24 @@ class _OrdersPageState extends State<OrdersPage> {
   int bartenderNumber = 2; // Set to bartenderCount + 1
   bool disabledTerminal = false; // Tracks if terminal is disabled
   bool barOpenStatus = true; // Track if bar is open or closed
+  WebSocket? socket;
 
   Timer? _timer;
+  WebSocket? websocket;
 
   @override
   void initState() {
     super.initState();
+
+
+  initWebsocket();
+
     // Initialize filters and bartender number
     filterUnique = true;
     filterHideReady = true;
     bartenderNumber = 0;
     bartenderCount = 1;
+    
     _updateLists();
 
     // Start a timer to update the list every 30 seconds
@@ -59,7 +67,25 @@ class _OrdersPageState extends State<OrdersPage> {
 
 
   // Listen for the response from the server
-  widget.socket.listen((event) {
+  socket?.listen((event) {
+
+debugPrint('Received: $event');
+
+        // Handle the response from the server
+        if (event.contains("Initialization successful")) {
+          _showAlertDialog(context, "Success!", "Logged in as ${widget.bartenderID}");
+          //TODO Auto-Refresh
+          
+        } else if (event.contains("Initialization failed")) {
+          // Show an alert dialog if the response is unsuccessful
+          _showAlertDialog(context, "Error", "Failed to initialize: $event");
+            Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => BartenderIDScreen()),
+            (Route<dynamic> route) => false, // Remove all previous routes
+          );
+        }
+
   // Parse the JSON response from the server
   final Map<String, dynamic> response = jsonDecode(event);
 
@@ -73,13 +99,18 @@ class _OrdersPageState extends State<OrdersPage> {
       break;
 
     case 'terminate':
-      _showErrorSnackbar("Connection terminated by the server");
+      disabledTerminal = true;
+      _showErrorSnackbar("Connection terminated by the server: new connection inbound");
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => BartenderIDScreen()),
         (Route<dynamic> route) => false, // Remove all previous routes
       );
-      
+        if (socket != null) {
+        socket!.close(); // Close the WebSocket connection
+        socket = null; // Set the WebSocket reference to null
+  }
+
       break;
 
     case 'orders':
@@ -89,7 +120,7 @@ class _OrdersPageState extends State<OrdersPage> {
       final incomingOrders = ordersJson.map((json) => Order.fromJson(json)).toList();
       for (Order incomingOrder in incomingOrders) {
         // Check if the order exists in allOrders
-        int index = allOrders.indexWhere((order) => order.orderId == incomingOrder.orderId);
+        int index = allOrders.indexWhere((order) => order.userId == incomingOrder.userId);
         
         if (index != -1) {
           // If it exists, replace the old order
@@ -132,14 +163,14 @@ class _OrdersPageState extends State<OrdersPage> {
 },
     onError: (error) {
       // Handle WebSocket errors
-      _handleWebSocketError(error);
+      if(!disabledTerminal) _handleWebSocketError(error);
     },
     onDone: () {
-      // Handle WebSocket termination
-      print('WebSocket connection closed');
-      _handleWebSocketTermination(); // Call the function when the WebSocket is terminated
+
+debugPrint('WebSocket connection closed');
+      if(!disabledTerminal) _handleWebSocketTermination(); 
     },
-    cancelOnError: true, // Optionally, cancel the listener on error
+    cancelOnError: false, // Optionally, cancel the listener on error
   );
   }
 
@@ -186,11 +217,27 @@ void _updateLists() {
 
   // Check if terminal is disabled and no orders are claimed by the bartender
   if (disabledTerminal && !allOrders.any((order) => order.claimer == widget.bartenderID)) {
-    Navigator.pushAndRemoveUntil(
+    
+      socket?.add(
+      json.encode({
+        'action': 'dispose',
+        'barID': widget.barID,
+      }),
+      );
+
+     if (socket != null) {
+        socket!.close(); // Close the WebSocket connection
+        socket = null; // Set the WebSocket reference to null
+     }
+
+     
+      Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => BartenderIDScreen()),
       (Route<dynamic> route) => false, // Remove all previous routes
     );
+
+
   }
 
   // Update state to refresh the UI
@@ -338,10 +385,11 @@ void _toggleBarStatus() {
     );
     return; // Exit the function without changing the barOpenStatus
   }
-
-  widget.socket.add(
+debugPrint(barOpenStatus ? 'close' : 'open' ' sent');
+  socket?.add(
   json.encode({
     'action': barOpenStatus ? 'close' : 'open',
+    'barID': widget.barID,
   }),
   );
 
@@ -363,7 +411,8 @@ void _refresh() {
   displayList.clear();
   
   // Send a 'refresh' action to the server via WebSocket
-  widget.socket.add(
+  debugPrint("refresh sent");
+  socket?.add(
     jsonEncode({
       'action': 'refresh',
       'barID': widget.barID,
@@ -377,12 +426,13 @@ void _refresh() {
     final claimRequest = {
       'action': 'claim',
       'bartenderID': widget.bartenderID,
-      'orderID': order.orderId,
+      'orderID': order.userId,
       'barID': order.barId,
     };
 
     // Send the message via WebSocket
-    widget.socket.add(jsonEncode(claimRequest));
+    debugPrint("claimRequest");
+    socket?.add(jsonEncode(claimRequest));
     debugPrint("attempting claim");
   }
 
@@ -392,7 +442,7 @@ void _executeFunctionForClaimed(Order order) {
     builder: (BuildContext context) {
       return AlertDialog(
         title: Text(
-          'Order #${order.orderId}',
+          'Bar #${order.barId}',
           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold), // Larger title
         ),
         content: Container(
@@ -406,11 +456,12 @@ void _executeFunctionForClaimed(Order order) {
                 children: [
                   ElevatedButton(
                     onPressed: () {
-                      widget.socket.add(
+                      debugPrint("unclaim");
+                      socket?.add(
                         json.encode({
                           'action': 'unclaim',
                           'bartenderID': widget.bartenderID,
-                          'orderID': order.orderId,
+                          'orderID': order.userId,
                           'barID': order.barId,
                         }),
                       );
@@ -429,12 +480,13 @@ void _executeFunctionForClaimed(Order order) {
                   const SizedBox(width: 20), // Add horizontal space between buttons
                   ElevatedButton(
                     onPressed: () {
-                      
-                      widget.socket.add(
+                      debugPrint("ready");
+                      socket?.add(
                         json.encode({
                           'action': 'ready',
                           'bartenderID': widget.bartenderID,
-                          'orderID': order.orderId,
+                          'orderID': order.userId,    
+                          'barID': widget.barID,
                         }),
                       );
                       Navigator.of(context).pop();
@@ -468,7 +520,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
     builder: (BuildContext context) {
       return AlertDialog(
         title: Text(
-          'Order #${order.orderId}',
+          'Order #${order.userId}',
           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold), // Larger title
         ),
         content: Container(
@@ -482,11 +534,13 @@ void _executeFunctionForClaimedAndReady(Order order) {
                 children: [
                   ElevatedButton(
                     onPressed: () {
-                      widget.socket.add(
+                      debugPrint("Cancel");
+                      socket?.add(
                         json.encode({
                           'action': 'cancel',
                           'bartenderID': widget.bartenderID,
-                          'orderID': order.orderId,
+                          'orderID': order.userId,
+                          'barID': widget.barID,
                         }),
                       );
                       Navigator.of(context).pop();
@@ -504,11 +558,13 @@ void _executeFunctionForClaimedAndReady(Order order) {
                   const SizedBox(width: 30), // Increased horizontal space between buttons
                   ElevatedButton(
                     onPressed: () {
-                      widget.socket.add(
+                      debugPrint("deliver");
+                      socket?.add(
                         json.encode({
                           'action': 'deliver',
                           'bartenderID': widget.bartenderID,
-                          'orderID': order.orderId,
+                          'orderID': order.userId,
+                          'barID': widget.barID,
                         }),
                       );
                       Navigator.of(context).pop();
@@ -556,7 +612,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
     final ageInSeconds = order.getAge();
     
     // Debug print to show age and orderId
-    debugPrint('Order ID: ${order.orderId}, Age: $ageInSeconds seconds');
+    debugPrint('Order ID: ${order.userId}, Age: $ageInSeconds seconds');
     if (order.claimer != '' && order.claimer != widget.bartenderID ) {
       return Colors.grey[700]!;
     }
@@ -582,10 +638,12 @@ void _executeFunctionForClaimedAndReady(Order order) {
               child: IconButton(
                 icon: const Icon(Icons.cancel),
                 onPressed: () {
-                      widget.socket.add(
+                  debugPrint("disable");
+                      socket?.add(
                         json.encode({
                           'action': 'disableTerminal',
                           'bartenderID': widget.bartenderID,
+                          'barID': widget.barID
                         }),
                       );
                 } 
@@ -652,7 +710,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
                               Text(
-                                '#${order.orderId}',
+                                '#${order.userId}',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -800,7 +858,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Bartender ID: ${widget.bartenderID}',
+                'Bartender ID: ${widget.barID}//${widget.bartenderID}',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -835,10 +893,57 @@ void _executeFunctionForClaimedAndReady(Order order) {
   
   
   
-  void _handleWebSocketError(error) { //TODO
+  void _handleWebSocketError(error) { 
   }
   
-  void _handleWebSocketTermination() {//TODO
+  void _handleWebSocketTermination() {
+
+  }
+
+
+void _showAlertDialog(BuildContext context, String title, String content) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: <Widget>[
+          TextButton(
+            child: const Text("OK"),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
+  void initWebsocket() async {
+       try {
+      // Attempt to open a WebSocket connection
+      final url = 'wss://www.barzzy.site/ws/bartenders';
+
+      socket = await WebSocket.connect(url);
+      
+      debugPrint('Connected to WebSocket at $url');
+
+      // Send a message to initialize the bartender session
+      final Map<String, dynamic> bartenderLogin = {'action': 'initialize', 'barID': widget.barID, 'bartenderID': widget.bartenderID};
+      debugPrint("login");
+      socket?.add(jsonEncode(bartenderLogin));
+      
+
+
+
+
+    } catch (e) {
+      // Handle the error
+      debugPrint('Failed to connect to WebSocket: $e');
+      _showAlertDialog(context, "Connection Error", "Could not connect to the server. Please try again.");
+    }
   }
 
 }

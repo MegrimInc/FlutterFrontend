@@ -9,7 +9,6 @@ import 'package:barzzy_app1/Backend/searchengine.dart';
 import 'package:barzzy_app1/Backend/recommended.dart';
 import 'package:barzzy_app1/Backend/tags.dart';
 import 'package:barzzy_app1/Backend/user.dart';
-import 'package:barzzy_app1/BarPages/orderdisplay.dart';
 import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
 import 'package:barzzy_app1/Terminal/ordersv2-0.dart';

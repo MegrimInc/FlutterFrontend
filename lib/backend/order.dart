@@ -1,6 +1,6 @@
   class Order {
     int barId;
-    int orderId;
+   // int orderId;
     int userId;
     double price;
     List<String> name;
@@ -10,7 +10,7 @@
 
     Order(
       this.barId,
-      this.orderId,
+    //  this.orderId,
       this.userId,
       this.price,
       this.name,
@@ -24,7 +24,7 @@
     factory Order.fromJson(Map<String, dynamic> json) {
       return Order(
         json['barId'] as int,
-        json['orderId'] as int,
+       // json['orderId'] as int,
         json['userId'] as int,
         (json['price'] as num).toDouble(),
         List<String>.from(json['name'] as List), // Parse 'name' from JSON
@@ -38,7 +38,7 @@
     Map<String, dynamic> toJson() {
       return {
         'barId': barId,
-        'orderId': orderId,
+      //  'orderId': orderId,
         'userId': userId,
         'price': price,
         'name': name,

@@ -25,40 +25,13 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
 
   if (_controller.text.isNotEmpty) {
     final String bartenderID = _controller.text;
-    final url = 'wss://www.barzzy.site/ws/bartenders';
 
-    try {
-      // Attempt to open a WebSocket connection
-      final WebSocket socket = await WebSocket.connect(url);
-      debugPrint('Connected to WebSocket at $url');
-
-      // Send a message to initialize the bartender session
-      final Map<String, dynamic> bartenderLogin = {'action': 'initialize', 'barID': barId, 'bartenderID': bartenderID};
-      socket.add(jsonEncode(bartenderLogin));
-      
-      // Listen for messages
-      socket.listen((message) {
-        debugPrint('Received: $message');
-
-        // Handle the response from the server
-        if (message.contains("Initialization successful")) {
-          // Navigate to OrdersPage and pass the bartenderID if successful
-          Navigator.pushAndRemoveUntil(
+    Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => OrdersPage(bartenderID: bartenderID, barID: barId, socket: socket,)),
+            MaterialPageRoute(builder: (context) => OrdersPage(bartenderID: bartenderID.toLowerCase(), barID: barId, )),
             (Route<dynamic> route) => false, // Remove all previous routes
           );
-        } else {
-          // Show an alert dialog if the response is unsuccessful
-          _showAlertDialog(context, "Error", "Failed to initialize: $message");
-        }
-      });
-
-    } catch (e) {
-      // Handle the error
-      debugPrint('Failed to connect to WebSocket: $e');
-      _showAlertDialog(context, "Connection Error", "Could not connect to the server. Please try again.");
-    }
+ 
   } else {
     // Show a SnackBar with an error message if the text field is empty
     ScaffoldMessenger.of(context).showSnackBar(
@@ -137,7 +110,7 @@ void _showAlertDialog(BuildContext context, String title, String content) {
               controller: _controller,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                hintText: 'Enter alphanumeric code',
+                hintText: 'Enter alpha-only code',
               ),
               keyboardType: TextInputType.text,
               textInputAction: TextInputAction.done,
