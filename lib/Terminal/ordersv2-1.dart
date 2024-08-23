@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:barzzy_app1/Terminal/ordersv2-0.dart';
 import 'package:barzzy_app1/backend/activeorder.dart';
 import 'package:flutter/material.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class OrdersPage extends StatefulWidget {
   final String bartenderID; // Bartender ID parameter
@@ -23,6 +24,8 @@ class _OrdersPageState extends State<OrdersPage> {
 
 //TESTING VARIABLE
   bool testing = true;
+  bool connected = false;
+  int _reconnectAttempts = 0;
 
   bool filterUnique = true;
   bool filterHideReady = false;
@@ -31,7 +34,8 @@ class _OrdersPageState extends State<OrdersPage> {
   int bartenderNumber = 2; // Set to bartenderCount + 1
   bool disabledTerminal = false; // Tracks if terminal is disabled
   bool barOpenStatus = true; // Track if bar is open or closed
-  WebSocket? socket;
+  bool happyHour = false;
+  WebSocketChannel? socket;
   bool terminalStatus = true;
 
   Timer? _timer;
@@ -41,8 +45,9 @@ class _OrdersPageState extends State<OrdersPage> {
   void initState() {
     super.initState();
 
-
-  initWebsocket();
+ 
+debugPrint("Socket is ${socket == null}");
+    if(socket == null) initWebsocket();
 
     // Initialize filters and bartender number
     filterUnique = true;
@@ -68,6 +73,9 @@ class _OrdersPageState extends State<OrdersPage> {
     _timer?.cancel(); // Cancel the timer when the widget is disposed
     super.dispose();
   }
+
+
+
 
 void _updateLists() {
 debugPrint("updating LIsts");
@@ -120,7 +128,7 @@ debugPrint("Done filtring");
 debugPrint("checking if you need to disable terminal");
   if (disabledTerminal && !allOrders.any((order) => order.claimer == widget.bartenderID)) {
     
-      socket?.add(
+      socket!.sink.add(
       json.encode({
         'action': 'dispose',
         'barID': widget.barID,
@@ -128,7 +136,7 @@ debugPrint("checking if you need to disable terminal");
       );
 
      if (socket != null) {
-        socket!.close(); // Close the WebSocket connection
+        socket!.sink.close(); // Close the WebSocket connection
         socket = null; // Set the WebSocket reference to null
      }
 
@@ -296,7 +304,7 @@ void _toggleBarStatus() {
     return; // Exit the function without changing the barOpenStatus
   }
 debugPrint(barOpenStatus ? 'close' : 'open' ' sent');
-  socket?.add(
+  socket!.sink.add(
   json.encode({
     'action': barOpenStatus ? 'close' : 'open',
     'barID': widget.barID,
@@ -322,7 +330,7 @@ void _refresh() {
   
   // Send a 'refresh' action to the server via WebSocket
   debugPrint("refresh sent");
-  socket?.add(
+  socket!.sink.add(
     jsonEncode({
       'action': 'refresh',
       'barID': widget.barID,
@@ -342,7 +350,7 @@ void _refresh() {
 
     // Send the message via WebSocket
     debugPrint("claimRequest");
-    socket?.add(jsonEncode(claimRequest));
+    socket!.sink.add(jsonEncode(claimRequest));
     debugPrint("attempting claim");
   }
 
@@ -365,7 +373,7 @@ void _executeFunctionForClaimed(CustomerOrder order) {
                 onLongPress: () {
                   // Handle order cancellation here
                   debugPrint("Order canceled!");
-                  socket?.add(
+                  socket!.sink.add(
                     json.encode({
                       'action': 'cancel',
                       'bartenderID': widget.bartenderID.toString(),
@@ -391,7 +399,7 @@ void _executeFunctionForClaimed(CustomerOrder order) {
                   ElevatedButton(
                     onPressed: () {
                       debugPrint("unclaim");
-                      socket?.add(
+                      socket!.sink.add(
                         json.encode({
                           'action': 'unclaim',
                           'bartenderID': widget.bartenderID.toString(),
@@ -415,7 +423,7 @@ void _executeFunctionForClaimed(CustomerOrder order) {
                   ElevatedButton(
                     onPressed: () {
                       debugPrint("ready");
-                      socket?.add(
+                      socket!.sink.add(
                         json.encode({
                           'action': 'ready',
                           'bartenderID': widget.bartenderID.toString(),
@@ -471,7 +479,7 @@ void _executeFunctionForClaimedAndReady(CustomerOrder order) {
                   ElevatedButton(
                     onPressed: () {
                       debugPrint("Cancel");
-                      socket?.add(
+                      socket!.sink.add(
                         json.encode({
                           'action': 'cancel',
                           'bartenderID': widget.bartenderID.toString(),
@@ -495,7 +503,7 @@ void _executeFunctionForClaimedAndReady(CustomerOrder order) {
                   ElevatedButton(
                     onPressed: () {
                       debugPrint("deliver");
-                      socket?.add(
+                      socket!.sink.add(
                         json.encode({
                           'action': 'deliver',
                           'bartenderID': widget.bartenderID.toString(),
@@ -562,61 +570,87 @@ void _executeFunctionForClaimedAndReady(CustomerOrder order) {
 
 @override
 Widget build(BuildContext context) {
+  if (!connected) {
+    return const Center(
+      child: CircularProgressIndicator(
+        color: Colors.white,
+      ),
+    );
+  }
+
   return Scaffold(
     appBar: AppBar(
-      title: const Center(
-        child: Text('Orders'),
-      ),
-      leading: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: IconButton(
-              icon: const Icon(Icons.cancel),
-              onPressed: () {
-                debugPrint("disable");
-                socket?.add(
-                  json.encode({
-                    'action': 'disable',
-                    'bartenderID': widget.bartenderID.toString(),
-                    'barID': widget.barID
-                  }),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.filter_list),
-          onPressed: _showFilterMenu,
-        ),
-        IconButton(
-          icon: const Icon(Icons.sync),
-          color: Colors.red,
+  title: const Center(
+    child: Text('Orders'),
+  ),
+  leading: Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Flexible(
+        child: IconButton(
+          icon: const Icon(Icons.cancel),
           onPressed: () {
-            _refresh();
+            debugPrint("disable");
+            socket!.sink.add(
+              json.encode({
+                'action': 'disable',
+                'bartenderID': widget.bartenderID.toString(),
+                'barID': widget.barID
+              }),
+            );
           },
         ),
-        GestureDetector(
-          onLongPress: _toggleBarStatus, // Handle long press
-          child: Container(
-            color: barOpenStatus ? Colors.red : Colors.green,
-            child: Center(
-              child: Text(
-                barOpenStatus ? "[HOLD] Close Bar" : "[HOLD] Open Bar",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                ),
-              ),
+      ),
+    ],
+  ),
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.filter_list),
+      onPressed: _showFilterMenu,
+    ),
+    IconButton(
+      icon: const Icon(Icons.sync),
+      color: Colors.red,
+      onPressed: () {
+        _refresh();
+      },
+    ),
+    GestureDetector(
+      onLongPress: _toggleHappyHour, // Handle long press for Happy Hour
+      child: Container(
+        color: happyHour ? Colors.amber : Colors.grey, // Gold if happyHour is true, gray otherwise
+        padding: const EdgeInsets.symmetric(horizontal: 8.0), // Add some padding around the button
+        child: Center(
+          child: Text(
+            happyHour ? "[HOLD TO DISABLE] Happy Hour" : "[HOLD TO ENABLE] Happy Hour",
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
             ),
           ),
         ),
-        const SizedBox(width: 16), // Add space between the last action and the edge
-      ],
+      ),
     ),
+    const SizedBox(width: 8), // Space between the Happy Hour button and the Open/Close button
+    GestureDetector(
+      onLongPress: _toggleBarStatus, // Handle long press for Open/Close
+      child: Container(
+        color: barOpenStatus ? Colors.red : Colors.green,
+        child: Center(
+          child: Text(
+            barOpenStatus ? "[HOLD] Close Bar" : "[HOLD] Open Bar",
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ),
+    ),
+    const SizedBox(width: 16), // Add space between the last action and the edge
+  ],
+),
+
     body: Stack(
       children: [
         ListView.builder(
@@ -846,11 +880,27 @@ Widget build(BuildContext context) {
   
   
   void _handleWebSocketError(error) { 
+    _showErrorSnackbar(error.toString());
   }
   
-  void _handleWebSocketTermination() {
 
+
+    void _attemptReconnect() {
+    _reconnectAttempts++;
+    int delay = (1 <<
+        (_reconnectAttempts -
+            1)); // Exponential backoff: 1, 2, 4, 8, etc. seconds
+    debugPrint(
+        'Scheduling reconnect attempt $_reconnectAttempts in $delay seconds.');
+
+    Future.delayed(Duration(seconds: delay), () {
+      debugPrint('Attempting to reconnect... (Attempt $_reconnectAttempts)');
+      socket = null; // Ensure _channel is null before reconnecting
+      initWebsocket(); // Re-attempt the connection
+    });
   }
+
+
 
 
 void _showAlertDialog(BuildContext context, String title, String content) {
@@ -874,29 +924,38 @@ void _showAlertDialog(BuildContext context, String title, String content) {
 }
 
   void initWebsocket() async {
+debugPrint("initial connection");
        try {
       // Attempt to open a WebSocket connection
-      final url = 'wss://www.barzzy.site/ws/bartenders';
+      const url = 'wss://www.barzzy.site/ws/bartenders';
 
-      socket = await WebSocket.connect(url);
+      socket = WebSocketChannel.connect(Uri.parse(url));
       
       debugPrint('Connected to WebSocket at $url');
 
       // Send a message to initialize the bartender session
       final Map<String, dynamic> bartenderLogin = {'action': 'initialize', 'barID': widget.barID, 'bartenderID': widget.bartenderID};
       debugPrint("login");
-      socket?.add(jsonEncode(bartenderLogin));
+      socket!.sink.add(jsonEncode(bartenderLogin));
 
 
 
-socket?.listen((event) {
+socket!.stream.listen((event) {
+
+  if (_reconnectAttempts > 0) {
+              debugPrint(
+                  'Connection successful. Resetting reconnect attempts.');
+              _reconnectAttempts =
+                  0; // Reset the reconnect attempts on successful connection
+            }
+  connected = true;
 
 debugPrint('Received: $event at ${DateTime.now()}');
 
         // Handle the response from the server
         if (event.contains("Initialization successful")) {
           _showAlertDialog(context, "Success!", "Logged in as ${widget.bartenderID}");
-          //TODO Auto-Refresh
+          return;
           
         } else if (event.contains("Initialization failed")) {
           // Show an alert dialog if the response is unsuccessful
@@ -906,6 +965,7 @@ debugPrint('Received: $event at ${DateTime.now()}');
             MaterialPageRoute(builder: (context) => BartenderIDScreen()),
             (Route<dynamic> route) => false, // Remove all previous routes
           );
+          return;
         }
 
   // Parse the JSON response from the server
@@ -929,7 +989,7 @@ debugPrint('Received: $event at ${DateTime.now()}');
         (Route<dynamic> route) => false, // Remove all previous routes
       );
         if (socket != null) {
-        socket!.close(); // Close the WebSocket connection
+        socket!.sink.close(); // Close the WebSocket connection
         socket = null; // Set the WebSocket reference to null
   }
 
@@ -988,6 +1048,15 @@ debugPrint('Received: $event at ${DateTime.now()}');
        // Update barOpenStatus and refresh UI
         setState(() {
           barOpenStatus = response['barStatus'];
+                    debugPrint("BarState set to $barOpenStatus" );
+        });
+        break;
+
+    case 'happyHour':
+       // Update barOpenStatus and refresh UI
+        setState(() {
+          happyHour = response['happyHour'];
+          debugPrint("Happy hour set to $happyHour" );
         });
         break;
 
@@ -1008,24 +1077,40 @@ debugPrint('Received: $event at ${DateTime.now()}');
   }
 },
     onError: (error) {
-      // Handle WebSocket errors
       if(!disabledTerminal) _handleWebSocketError(error);
     },
     onDone: () {
 
 debugPrint('WebSocket connection closed');
-      if(!disabledTerminal) _handleWebSocketTermination(); 
+      connected = false;
+      if(!disabledTerminal) _attemptReconnect(); 
+
+      
     },
     cancelOnError: false, // Optionally, cancel the listener on error
   );
 
-
     } catch (e) {
       // Handle the error
-      debugPrint('Failed to connect to WebSocket: $e');
-      _showAlertDialog(context, "Connection Error", "Could not connect to the server. Please try again.");
+      connected = false;
+      _attemptReconnect();
+debugPrint('Failed to connect to WebSocket: $e');
     }
   }
 
+
+  void _toggleHappyHour() {
+
+
+debugPrint('Happy Hour Toggled');
+  socket!.sink.add(
+  json.encode({
+    'action': happyHour ? 'sadHour' : 'happyHour',
+    'barID': widget.barID,
+  }),
+  );
+
+
+  }
 }
 
