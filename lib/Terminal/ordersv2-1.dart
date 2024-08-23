@@ -10,7 +10,7 @@ class OrdersPage extends StatefulWidget {
   final String bartenderID; // Bartender ID parameter
   final int barID;
 
-  const OrdersPage({super.key, required this.bartenderID, required this.barID, required this.socket});
+  const OrdersPage({super.key, required this.bartenderID, required this.barID,});
 
   @override
   State<OrdersPage> createState() => _OrdersPageState();
@@ -438,73 +438,97 @@ void _executeFunctionForClaimed(Order order) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text(
-          'Bar #${order.barId}',
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold), // Larger title
-        ),
-        content: Container(
-          height: 200, // Increase the height of the dialog
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              const Spacer(), // Space at the top
-              Row(
+      return Stack(
+        children: [
+          AlertDialog(
+            title: Text(
+              'Bar #${order.barId}',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold), // Larger title
+            ),
+            content: Container(
+              height: 200, // Increase the height of the dialog
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      debugPrint("unclaim");
-                      socket?.add(
-                        json.encode({
-                          'action': 'unclaim',
-                          'bartenderID': widget.bartenderID,
-                          'orderID': order.userId,
-                          'barID': order.barId,
-                        }),
-                      );
-                      Navigator.of(context).pop();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 32, vertical: 32), // Double the vertical padding
-                    ),
-                    child: const Text(
-                      'Unclaim',
-                      style: TextStyle(fontSize: 20, color: Colors.white), // Larger text
-                    ),
+                children: <Widget>[
+                  const Spacer(), // Space at the top
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          debugPrint("unclaim");
+                          socket?.add(
+                            json.encode({
+                              'action': 'unclaim',
+                              'bartenderID': widget.bartenderID,
+                              'orderID': order.userId,
+                              'barID': order.barId,
+                            }),
+                          );
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 32, vertical: 32), // Double the vertical padding
+                        ),
+                        child: const Text(
+                          'Unclaim',
+                          style: TextStyle(fontSize: 20, color: Colors.white), // Larger text
+                        ),
+                      ),
+                      const SizedBox(width: 20), // Add horizontal space between buttons
+                      ElevatedButton(
+                        onPressed: () {
+                          debugPrint("ready");
+                          socket?.add(
+                            json.encode({
+                              'action': 'ready',
+                              'bartenderID': widget.bartenderID,
+                              'orderID': order.userId,
+                              'barID': widget.barID,
+                            }),
+                          );
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 32, vertical: 32), // Double the vertical padding
+                        ),
+                        child: const Text(
+                          'Ready',
+                          style: TextStyle(fontSize: 20, color: Colors.white), // Larger text
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 20), // Add horizontal space between buttons
-                  ElevatedButton(
-                    onPressed: () {
-                      debugPrint("ready");
-                      socket?.add(
-                        json.encode({
-                          'action': 'ready',
-                          'bartenderID': widget.bartenderID,
-                          'orderID': order.userId,    
-                          'barID': widget.barID,
-                        }),
-                      );
-                      Navigator.of(context).pop();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 32, vertical: 32), // Double the vertical padding
-                    ),
-                    child: const Text(
-                      'Ready',
-                      style: TextStyle(fontSize: 20, color: Colors.white), // Larger text
-                    ),
-                  ),
+                  const Spacer(), // Space at the bottom
                 ],
               ),
-              const Spacer(), // Space at the bottom
-            ],
+            ),
           ),
-        ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: ElevatedButton(
+              onPressed: () {},
+              onLongPress: () {
+                // Placeholder function call
+                debugPrint("Order canceled!");
+                Navigator.of(context).pop(); // Close the dialog after the action
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Smaller padding
+              ),
+              child: const Text(
+                'Hold to cancel order',
+                style: TextStyle(fontSize: 12, color: Colors.white), // Smaller text
+              ),
+            ),
+          ),
+        ],
       );
     },
   );
