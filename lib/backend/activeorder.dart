@@ -46,6 +46,8 @@ class CustomerOrder {
     );
   }
 
+  get name => userId;
+
   // Method to convert Order to JSON
   Map<String, dynamic> toJson() {
     // Convert drink quantities to a list of maps
@@ -68,4 +70,21 @@ class CustomerOrder {
   double? getPrice() {
     return price;
   }
+
+      int getAge() {
+      // Get the current time in milliseconds since epoch
+      int currentTimestamp = DateTime.now().millisecondsSinceEpoch;
+      
+      // Calculate the duration in seconds
+      Duration ageDuration = DateTime.fromMillisecondsSinceEpoch(currentTimestamp)
+          .difference(DateTime.fromMillisecondsSinceEpoch(int.parse(timestamp)));
+      
+      // Return the age in seconds
+      return ageDuration.inSeconds;
+    }
+
+    int getDrinkQuantity(String drinkId) {
+    return drinkQuantities[drinkId] ?? 0;
+  }
+
 }

@@ -3,8 +3,8 @@ import 'dart:convert'; //TODO check bar is active
 import 'dart:io';
 
 import 'package:barzzy_app1/Terminal/ordersv2-0.dart';
+import 'package:barzzy_app1/backend/activeorder.dart';
 import 'package:flutter/material.dart';
-import 'package:barzzy_app1/backend/order.dart';
 
 class OrdersPage extends StatefulWidget {
   final String bartenderID; // Bartender ID parameter
@@ -17,16 +17,9 @@ class OrdersPage extends StatefulWidget {
 }
 
 class _OrdersPageState extends State<OrdersPage> {
-  List<Order> allOrders = [
-    Order(1, 101, 202,  ['Coke', 'Pepsi', 'one', 'two', 'three', 'four'], 'unclaimed', '', DateTime.now().millisecondsSinceEpoch + 100),
-    Order(2, 102, 203,  ['Sprite', 'Fanta'], 'unclaimed', '', DateTime.now().millisecondsSinceEpoch - 200000),
-    Order(3, 103, 204,  ['Water', 'Juice'], 'claimed', 'Z', DateTime.now().millisecondsSinceEpoch - 300000),
-    Order(4, 201, 205,  ['Test', 'Two'], 'unclaimed', '', DateTime.now().millisecondsSinceEpoch - 400000),
-    Order(5, 202, 206, ['Three', 'Is'], 'claimed', 'test', DateTime.now().millisecondsSinceEpoch - 800000),
-    Order(6, 203, 207, ['This', 'Working'], 'ready', 'test', DateTime.now().millisecondsSinceEpoch),
-  ];
+  List<CustomerOrder> allOrders = [];
 
-  List<Order> displayList = [];
+  List<CustomerOrder> displayList = [];
 
 //TESTING VARIABLE
   bool testing = true;
@@ -39,6 +32,7 @@ class _OrdersPageState extends State<OrdersPage> {
   bool disabledTerminal = false; // Tracks if terminal is disabled
   bool barOpenStatus = true; // Track if bar is open or closed
   WebSocket? socket;
+  bool terminalStatus = true;
 
   Timer? _timer;
   WebSocket? websocket;
@@ -65,111 +59,8 @@ class _OrdersPageState extends State<OrdersPage> {
 
 
   // Listen for the response from the server
-  socket?.listen((event) {
-
-debugPrint('Received: $event');
-
-        // Handle the response from the server
-        if (event.contains("Initialization successful")) {
-          _showAlertDialog(context, "Success!", "Logged in as ${widget.bartenderID}");
-          //TODO Auto-Refresh
-          
-        } else if (event.contains("Initialization failed")) {
-          // Show an alert dialog if the response is unsuccessful
-          _showAlertDialog(context, "Error", "Failed to initialize: $event");
-            Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => BartenderIDScreen()),
-            (Route<dynamic> route) => false, // Remove all previous routes
-          );
-        }
-
-  // Parse the JSON response from the server
-  final Map<String, dynamic> response = jsonDecode(event);
-
-
-
-  // Check which key is present in the response and handle accordingly
-  switch (response.keys.first) {
-    case 'error':
-      // Use _showErrorSnackbar to display the error message
-      _showErrorSnackbar(response['error']);
-      break;
-
-    case 'terminate':
-      disabledTerminal = true;
-      _showErrorSnackbar("Connection terminated by the server: new connection inbound");
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
-        (Route<dynamic> route) => false, // Remove all previous routes
-      );
-        if (socket != null) {
-        socket!.close(); // Close the WebSocket connection
-        socket = null; // Set the WebSocket reference to null
-  }
-
-      break;
-
-    case 'orders':
-      final List<dynamic> ordersJson = response['orders'];
-      
-      // Convert JSON to Order objects and update allOrders
-      final incomingOrders = ordersJson.map((json) => Order.fromJson(json)).toList();
-      for (Order incomingOrder in incomingOrders) {
-        // Check if the order exists in allOrders
-        int index = allOrders.indexWhere((order) => order.userId == incomingOrder.userId);
-        
-        if (index != -1) {
-          // If it exists, replace the old order
-          allOrders[index] = incomingOrder;
-          if( allOrders[index].status == 'delivered' || allOrders[index].status == 'canceled') allOrders.remove(allOrders[index]);
-        } else {
-          // If it doesn't exist, add the new order to allOrders
-          if( allOrders[index].status != 'delivered' && allOrders[index].status != 'canceled') allOrders.add(incomingOrder);
-                    
-        }
-      }
-      setState(() {
-        // Update the displayList based on the new allOrders
-        _updateLists();
-      });
-      break;
-
-    case 'barStatus':
-       // Update barOpenStatus and refresh UI
-        setState(() {
-          barOpenStatus = response['barStatus'];
-        });
-        break;
-
-    case 'disableTerminal':
-        _disableTerminal();
-        break;
-
-    case 'updateTerminal':
-        // Update local values and refresh UI
-        setState(() {
-          bartenderCount = response['bartenderCount'];
-          bartenderNumber = response['bartenderNumber'];
-        });
-        break;
-
-    default:
-      debugPrint("Unknown key received in WebSocket message: ${response.keys.first}");
-  }
-},
-    onError: (error) {
-      // Handle WebSocket errors
-      if(!disabledTerminal) _handleWebSocketError(error);
-    },
-    onDone: () {
-
-debugPrint('WebSocket connection closed');
-      if(!disabledTerminal) _handleWebSocketTermination(); 
-    },
-    cancelOnError: false, // Optionally, cancel the listener on error
-  );
+  
+  
   }
 
   @override
@@ -179,24 +70,35 @@ debugPrint('WebSocket connection closed');
   }
 
 void _updateLists() {
+debugPrint("updating LIsts");
   // Sort `allOrders` by timestamp, older orders first
+debugPrint("Sorting");
   allOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+debugPrint("done sorting");
 
-  List<Order> claimedByBartender = [];
-  List<Order> notClaimedByBartender = [];
+  List<CustomerOrder> claimedByBartender = [];
+  List<CustomerOrder> notClaimedByBartender = [];
 
   // Separate orders based on whether they are claimed by the bartender
+debugPrint("iterating through sorted order.");
   for (var order in allOrders) {
     if (widget.bartenderID == order.claimer && order.status != 'claimed' && order.status != 'delivered') {
       claimedByBartender.add(order);
+debugPrint("iterated: claimed");
     } else if (order.status != 'claimed' && order.status != 'delivered') {
       notClaimedByBartender.add(order);
+debugPrint("iterated: unclaimed");
     }
   }
+debugPrint("done iterating through sortedorder");
 
   // Combine the lists: orders claimed by bartender first, then the rest
+debugPrint("Attempting combine");
   displayList = claimedByBartender + notClaimedByBartender;
+debugPrint("Done combining");
 
+
+debugPrint("filtering");
   if (priorityFilterShowReady) {
     displayList = displayList.where((order) => (order.userId % bartenderCount) == bartenderNumber).toList();
     displayList = displayList.where((order) => order.status == 'ready').toList();
@@ -212,8 +114,10 @@ void _updateLists() {
       displayList = displayList.where((order) => order.status != 'ready').toList();
     }
   }
+debugPrint("Done filtring");
 
   // Check if terminal is disabled and no orders are claimed by the bartender
+debugPrint("checking if you need to disable terminal");
   if (disabledTerminal && !allOrders.any((order) => order.claimer == widget.bartenderID)) {
     
       socket?.add(
@@ -237,6 +141,7 @@ void _updateLists() {
 
 
   }
+debugPrint("done updating lists");
 
   // Update state to refresh the UI
   setState(() {});
@@ -268,7 +173,14 @@ void _updateLists() {
   }
 
   void _disableTerminal() {
+
+
+    _showAlertDialog(context, 'This station is now disabled.', 'Please complete the remaining orders to finalize the logout.');
+
+
+  
     setState(() {
+      terminalStatus = false;
       bartenderNumber = bartenderCount;
       filterUnique = true;
       filterHideReady = false;
@@ -419,13 +331,13 @@ void _refresh() {
   setState((){});
 }
 
-  void _executeFunctionForUnclaimed(Order order) {
+  void _executeFunctionForUnclaimed(CustomerOrder order) {
     // Construct the message
     final claimRequest = {
       'action': 'claim',
-      'bartenderID': widget.bartenderID,
+      'bartenderID': widget.bartenderID.toString(),
       'orderID': order.userId,
-      'barID': order.barId,
+      'barID': widget.barID,
     };
 
     // Send the message via WebSocket
@@ -434,101 +346,101 @@ void _refresh() {
     debugPrint("attempting claim");
   }
 
-void _executeFunctionForClaimed(Order order) {
+void _executeFunctionForClaimed(CustomerOrder order) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
-      return Stack(
-        children: [
-          AlertDialog(
-            title: Text(
-              'Bar #${order.barId}',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold), // Larger title
-            ),
-            content: Container(
-              height: 200, // Increase the height of the dialog
-              child: Column(
+      return AlertDialog(
+        title: Text(
+          'Bar #${order.barId}',
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold), // Larger title
+        ),
+        content: Container(
+          height: 200, // Increase the height of the dialog
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              ElevatedButton(
+                onPressed: () {},
+                onLongPress: () {
+                  // Handle order cancellation here
+                  debugPrint("Order canceled!");
+                  socket?.add(
+                    json.encode({
+                      'action': 'cancel',
+                      'bartenderID': widget.bartenderID.toString(),
+                      'orderID': order.userId,
+                      'barID': widget.barID,
+                    }),
+                  );
+                  Navigator.of(context).pop(); // Close the dialog after the action
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Smaller padding
+                ),
+                child: const Text(
+                  'Hold to cancel order',
+                  style: TextStyle(fontSize: 12, color: Colors.white), // Smaller text
+                ),
+              ),
+              const Spacer(), // Space at the top
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  const Spacer(), // Space at the top
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          debugPrint("unclaim");
-                          socket?.add(
-                            json.encode({
-                              'action': 'unclaim',
-                              'bartenderID': widget.bartenderID,
-                              'orderID': order.userId,
-                              'barID': order.barId,
-                            }),
-                          );
-                          Navigator.of(context).pop();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 32, vertical: 32), // Double the vertical padding
-                        ),
-                        child: const Text(
-                          'Unclaim',
-                          style: TextStyle(fontSize: 20, color: Colors.white), // Larger text
-                        ),
-                      ),
-                      const SizedBox(width: 20), // Add horizontal space between buttons
-                      ElevatedButton(
-                        onPressed: () {
-                          debugPrint("ready");
-                          socket?.add(
-                            json.encode({
-                              'action': 'ready',
-                              'bartenderID': widget.bartenderID,
-                              'orderID': order.userId,
-                              'barID': widget.barID,
-                            }),
-                          );
-                          Navigator.of(context).pop();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 32, vertical: 32), // Double the vertical padding
-                        ),
-                        child: const Text(
-                          'Ready',
-                          style: TextStyle(fontSize: 20, color: Colors.white), // Larger text
-                        ),
-                      ),
-                    ],
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      debugPrint("unclaim");
+                      socket?.add(
+                        json.encode({
+                          'action': 'unclaim',
+                          'bartenderID': widget.bartenderID.toString(),
+                          'orderID': order.userId,
+                          'barID': widget.barID,
+                        }),
+                      );
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 32), // Double the vertical padding
+                    ),
+                    child: const Text(
+                      'Unclaim',
+                      style: TextStyle(fontSize: 20, color: Colors.white), // Larger text
+                    ),
                   ),
-                  const Spacer(), // Space at the bottom
+                  const SizedBox(width: 20), // Add horizontal space between buttons
+                  ElevatedButton(
+                    onPressed: () {
+                      debugPrint("ready");
+                      socket?.add(
+                        json.encode({
+                          'action': 'ready',
+                          'bartenderID': widget.bartenderID.toString(),
+                          'orderID': order.userId,
+                          'barID': widget.barID,
+                        }),
+                      );
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 32), // Double the vertical padding
+                    ),
+                    child: const Text(
+                      'Ready',
+                      style: TextStyle(fontSize: 20, color: Colors.white), // Larger text
+                    ),
+                  ),
                 ],
               ),
-            ),
+              const Spacer(), // Space at the bottom
+            ],
           ),
-          Positioned(
-            top: 8,
-            right: 8,
-            child: ElevatedButton(
-              onPressed: () {},
-              onLongPress: () {
-                // Placeholder function call
-                debugPrint("Order canceled!");
-                Navigator.of(context).pop(); // Close the dialog after the action
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Smaller padding
-              ),
-              child: const Text(
-                'Hold to cancel order',
-                style: TextStyle(fontSize: 12, color: Colors.white), // Smaller text
-              ),
-            ),
-          ),
-        ],
+        ),
       );
     },
   );
@@ -536,7 +448,9 @@ void _executeFunctionForClaimed(Order order) {
 
 
 
-void _executeFunctionForClaimedAndReady(Order order) {
+
+
+void _executeFunctionForClaimedAndReady(CustomerOrder order) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
@@ -560,7 +474,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
                       socket?.add(
                         json.encode({
                           'action': 'cancel',
-                          'bartenderID': widget.bartenderID,
+                          'bartenderID': widget.bartenderID.toString(),
                           'orderID': order.userId,
                           'barID': widget.barID,
                         }),
@@ -584,7 +498,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
                       socket?.add(
                         json.encode({
                           'action': 'deliver',
-                          'bartenderID': widget.bartenderID,
+                          'bartenderID': widget.bartenderID.toString(),
                           'orderID': order.userId,
                           'barID': widget.barID,
                         }),
@@ -618,7 +532,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
 
 
 
-  void _onOrderTap(Order order) {
+  void _onOrderTap(CustomerOrder order) {
     if (order.claimer.isEmpty) {
       _executeFunctionForUnclaimed(order);
     } else if (order.claimer == widget.bartenderID) {
@@ -630,7 +544,7 @@ void _executeFunctionForClaimedAndReady(Order order) {
     }
   }
 
-  Color _getOrderTintColor(Order order) {
+  Color _getOrderTintColor(CustomerOrder order) {
     final ageInSeconds = order.getAge();
     
     // Debug print to show age and orderId
@@ -646,151 +560,191 @@ void _executeFunctionForClaimedAndReady(Order order) {
     return Colors.red[700]!; // Over 10 minutes old
   }
 
- @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Center(
-          child: Text('Orders'),
-        ),
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: IconButton(
-                icon: const Icon(Icons.cancel),
-                onPressed: () {
-                  debugPrint("disable");
-                      socket?.add(
-                        json.encode({
-                          'action': 'disableTerminal',
-                          'bartenderID': widget.bartenderID,
-                          'barID': widget.barID
-                        }),
-                      );
-                } 
-              ),
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Center(
+        child: Text('Orders'),
+      ),
+      leading: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: IconButton(
+              icon: const Icon(Icons.cancel),
+              onPressed: () {
+                debugPrint("disable");
+                socket?.add(
+                  json.encode({
+                    'action': 'disable',
+                    'bartenderID': widget.bartenderID.toString(),
+                    'barID': widget.barID
+                  }),
+                );
+              },
             ),
-            // Removed the IconButton for Logout
-          ],
+          ),
+        ],
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.filter_list),
+          onPressed: _showFilterMenu,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterMenu,
-          ),
-          IconButton(
-            icon: const Icon(Icons.sync),
-            color: Colors.red,
-            onPressed: () {
-              _refresh();
-            },
-          ),
-          GestureDetector(
-            onLongPress: _toggleBarStatus, // Handle long press
-            child: Container(
-              color: barOpenStatus ? Colors.red : Colors.green,
-              child: Center(
-                child: Text(
-                  barOpenStatus ? "[HOLD] Close Bar" : "[HOlD] Open Bar",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
+        IconButton(
+          icon: const Icon(Icons.sync),
+          color: Colors.red,
+          onPressed: () {
+            _refresh();
+          },
+        ),
+        GestureDetector(
+          onLongPress: _toggleBarStatus, // Handle long press
+          child: Container(
+            color: barOpenStatus ? Colors.red : Colors.green,
+            child: Center(
+              child: Text(
+                barOpenStatus ? "[HOLD] Close Bar" : "[HOLD] Open Bar",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 16), // Add space between the last action and the edge
-        ],
-      ),
-      body: Stack(
-        children: [
-          ListView.builder(
-            itemCount: displayList.length,
-            itemBuilder: (context, index) {
-              final order = displayList[index];
-              final tintColor = _getOrderTintColor(order);
+        ),
+        const SizedBox(width: 16), // Add space between the last action and the edge
+      ],
+    ),
+    body: Stack(
+      children: [
+        ListView.builder(
+          itemCount: displayList.length,
+          itemBuilder: (context, index) {
+            final order = displayList[index];
+            final tintColor = _getOrderTintColor(order);
 
-              return InkWell(
-                onTap: () => _onOrderTap(order),
-                child: Card(
-                  margin: const EdgeInsets.all(8.0),
-                  color: tintColor,
-                  shape: RoundedRectangleBorder(
-                    side: const BorderSide(color: Color(0xFFFFD700), width: 2), // Gold border using hex color
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Expanded(
-                        flex: 1,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Text(
-                                '#${order.userId}',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black,
-                                      offset: Offset(1.0, 1.0),
-                                      blurRadius: 1.0,
-                                    ),
-                                  ],
-                                ),
+            return InkWell(
+              onTap: () => _onOrderTap(order),
+              child: Card(
+                margin: const EdgeInsets.all(8.0),
+                color: tintColor,
+                shape: RoundedRectangleBorder(
+                  side: const BorderSide(color: Color(0xFFFFD700), width: 2), // Gold border using hex color
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      flex: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              '#${order.userId}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black,
+                                    offset: Offset(1.0, 1.0),
+                                    blurRadius: 1.0,
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '\$${order.price.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black,
-                                      offset: Offset(1.0, 1.0),
-                                      blurRadius: 1.0,
-                                    ),
-                                  ],
-                                ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '\$${order.price.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black,
+                                    offset: Offset(1.0, 1.0),
+                                    blurRadius: 1.0,
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '@${order.userId}',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black,
-                                      offset: Offset(1.0, 1.0),
-                                      blurRadius: 1.0,
-                                    ),
-                                  ],
-                                ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '@${order.userId}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black,
+                                    offset: Offset(1.0, 1.0),
+                                    blurRadius: 1.0,
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                      Expanded(
-                        flex: 2,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            children: order.name.map((drinkName) {
-                              return ListTile(
-                                title: Text(
-                                  drinkName,
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: order.drinkQuantities.entries.map((entry) {
+                            final drinkName = entry.key;
+                            final quantity = entry.value;
+                            final displayText = quantity > 1
+                                ? '$drinkName x $quantity'
+                                : drinkName;
+                            return ListTile(
+                              title: Text(
+                                displayText,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black,
+                                      offset: Offset(1.0, 1.0),
+                                      blurRadius: 1.0,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              contentPadding: EdgeInsets.zero,
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    // Container for claimer text box
+                    Expanded(
+                      flex: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: double.infinity, // Full width of the available space
+                              padding: const EdgeInsets.all(8.0),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.black, width: 2), // Static black border
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  order.claimer,
                                   style: const TextStyle(
+                                    fontSize: 24, // Increased font size
                                     color: Colors.white,
                                     shadows: [
                                       Shadow(
@@ -801,32 +755,19 @@ void _executeFunctionForClaimedAndReady(Order order) {
                                     ],
                                   ),
                                 ),
-                                contentPadding: EdgeInsets.zero,
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ),
-                      // Container for claimer text box
-                      Expanded(
-                        flex: 1,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: double.infinity, // Full width of the available space
-                                padding: const EdgeInsets.all(8.0),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.black, width: 2), // Static black border
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    order.claimer,
+                              ),
+                            ),
+                            const SizedBox(height: 8), // Space between text box and timer
+                            Center(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.timer, color: Colors.white),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _formatDuration(order.getAge()),
                                     style: const TextStyle(
-                                      fontSize: 24, // Increased font size
+                                      fontSize: 16,
                                       color: Colors.white,
                                       shadows: [
                                         Shadow(
@@ -837,43 +778,20 @@ void _executeFunctionForClaimedAndReady(Order order) {
                                       ],
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
-                              const SizedBox(height: 8), // Space between text box and timer
-                              Center(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.timer, color: Colors.white),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _formatDuration(order.getAge()),
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.white,
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.black,
-                                            offset: Offset(1.0, 1.0),
-                                            blurRadius: 1.0,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              );
-            },
-          ),
- Positioned(
+              ),
+            );
+          },
+        ),
+        Positioned(
           bottom: 16.0,
           left: 16.0,
           child: Column(
@@ -898,13 +816,25 @@ void _executeFunctionForClaimedAndReady(Order order) {
                   backgroundColor: Colors.white,
                 ),
               ),
+
+                Text(
+                'Terminal Status: ${terminalStatus ? 'Active' : 'Disabled'}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                  backgroundColor: Colors.white,
+                ),
+              ),
             ],
+            
           ),
         ),
-        ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
+
 
   String _formatDuration(int seconds) {
     final Duration duration = Duration(seconds: seconds);
@@ -956,9 +886,138 @@ void _showAlertDialog(BuildContext context, String title, String content) {
       final Map<String, dynamic> bartenderLogin = {'action': 'initialize', 'barID': widget.barID, 'bartenderID': widget.bartenderID};
       debugPrint("login");
       socket?.add(jsonEncode(bartenderLogin));
+
+
+
+socket?.listen((event) {
+
+debugPrint('Received: $event at ${DateTime.now()}');
+
+        // Handle the response from the server
+        if (event.contains("Initialization successful")) {
+          _showAlertDialog(context, "Success!", "Logged in as ${widget.bartenderID}");
+          //TODO Auto-Refresh
+          
+        } else if (event.contains("Initialization failed")) {
+          // Show an alert dialog if the response is unsuccessful
+          _showAlertDialog(context, "Error", "Failed to initialize: $event");
+            Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => BartenderIDScreen()),
+            (Route<dynamic> route) => false, // Remove all previous routes
+          );
+        }
+
+  // Parse the JSON response from the server
+  final Map<String, dynamic> response = jsonDecode(event);
+
+
+
+  // Check which key is present in the response and handle accordingly
+  switch (response.keys.first) {
+    case 'error':
+      // Use _showErrorSnackbar to display the error message
+      _showErrorSnackbar(response['error']);
+      break;
+
+    case 'terminate':
+      disabledTerminal = true;
+      _showErrorSnackbar("Connection terminated by the server: new connection inbound");
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
+        (Route<dynamic> route) => false, // Remove all previous routes
+      );
+        if (socket != null) {
+        socket!.close(); // Close the WebSocket connection
+        socket = null; // Set the WebSocket reference to null
+  }
+
+      break;
+
+    case 'barId':
+    final Map<String, dynamic> ordersJson = response;
+
+    final incomingOrder = CustomerOrder.fromJson(ordersJson);
+
+      // Check if the order exists in allOrders
+      int index = allOrders.indexWhere((order) => order.userId == incomingOrder.userId);
+      if (index != -1) {
+        // If it exists, replace the old order
+        allOrders[index] = incomingOrder;
+        if( allOrders[index].status == 'delivered' || allOrders[index].status == 'canceled') allOrders.remove(allOrders[index]);
+      } else  {
+        // If it doesn't exist, add the new order to allOrders
+        if( incomingOrder.status != 'delivered' && incomingOrder.status != 'canceled') allOrders.add(incomingOrder);
+                  
+      }
+    
+      setState(() {
+        // Update the displayList based on the new allOrders
+        _updateLists();
+      });
+      break;
+
+
+
+    case 'orders':
+      final List<dynamic> ordersJson = response['orders'];
       
+      // Convert JSON to Order objects and update allOrders
+      final incomingOrders = ordersJson.map((json) => CustomerOrder.fromJson(json)).toList();
+      for (CustomerOrder incomingOrder in incomingOrders) {
+        // Check if the order exists in allOrders
+        int index = allOrders.indexWhere((order) => order.userId == incomingOrder.userId);
+        if (index != -1) {
+          // If it exists, replace the old order
+          allOrders[index] = incomingOrder;
+          if( allOrders[index].status == 'delivered' || allOrders[index].status == 'canceled') allOrders.remove(allOrders[index]);
+        } else  {
+          // If it doesn't exist, add the new order to allOrders
+          if( incomingOrder.status != 'delivered' && incomingOrder.status != 'canceled') allOrders.add(incomingOrder);
+                    
+        }
+      }
+      setState(() {
+        // Update the displayList based on the new allOrders
+        _updateLists();
+      });
+      break;
 
+    case 'barStatus':
+       // Update barOpenStatus and refresh UI
+        setState(() {
+          barOpenStatus = response['barStatus'];
+        });
+        break;
 
+    case 'disable':
+        _disableTerminal();
+        break;
+
+    case 'updateTerminal':
+        // Update local values and refresh UI
+        setState(() {
+          bartenderCount = int.parse(response['bartenderCount']);
+          bartenderNumber = int.parse(response['bartenderNumber']);
+        });
+        break;
+
+    default:
+      debugPrint("Unknown key received in WebSocket message: ${response.keys.first}");
+  }
+},
+    onError: (error) {
+      // Handle WebSocket errors
+      if(!disabledTerminal) _handleWebSocketError(error);
+    },
+    onDone: () {
+
+debugPrint('WebSocket connection closed');
+      if(!disabledTerminal) _handleWebSocketTermination(); 
+    },
+    cancelOnError: false, // Optionally, cancel the listener on error
+  );
 
 
     } catch (e) {
