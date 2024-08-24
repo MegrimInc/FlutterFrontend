@@ -12,7 +12,6 @@ import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
 import 'package:barzzy_app1/Terminal/ordersv2-0.dart';
-import 'package:barzzy_app1/QrPage/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:barzzy_app1/Backend/localdatabase.dart';
@@ -78,6 +77,7 @@ void main() async {
         ChangeNotifierProvider(create: (context) => BarHistory()),
         ChangeNotifierProvider(create: (context) => Recommended()),
         ChangeNotifierProvider(create: (context) => Hierarchy(context)),
+        
         ChangeNotifierProvider(create: (_) => LoginCache()),
         ChangeNotifierProvider(create: (context) => user),
         ProxyProvider<LocalDatabase, SearchService>(
@@ -197,7 +197,6 @@ class Barzzy extends StatelessWidget {
     Provider.of<Recommended>(context, listen: false)
         .fetchRecommendedBars(context);
 
-    cameraControllerSingleton.initialize();
 
     // Decide the initial route
     final String initialRoute;

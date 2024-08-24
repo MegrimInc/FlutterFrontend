@@ -63,6 +63,18 @@ class LocalDatabase with ChangeNotifier {
     }
   }
 
+  // Method to clear only the bar orders and related persisted data
+  Future<void> clearBarOrders() async {
+    // Clear in-memory bar orders
+    _barOrders.clear();
+
+    // Clear persisted bar orders in SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_orderPrefsKey);
+
+    notifyListeners(); // Notify listeners that the bar orders have been cleared
+  }
+
   CustomerOrder? getOrderForBar(String barId) {
     return _barOrders[barId];
   }

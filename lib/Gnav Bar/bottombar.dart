@@ -5,7 +5,7 @@ import 'package:barzzy_app1/QrPage/qr.dart';
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+
 
 
 class AuthPage extends StatefulWidget {
@@ -18,14 +18,14 @@ class AuthPage extends StatefulWidget {
 
 class AuthPageState extends State<AuthPage> {
   late int _selectedIndex;
-  late MobileScannerController _cameraController;
+  
   late List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.selectedTab;
-    _cameraController = MobileScannerController(); 
+    
     _initPages();
   }
 
@@ -33,14 +33,14 @@ class AuthPageState extends State<AuthPage> {
     _pages = [
       const HomePage(),
       const PickupPage(),
-      QrPage(cameraController: _cameraController),
+      const QrPage(),
       const ProfilePage(),
     ];
   }
 
   @override
   void dispose() {
-    _cameraController.dispose();
+    
     super.dispose();
   }
 

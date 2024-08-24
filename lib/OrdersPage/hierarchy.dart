@@ -1,8 +1,11 @@
+
+
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Backend/activeorder.dart';
 import 'package:barzzy_app1/Backend/localdatabase.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -14,9 +17,13 @@ class Hierarchy extends ChangeNotifier {
   final LocalDatabase localDatabase;
   final List<String> _createdOrderBarIds = [];
   bool _isConnected = false;
+  static const String _prefsKey = 'createdOrderBarIds';
+  
 
   Hierarchy(BuildContext context)
-      : localDatabase = Provider.of<LocalDatabase>(context, listen: false);
+      : localDatabase = Provider.of<LocalDatabase>(context, listen: false)
+      {_loadBarIdsFromSharedPreferences();}
+
 
   // Establish a WebSocket connection with exponential backoff
   void connect(BuildContext context) {
@@ -159,21 +166,56 @@ class Hierarchy extends ChangeNotifier {
     }
   }
 
-  // Method to handle create order responses
-  void _createOrderResponse(Map<String, dynamic> data) {
-    try {
-      // Create a CustomerOrder object using the data from the response
-      final customerOrder = CustomerOrder.fromJson(data);
-      debugPrint('CustomerOrder created: $customerOrder');
 
-      localDatabase.addOrUpdateOrderForBar(customerOrder);
-      _createdOrderBarIds.add(customerOrder.barId);
-      // Print statement to confirm addition
-      debugPrint(
-          'CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
-    } catch (e) {
-      debugPrint('Error while creating CustomerOrder: $e');
+  // Method to handle create order responses
+void _createOrderResponse(Map<String, dynamic> data) async {
+  try {
+    // Create a CustomerOrder object using the data from the response
+    final customerOrder = CustomerOrder.fromJson(data);
+    debugPrint('CustomerOrder created: $customerOrder');
+
+    localDatabase.addOrUpdateOrderForBar(customerOrder);
+
+    // Add the bar ID to the list, ensuring only the 5 most recent IDs are stored
+    if (_createdOrderBarIds.contains(customerOrder.barId)) {
+      // If the barId already exists, remove it from its current position
+      _createdOrderBarIds.remove(customerOrder.barId);
     }
+    // Add the barId to the end of the list (most recent)
+    _createdOrderBarIds.add(customerOrder.barId);
+
+    // Ensure the list contains only the 5 most recent IDs
+    if (_createdOrderBarIds.length > 5) {
+      _createdOrderBarIds.removeAt(0); // Remove the oldest ID
+    }
+
+     await _saveBarIdsToSharedPreferences();
+
+    // Print statement to confirm addition
+    debugPrint('CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
+  } catch (e) {
+    debugPrint('Error while creating CustomerOrder: $e');
+  }
+}
+
+
+
+// Method to save the list to SharedPreferences
+  Future<void> _saveBarIdsToSharedPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_prefsKey, _createdOrderBarIds);
+  }
+
+  // Method to load the list from SharedPreferences
+  Future<void> _loadBarIdsFromSharedPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final loadedBarIds = prefs.getStringList(_prefsKey);
+
+    if (loadedBarIds != null) {
+      _createdOrderBarIds.addAll(loadedBarIds);
+    }
+
+    notifyListeners(); // Notify listeners that the data has been loaded
   }
 
   // Method to retrieve the list of barIds for created orders
