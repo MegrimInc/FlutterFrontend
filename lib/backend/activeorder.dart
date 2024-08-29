@@ -7,7 +7,7 @@ class CustomerOrder {
   Map<String, int> drinkQuantities; // Map<String, int> for drink quantities
   String status;
   String claimer;
-  String timestamp;
+  int timestamp;
 
   CustomerOrder(
     this.barId,
@@ -42,7 +42,7 @@ class CustomerOrder {
       drinkQuantities, // Use parsed drink quantities
       json['status'] as String,
       json['claimer'] as String,
-      json['timestamp'] as String,
+      int.parse(json['timestamp']),
     );
   }
 
@@ -71,17 +71,17 @@ class CustomerOrder {
     return price;
   }
 
-      int getAge() {
-      // Get the current time in milliseconds since epoch
-      int currentTimestamp = DateTime.now().millisecondsSinceEpoch;
-      
-      // Calculate the duration in seconds
-      Duration ageDuration = DateTime.fromMillisecondsSinceEpoch(currentTimestamp)
-          .difference(DateTime.fromMillisecondsSinceEpoch(int.parse(timestamp)));
-      
-      // Return the age in seconds
-      return ageDuration.inSeconds;
-    }
+    int getAge() {
+  // Get the current time in milliseconds since epoch
+  int currentTimestamp = DateTime.now().millisecondsSinceEpoch;
+  
+  // Calculate the duration in seconds
+  Duration ageDuration = DateTime.fromMillisecondsSinceEpoch(currentTimestamp)
+      .difference(DateTime.fromMillisecondsSinceEpoch(timestamp));
+  
+  // Return the age in seconds
+  return ageDuration.inSeconds;
+}
 
     int getDrinkQuantity(String drinkId) {
     return drinkQuantities[drinkId] ?? 0;

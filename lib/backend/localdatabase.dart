@@ -20,11 +20,8 @@ class LocalDatabase with ChangeNotifier {
 
   LocalDatabase._internal() {
     // Automatically load orders when the class is instantiated
-    loadOrdersFromSharedPreferences();
+    //loadOrdersFromSharedPreferences();
   }
-
-
-  
 
   final Map<String, Bar> _bars = {};
   final Map<String, Tag> tags = {};
@@ -32,35 +29,10 @@ class LocalDatabase with ChangeNotifier {
   final Cache _cache = Cache();
   final Map<String, CustomerOrder> _barOrders = {};
 
-
-   void addOrUpdateOrderForBar(CustomerOrder order) async {
+  void addOrUpdateOrderForBar(CustomerOrder order) async {
     _barOrders[order.barId] = order;
-     await _saveOrdersToSharedPreferences(); 
+    //await _saveOrdersToSharedPreferences();
     notifyListeners();
-  }
-
-  
-
-   // Method to save all orders to SharedPreferences
-  Future<void> _saveOrdersToSharedPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    final orderMap = _barOrders.map((barId, order) => MapEntry(barId, jsonEncode(order.toJson())));
-    await prefs.setString(_orderPrefsKey, jsonEncode(orderMap));
-  }
-
-  // Method to load orders from SharedPreferences
-  Future<void> loadOrdersFromSharedPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    final orderMapString = prefs.getString(_orderPrefsKey);
-
-    if (orderMapString != null) {
-      final Map<String, dynamic> orderMap = jsonDecode(orderMapString);
-      orderMap.forEach((barId, orderJson) {
-        _barOrders[barId] = CustomerOrder.fromJson(jsonDecode(orderJson));
-        debugPrint('Loaded order for barId: $barId, Order: ${_barOrders[barId]}');
-      });
-      notifyListeners();
-    }
   }
 
   // Method to clear only the bar orders and related persisted data
@@ -78,7 +50,6 @@ class LocalDatabase with ChangeNotifier {
   CustomerOrder? getOrderForBar(String barId) {
     return _barOrders[barId];
   }
-
 
   // Method to add a new bar, generating an ID for it
   void addBar(Bar bar) {
@@ -199,5 +170,49 @@ class LocalDatabase with ChangeNotifier {
     } else {
       Response().addPositiveResponse(user, barId, drinkIds.length, query);
     }
+  }
+
+  Future<List<String>> fetchSixDrinks(User user, String barId) async {
+    // Define the endpoint URL
+    final url =
+        Uri.parse('https://www.barzzy.site/bars/getSixDrinks?barId=$barId');
+
+    List<String> drinkIds = [];
+
+    try {
+      // Make the GET request
+      final response2 = await http.get(url);
+
+      // Check if the request was successful
+      if (response2.statusCode == 200) {
+        // Parse the JSON response
+        final List<dynamic> jsonResponse = jsonDecode(response2.body);
+        debugPrint('Six drinks data received: $jsonResponse');
+
+        for (var drinkJson in jsonResponse) {
+          Drink drink = Drink.fromJson(drinkJson);
+          addDrink(drink); // Add each drink to the local database
+          drinkIds.add(drink.id); // Collect the drink IDs
+        }
+
+        // Add fetched drink IDs to cache
+        for (var drinkId in drinkIds) {
+          await _cache.addDrinkId(drinkId);
+        }
+        String response = "";
+   String query = "";
+   user.addResponseToHistory(barId, response);
+   user.addQueryToHistory(barId, query);
+   user.addSearchQuery(barId, query, drinkIds);
+   user.setLastSearch(barId, query, drinkIds);
+      } else {
+        debugPrint(
+            'Failed to load six drinks. Status code: ${response2.statusCode}');
+      }
+    } catch (e) {
+      // Handle any errors during the request
+      debugPrint('Error fetching six drinks: $e');
+    }
+    return drinkIds;
   }
 }

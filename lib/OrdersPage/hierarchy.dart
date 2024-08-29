@@ -1,11 +1,9 @@
-
-
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Backend/activeorder.dart';
 import 'package:barzzy_app1/Backend/localdatabase.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -15,15 +13,12 @@ class Hierarchy extends ChangeNotifier {
   WebSocketChannel? _channel;
   int _reconnectAttempts = 0;
   final LocalDatabase localDatabase;
-  final List<String> _createdOrderBarIds = [];
+  final Map<String, int> _createdOrderBarIds = {};
   bool _isConnected = false;
-  static const String _prefsKey = 'createdOrderBarIds';
-  
+
 
   Hierarchy(BuildContext context)
-      : localDatabase = Provider.of<LocalDatabase>(context, listen: false)
-      {_loadBarIdsFromSharedPreferences();}
-
+      : localDatabase = Provider.of<LocalDatabase>(context, listen: false);
 
   // Establish a WebSocket connection with exponential backoff
   void connect(BuildContext context) {
@@ -73,16 +68,14 @@ class Hierarchy extends ChangeNotifier {
                   final data = decodedMessage['data'];
                   _createOrderResponse(
                       data); // Trigger the createOrderResponse method
+
+                      case 'delete':
+                       debugPrint('Delete response received.');
+                       final data = decodedMessage['data'];
+                       _createOrderResponse(
+                        data); 
+
                   break;
-
-
-                  case 'update':
-                  debugPrint('Update response received.');
-                  final data = decodedMessage['data'];
-                  _createOrderResponse(
-                      data); // Trigger the createOrderResponse method
-                  break;
-
 
                 default:
                   debugPrint('Unknown message type: $messageType');
@@ -175,61 +168,54 @@ class Hierarchy extends ChangeNotifier {
     }
   }
 
-
   // Method to handle create order responses
-void _createOrderResponse(Map<String, dynamic> data) async {
+  void _createOrderResponse(Map<String, dynamic> data) async {
+    try {
+      // Create a CustomerOrder object using the data from the response
+      final customerOrder = CustomerOrder.fromJson(data);
+      debugPrint('CustomerOrder created: $customerOrder');
+
+      localDatabase.addOrUpdateOrderForBar(customerOrder);
+
+     // Directly update the map with the new timestamp for the barId
+      _createdOrderBarIds[customerOrder.barId] = customerOrder.timestamp as int;
+
+
+      // Print statement to confirm addition
+      debugPrint(
+          'CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
+    } catch (e) {
+      debugPrint('Error while creating CustomerOrder: $e');
+    }
+  }
+
+  
+void cancelOrder(int barId, int userId) {
   try {
-    // Create a CustomerOrder object using the data from the response
-    final customerOrder = CustomerOrder.fromJson(data);
-    debugPrint('CustomerOrder created: $customerOrder');
-
-    localDatabase.addOrUpdateOrderForBar(customerOrder);
-
-    // Add the bar ID to the list, ensuring only the 5 most recent IDs are stored
-    if (_createdOrderBarIds.contains(customerOrder.barId)) {
-      // If the barId already exists, remove it from its current position
-      _createdOrderBarIds.remove(customerOrder.barId);
+    if (_channel != null) {
+      final message = {
+        "action": "delete",
+        "barId": barId,
+        "userId": userId,
+      };
+      final jsonMessage = jsonEncode(message); // Encode message to JSON
+      debugPrint('Sending cancel order message: $jsonMessage');
+      _channel!.sink.add(jsonMessage); // Send the JSON encoded string
+      debugPrint('Cancel order message sent.');
+    } else {
+      debugPrint('Failed to send cancel order message: WebSocket is not connected');
     }
-    // Add the barId to the end of the list (most recent)
-    _createdOrderBarIds.add(customerOrder.barId);
-
-    // Ensure the list contains only the 5 most recent IDs
-    if (_createdOrderBarIds.length > 5) {
-      _createdOrderBarIds.removeAt(0); // Remove the oldest ID
-    }
-
-     await _saveBarIdsToSharedPreferences();
-
-    // Print statement to confirm addition
-    debugPrint('CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
   } catch (e) {
-    debugPrint('Error while creating CustomerOrder: $e');
+    debugPrint('Error while sending cancel order message: $e');
   }
 }
-
-
-
-// Method to save the list to SharedPreferences
-  Future<void> _saveBarIdsToSharedPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_prefsKey, _createdOrderBarIds);
-  }
-
-  // Method to load the list from SharedPreferences
-  Future<void> _loadBarIdsFromSharedPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    final loadedBarIds = prefs.getStringList(_prefsKey);
-
-    if (loadedBarIds != null) {
-      _createdOrderBarIds.addAll(loadedBarIds);
-    }
-
-    notifyListeners(); // Notify listeners that the data has been loaded
-  }
+  
 
   // Method to retrieve the list of barIds for created orders
   List<String> getOrders() {
-    return _createdOrderBarIds;
+    // Return the list of bar IDs sorted by timestamp in descending order
+    return _createdOrderBarIds.keys.toList()
+      ..sort((a, b) => _createdOrderBarIds[b]!.compareTo(_createdOrderBarIds[a]!));
   }
 
   bool get isConnected => _isConnected;

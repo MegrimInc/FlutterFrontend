@@ -204,4 +204,5 @@ class Response {
     String response = generatePositiveResponse(numberOfDrinks, query);
     user.addResponseToHistory(barId, response);
   }
+
 }

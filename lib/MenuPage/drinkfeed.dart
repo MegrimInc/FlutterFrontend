@@ -23,6 +23,8 @@ class DrinkFeed extends StatefulWidget {
 }
 
 class DrinkFeedState extends State<DrinkFeed> with SingleTickerProviderStateMixin {
+  Offset? _startPosition;
+  static const double swipeThreshold = 50.0;
   late AnimationController _controller;
   late Animation<double> _blurAnimation;
   late Animation<double> _opacityAnimation;
@@ -62,33 +64,48 @@ class DrinkFeedState extends State<DrinkFeed> with SingleTickerProviderStateMixi
             Navigator.of(context).pop();
             FocusScope.of(context).unfocus();
           },
+          onPanStart: (details) {
+            _startPosition = details.globalPosition;
+          },
+          onPanUpdate: (details) {
+            // Optionally track the swipe progress here
+          },
+          onPanEnd: (details) {
+            if (_startPosition == null) return;
+
+            final Offset endPosition = details.globalPosition;
+            final double dy = endPosition.dy - _startPosition!.dy;
+
+            if (dy.abs() > swipeThreshold) {
+              if (dy < 0) {
+                widget.cart.addDrink(widget.drink.id);
+              } else if (dy > 0) {
+                widget.cart.removeDrink(widget.drink.id);
+              }
+            }
+          },
           child: Stack(
             children: [
               // Full-screen background image with blur effect
               Positioned.fill(
-                child: AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return Stack(
-                      children: [
-                        Image.network(
-                          widget.drink.image,
-                          fit: BoxFit.cover,
-                          height: double.infinity,
-                          width: double.infinity,
-                        ),
-                        BackdropFilter(
-                          filter: ImageFilter.blur(
-                            sigmaX: _blurAnimation.value,
-                            sigmaY: _blurAnimation.value,
-                          ),
-                          child: Container(
-                            color: Colors.black.withOpacity(0.2),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+                child: Stack(
+                  children: [
+                    Image.network(
+                      widget.drink.image,
+                      fit: BoxFit.cover,
+                      height: double.infinity,
+                      width: double.infinity,
+                    ),
+                    BackdropFilter(
+                      filter: ImageFilter.blur(
+                        sigmaX: _blurAnimation.value,
+                        sigmaY: _blurAnimation.value,
+                      ),
+                      child: Container(
+                        color: Colors.black.withOpacity(0.2),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               // Gradient overlay for better readability

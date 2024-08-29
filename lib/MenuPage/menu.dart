@@ -128,35 +128,35 @@ class MenuPageState extends State<MenuPage>
   }
 
   void _submitOrder(BuildContext context) async {
-  final loginCache = Provider.of<LoginCache>(context, listen: false);
-  final userId = await loginCache.getUID();
-  final cart = Provider.of<Cart>(context, listen: false);
-  final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+    final loginCache = Provider.of<LoginCache>(context, listen: false);
+    final userId = await loginCache.getUID();
+    final cart = Provider.of<Cart>(context, listen: false);
+    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
 
-  final barId = widget.barId;
+    final barId = widget.barId;
 
-  // Create the drink quantities list
-  final drinkQuantities = cart.barCart.entries.map((entry) {
-    return {
-      'drinkId': int.parse(entry.key),
-      'quantity': entry.value,
+    // Create the drink quantities list
+    final drinkQuantities = cart.barCart.entries.map((entry) {
+      return {
+        'drinkId': int.parse(entry.key),
+        'quantity': entry.value,
+      };
+    }).toList();
+
+    // Construct the order object
+    final order = {
+      "action": "create",
+      "barId": barId,
+      "userId": userId,
+      "drinks": drinkQuantities,
     };
-  }).toList();
 
-  // Construct the order object
-  final order = {
-    "action": "create",
-    "barId": barId,
-    "userId": userId,
-    "drinks": drinkQuantities,
-  };
+    // Pass the order object to the createOrder method
+    hierarchy.createOrder(order);
 
-  // Pass the order object to the createOrder method
-  hierarchy.createOrder(order);
-
-  // Navigate to orders page or perform other actions as needed
-  navigateToOrdersPage(context);
-}
+    // Navigate to orders page or perform other actions as needed
+    navigateToOrdersPage(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -192,7 +192,6 @@ class MenuPageState extends State<MenuPage>
                             // Swiping left from the right edge
                             // Start the order submission process
                             _submitOrder(context);
-                            
                           }
                         },
                         child: Container(
@@ -644,52 +643,66 @@ class MenuPageState extends State<MenuPage>
 
               //RECENT AND SEARCH BUTTON
               GestureDetector(
-                child: hasText
-                    ? Container(
-                        color: Colors.transparent,
-                        height: 50,
-                        width: 50,
-                        child: Padding(
-                          padding: const EdgeInsets.only(
-                              left: 21.0, top: 7.5, bottom: 7.5),
-                          child: Container(
-                            decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 255, 255, 255),
-                                borderRadius: BorderRadius.circular(20)),
-                            child: const Icon(
-                              Icons.arrow_upward_outlined,
-                              size: 19,
-                              color: Colors.black,
+                  child: hasText
+                      ? Container(
+                          color: Colors.transparent,
+                          height: 50,
+                          width: 50,
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                                left: 21.0, top: 7.5, bottom: 7.5),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                  color:
+                                      const Color.fromARGB(255, 255, 255, 255),
+                                  borderRadius: BorderRadius.circular(20)),
+                              child: const Icon(
+                                Icons.arrow_upward_outlined,
+                                size: 19,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          color: Colors.transparent,
+                          height: 50,
+                          width: 50,
+                          child: const Padding(
+                            padding: EdgeInsets.only(
+                                left: 21, top: 7.5, bottom: 7.5),
+                            child: FaIcon(
+                              FontAwesomeIcons.arrowsRotate,
+                              size: 25.5,
+                              color: Colors.white,
                             ),
                           ),
                         ),
-                      )
-                    : Container(
-                        color: Colors.transparent,
-                        height: 50,
-                        width: 50,
-                        child: const Padding(
-                          padding:
-                              EdgeInsets.only(left: 21, top: 7.5, bottom: 7.5),
-                          child: FaIcon(
-                            FontAwesomeIcons.arrowsRotate,
-                            size: 25.5,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                onTap: () {
-                  if (hasText) {
-                    String query = autoCompleteTag.isNotEmpty
-                        ? autoCompleteTag
-                        : _searchController.text;
-                    debugPrint('Query being sent: $query');
-                    _search(query);
-                    _searchController.clear();
-                    autoCompleteTag = ''; // Clear autoCompleteTag after search
-                  }
-                },
-              )
+                  onTap: () async {
+                    if (hasText) {
+                      String query = autoCompleteTag.isNotEmpty
+                          ? autoCompleteTag
+                          : _searchController.text;
+                      debugPrint('Query being sent: $query');
+                      _search(query);
+                      _searchController.clear();
+                      autoCompleteTag =
+                          ''; // Clear autoCompleteTag after search
+                    } else {
+                      // New functionality when the text field is empty
+                      final user = Provider.of<User>(context,
+                          listen: false); // Retrieve User from Provider
+                      final barId =
+                          widget.barId; // Get the current bar ID from MenuPage
+                      final localDatabase = Provider.of<LocalDatabase>(context,
+                          listen:
+                              false); // Retrieve LocalDatabase from Provider
+
+                      // Fetch six drinks
+                      debugPrint('Fetching six drinks for barId: $barId');
+                      await localDatabase.fetchSixDrinks(user, barId);
+                    }
+                  })
             ],
           ),
         ),

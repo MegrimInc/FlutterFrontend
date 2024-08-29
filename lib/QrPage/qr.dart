@@ -21,29 +21,12 @@ class _QrPageState extends State<QrPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: Colors.black,
      
     );
   }
 
-  void _handleQRCode(BuildContext context, String code) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Scanned QR Code'),
-        content: Text(code),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
 
  
 }

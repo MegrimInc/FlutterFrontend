@@ -1,10 +1,10 @@
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy_app1/Backend/activeorder.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import for haptic feedback
 import 'package:provider/provider.dart';
 import '../Backend/localdatabase.dart';
-import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
-import 'package:ndef/ndef.dart' as ndef;
 
 class PickupPage extends StatefulWidget {
   const PickupPage({super.key});
@@ -14,8 +14,8 @@ class PickupPage extends StatefulWidget {
 }
 
 class PickupPageState extends State<PickupPage> {
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
+  bool _isGridView = true; // Toggle between Grid and Card view
+  String? _selectedBarId; // Keep track of the selected bar ID
 
   @override
   Widget build(BuildContext context) {
@@ -24,53 +24,7 @@ class PickupPageState extends State<PickupPage> {
       body: SafeArea(
         child: Column(
           children: [
-            Container(
-              height: 55,
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.grey.withOpacity(0.3),
-                    width: 0.5,
-                  ),
-                ),
-                gradient: LinearGradient(
-                  colors: [Colors.black, Colors.grey.shade900],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Consumer<Hierarchy>(
-                builder: (context, hierarchy, child) {
-                  final orders = hierarchy.getOrders();
-
-                  if (orders.isEmpty) {
-                    return const SizedBox();
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${_currentPage + 1}/${orders.length}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Icon(
-                          Icons.receipt_long,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
+            _buildHeader(),
             Expanded(
               child: Consumer<Hierarchy>(
                 builder: (context, hierarchy, child) {
@@ -93,144 +47,18 @@ class PickupPageState extends State<PickupPage> {
                     );
                   }
 
-                  final reversedOrderKeys = orders.reversed.toList();
-
-                  return PageView.builder(
-                    controller: _pageController,
-                    itemCount: reversedOrderKeys.length,
-                    scrollDirection: Axis.vertical,
-                    onPageChanged: (index) async {
-                      setState(() {
-                        _currentPage = index;
-                      });
-
-                      final barId = reversedOrderKeys[index].toString();
-                      await _writeToNfc(barId);  // Writing to NFC when the page changes
-                    },
-                    itemBuilder: (context, index) {
-                      final barId = reversedOrderKeys[index].toString();
-                      final localDatabase = LocalDatabase();
-
-                      final bar = LocalDatabase.getBarById(barId);
-                      final order = localDatabase.getOrderForBar(barId);
-
-                      if (bar == null || order == null) {
-                        return const Center(
-                          child: Text(
-                            'Data not found.',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        );
-                      }
-
-                      final drinkQuantities = order.drinkQuantities;
-
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(25.0),
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.white.withOpacity(0.05),
-                                      Colors.white.withOpacity(0.15),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.2),
-                                    width: 1.5,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.4),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 10),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(20.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Center(
-                                    child: Text(
-                                      bar.getName() ?? 'Unknown',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 26,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Status: ${order.status}',
-                                        style: const TextStyle(
-                                          color: Colors.greenAccent,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Claimer: ${order.claimer.isNotEmpty ? order.claimer : 'None'}',
-                                        style: const TextStyle(
-                                          color: Colors.orangeAccent,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: drinkQuantities.entries.map((entry) {
-                                      final drink = localDatabase.getDrinkById(entry.key);
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                        child: Text(
-                                          '${drink.getName() ?? 'Unknown'}: ${entry.value}',
-                                          style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 18,
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                  const Spacer(),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Total: \$${order.getPrice()?.toStringAsFixed(2) ?? '0.00'}',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
+                  if (_isGridView) {
+                    return _buildGridView(orders);
+                  } else if (_selectedBarId != null) {
+                    return _buildCardView(_selectedBarId!);
+                  } else {
+                    return const Center(
+                      child: Text(
+                        'Select a bar to view details.',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
                 },
               ),
             ),
@@ -240,46 +68,324 @@ class PickupPageState extends State<PickupPage> {
     );
   }
 
- Future<void> _writeToNfc(String barId) async {
-  try {
-    // Retrieve the userId from LoginCache
+  Widget _buildHeader() {
+    return Container(
+      height: 55,
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.withOpacity(0.3),
+            width: 0.25,
+          ),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              _isGridView ? 'Tabs' : 'Order Details',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (!_isGridView)
+              IconButton(
+                icon: const Icon(
+                  Icons.grid_view,
+                  color: Colors.white,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isGridView = true;
+                  });
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGridView(List<String> barIds) {
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 5.0,
+        mainAxisSpacing: 10.0,
+        childAspectRatio: .1,
+      ),
+      padding: const EdgeInsets.only(top: 30),
+      itemCount: barIds.length,
+      itemBuilder: (context, index) {
+        final barId = barIds[index];
+        final bar = LocalDatabase.getBarById(barId);
+
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedBarId = barId;
+              _isGridView = false; // Switch to card view
+            });
+          },
+          child: Column(
+            children: [
+              Container(
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                ),
+                child: ClipOval(
+                  child: Image.network(
+                    bar?.tagimg ?? 'https://www.barzzy.site/images/default.png',
+                    fit: BoxFit.cover,
+                    width: 105, // Adjust as needed
+                    height: 105, // Adjust as needed
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Flexible(
+                child: Text(
+                  bar?.tag ?? 'No Tag',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis, // Handle long text
+                  maxLines: 1, // Ensure text doesn't overflow
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCardView(String barId) {
+    final localDatabase = LocalDatabase();
+    final bar = LocalDatabase.getBarById(barId);
+    final order = localDatabase.getOrderForBar(barId);
+
+    if (bar == null || order == null) {
+      return const Center(
+        child: Text(
+          'Data not found.',
+          style: TextStyle(color: Colors.white),
+        ),
+      );
+    }
+
+    final drinkQuantities = order.drinkQuantities;
+    final status = order.status; // Assuming you have a 'status' field in the order object
+    final claimer = order.claimer; // Assuming you have a 'claimer' field in the order object
+    final userId = order.userId;
+
+    return GestureDetector(
+      onLongPress: (status == "delivered" || status == "canceled")
+          ? () {
+              // Trigger reorder and provide haptic feedback
+              HapticFeedback.heavyImpact();  // Provide haptic feedback
+              _triggerReorder(order, context);
+            }
+          : null,
+      child: Container(
+        color: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(60),
+                        child: Image.network(
+                          bar.tagimg ?? 'https://www.barzzy.site/images/default.png',
+                          width: 105,
+                          height: 105,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: Text(
+                        bar.getName() ?? 'Unknown',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 60),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: drinkQuantities.entries.map((entry) {
+                        final drink = localDatabase.getDrinkById(entry.key);
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Text(
+                            '${drink.getName() ?? 'Unknown'} x ${entry.value}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 18,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const Spacer(),
+                    const SizedBox(height: 16),
+                    // Show total price only when order is not delivered or canceled
+                    if (status != "delivered" && status != "canceled")
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4.0),
+                            child: Text(
+                              'Total: \$${order.getPrice()?.toStringAsFixed(2) ?? '0.00'}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+              // Positioned button for precise control
+              Positioned(
+                bottom: 0, // Adjust this value for vertical placement
+                right: 0, // Adjust this value for horizontal placement
+                child: _buildStatusButton(status, claimer, int.parse(barId), userId, context),
+              ),
+              // Positioned "HOLD TO ORDER AGAIN" text when status is delivered or canceled
+              if (status == "delivered" || status == "canceled")
+                Positioned(
+                  bottom: 5, // Adjust this value for vertical placement
+                  left: 0,
+                  right: 0,
+                  child: const Center(
+                    child: Text(
+                      'HOLD TO REORDER',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Method to trigger reorder by creating an order
+  void _triggerReorder(CustomerOrder order, BuildContext context) async {
+    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
     final loginCache = Provider.of<LoginCache>(context, listen: false);
     final userId = await loginCache.getUID();
 
-    if (userId == null) {
-      throw Exception("User ID is null.");
-    }
+    // Construct the order object for the reorder
+    final reorder = {
+      "action": "create",
+      "barId": int.parse(order.barId), // Assuming barId is a String, convert to int if needed
+      "userId": userId,
+      "drinks": order.drinkQuantities.entries.map((entry) {
+        return {
+          'drinkId': int.parse(entry.key),
+          'quantity': entry.value,
+        };
+      }).toList(),
+    };
 
-    // Poll for NFC tag
-    final tag = await FlutterNfcKit.poll(
-      timeout: Duration(seconds: 10),
-      iosMultipleTagMessage: "Multiple tags found!",
-      iosAlertMessage: "Scan your tag",
-    );
-
-    if (tag == null) {
-      throw Exception("No NFC tag detected.");
-    }
-
-    // Prepare data to write
-    final dataToWrite = 'barId: $barId, userId: $userId';
-
-    // Write NDEF records
-    await FlutterNfcKit.writeNDEFRecords([
-      NDEFRecord.text(dataToWrite) // This will cause an error
-    ]);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('NFC tag written with barId: $barId, userId: $userId')),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to write to NFC tag: $e')),
-    );
-  } finally {
-    await FlutterNfcKit.finish(
-      iosAlertMessage: "Success",
-    );
+    // Pass the order object to the createOrder method
+    hierarchy.createOrder(reorder);
   }
-}
+
+  // Method to build the dynamic button based on status and claimer
+  Widget _buildStatusButton(String status, String claimer, int barId, int userId, BuildContext context) {
+    final hierarchy = Provider.of<Hierarchy>(context, listen: false); // Get Hierarchy instance from Provider
+
+    // Case: Status is "unready" and claimer is empty
+    if (status == "unready" && claimer.isEmpty) {
+      return GestureDetector(
+        onTap: () {
+          // Cancel action
+          hierarchy.cancelOrder(barId, userId);
+        },
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            width: 120,
+            height: 40,
+            child: const Padding(
+              padding: EdgeInsets.only(top: 5.5),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17.5,
+                ),
+                textAlign: TextAlign.center, // Center text alignment if the text wraps
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Case: Status is "unready" and claimer is not empty
+    if (status == "unready" && claimer.isNotEmpty) {
+      return Text(
+        claimer,
+        style: const TextStyle(
+          color: Colors.yellow,
+          fontWeight: FontWeight.bold,
+          fontSize: 35,
+        ),
+      );
+    }
+
+    // Case: Status is "ready" and claimer is not empty
+    if (status == "ready" && claimer.isNotEmpty) {
+      return Text(
+        claimer,
+        style: const TextStyle(
+          color: Colors.green,
+          fontWeight: FontWeight.bold,
+          fontSize: 35,
+        ),
+      );
+    }
+
+    // Case: Status is "delivered" or "canceled"
+    if (status == "delivered" || status == "canceled") {
+      return Container(); // No button needed in this state, only "HOLD TO ORDER AGAIN" text is shown.
+    }
+
+    // Default case if none of the conditions match
+    return Container();
+  }
 }
