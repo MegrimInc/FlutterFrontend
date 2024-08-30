@@ -274,11 +274,11 @@ class PickupPageState extends State<PickupPage> {
               ),
               // Positioned "HOLD TO ORDER AGAIN" text when status is delivered or canceled
               if (status == "delivered" || status == "canceled")
-                Positioned(
+                const Positioned(
                   bottom: 5, // Adjust this value for vertical placement
                   left: 0,
                   right: 0,
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       'HOLD TO REORDER',
                       style: TextStyle(

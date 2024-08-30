@@ -178,7 +178,7 @@ class Hierarchy extends ChangeNotifier {
       localDatabase.addOrUpdateOrderForBar(customerOrder);
 
      // Directly update the map with the new timestamp for the barId
-      _createdOrderBarIds[customerOrder.barId] = customerOrder.timestamp as int;
+      _createdOrderBarIds[customerOrder.barId] = customerOrder.timestamp;
 
 
       // Print statement to confirm addition

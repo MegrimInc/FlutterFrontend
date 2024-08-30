@@ -7,7 +7,7 @@ import 'package:barzzy_app1/Backend/bar.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/searchengine.dart';
 import 'package:barzzy_app1/Backend/recommended.dart';
-import 'package:barzzy_app1/Backend/tags.dart';
+import 'package:barzzy_app1/backend/tags.dart';
 import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
@@ -17,8 +17,6 @@ import 'package:provider/provider.dart';
 import 'package:barzzy_app1/Backend/localdatabase.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy_app1/Backend/barhistory.dart';
-import 'package:barzzy_app1/Backend/cache.dart';
-
 
 void main() async {
   debugPrint("current date: ${DateTime.now()}");
@@ -26,8 +24,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final loginCache = LoginCache();
   // await loginCache.clearAll();
-
-  
 
   bool loggedInAlready = true;
   await loginCache.getSignedIn() /* && HTTP REQUEST*/;
@@ -49,7 +45,7 @@ void main() async {
   // Check the response
   if (response.statusCode == 200) {
     debugPrint('Init Request successful');
-   debugPrint('Init Response body: ${response.body}');
+    debugPrint('Init Response body: ${response.body}');
     if (int.parse(response.body) != 0) httprequest = true;
   } else {
     debugPrint('Init Request failed with status: ${response.statusCode}');
@@ -63,21 +59,17 @@ void main() async {
   loggedInAlready = loggedInAlready && httprequest;
   debugPrint("Final loggedInAlready after request: $loggedInAlready");
 
-  LocalDatabase barDatabase = LocalDatabase();
+  LocalDatabase localDatabase = LocalDatabase();
+  User user = User();
   await sendGetRequest();
-  await fetchTags();
-  await updateDrinkDatabase(barDatabase);
-  final user = User();
-  await user.init(); // Ensure User is fully initialized
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => barDatabase),
+        ChangeNotifierProvider(create: (context) => localDatabase),
         ChangeNotifierProvider(create: (context) => BarHistory()),
         ChangeNotifierProvider(create: (context) => Recommended()),
         ChangeNotifierProvider(create: (context) => Hierarchy(context)),
-        
         ChangeNotifierProvider(create: (_) => LoginCache()),
         ChangeNotifierProvider(create: (context) => user),
         ProxyProvider<LocalDatabase, SearchService>(
@@ -88,8 +80,6 @@ void main() async {
     ),
   );
 }
-
-
 
 Future<void> sendGetRequest() async {
   try {
@@ -114,6 +104,7 @@ Future<void> sendGetRequest() async {
         // debugPrint('Parsed Bar Image: ${bar.barimg}');
         // debugPrint('Parsed Tag Image: ${bar.tagimg}');
         barDatabase.addBar(bar);
+        await fetchTagsAndDrinks(bar.id!);
       }
 
       debugPrint('All bars have been added to the database.');
@@ -126,64 +117,76 @@ Future<void> sendGetRequest() async {
   }
 }
 
-Future<void> fetchTags() async {
-  try {
-    final url = Uri.parse('https://www.barzzy.site/bars/seeAllTags');
+Future<void> fetchTagsAndDrinks(String barId) async {
+  LocalDatabase barDatabase = LocalDatabase();
+  User user = User();
+
+  // Define hardcoded static tag IDs and their corresponding names
+  List<MapEntry<int, String>> tagList = [
+    const MapEntry(171, 'vodka'),
+    const MapEntry(172, 'gin'),
+    const MapEntry(173, 'whiskey'),
+    const MapEntry(174, 'tequila'),
+    const MapEntry(175, 'brandy'),
+    const MapEntry(176, 'rum'),
+    const MapEntry(177, 'ale'),
+    const MapEntry(178, 'lager'),
+    const MapEntry(180, 'juice'),
+    const MapEntry(181, 'soda'),
+    const MapEntry(182, 'red wine'),
+    const MapEntry(183, 'white wine'),
+    const MapEntry(185, 'seltzer'),
+  ];
+
+  debugPrint('Starting to fetch tags and drinks for barId: $barId');
+  
+  for (var entry in tagList) {
+    int tagId = entry.key;
+    String tagName = entry.value;
+
+    debugPrint('Processing tag: $tagName ($tagId)');
+    
+    // Create and add Tag objects to the internal tag map
+    Tag tag = Tag(id: tagId.toString(), name: tagName);
+    barDatabase.addTag(tag);
+    debugPrint('Added tag to database: ${tag.name}');
+
+    // Fetch drinks for this tag
+    final url = Uri.parse(
+        'https://www.barzzy.site/bars/getRandomDrinks?barId=$barId&categoryId=$tagId');
     final response = await http.get(url);
 
+    debugPrint('Requesting drinks for tag: $tagName ($tagId) from URL: $url');
+    
     if (response.statusCode == 200) {
-      debugPrint('GET request for tags successful');
-
-      // Decode and print formatted JSON
       final List<dynamic> jsonResponse = jsonDecode(response.body);
-      //debugPrint('Decoded JSON tags response: ${jsonResponse.toString()}');
+      List<String> drinkIds = [];
 
-      // Get the singleton instance of BarDatabase
-     LocalDatabase barDatabase = LocalDatabase();
+      debugPrint('Response received for tag $tagName: $jsonResponse');
 
-      // Process each tag from the JSON response
-      for (var tagJson in jsonResponse) {
-        Tag tag = Tag.fromJson(tagJson as Map<String, dynamic>);
-        barDatabase.addTag(tag); // Add tag to the database
+      for (var drinkJson in jsonResponse) {
+        String? drinkId = drinkJson['drinkId']?.toString();
+        if (drinkId != null) {
+          Drink drink = Drink.fromJson(drinkJson);
+          barDatabase.addDrink(drink);
+          drinkIds.add(drinkId);
+          debugPrint('Added drink to database: ${drink.name} (ID: $drinkId)');
+        } else {
+          debugPrint('Warning: Drink ID is null for drink: $drinkJson');
+        }
       }
 
-      debugPrint('All tags have been added to the database.');
+      user.addQueryToHistory(barId, tagName);
+      user.addSearchQuery(barId, tagName, drinkIds);
+
+      debugPrint(
+          'Drinks for tag $tagName ($tagId) have been added to the database for bar $barId with drink IDs: $drinkIds');
     } else {
-      debugPrint('Failed to send GET request for tags');
-      debugPrint('Response status code: ${response.statusCode}');
-    }
-  } catch (e) {
-    debugPrint('Error sending GET request for tags: $e');
-  }
-}
-
-Future<void> updateDrinkDatabase(LocalDatabase barDatabase) async {
-  final cache = Cache();
-  final cachedDrinkIds = await cache.getDrinkIds();
-
-  for (String drinkId in cachedDrinkIds) {
-    try {
-      final drink = await fetchDrinkDetails(drinkId);
-      barDatabase.addDrink(drink);
-      //debugPrint('Added drink with ID $drinkId to the database');
-    } catch (e) {
-      debugPrint('Error fetching drink details for ID $drinkId: $e');
+      debugPrint('Failed to load drinks for tag $tagId. Status code: ${response.statusCode}');
     }
   }
-}
 
-// Fetch drink details from backend
-Future<Drink> fetchDrinkDetails(String drinkId) async {
-  final url = Uri.parse('https://www.barzzy.site/bars/getOneDrink?id=$drinkId');
-  final response = await http.get(url);
-
-  if (response.statusCode == 200) {
-    final jsonResponse = jsonDecode(response.body);
-    debugPrint('Decoded JSON response: ${jsonResponse.toString()}');
-    return Drink.fromJson(jsonResponse);
-  } else {
-    throw Exception('Failed to load drink details');
-  }
+  debugPrint('Finished processing tags and drinks for barId: $barId');
 }
 
 class Barzzy extends StatelessWidget {
@@ -196,7 +199,6 @@ class Barzzy extends StatelessWidget {
     Provider.of<BarHistory>(context, listen: false).setContext(context);
     Provider.of<Recommended>(context, listen: false)
         .fetchRecommendedBars(context);
-
 
     // Decide the initial route
     final String initialRoute;
@@ -214,11 +216,12 @@ class Barzzy extends StatelessWidget {
       //home: OrdersPage(bartenderID: "test"),
       //ALREADY COMMENTED home: loggedInAlready ? (isBar ? const OrderDisplay() : const AuthPage()) : const LoginOrRegisterPage()//Make it so that when bars sign in, they get sent to
       initialRoute: initialRoute, // Set the initial route based on the logic
-      
+
       routes: {
         '/auth': (context) =>
             const AuthPage(), // Your main app page for non-bar users
-        '/bar': (context) => const BartenderIDScreen(), // Orders page for bar users
+        '/bar': (context) =>
+            const BartenderIDScreen(), // Orders page for bar users
         '/login': (context) =>
             const LoginOrRegisterPage(), // Login or Register page
         '/orders': (context) => const AuthPage(selectedTab: 1),
