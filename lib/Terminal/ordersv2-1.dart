@@ -152,22 +152,27 @@ debugPrint("checking if you need to disable terminal");
   }
 debugPrint("done updating lists");
 
-      if(testing) {
-        debugPrint("Testing enabled for _updateLists()");
-          CustomerOrder testOrder = CustomerOrder(
-    'bar123',              // barId
-    456,                   // userId
-    29.99,                 // price
-    {'drink1': 2, 'drink2': 1}, // drinkQuantities
-    'pending',             // status
-    '',                    // claimer (empty since no one has claimed the order yet)
+if (testing) {
+  // Create a list of DrinkOrder objects
+  List<DrinkOrder> testDrinks = [
+    DrinkOrder('drink1', 'Cocktail', "1"),
+    DrinkOrder('drink2', 'Beer', "3"),
+  ];
+
+  // Create a CustomerOrder with the updated structure
+  CustomerOrder testOrder = CustomerOrder(
+    'bar123',                          // barId
+    456,                               // userId
+    29.99,                             // price
+    testDrinks,                         // drinks (List<DrinkOrder>)
+    'pending',                         // status
+    '',                                // claimer (empty since no one has claimed the order yet)
     DateTime.now().millisecondsSinceEpoch // timestamp (current time)
   );
 
   allOrders.add(testOrder);
-  // Update state to refresh the UI
-  setState(() {});
 }
+
 }
 
   void _showAlert(String message) {
@@ -561,7 +566,6 @@ void _executeFunctionForClaimedAndReady(CustomerOrder order) {
     if (ageInSeconds <= 600) return Colors.orange[500]!; // 5-10 minutes old
     return Colors.red[700]!; // Over 10 minutes old
   }
-
 @override
 Widget build(BuildContext context) {
   if (!connected) {
@@ -757,86 +761,44 @@ Widget build(BuildContext context) {
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Column(
-                            children: order.drinkQuantities.entries.map((entry) {
-                              final drinkName = entry.key;
-                              final quantity = entry.value;
-                              final displayText = quantity > 1
-                                  ? '$drinkName x $quantity'
-                                  : drinkName;
-                              return ListTile(
-                                title: Text(
-                                  displayText,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black,
-                                        offset: Offset(1.0, 1.0),
-                                        blurRadius: 1.0,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                contentPadding: EdgeInsets.zero,
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ),
-                      // Container for claimer text box
-                      Expanded(
-                        flex: 1,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: double.infinity, // Full width of the available space
-                                padding: const EdgeInsets.all(8.0),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.black, width: 2), // Static black border
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    order.claimer,
-                                    style: const TextStyle(
-                                      fontSize: 24, // Increased font size
-                                      color: Colors.white,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black,
-                                          offset: Offset(1.0, 1.0),
-                                          blurRadius: 1.0,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8), // Space between text box and timer
-                              Center(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.timer, color: Colors.white),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _formatDuration(order.getAge()),
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.white,
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.black,
-                                            offset: Offset(1.0, 1.0),
-                                            blurRadius: 1.0,
-                                          ),
-                                        ],
-                                      ),
+                            children: <Widget>[
+                              ...order.drinks.map((drink) => Text(
+                                '${drink.drinkName} x ${drink.quantity}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black,
+                                      offset: Offset(1.0, 1.0),
+                                      blurRadius: 1.0,
                                     ),
                                   ],
+                                ),
+                              )),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Status: ${order.status}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Claimed by: ${order.claimer.isEmpty ? 'N/A' : order.claimer}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Timestamp: ${DateTime.fromMillisecondsSinceEpoch(order.timestamp)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
                                 ),
                               ),
                             ],
@@ -850,47 +812,11 @@ Widget build(BuildContext context) {
             },
           ),
         ),
-        Positioned(
-          bottom: 16.0,
-          left: 16.0,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Bartender ID: ${widget.barID}//${widget.bartenderID}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                  backgroundColor: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Active Terminals: $bartenderCount',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                  backgroundColor: Colors.white,
-                ),
-              ),
-              Text(
-                'Terminal Status: ${terminalStatus ? "ENABLED" : "DISABLED"}',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color:  terminalStatus ? Colors.green : Colors.red,
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     ),
   );
-
 }
+
 
 
 
@@ -1046,19 +972,9 @@ debugPrint('Received: $event at ${DateTime.now()}');
 
     case 'orders':
       final List<dynamic> ordersJson = response['orders'];
-      if(testing) {
-          CustomerOrder testOrder = CustomerOrder(
-    'bar123',              // barId
-    456,                   // userId
-    29.99,                 // price
-    {'drink1': 2, 'drink2': 1}, // drinkQuantities
-    'pending',             // status
-    '',                    // claimer (empty since no one has claimed the order yet)
-    DateTime.now().millisecondsSinceEpoch // timestamp (current time)
-  );
 
-        allOrders.add(testOrder);
-      }
+
+
       // Convert JSON to Order objects and update allOrders
       final incomingOrders = ordersJson.map((json) => CustomerOrder.fromJson(json)).toList();
       for (CustomerOrder incomingOrder in incomingOrders) {
