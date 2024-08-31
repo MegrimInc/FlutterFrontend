@@ -24,7 +24,7 @@ class _OrdersPageState extends State<OrdersPage> {
   List<CustomerOrder> displayList = [];
 
 //TESTING VARIABLE
-  bool testing = true;
+  bool testing = false;
   bool connected = false;
   int _reconnectAttempts = 0;
 
