@@ -6,6 +6,7 @@ import 'package:barzzy_app1/Terminal/ordersv2-0.dart';
 import 'package:barzzy_app1/backend/activeorder.dart';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:flutter/gestures.dart';
 
 class OrdersPage extends StatefulWidget {
   final String bartenderID; // Bartender ID parameter
@@ -151,10 +152,23 @@ debugPrint("checking if you need to disable terminal");
   }
 debugPrint("done updating lists");
 
+      if(testing) {
+        debugPrint("Testing enabled for _updateLists()");
+          CustomerOrder testOrder = CustomerOrder(
+    'bar123',              // barId
+    456,                   // userId
+    29.99,                 // price
+    {'drink1': 2, 'drink2': 1}, // drinkQuantities
+    'pending',             // status
+    '',                    // claimer (empty since no one has claimed the order yet)
+    DateTime.now().millisecondsSinceEpoch // timestamp (current time)
+  );
+
+  allOrders.add(testOrder);
   // Update state to refresh the UI
   setState(() {});
 }
-
+}
 
   void _showAlert(String message) {
     showDialog(
@@ -262,26 +276,6 @@ void _showFilterMenu() {
                   },
                 ),
                 const Text('Hide Ready Orders'),
-              ],
-            );
-          },
-        ),
-      ),
-      PopupMenuItem(
-        child: StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Row(
-              children: [
-                Checkbox(
-                  value: priorityFilterShowReady,
-                  onChanged: (bool? value) {
-                    setState(() {
-                      priorityFilterShowReady = value ?? false;
-                      _updateLists(); // Apply filters when changed
-                    });
-                  },
-                ),
-                const Text('[Override] Ready-Only'),
               ],
             );
           },
@@ -580,169 +574,139 @@ Widget build(BuildContext context) {
 
   return Scaffold(
     appBar: AppBar(
-  title: const Center(
-    child: Text('Orders'),
-  ),
-  leading: Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Flexible(
-        child: IconButton(
-          icon: const Icon(Icons.cancel),
+      title: const Center(
+        child: Text('Orders'),
+      ),
+      leading: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: IconButton(
+              icon: const Icon(Icons.cancel),
+              onPressed: () {
+                debugPrint("disable");
+                socket!.sink.add(
+                  json.encode({
+                    'action': 'disable',
+                    'bartenderID': widget.bartenderID.toString(),
+                    'barID': widget.barID
+                  }),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.filter_list),
+          onPressed: _showFilterMenu,
+        ),
+        IconButton(
+          icon: const Icon(Icons.sync),
+          color: Colors.red,
           onPressed: () {
-            debugPrint("disable");
-            socket!.sink.add(
-              json.encode({
-                'action': 'disable',
-                'bartenderID': widget.bartenderID.toString(),
-                'barID': widget.barID
-              }),
-            );
+            _refresh();
           },
         ),
-      ),
-    ],
-  ),
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.filter_list),
-      onPressed: _showFilterMenu,
-    ),
-    IconButton(
-      icon: const Icon(Icons.sync),
-      color: Colors.red,
-      onPressed: () {
-        _refresh();
-      },
-    ),
-    GestureDetector(
-      onLongPress: _toggleHappyHour, // Handle long press for Happy Hour
-      child: Container(
-        color: happyHour ? Colors.amber : Colors.grey, // Gold if happyHour is true, gray otherwise
-        padding: const EdgeInsets.symmetric(horizontal: 8.0), // Add some padding around the button
-        child: Center(
-          child: Text(
-            happyHour ? "[HOLD TO DISABLE] Happy Hour" : "[HOLD TO ENABLE] Happy Hour",
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
+        GestureDetector(
+          onLongPress: _toggleHappyHour, // Handle long press for Happy Hour
+          child: Container(
+            color: happyHour ? Colors.amber : Colors.grey, // Gold if happyHour is true, gray otherwise
+            padding: const EdgeInsets.symmetric(horizontal: 8.0), // Add some padding around the button
+            child: Center(
+              child: Text(
+                happyHour ? "[HOLD TO DISABLE] Happy Hour" : "[HOLD TO ENABLE] Happy Hour",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                ),
+              ),
             ),
           ),
         ),
-      ),
-    ),
-    const SizedBox(width: 8), // Space between the Happy Hour button and the Open/Close button
-    GestureDetector(
-      onLongPress: _toggleBarStatus, // Handle long press for Open/Close
-      child: Container(
-        color: barOpenStatus ? Colors.red : Colors.green,
-        child: Center(
-          child: Text(
-            barOpenStatus ? "[HOLD] Close Bar" : "[HOLD] Open Bar",
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
+        const SizedBox(width: 8), // Space between the Happy Hour button and the Open/Close button
+        GestureDetector(
+          onLongPress: _toggleBarStatus, // Handle long press for Open/Close
+          child: Container(
+            color: barOpenStatus ? Colors.red : Colors.green,
+            child: Center(
+              child: Text(
+                barOpenStatus ? "[HOLD] Close Bar" : "[HOLD] Open Bar",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                ),
+              ),
             ),
           ),
         ),
-      ),
+        const SizedBox(width: 16), // Add space between the last action and the edge
+      ],
     ),
-    const SizedBox(width: 16), // Add space between the last action and the edge
-  ],
-),
-
     body: Stack(
       children: [
-        ListView.builder(
-          itemCount: displayList.length,
-          itemBuilder: (context, index) {
-            final order = displayList[index];
-            final tintColor = _getOrderTintColor(order);
+        // GestureDetector as the first child in the Stack to capture touch events first
+        GestureDetector(
+          onHorizontalDragUpdate: (details) {
+            // Detect a left swipe from the right edge of the screen
+            if (details.primaryDelta! < -10 && details.globalPosition.dx > MediaQuery.of(context).size.width - 40) {
+              _showErrorSnackbar("Showing Ready Orders");
+              debugPrint("test1");
+              setState(() {
+                priorityFilterShowReady = true;
+                _updateLists(); // Apply filters when changed
+              });
+            }
 
-            return InkWell(
-              onTap: () => _onOrderTap(order),
-              child: Card(
-                margin: const EdgeInsets.all(8.0),
-                color: tintColor,
-                shape: RoundedRectangleBorder(
-                  side: const BorderSide(color: Color(0xFFFFD700), width: 2), // Gold border using hex color
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(
-                      flex: 1,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              '#${order.userId}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black,
-                                    offset: Offset(1.0, 1.0),
-                                    blurRadius: 1.0,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '\$${order.price.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black,
-                                    offset: Offset(1.0, 1.0),
-                                    blurRadius: 1.0,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '@${order.userId}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black,
-                                    offset: Offset(1.0, 1.0),
-                                    blurRadius: 1.0,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          children: order.drinkQuantities.entries.map((entry) {
-                            final drinkName = entry.key;
-                            final quantity = entry.value;
-                            final displayText = quantity > 1
-                                ? '$drinkName x $quantity'
-                                : drinkName;
-                            return ListTile(
-                              title: Text(
-                                displayText,
-                                style: const TextStyle(
+            // Detect a right swipe from the left edge of the screen
+            if (details.primaryDelta! > 10 && details.globalPosition.dx < 40) {
+              debugPrint("test2");
+              _showErrorSnackbar("Showing Default");
+              setState(() {
+                priorityFilterShowReady = false;
+                _updateLists(); // Apply filters when changed
+              });
+            }
+          },
+          child: Container(
+            color: Colors.transparent, // Ensure the GestureDetector covers the entire screen area
+            width: double.infinity,
+            height: double.infinity,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0), // Add horizontal padding
+          child: ListView.builder(
+            itemCount: displayList.length,
+            itemBuilder: (context, index) {
+              final order = displayList[index];
+              final tintColor = _getOrderTintColor(order);
+
+              return InkWell(
+                onTap: () => _onOrderTap(order),
+                child: Card(
+                  margin: const EdgeInsets.all(8.0),
+                  color: tintColor,
+                  shape: RoundedRectangleBorder(
+                    side: const BorderSide(color: Color(0xFFFFD700), width: 2), // Gold border using hex color
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        flex: 1,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                '#${order.userId}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                   shadows: [
                                     Shadow(
@@ -753,32 +717,56 @@ Widget build(BuildContext context) {
                                   ],
                                 ),
                               ),
-                              contentPadding: EdgeInsets.zero,
-                            );
-                          }).toList(),
+                              const SizedBox(height: 4),
+                              Text(
+                                '\$${order.price.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black,
+                                      offset: Offset(1.0, 1.0),
+                                      blurRadius: 1.0,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '@${order.userId}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black,
+                                      offset: Offset(1.0, 1.0),
+                                      blurRadius: 1.0,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    // Container for claimer text box
-                    Expanded(
-                      flex: 1,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: double.infinity, // Full width of the available space
-                              padding: const EdgeInsets.all(8.0),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.black, width: 2), // Static black border
-                                borderRadius: BorderRadius.circular(8.0),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  order.claimer,
+                      Expanded(
+                        flex: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            children: order.drinkQuantities.entries.map((entry) {
+                              final drinkName = entry.key;
+                              final quantity = entry.value;
+                              final displayText = quantity > 1
+                                  ? '$drinkName x $quantity'
+                                  : drinkName;
+                              return ListTile(
+                                title: Text(
+                                  displayText,
                                   style: const TextStyle(
-                                    fontSize: 24, // Increased font size
                                     color: Colors.white,
                                     shadows: [
                                       Shadow(
@@ -789,19 +777,32 @@ Widget build(BuildContext context) {
                                     ],
                                   ),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 8), // Space between text box and timer
-                            Center(
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.timer, color: Colors.white),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    _formatDuration(order.getAge()),
+                                contentPadding: EdgeInsets.zero,
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      // Container for claimer text box
+                      Expanded(
+                        flex: 1,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: double.infinity, // Full width of the available space
+                                padding: const EdgeInsets.all(8.0),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.black, width: 2), // Static black border
+                                  borderRadius: BorderRadius.circular(8.0),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    order.claimer,
                                     style: const TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 24, // Increased font size
                                       color: Colors.white,
                                       shadows: [
                                         Shadow(
@@ -812,18 +813,42 @@ Widget build(BuildContext context) {
                                       ],
                                     ),
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 8), // Space between text box and timer
+                              Center(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.timer, color: Colors.white),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _formatDuration(order.getAge()),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black,
+                                            offset: Offset(1.0, 1.0),
+                                            blurRadius: 1.0,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
         Positioned(
           bottom: 16.0,
@@ -850,24 +875,23 @@ Widget build(BuildContext context) {
                   backgroundColor: Colors.white,
                 ),
               ),
-
-                Text(
-                'Terminal Status: ${terminalStatus ? 'Active' : 'Disabled'}',
-                style: const TextStyle(
+              Text(
+                'Terminal Status: ${terminalStatus ? "ENABLED" : "DISABLED"}',
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                  backgroundColor: Colors.white,
+                  color:  terminalStatus ? Colors.green : Colors.red,
                 ),
               ),
             ],
-            
           ),
         ),
       ],
     ),
   );
+
 }
+
 
 
   String _formatDuration(int seconds) {
@@ -1022,7 +1046,19 @@ debugPrint('Received: $event at ${DateTime.now()}');
 
     case 'orders':
       final List<dynamic> ordersJson = response['orders'];
-      
+      if(testing) {
+          CustomerOrder testOrder = CustomerOrder(
+    'bar123',              // barId
+    456,                   // userId
+    29.99,                 // price
+    {'drink1': 2, 'drink2': 1}, // drinkQuantities
+    'pending',             // status
+    '',                    // claimer (empty since no one has claimed the order yet)
+    DateTime.now().millisecondsSinceEpoch // timestamp (current time)
+  );
+
+        allOrders.add(testOrder);
+      }
       // Convert JSON to Order objects and update allOrders
       final incomingOrders = ordersJson.map((json) => CustomerOrder.fromJson(json)).toList();
       for (CustomerOrder incomingOrder in incomingOrders) {
