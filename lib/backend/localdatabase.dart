@@ -1,10 +1,9 @@
-import 'dart:convert';
+
 import 'package:barzzy_app1/Backend/activeorder.dart';
 import 'package:barzzy_app1/backend/tags.dart';
-import 'package:http/http.dart' as http;
+
 import 'package:barzzy_app1/Backend/drink.dart';
-import 'package:barzzy_app1/Backend/response.dart';
-import 'package:barzzy_app1/Backend/user.dart';
+
 import 'package:flutter/material.dart';
 import 'bar.dart';
 

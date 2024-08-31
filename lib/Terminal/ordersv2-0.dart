@@ -4,8 +4,6 @@ import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/AuthPages/components/toggle.dart';
 import 'package:barzzy_app1/Terminal/ordersv2-1.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert'; // For decoding JSON
 
 class BartenderIDScreen extends StatefulWidget {
   const BartenderIDScreen({super.key});

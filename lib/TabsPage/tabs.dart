@@ -1,7 +1,6 @@
 
-import 'package:barzzy_app1/Backend/user.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+
 class TabsPage extends StatefulWidget {
   
 
@@ -23,8 +22,7 @@ class _TabsPageState extends State<TabsPage> {
     
      // Clear histories when this page is navigated to
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = Provider.of<User>(context, listen: false);
-      user.clearAllHistories();
+
     });
   }
 
