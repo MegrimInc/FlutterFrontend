@@ -1,7 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'dart:math';
-
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
@@ -9,10 +7,10 @@ import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/MenuPage/cart.dart';
 import 'package:barzzy_app1/MenuPage/drinkfeed.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
-import 'package:barzzy_app1/backend/categories.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../Backend/bar.dart';
 import '../Backend/localdatabase.dart';
@@ -30,7 +28,8 @@ class MenuPage extends StatefulWidget {
   MenuPageState createState() => MenuPageState();
 }
 
-class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin {
+class MenuPageState extends State<MenuPage>
+    with SingleTickerProviderStateMixin {
   String appBarTitle = '';
   bool isLoading = true;
   Bar? currentBar;
@@ -56,7 +55,8 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
   Future<void> _fetchBarData() async {
     currentBar = LocalDatabase.getBarById(widget.barId);
     if (currentBar != null) {
-      appBarTitle = (currentBar!.tag ?? 'Menu Page').replaceAll(' ', '').toLowerCase();
+      appBarTitle =
+          (currentBar!.tag ?? 'Menu Page').replaceAll(' ', '').toLowerCase();
     }
     setState(() {
       isLoading = false;
@@ -96,9 +96,6 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
     navigateToOrdersPage(context);
   }
 
-
- 
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -119,27 +116,29 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
               Consumer<Cart>(
                 builder: (context, cart, _) {
                   // Check if there are items in the cart
-                  if (cart.getTotalDrinkCount() > 0) {
+                  if (cart.getTotalDrinkCount() == 0) {
                     return Positioned(
                       right: 0,
                       top: 0,
                       bottom: 0,
-                      width: 12.5, // Adjust this width as needed
+                      width: 13, // Adjust this width as needed
                       child: GestureDetector(
                         onHorizontalDragEnd: (details) {
                           if (details.velocity.pixelsPerSecond.dx < -50) {
-                            // Swiping left from the right edge
-                            // Start the order submission process
-                            _submitOrder(context);
+                            final user =
+                                Provider.of<User>(context, listen: false);
+                            //_submitOrder(context);
+                            user.triggerUIUpdate();
                           }
                         },
                         child: Container(
-                          color: Colors.red, // Invisible swipe area
+                          color: Colors.transparent, // Invisible swipe area
                         ),
                       ),
                     );
                   } else {
-                    return const SizedBox.shrink(); // Render an empty widget if the cart is empty
+                    return const SizedBox
+                        .shrink(); // Render an empty widget if the cart is empty
                   }
                 },
               ),
@@ -154,6 +153,7 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
     return Column(
       children: [
         SizedBox(
+          
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -171,24 +171,31 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
               Center(
                 child: Text(
                   appBarTitle,
-                  style: const TextStyle(
+                  style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontSize: 16,
                   ),
                 ),
               ),
 
-              // REFRESH BUTTON
-              IconButton(
-                onPressed: () {
-                  final user = Provider.of<User>(context, listen: false);
-    user.triggerUIUpdate(); // This will retrigger the random drink selection
+              Consumer<Cart>(
+                builder: (context, cart, _) {
+                  bool hasItemsInCart = cart.getTotalDrinkCount() > 0;
+                  return IconButton(
+                    onPressed: hasItemsInCart
+                        ? null // Disable the button if there are items in the cart
+                        : () {
+                            final user =
+                                Provider.of<User>(context, listen: false);
+                            user.triggerUIUpdate(); // This will retrigger the random drink selection
+                          },
+                    icon: Icon(
+                      FontAwesomeIcons.forward,
+                      size: 22.5,
+                      color: hasItemsInCart ? Colors.grey : Colors.white,
+                    ), // Replace with your desired icon
+                  );
                 },
-                icon: const FaIcon(
-                  FontAwesomeIcons.arrowsRotate,
-                  size: 22,
-                  color: Colors.white,
-                ),
               ),
             ],
           ),
@@ -203,48 +210,48 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
                 final randomDrinks = user.getRandomDrinksByBarId(widget.barId);
 
                 return Column(
-  children: [
-    if (randomDrinks['tag172']?.isNotEmpty ?? false)
-      _buildDrinkGrid(context, randomDrinks['tag172']!),
-    const SizedBox(height: 30),
-    if (randomDrinks['tag173']?.isNotEmpty ?? false)
-      _buildDrinkGrid(context, randomDrinks['tag173']!),
-    const SizedBox(height: 30),
-    if (randomDrinks['tag174']?.isNotEmpty ?? false)
-      _buildDrinkGrid(context, randomDrinks['tag174']!),
-    const SizedBox(height: 30),
-    if (randomDrinks['tag175']?.isNotEmpty ?? false)
-      _buildDrinkGrid(context, randomDrinks['tag175']!),
-    const SizedBox(height: 30),
-    if (randomDrinks['tag176']?.isNotEmpty ?? false)
-      _buildDrinkGrid(context, randomDrinks['tag176']!),
-    const SizedBox(height: 30),
-    if (randomDrinks['tag177']?.isNotEmpty ?? false)
-      _buildDrinkGrid(context, randomDrinks['tag177']!),
-    const SizedBox(height: 30),
-    if (randomDrinks['tag178']?.isNotEmpty ?? false)
-      _buildDrinkGrid(context, randomDrinks['tag178']!),
-    const SizedBox(height: 30),
-    if (randomDrinks['tag179']?.isNotEmpty ?? false)
-      _buildDrinkGrid(context, randomDrinks['tag179']!),
-    const SizedBox(height: 30),
-    if (randomDrinks['tag181']?.isNotEmpty ?? false)
-      _buildDrinkGrid(context, randomDrinks['tag181']!),
-    const SizedBox(height: 30),
-    if (randomDrinks['tag182']?.isNotEmpty ?? false)
-      _buildDrinkGrid(context, randomDrinks['tag182']!),
-    const SizedBox(height: 30),
-    if (randomDrinks['tag183']?.isNotEmpty ?? false)
-      _buildDrinkGrid(context, randomDrinks['tag183']!),
-    const SizedBox(height: 30),
-    if (randomDrinks['tag184']?.isNotEmpty ?? false)
-      _buildDrinkGrid(context, randomDrinks['tag184']!),
-    const SizedBox(height: 30),
-    if (randomDrinks['tag186']?.isNotEmpty ?? false)
-      _buildDrinkGrid(context, randomDrinks['tag186']!),
-    const SizedBox(height: 30),
-  ],
-);
+                  children: [
+                    if (randomDrinks['tag172']?.isNotEmpty ?? false)
+                      _buildDrinkGrid(context, randomDrinks['tag172']!),
+                    const SizedBox(height: 30),
+                    if (randomDrinks['tag173']?.isNotEmpty ?? false)
+                      _buildDrinkGrid(context, randomDrinks['tag173']!),
+                    const SizedBox(height: 30),
+                    if (randomDrinks['tag174']?.isNotEmpty ?? false)
+                      _buildDrinkGrid(context, randomDrinks['tag174']!),
+                    const SizedBox(height: 30),
+                    if (randomDrinks['tag175']?.isNotEmpty ?? false)
+                      _buildDrinkGrid(context, randomDrinks['tag175']!),
+                    const SizedBox(height: 30),
+                    if (randomDrinks['tag176']?.isNotEmpty ?? false)
+                      _buildDrinkGrid(context, randomDrinks['tag176']!),
+                    const SizedBox(height: 30),
+                    if (randomDrinks['tag177']?.isNotEmpty ?? false)
+                      _buildDrinkGrid(context, randomDrinks['tag177']!),
+                    const SizedBox(height: 30),
+                    if (randomDrinks['tag178']?.isNotEmpty ?? false)
+                      _buildDrinkGrid(context, randomDrinks['tag178']!),
+                    const SizedBox(height: 30),
+                    if (randomDrinks['tag179']?.isNotEmpty ?? false)
+                      _buildDrinkGrid(context, randomDrinks['tag179']!),
+                    const SizedBox(height: 30),
+                    if (randomDrinks['tag181']?.isNotEmpty ?? false)
+                      _buildDrinkGrid(context, randomDrinks['tag181']!),
+                    const SizedBox(height: 30),
+                    if (randomDrinks['tag182']?.isNotEmpty ?? false)
+                      _buildDrinkGrid(context, randomDrinks['tag182']!),
+                    const SizedBox(height: 30),
+                    if (randomDrinks['tag183']?.isNotEmpty ?? false)
+                      _buildDrinkGrid(context, randomDrinks['tag183']!),
+                    const SizedBox(height: 30),
+                    if (randomDrinks['tag184']?.isNotEmpty ?? false)
+                      _buildDrinkGrid(context, randomDrinks['tag184']!),
+                    const SizedBox(height: 30),
+                    if (randomDrinks['tag186']?.isNotEmpty ?? false)
+                      _buildDrinkGrid(context, randomDrinks['tag186']!),
+                    const SizedBox(height: 30),
+                  ],
+                );
               },
             ),
           ),
@@ -252,11 +259,50 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
 
         // BOTTOM BAR
         Container(
-          height: 67,
-          child: const BottomAppBar(
+          height: 50,
+          child: BottomAppBar(
             color: Colors.black,
-            child: Row(
-              children: [],
+            child: Consumer<Cart>(
+              builder: (context, cart, _) {
+                if (cart.getTotalDrinkCount() == 0) {
+                  return const Center(
+                    child: Text(
+                      'DOUBLE TAP TO ADD DRINK',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                } else {
+                  return GestureDetector(
+                    onTap: () {
+                      _submitOrder(context); // Trigger the order submission
+                    },
+                    child: Center(
+                      child: Container(
+                        height: 50,
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+              },
             ),
           ),
         ),
@@ -281,7 +327,8 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
       ),
       childrenDelegate: SliverChildBuilderDelegate(
         (context, index) {
-          final barDatabase = Provider.of<LocalDatabase>(context, listen: false);
+          final barDatabase =
+              Provider.of<LocalDatabase>(context, listen: false);
           final drink = barDatabase.getDrinkById(drinkIds[index].toString());
 
           return GestureDetector(
@@ -343,8 +390,8 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
                           children: [
                             Expanded(
                               child: Text(
-                                drink.name,
-                                style: const TextStyle(
+                                '`${drink.name}',
+                                style: GoogleFonts.poppins(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                   fontStyle: FontStyle.italic,
@@ -382,8 +429,10 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
         var end = 1.0;
         var curve = Curves.easeInOut;
 
-        var scaleTween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-        var fadeTween = Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: curve));
+        var scaleTween =
+            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+        var fadeTween =
+            Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: curve));
 
         return ScaleTransition(
           scale: animation.drive(scaleTween),
@@ -397,7 +446,8 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
   }
 
   void navigateToOrdersPage(BuildContext context) {
-    Navigator.of(context).pushNamedAndRemoveUntil('/orders', (Route<dynamic> route) => false);
+    Navigator.of(context)
+        .pushNamedAndRemoveUntil('/orders', (Route<dynamic> route) => false);
   }
 
   @override

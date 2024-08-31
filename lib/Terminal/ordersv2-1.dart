@@ -708,7 +708,7 @@ Widget build(BuildContext context) {
                             children: <Widget>[
                               Text(
                                 '#${order.userId}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -912,7 +912,7 @@ debugPrint('Received: $event at ${DateTime.now()}');
           _showAlertDialog(context, "Error", "Failed to initialize: $event");
             Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => BartenderIDScreen()),
+            MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
             (Route<dynamic> route) => false, // Remove all previous routes
           );
           return;

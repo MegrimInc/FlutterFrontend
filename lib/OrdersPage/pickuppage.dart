@@ -167,157 +167,175 @@ class PickupPageState extends State<PickupPage> {
   }
 
   Widget _buildCardView(String barId) {
-    final localDatabase = LocalDatabase();
-    final bar = LocalDatabase.getBarById(barId);
-    final order = localDatabase.getOrderForBar(barId);
+  final bar = LocalDatabase.getBarById(barId);
+  final localDatabase = LocalDatabase();
+final order = localDatabase.getOrderForBar(barId);
 
-    if (bar == null || order == null) {
-      return const Center(
-        child: Text(
-          'Data not found.',
-          style: TextStyle(color: Colors.white),
-        ),
-      );
-    }
-
-    final drinkQuantities = order.drinkQuantities;
-    final status = order.status; // Assuming you have a 'status' field in the order object
-    final claimer = order.claimer; // Assuming you have a 'claimer' field in the order object
-    final userId = order.userId;
-
-    return GestureDetector(
-      onLongPress: (status == "delivered" || status == "canceled")
-          ? () {
-              // Trigger reorder and provide haptic feedback
-              HapticFeedback.heavyImpact();  // Provide haptic feedback
-              _triggerReorder(order, context);
-            }
-          : null,
-      child: Container(
-        color: Colors.transparent,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-          child: Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(60),
-                        child: Image.network(
-                          bar.tagimg ?? 'https://www.barzzy.site/images/default.png',
-                          width: 105,
-                          height: 105,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Center(
-                      child: Text(
-                        bar.getName() ?? 'Unknown',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 60),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: drinkQuantities.entries.map((entry) {
-                        final drink = localDatabase.getDrinkById(entry.key);
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: Text(
-                            '${drink.getName() ?? 'Unknown'} x ${entry.value}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 18,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const Spacer(),
-                    const SizedBox(height: 16),
-                    // Show total price only when order is not delivered or canceled
-                    if (status != "delivered" && status != "canceled")
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4.0),
-                            child: Text(
-                              'Total: \$${order.getPrice()?.toStringAsFixed(2) ?? '0.00'}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-              // Positioned button for precise control
-              Positioned(
-                bottom: 0, // Adjust this value for vertical placement
-                right: 0, // Adjust this value for horizontal placement
-                child: _buildStatusButton(status, claimer, int.parse(barId), userId, context),
-              ),
-              // Positioned "HOLD TO ORDER AGAIN" text when status is delivered or canceled
-              if (status == "delivered" || status == "canceled")
-                const Positioned(
-                  bottom: 5, // Adjust this value for vertical placement
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Text(
-                      'HOLD TO REORDER',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
+  if (bar == null || order == null) {
+    return const Center(
+      child: Text(
+        'Data not found.',
+        style: TextStyle(color: Colors.white),
       ),
     );
   }
 
+  final status = order.status;
+  final claimer = order.claimer;
+  final userId = order.userId;
+
+  return GestureDetector(
+    onLongPress: (status == "delivered" || status == "canceled")
+        ? () {
+            HapticFeedback.heavyImpact();
+            _triggerReorder(order, context);
+          }
+        : null,
+    child: Container(
+      color: Colors.transparent,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(60),
+                      child: Image.network(
+                        bar.tagimg ?? 'https://www.barzzy.site/images/default.png',
+                        width: 105,
+                        height: 105,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Text(
+                      bar.getName() ?? 'Unknown',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 60),
+                  // Iterate over the drinks list in the order object
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: order.drinks.map((drinkOrder) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: Text(
+                          '${drinkOrder.drinkName} x ${drinkOrder.quantity}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 18,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const Spacer(),
+                  const SizedBox(height: 16),
+                  if (status != "delivered" && status != "canceled")
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4.0),
+                          child: Text(
+                            'Total: \$${order.getPrice()?.toStringAsFixed(2) ?? '0.00'}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: _buildStatusButton(status, claimer, int.parse(barId), userId, context),
+            ),
+            if (status == "delivered" || status == "canceled")
+              const Positioned(
+                bottom: 5,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Text(
+                    'HOLD TO REORDER',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+  // // Method to trigger reorder by creating an order
+  // void _triggerReorder(CustomerOrder order, BuildContext context) async {
+  //   final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+  //   final loginCache = Provider.of<LoginCache>(context, listen: false);
+  //   final userId = await loginCache.getUID();
+
+  //   // Construct the order object for the reorder
+  //   final reorder = {
+  //     "action": "create",
+  //     "barId": int.parse(order.barId), // Assuming barId is a String, convert to int if needed
+  //     "userId": userId,
+  //     "drinks": order.drinkQuantities.entries.map((entry) {
+  //       return {
+  //         'drinkId': int.parse(entry.key),
+  //         'quantity': entry.value,
+  //       };
+  //     }).toList(),
+  //   };
+
+  //   // Pass the order object to the createOrder method
+  //   hierarchy.createOrder(reorder);
+  // }
+
   // Method to trigger reorder by creating an order
-  void _triggerReorder(CustomerOrder order, BuildContext context) async {
-    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
-    final loginCache = Provider.of<LoginCache>(context, listen: false);
-    final userId = await loginCache.getUID();
+void _triggerReorder(CustomerOrder order, BuildContext context) async {
+  final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+  final loginCache = Provider.of<LoginCache>(context, listen: false);
+  final userId = await loginCache.getUID();
 
-    // Construct the order object for the reorder
-    final reorder = {
-      "action": "create",
-      "barId": int.parse(order.barId), // Assuming barId is a String, convert to int if needed
-      "userId": userId,
-      "drinks": order.drinkQuantities.entries.map((entry) {
-        return {
-          'drinkId': int.parse(entry.key),
-          'quantity': entry.value,
-        };
-      }).toList(),
-    };
+  // Construct the order object for the reorder
+  final reorder = {
+    "action": "create",
+    "barId": int.parse(order.barId), // Assuming barId is a String, convert to int if needed
+    "userId": userId,
+    "drinks": order.drinks.map((drinkOrder) {
+      return {
+        'drinkId': int.parse(drinkOrder.id),  // Convert drinkId to int if necessary
+        'quantity': int.parse(drinkOrder.quantity),  // Convert quantity to int if necessary
+      };
+    }).toList(),
+  };
 
-    // Pass the order object to the createOrder method
-    hierarchy.createOrder(reorder);
-  }
+  // Pass the order object to the createOrder method
+  hierarchy.createOrder(reorder);
+}
 
   // Method to build the dynamic button based on status and claimer
   Widget _buildStatusButton(String status, String claimer, int barId, int userId, BuildContext context) {
