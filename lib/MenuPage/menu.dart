@@ -5,10 +5,10 @@ import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/user.dart';
 
-import 'package:barzzy_app1/MenuPage/overlay.dart';
 import 'package:barzzy_app1/MenuPage/cart.dart';
 import 'package:barzzy_app1/MenuPage/drinkfeed.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
+import 'package:barzzy_app1/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -40,45 +40,18 @@ class MenuPageState extends State<MenuPage>
   bool hasText = false;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
-  String autoCompleteTag = '';
-  bool _showOverlay = false;
+
   late AnimationController _animationController;
-  late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
     _fetchBarData();
-    _searchController.addListener(_onSearchChanged);
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _animation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    );
-  }
-
-  void _onSearchChanged() {
-    setState(() {
-      hasText = _searchController.text.isNotEmpty;
-      _updateAutoComplete(_searchController.text);
-    });
-  }
-
-  void _updateAutoComplete(String query) {
-    final barDatabase = Provider.of<LocalDatabase>(context, listen: false);
-    final matchingTags = barDatabase.tags.values
-        .where((tag) => tag.name.toLowerCase().startsWith(query.toLowerCase()))
-        .toList();
-
-    if (matchingTags.isNotEmpty) {
-      autoCompleteTag = matchingTags.first.name;
-    } else {
-      autoCompleteTag = query; // Display the user's input if no matching tag
-    }
   }
 
   //LOADS DRINK IN
@@ -86,45 +59,14 @@ class MenuPageState extends State<MenuPage>
   Future<void> _fetchBarData() async {
     currentBar = LocalDatabase.getBarById(widget.barId);
     if (currentBar != null) {
-      appBarTitle = ('*${currentBar!.tag ?? 'Menu Page'}')
-          .replaceAll(' ', '')
-          .toLowerCase();
-      //appBarTitle = ('*${currentBar!.tag ?? 'Menu Page'}');
+      appBarTitle =
+          (currentBar!.tag ?? 'Menu Page').replaceAll(' ', '').toLowerCase();
     }
     setState(() {
       isLoading = false;
     });
     final barHistory = Provider.of<BarHistory>(context, listen: false);
     barHistory.setTappedBarId(widget.barId);
-  }
-
-  void _search(String query) {
-    if (query.trim().isEmpty) {
-      // If query contains only empty spaces or is empty after trimming, do nothing
-      return;
-    }
-    final user = Provider.of<User>(context, listen: false);
-    final barDatabase = Provider.of<LocalDatabase>(context, listen: false);
-    barDatabase.searchDrinks(query, user, widget.barId);
-    setState(() {
-      FocusScope.of(context).unfocus(); // Close keyboard
-      _scrollToBottom();
-    });
-  }
-
-  void _showOverlayWidget() {
-    setState(() {
-      _showOverlay = true;
-    });
-    _animationController.forward();
-  }
-
-  void _hideOverlayWidget() {
-    _animationController.reverse().then((_) {
-      setState(() {
-        _showOverlay = false;
-      });
-    });
   }
 
   void _submitOrder(BuildContext context) async {
@@ -156,6 +98,15 @@ class MenuPageState extends State<MenuPage>
 
     // Navigate to orders page or perform other actions as needed
     navigateToOrdersPage(context);
+  }
+
+  // Method to refresh the drink list for the current bar
+  Future<void> _refreshDrinks() async {
+    print('hey are you working');
+    final user = Provider.of<User>(context, listen: false);
+    user.clearHistoriesForBar(
+        widget.barId); // Clear the user's data for this bar
+    await fetchTagsAndDrinks(widget.barId); // Fetch the drinks for this bar
   }
 
   @override
@@ -205,40 +156,6 @@ class MenuPageState extends State<MenuPage>
                   }
                 },
               ),
-
-              // Overlay content
-              if (_showOverlay)
-                AnimatedBuilder(
-                  animation: _animation,
-                  builder: (context, child) {
-                    return Transform(
-                      transform: Matrix4.identity()
-                        ..scale(_animation.value)
-                        ..translate(
-                          -1.0 *
-                              MediaQuery.of(context).size.width /
-                              2 *
-                              (1 - _animation.value),
-                          MediaQuery.of(context).size.height *
-                              (1 - _animation.value),
-                        ),
-                      alignment: Alignment.bottomLeft,
-                      child: FadeTransition(
-                        opacity: _animation,
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: Consumer<Cart>(
-                    builder: (context, cart, _) {
-                      return HistorySheet(
-                        barId: widget.barId,
-                        onClose: _hideOverlayWidget,
-                        cart: cart,
-                      );
-                    },
-                  ),
-                ),
             ],
           ),
         ),
@@ -256,8 +173,6 @@ class MenuPageState extends State<MenuPage>
 
             IconButton(
               icon: const Icon(
-                //Icons.arrow_back,
-                //FontAwesomeIcons.arrowLeftLong,
                 FontAwesomeIcons.caretLeft,
                 color: Colors.white,
                 size: 29,
@@ -277,29 +192,26 @@ class MenuPageState extends State<MenuPage>
               ),
             ),
 
-            // MENU BUTTON
+            // REFRESH BUTTON
 
-            Consumer<Cart>(
-              builder: (context, cart, _) {
-                bool hasItemsInCart = cart.getTotalDrinkCount() > 0;
-                return IconButton(
-                  onPressed: () {},
-                  icon: Icon(
-                    FontAwesomeIcons.forward,
-                    //FontAwesomeIcons.caretRight,
-                    size: 22.5,
-                    color: hasItemsInCart ? Colors.white : Colors.grey,
-                  ), // Replace with your desired icon
-                );
+            IconButton(
+              onPressed: () {
+                print('plz baby girl');
+                _refreshDrinks();
               },
-            )
+              icon: const FaIcon(
+                FontAwesomeIcons.arrowsRotate,
+                size: 22,
+                color: Colors.white,
+              ),
+            ),
           ],
         ),
       ),
 
       Expanded(
         child: SingleChildScrollView(
-            reverse: true,
+            //reverse: true,
             key: _listKey,
             controller: _scrollController,
             child: Consumer<User>(builder: (context, user, _) {
@@ -326,7 +238,7 @@ class MenuPageState extends State<MenuPage>
                                   margin: const EdgeInsets.symmetric(
                                       vertical: 2.5, horizontal: 0),
                                   child: Text(
-                                    '*$query',
+                                    query,
                                     style: GoogleFonts.poppins(
                                         fontSize: 15.5,
                                         //fontWeight:
@@ -345,15 +257,11 @@ class MenuPageState extends State<MenuPage>
                           builder: (context, user, _) {
                             final searchHistoryEntries =
                                 user.getSearchHistory(widget.barId);
-                            final responseHistory =
-                                user.getResponseHistory(widget.barId);
+
                             final entry = index < searchHistoryEntries.length
                                 ? searchHistoryEntries[index]
                                 : null;
                             final drinkIds = entry?.value ?? [];
-                            final response = index < responseHistory.length
-                                ? responseHistory[index]
-                                : '';
 
                             if (entry == null) {
                               return const Row(
@@ -471,15 +379,15 @@ class MenuPageState extends State<MenuPage>
                                                             '`${drink.name}',
                                                             style:
                                                                 const TextStyle(
-                                                              fontSize: 13,
+                                                              fontSize: 15,
                                                               fontWeight:
                                                                   FontWeight
                                                                       .w600,
                                                               fontStyle:
                                                                   FontStyle
                                                                       .italic,
-                                                              color:
-                                                                  Colors.white,
+                                                              color: Colors
+                                                                  .white54,
                                                             ),
                                                             overflow:
                                                                 TextOverflow
@@ -504,29 +412,7 @@ class MenuPageState extends State<MenuPage>
                                         : drinkIds.length,
                                   ),
                                 ),
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 10, horizontal: 15),
-                                        margin: const EdgeInsets.symmetric(
-                                            vertical: 2.5, horizontal: 0),
-                                        child: Text(
-                                          response,
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 15.5,
-                                            fontStyle: FontStyle.italic,
-                                            color: Colors.white,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                          maxLines: 1,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 50),
-                                  ],
-                                ),
+                                const SizedBox(height: 30)
                               ],
                             );
                           },
@@ -538,172 +424,14 @@ class MenuPageState extends State<MenuPage>
       ),
 
       // BOTTOM BAR
-      SizedBox(
+      Container(
         height: 67,
-        child: BottomAppBar(
+        child: const BottomAppBar(
           color: Colors.black,
 
           //PLUS ICON
           child: Row(
-            children: [
-              GestureDetector(
-                child: Container(
-                  color: Colors.transparent,
-                  width: 50,
-                  height: 50,
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      top: 7,
-                      bottom: 7,
-                      right: 20,
-                    ),
-                    child: Container(
-                        decoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 52, 51, 51),
-                            borderRadius: BorderRadius.circular(20)),
-                        child: const Icon(
-                          Icons.add,
-                          color: Colors.grey,
-                          size: 22,
-                        )),
-                  ),
-                ),
-                onTap: () {
-                  _scrollToBottom();
-                  _showOverlayWidget();
-                  FocusScope.of(context).unfocus();
-                },
-              ),
-
-              // MESSAGE FIELD
-              Expanded(
-                child: SizedBox(
-                  height: 35,
-                  child: Stack(
-                    children: [
-                      TextFormField(
-                        cursorColor: Colors.white,
-                        controller: _searchController,
-                        onChanged: (text) => _onSearchChanged(),
-                        onTap: () {
-                          _scrollToBottom(); // Trigger scroll to bottom when text field is tapped
-                        },
-                        style: const TextStyle(
-                            color: Colors
-                                .transparent), // Make the TextFormField text transparent
-                        decoration: InputDecoration(
-                          labelText: 'I want...',
-                          labelStyle: const TextStyle(
-                              color: Colors.white,
-                              //fontStyle: FontStyle.italic,
-                              fontSize: 16),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: const BorderSide(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20.0),
-                            borderSide: const BorderSide(color: Colors.grey),
-                          ),
-                          contentPadding:
-                              const EdgeInsets.only(left: 15.0, bottom: 0),
-                          floatingLabelBehavior: FloatingLabelBehavior.never,
-                        ),
-                      ),
-                      if (hasText && autoCompleteTag.isNotEmpty)
-                        Positioned(
-                          left: 15,
-                          top: 0,
-                          bottom: 0,
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: RichText(
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: _searchController.text,
-                                    style: const TextStyle(
-                                        color: Colors.white, fontSize: 17),
-                                  ),
-                                  TextSpan(
-                                    text: autoCompleteTag.substring(
-                                        _searchController.text.length),
-                                    style: const TextStyle(
-                                        color: Colors.grey, fontSize: 17),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-
-              //RECENT AND SEARCH BUTTON
-              GestureDetector(
-                  child: hasText
-                      ? Container(
-                          color: Colors.transparent,
-                          height: 50,
-                          width: 50,
-                          child: Padding(
-                            padding: const EdgeInsets.only(
-                                left: 21.0, top: 7.5, bottom: 7.5),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                  color:
-                                      const Color.fromARGB(255, 255, 255, 255),
-                                  borderRadius: BorderRadius.circular(20)),
-                              child: const Icon(
-                                Icons.arrow_upward_outlined,
-                                size: 19,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
-                        )
-                      : Container(
-                          color: Colors.transparent,
-                          height: 50,
-                          width: 50,
-                          child: const Padding(
-                            padding: EdgeInsets.only(
-                                left: 21, top: 7.5, bottom: 7.5),
-                            child: FaIcon(
-                              FontAwesomeIcons.arrowsRotate,
-                              size: 25.5,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                  onTap: () async {
-                    if (hasText) {
-                      String query = autoCompleteTag.isNotEmpty
-                          ? autoCompleteTag
-                          : _searchController.text;
-                      debugPrint('Query being sent: $query');
-                      _search(query);
-                      _searchController.clear();
-                      autoCompleteTag =
-                          ''; // Clear autoCompleteTag after search
-                    } else {
-                      // New functionality when the text field is empty
-                      final user = Provider.of<User>(context,
-                          listen: false); // Retrieve User from Provider
-                      final barId =
-                          widget.barId; // Get the current bar ID from MenuPage
-                      final localDatabase = Provider.of<LocalDatabase>(context,
-                          listen:
-                              false); // Retrieve LocalDatabase from Provider
-
-                      // Fetch six drinks
-                      debugPrint('Fetching six drinks for barId: $barId');
-                      await localDatabase.fetchSixDrinks(user, barId);
-                    }
-                  })
-            ],
+            children: [],
           ),
         ),
       ),
@@ -756,7 +484,6 @@ class MenuPageState extends State<MenuPage>
   @override
   void dispose() {
     _animationController.dispose();
-    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
