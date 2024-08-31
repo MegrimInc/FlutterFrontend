@@ -7,7 +7,7 @@ import 'package:barzzy_app1/Backend/bar.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/searchengine.dart';
 import 'package:barzzy_app1/Backend/recommended.dart';
-import 'package:barzzy_app1/backend/tags.dart';
+import 'package:barzzy_app1/backend/categories.dart';
 import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
@@ -117,76 +117,126 @@ Future<void> sendGetRequest() async {
   }
 }
 
+
 Future<void> fetchTagsAndDrinks(String barId) async {
   LocalDatabase barDatabase = LocalDatabase();
   User user = User();
 
-  // Define hardcoded static tag IDs and their corresponding names
+  // Corrected tagList with updated tag IDs
   List<MapEntry<int, String>> tagList = [
-    const MapEntry(171, 'vodka'),
-    const MapEntry(172, 'gin'),
-    const MapEntry(173, 'whiskey'),
-    const MapEntry(174, 'tequila'),
-    const MapEntry(175, 'brandy'),
-    const MapEntry(176, 'rum'),
-    const MapEntry(177, 'ale'),
-    const MapEntry(178, 'lager'),
-    const MapEntry(180, 'juice'),
-    const MapEntry(181, 'soda'),
-    const MapEntry(182, 'red wine'),
-    const MapEntry(183, 'white wine'),
-    const MapEntry(185, 'seltzer'),
+    const MapEntry(172, 'vodka'),
+    const MapEntry(173, 'gin'),
+    const MapEntry(174, 'whiskey'),
+    const MapEntry(175, 'tequila'),
+    const MapEntry(176, 'brandy'),
+    const MapEntry(177, 'rum'),
+    const MapEntry(178, 'ale'),
+    const MapEntry(179, 'lager'),
+    const MapEntry(181, 'juice'),
+    const MapEntry(182, 'soda'),
+    const MapEntry(183, 'red wine'),
+    const MapEntry(184, 'white wine'),
+    const MapEntry(186, 'seltzer'),
   ];
 
-  debugPrint('Starting to fetch tags and drinks for barId: $barId');
-  
-  for (var entry in tagList) {
-    int tagId = entry.key;
-    String tagName = entry.value;
+  // Initialize a Categories object with the correct tags
+  Categories categories = Categories(
+    barId: int.parse(barId),
+    tag172: [],
+    tag173: [],
+    tag174: [],
+    tag175: [],
+    tag176: [],
+    tag177: [],
+    tag178: [],
+    tag179: [],
+    tag181: [],
+    tag182: [],
+    tag183: [],
+    tag184: [],
+    tag186: [],
+  );
 
-    debugPrint('Processing tag: $tagName ($tagId)');
-    
-    // Create and add Tag objects to the internal tag map
-    Tag tag = Tag(id: tagId.toString(), name: tagName);
-    barDatabase.addTag(tag);
-    debugPrint('Added tag to database: ${tag.name}');
+  // Fetch all drinks for the bar
+  final url = Uri.parse('https://www.barzzy.site/bars/getAllDrinksByBar/$barId');
+  final response = await http.get(url);
 
-    // Fetch drinks for this tag
-    final url = Uri.parse(
-        'https://www.barzzy.site/bars/getRandomDrinks?barId=$barId&categoryId=$tagId');
-    final response = await http.get(url);
+  if (response.statusCode == 200) {
+    final List<dynamic> jsonResponse = jsonDecode(response.body);
+    debugPrint('Response received for bar $barId: $jsonResponse');
 
-    debugPrint('Requesting drinks for tag: $tagName ($tagId) from URL: $url');
-    
-    if (response.statusCode == 200) {
-      final List<dynamic> jsonResponse = jsonDecode(response.body);
-      List<String> drinkIds = [];
+    for (var drinkJson in jsonResponse) {
+      String? drinkId = drinkJson['drinkId']?.toString();
+      if (drinkId != null) {
+        // Deserialize the drink JSON into a Drink object
+        Drink drink = Drink.fromJson(drinkJson);
 
-      debugPrint('Response received for tag $tagName: $jsonResponse');
+        // Add the drink object to the local database
+        barDatabase.addDrink(drink);
 
-      for (var drinkJson in jsonResponse) {
-        String? drinkId = drinkJson['drinkId']?.toString();
-        if (drinkId != null) {
-          Drink drink = Drink.fromJson(drinkJson);
-          barDatabase.addDrink(drink);
-          drinkIds.add(drinkId);
-          debugPrint('Added drink to database: ${drink.name} (ID: $drinkId)');
-        } else {
-          debugPrint('Warning: Drink ID is null for drink: $drinkJson');
+        // Check the tags and add the drinkId to the appropriate tag list in Categories
+        for (String tagId in drink.tagId) {
+          switch (int.parse(tagId)) {
+            case 172:
+              categories.tag172.add(int.parse(drinkId));
+              break;
+            case 173:
+              categories.tag173.add(int.parse(drinkId));
+              break;
+            case 174:
+              categories.tag174.add(int.parse(drinkId));
+              break;
+            case 175:
+              categories.tag175.add(int.parse(drinkId));
+              break;
+            case 176:
+              categories.tag176.add(int.parse(drinkId));
+              break;
+            case 177:
+              categories.tag177.add(int.parse(drinkId));
+              break;
+            case 178:
+              categories.tag178.add(int.parse(drinkId));
+              break;
+            case 179:
+              categories.tag179.add(int.parse(drinkId));
+              break;
+            case 181:
+              categories.tag181.add(int.parse(drinkId));
+              break;
+            case 182:
+              categories.tag182.add(int.parse(drinkId));
+              break;
+            case 183:
+              categories.tag183.add(int.parse(drinkId));
+              break;
+            case 184:
+              categories.tag184.add(int.parse(drinkId));
+              break;
+            case 186:
+              categories.tag186.add(int.parse(drinkId));
+              break;
+            default:
+              debugPrint('Unknown tagId: $tagId for drinkId: $drinkId');
+          }
         }
+
+        debugPrint('Added drink to database: ${drink.name} (ID: $drinkId)');
+      } else {
+        debugPrint('Warning: Drink ID is null for drink: $drinkJson');
       }
-
-      user.addQueryToHistory(barId, tagName);
-      user.addSearchQuery(barId, tagName, drinkIds);
-
-      debugPrint(
-          'Drinks for tag $tagName ($tagId) have been added to the database for bar $barId with drink IDs: $drinkIds');
-    } else {
-      debugPrint('Failed to load drinks for tag $tagId. Status code: ${response.statusCode}');
     }
+
+    // Add the Categories object to the User map
+    user.addCategories(barId, categories);
+
+    debugPrint(
+        'Drinks for bar $barId have been categorized and added to the User object.');
+  } else {
+    debugPrint('Failed to load drinks for bar $barId. Status code: ${response.statusCode}');
   }
 
-  debugPrint('Finished processing tags and drinks for barId: $barId');
+  debugPrint('Finished processing drinks for barId: $barId');
 }
 
 class Barzzy extends StatelessWidget {
