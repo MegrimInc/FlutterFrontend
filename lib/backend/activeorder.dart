@@ -1,25 +1,6 @@
 import 'package:flutter/material.dart';
 
-class DrinkOrder {
-  String id;
-  String drinkName;
-  String quantity;
 
-  DrinkOrder(
-    this.id,
-    this.drinkName,
-    this.quantity,
-  );
-
-  // Factory constructor to create a DrinkOrder from JSON
-  factory DrinkOrder.fromJson(Map<String, dynamic> json) {
-    return DrinkOrder(
-      json['id'].toString(),         // Convert id to String
-      json['drinkName'],             // Assuming drinkName is a String
-      json['quantity'].toString(),   // Convert quantity to String
-    );
-  }
-}
 
 class CustomerOrder {
   String barId;
@@ -64,7 +45,6 @@ class CustomerOrder {
     );
   }
 
-
   // Getter methods
   double? getPrice() {
     return price;
@@ -82,5 +62,28 @@ class CustomerOrder {
         .firstWhere((drink) => drink.drinkName == drinkName,
             orElse: () => DrinkOrder('', '', '0'))
         .quantity as int;
+  }
+
+  
+}
+
+class DrinkOrder {
+  String id;
+  String drinkName;
+  String quantity;
+
+  DrinkOrder(
+    this.id,
+    this.drinkName,
+    this.quantity,
+  );
+
+  // Factory constructor to create a DrinkOrder from JSON
+  factory DrinkOrder.fromJson(Map<String, dynamic> json) {
+    return DrinkOrder(
+      json['id'].toString(),         // Convert id to String
+      json['drinkName'],             // Assuming drinkName is a String
+      json['quantity'].toString(),   // Convert quantity to String
+    );
   }
 }
