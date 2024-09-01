@@ -92,6 +92,7 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
     // Pass the order object to the createOrder method
     hierarchy.createOrder(order);
 
+
     // Navigate to orders page and pass the barId
     Navigator.of(context).pushNamedAndRemoveUntil(
     '/orders',
@@ -124,7 +125,7 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
                     right: 0,
                     top: 0,
                     bottom: 0,
-                    width: 13, // Adjust this width as needed
+                    width: 27.5, // Adjust this width as needed
                     child: GestureDetector(
                       onHorizontalDragEnd: (details) {
                         if (details.velocity.pixelsPerSecond.dx < -50) {
@@ -286,7 +287,7 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          '`$tagName',
+          tagName,
           style: GoogleFonts.poppins(
             color: Colors.white70,
             fontSize: 18,
@@ -386,7 +387,7 @@ class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin 
                 cart,
               ));
             },
-            onDoubleTap: () {
+            onTap: () {
               HapticFeedback.lightImpact();
               Provider.of<Cart>(context, listen: false).addDrink(drink.id);
               FocusScope.of(context).unfocus();

@@ -19,48 +19,42 @@ class PickupPageState extends State<PickupPage> {
   bool _isGridView = true; // Toggle between Grid and Card view
   String? _selectedBarId; // Keep track of the selected bar ID
 
+  
   @override
-  void initState() {
-    super.initState();
-    _loadSelectedBar(); // Load the selected bar ID from shared preferences
-  }
+void didChangeDependencies() {
+  super.didChangeDependencies();
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  // Load the selected bar ID from shared preferences
+  _loadAndSetSelectedBar();
+}
 
-    // Get the barId from the arguments
-    final barId = ModalRoute.of(context)?.settings.arguments as String?;
-    if (barId != null && _selectedBarId == null) {
-      // Set initial view to CardView only if _selectedBarId is null
+Future<void> _loadAndSetSelectedBar() async {
+  // Load the bar ID from shared preferences
+  final prefs = await SharedPreferences.getInstance();
+  final savedBarId = prefs.getString('selected_bar_id');
+
+  // Get the barId from the arguments
+  // ignore: use_build_context_synchronously
+  final barId = ModalRoute.of(context)?.settings.arguments as String?;
+
+  // If a new barId is passed in arguments, use it; otherwise, fall back to saved barId
+  if (barId != null && barId != _selectedBarId) {
+    // Argument barId should take precedence
+    setState(() {
       _selectedBarId = barId;
       _isGridView = false;
-    }
-  }
+    });
 
-  // Method to load the selected bar from shared preferences
-  Future<void> _loadSelectedBar() async {
-    final prefs = await SharedPreferences.getInstance();
-    final barId = prefs.getString('selected_bar_id');
-    if (barId != null) {
-      setState(() {
-        _selectedBarId = barId;
-        _isGridView = false; // Show card view if a bar was previously selected
-      });
-    }
+    // Save this new barId to shared preferences
+    await _saveSelectedBar(barId);
+  } else if (savedBarId != null && _selectedBarId == null) {
+    // No new barId, so use the saved one
+    setState(() {
+      _selectedBarId = savedBarId;
+      _isGridView = false;
+    });
   }
-
-  // Method to save the selected bar to shared preferences
-  Future<void> _saveSelectedBar(String barId) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('selected_bar_id', barId);
-  }
-
-  // Method to clear the selected bar from shared preferences
-  Future<void> _clearSelectedBar() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('selected_bar_id');
-  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -173,6 +167,7 @@ class PickupPageState extends State<PickupPage> {
 
         return GestureDetector(
           onTap: () {
+            debugPrint('Grid item tapped. Bar ID: $barId');
             _saveSelectedBar(barId); // Save the selected bar ID
             setState(() {
               _selectedBarId = barId;
@@ -274,10 +269,13 @@ class PickupPageState extends State<PickupPage> {
                       ),
                     ),
                     const SizedBox(height: 60),
-                    // Iterate over the drinks list in the order object
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: order.drinks.map((drinkOrder) {
+                    
+
+                    Expanded( // Make the list of drinks scrollable
+                    child: ListView.builder(
+                      itemCount: order.drinks.length,
+                      itemBuilder: (context, index) {
+                        final drinkOrder = order.drinks[index];
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4.0),
                           child: Text(
@@ -288,10 +286,11 @@ class PickupPageState extends State<PickupPage> {
                             ),
                           ),
                         );
-                      }).toList(),
+                      },
                     ),
-                    const Spacer(),
-                    const SizedBox(height: 16),
+                  ),
+                    //const Spacer(),
+                    const SizedBox(height: 60),
                     if (status != "delivered" && status != "canceled")
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -440,3 +439,17 @@ class PickupPageState extends State<PickupPage> {
     return Container();
   }
 }
+
+// Method to save the selected bar from shared preferences
+
+Future<void> _saveSelectedBar(String barId) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('selected_bar_id', barId);
+}
+
+
+// Method to clear the selected bar from shared preferences
+  Future<void> _clearSelectedBar() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('selected_bar_id');
+  }

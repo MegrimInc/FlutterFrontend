@@ -1,7 +1,6 @@
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Backend/activeorder.dart';
 import 'package:barzzy_app1/Backend/localdatabase.dart';
-import 'package:barzzy_app1/main.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -239,9 +238,9 @@ class Hierarchy extends ChangeNotifier {
             children: [
               SizedBox(width: 75),
               Icon(Icons.error_outline, color: Colors.redAccent),
-              SizedBox(width: 10),
+              SizedBox(width: 5),
               Text(
-                'Error :/',
+                'Oops :/',
                 style: TextStyle(
                   color: Colors.redAccent,
                   fontWeight: FontWeight.bold,
