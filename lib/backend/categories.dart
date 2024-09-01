@@ -11,7 +11,7 @@ class Categories {
   final List<int> tag178;
   final List<int> tag179;
   final List<int> tag181;
-  final List<int> tag182;
+  // final List<int> tag182;
   final List<int> tag183;
   final List<int> tag184;
   final List<int> tag186;
@@ -27,7 +27,7 @@ class Categories {
     required this.tag178,
     required this.tag179,
     required this.tag181,
-    required this.tag182,
+    // required this.tag182,
     required this.tag183,
     required this.tag184,
     required this.tag186,
@@ -47,7 +47,7 @@ class Categories {
       'tag178': _getRandomSubset(tag178, random),
       'tag179': _getRandomSubset(tag179, random),
       'tag181': _getRandomSubset(tag181, random),
-      'tag182': _getRandomSubset(tag182, random),
+      // 'tag182': _getRandomSubset(tag182, random),
       'tag183': _getRandomSubset(tag183, random),
       'tag184': _getRandomSubset(tag184, random),
       'tag186': _getRandomSubset(tag186, random),

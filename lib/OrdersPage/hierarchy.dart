@@ -1,6 +1,7 @@
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Backend/activeorder.dart';
 import 'package:barzzy_app1/Backend/localdatabase.dart';
+import 'package:barzzy_app1/main.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -15,9 +16,9 @@ class Hierarchy extends ChangeNotifier {
   final LocalDatabase localDatabase;
   final Map<String, int> _createdOrderBarIds = {};
   bool _isConnected = false;
+  final GlobalKey<NavigatorState> navigatorKey;
 
-
-  Hierarchy(BuildContext context)
+  Hierarchy(BuildContext context, this.navigatorKey)
       : localDatabase = Provider.of<LocalDatabase>(context, listen: false);
 
   // Establish a WebSocket connection with exponential backoff
@@ -48,6 +49,7 @@ class Hierarchy extends ChangeNotifier {
 
               // Extract the messageType from the decoded JSON
               final String messageType = decodedMessage['messageType'];
+              debugPrint('Message type received: "$messageType"');
 
               switch (messageType) {
                 case 'ping':
@@ -68,13 +70,18 @@ class Hierarchy extends ChangeNotifier {
                   final data = decodedMessage['data'];
                   _createOrderResponse(
                       data); // Trigger the createOrderResponse method
+                  break;
 
-                      case 'delete':
-                       debugPrint('Delete response received.');
-                       final data = decodedMessage['data'];
-                       _createOrderResponse(
-                        data); 
+                case 'delete':
+                  debugPrint('Delete response received.');
+                  final data = decodedMessage['data'];
+                  _createOrderResponse(data);
+                  break;
 
+                case 'error':
+                  debugPrint('error response received.');
+                  final String errorMessage = decodedMessage['message'];
+                  _handleError(context, errorMessage);
                   break;
 
                 default:
@@ -177,9 +184,8 @@ class Hierarchy extends ChangeNotifier {
 
       localDatabase.addOrUpdateOrderForBar(customerOrder);
 
-     // Directly update the map with the new timestamp for the barId
+      // Directly update the map with the new timestamp for the barId
       _createdOrderBarIds[customerOrder.barId] = customerOrder.timestamp;
-
 
       // Print statement to confirm addition
       debugPrint(
@@ -189,33 +195,103 @@ class Hierarchy extends ChangeNotifier {
     }
   }
 
-  
-void cancelOrder(int barId, int userId) {
-  try {
-    if (_channel != null) {
-      final message = {
-        "action": "delete",
-        "barId": barId,
-        "userId": userId,
-      };
-      final jsonMessage = jsonEncode(message); // Encode message to JSON
-      debugPrint('Sending cancel order message: $jsonMessage');
-      _channel!.sink.add(jsonMessage); // Send the JSON encoded string
-      debugPrint('Cancel order message sent.');
-    } else {
-      debugPrint('Failed to send cancel order message: WebSocket is not connected');
+  void cancelOrder(int barId, int userId) {
+    try {
+      if (_channel != null) {
+        final message = {
+          "action": "delete",
+          "barId": barId,
+          "userId": userId,
+        };
+        final jsonMessage = jsonEncode(message); // Encode message to JSON
+        debugPrint('Sending cancel order message: $jsonMessage');
+        _channel!.sink.add(jsonMessage); // Send the JSON encoded string
+        debugPrint('Cancel order message sent.');
+      } else {
+        debugPrint(
+            'Failed to send cancel order message: WebSocket is not connected');
+      }
+    } catch (e) {
+      debugPrint('Error while sending cancel order message: $e');
     }
-  } catch (e) {
-    debugPrint('Error while sending cancel order message: $e');
   }
-}
-  
+
+  void _handleError(BuildContext context, String errorMessage) {
+    // Use the global navigator key to get a safe context
+    final safeContext = navigatorKey.currentContext;
+
+    if (safeContext == null) {
+      //debugPrint('Safe context is null. Cannot show dialog.');
+      return;
+    }
+
+    //debugPrint('Showing error dialog with safe context: $safeContext');
+
+    showDialog(
+      context: safeContext,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: Colors.black87,
+          title: const Row(
+            children: [
+              SizedBox(width: 75),
+              Icon(Icons.error_outline, color: Colors.redAccent),
+              SizedBox(width: 10),
+              Text(
+                'Error :/',
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            errorMessage,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 16,  
+            ),
+            textAlign: TextAlign.center,
+          ),
+          actions: <Widget>[
+            TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(); // Dismiss the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   // Method to retrieve the list of barIds for created orders
   List<String> getOrders() {
     // Return the list of bar IDs sorted by timestamp in descending order
     return _createdOrderBarIds.keys.toList()
-      ..sort((a, b) => _createdOrderBarIds[b]!.compareTo(_createdOrderBarIds[a]!));
+      ..sort(
+          (a, b) => _createdOrderBarIds[b]!.compareTo(_createdOrderBarIds[a]!));
   }
 
   bool get isConnected => _isConnected;

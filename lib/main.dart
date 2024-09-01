@@ -18,6 +18,9 @@ import 'package:barzzy_app1/Backend/localdatabase.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy_app1/Backend/barhistory.dart';
 
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   debugPrint("current date: ${DateTime.now()}");
 
@@ -69,14 +72,18 @@ void main() async {
         ChangeNotifierProvider(create: (context) => localDatabase),
         ChangeNotifierProvider(create: (context) => BarHistory()),
         ChangeNotifierProvider(create: (context) => Recommended()),
-        ChangeNotifierProvider(create: (context) => Hierarchy(context)),
+        ChangeNotifierProvider(create: (context) => Hierarchy(context, navigatorKey)),
         ChangeNotifierProvider(create: (_) => LoginCache()),
         ChangeNotifierProvider(create: (context) => user),
         ProxyProvider<LocalDatabase, SearchService>(
           update: (_, localDatabase, __) => SearchService(localDatabase),
         ),
       ],
-      child: Barzzy(loggedInAlready: loggedInAlready, isBar: isBar),
+      child: Barzzy(
+        loggedInAlready: loggedInAlready, 
+        isBar: isBar,
+        navigatorKey: navigatorKey, 
+        ),
     ),
   );
 }
@@ -132,8 +139,7 @@ Future<void> fetchTagsAndDrinks(String barId) async {
     const MapEntry(177, 'rum'),
     const MapEntry(178, 'ale'),
     const MapEntry(179, 'lager'),
-    const MapEntry(181, 'juice'),
-    const MapEntry(182, 'soda'),
+    const MapEntry(181, 'virgin'),
     const MapEntry(183, 'red wine'),
     const MapEntry(184, 'white wine'),
     const MapEntry(186, 'seltzer'),
@@ -151,7 +157,6 @@ Future<void> fetchTagsAndDrinks(String barId) async {
     tag178: [],
     tag179: [],
     tag181: [],
-    tag182: [],
     tag183: [],
     tag184: [],
     tag186: [],
@@ -204,9 +209,6 @@ Future<void> fetchTagsAndDrinks(String barId) async {
             case 181:
               categories.tag181.add(int.parse(drinkId));
               break;
-            case 182:
-              categories.tag182.add(int.parse(drinkId));
-              break;
             case 183:
               categories.tag183.add(int.parse(drinkId));
               break;
@@ -242,7 +244,14 @@ Future<void> fetchTagsAndDrinks(String barId) async {
 class Barzzy extends StatelessWidget {
   final bool loggedInAlready;
   final bool isBar;
-  const Barzzy({super.key, required this.loggedInAlready, required this.isBar});
+  final GlobalKey<NavigatorState> navigatorKey;
+
+  const Barzzy({
+    super.key,
+   required this.loggedInAlready, 
+   required this.isBar,
+   required this.navigatorKey,
+   });
 
   @override
   Widget build(BuildContext context) {
@@ -261,7 +270,8 @@ class Barzzy extends StatelessWidget {
     }
 
     return MaterialApp(
-      theme: ThemeData.dark(),
+      navigatorKey: navigatorKey,
+      //theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
       //home: OrdersPage(bartenderID: "test"),
       //ALREADY COMMENTED home: loggedInAlready ? (isBar ? const OrderDisplay() : const AuthPage()) : const LoginOrRegisterPage()//Make it so that when bars sign in, they get sent to

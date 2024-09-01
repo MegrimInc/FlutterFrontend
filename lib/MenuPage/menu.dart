@@ -1,5 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:ui';
+
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
@@ -28,8 +30,7 @@ class MenuPage extends StatefulWidget {
   MenuPageState createState() => MenuPageState();
 }
 
-class MenuPageState extends State<MenuPage>
-    with SingleTickerProviderStateMixin {
+class MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin {
   String appBarTitle = '';
   bool isLoading = true;
   Bar? currentBar;
@@ -55,8 +56,7 @@ class MenuPageState extends State<MenuPage>
   Future<void> _fetchBarData() async {
     currentBar = LocalDatabase.getBarById(widget.barId);
     if (currentBar != null) {
-      appBarTitle =
-          (currentBar!.tag ?? 'Menu Page').replaceAll(' ', '').toLowerCase();
+      appBarTitle = (currentBar!.tag ?? 'Menu Page').replaceAll(' ', '');
     }
     setState(() {
       isLoading = false;
@@ -92,8 +92,12 @@ class MenuPageState extends State<MenuPage>
     // Pass the order object to the createOrder method
     hierarchy.createOrder(order);
 
-    // Navigate to orders page or perform other actions as needed
-    navigateToOrdersPage(context);
+    // Navigate to orders page and pass the barId
+    Navigator.of(context).pushNamedAndRemoveUntil(
+    '/orders',
+    (Route<dynamic> route) => false,
+    arguments: barId, // Pass the barId to the PickupPage
+  );
   }
 
   @override
@@ -104,44 +108,41 @@ class MenuPageState extends State<MenuPage>
         cart.setBar(widget.barId); // Set the bar ID for the cart
         return cart;
       },
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: SafeArea(
-          child: Stack(
+      child: SafeArea(
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          body: Stack(
             children: [
-              // Main content
               _buildMainContent(),
-
-              //ORDER SWIPE
-              Consumer<Cart>(
-                builder: (context, cart, _) {
-                  // Check if there are items in the cart
-                  if (cart.getTotalDrinkCount() == 0) {
-                    return Positioned(
-                      right: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 13, // Adjust this width as needed
-                      child: GestureDetector(
-                        onHorizontalDragEnd: (details) {
-                          if (details.velocity.pixelsPerSecond.dx < -50) {
-                            final user =
-                                Provider.of<User>(context, listen: false);
-                            //_submitOrder(context);
-                            user.triggerUIUpdate();
-                          }
-                        },
-                        child: Container(
-                          color: Colors.transparent, // Invisible swipe area
-                        ),
+              _buildBottomBar(), // Add the floating button above the content
+              // ORDER SWIPE
+            Consumer<Cart>(
+              builder: (context, cart, _) {
+                // Check if there are items in the cart
+                if (cart.getTotalDrinkCount() == 0) {
+                  return Positioned(
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 13, // Adjust this width as needed
+                    child: GestureDetector(
+                      onHorizontalDragEnd: (details) {
+                        if (details.velocity.pixelsPerSecond.dx < -50) {
+                          final user =
+                              Provider.of<User>(context, listen: false);
+                          user.triggerUIUpdate();
+                        }
+                      },
+                      child: Container(
+                        color: Colors.transparent, // Invisible swipe area
                       ),
-                    );
-                  } else {
-                    return const SizedBox
-                        .shrink(); // Render an empty widget if the cart is empty
-                  }
-                },
-              ),
+                    ),
+                  );
+                } else {
+                  return const SizedBox.shrink(); // Render an empty widget if the cart is empty
+                }
+              },
+            ),
             ],
           ),
         ),
@@ -152,54 +153,7 @@ class MenuPageState extends State<MenuPage>
   Widget _buildMainContent() {
     return Column(
       children: [
-        SizedBox(
-          
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              //BACK ARROW BUTTON
-              IconButton(
-                icon: const Icon(
-                  FontAwesomeIcons.caretLeft,
-                  color: Colors.white,
-                  size: 29,
-                ),
-                onPressed: () => Navigator.pop(context),
-              ),
-
-              // BAR NAME
-              Center(
-                child: Text(
-                  appBarTitle,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-
-              Consumer<Cart>(
-                builder: (context, cart, _) {
-                  bool hasItemsInCart = cart.getTotalDrinkCount() > 0;
-                  return IconButton(
-                    onPressed: hasItemsInCart
-                        ? null // Disable the button if there are items in the cart
-                        : () {
-                            final user =
-                                Provider.of<User>(context, listen: false);
-                            user.triggerUIUpdate(); // This will retrigger the random drink selection
-                          },
-                    icon: Icon(
-                      FontAwesomeIcons.forward,
-                      size: 22.5,
-                      color: hasItemsInCart ? Colors.grey : Colors.white,
-                    ), // Replace with your desired icon
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
+        _buildTopBar(),
 
         Expanded(
           child: SingleChildScrollView(
@@ -211,44 +165,54 @@ class MenuPageState extends State<MenuPage>
 
                 return Column(
                   children: [
+                    const SizedBox(height: 17.5),
+                    if (randomDrinks['tag179']?.isNotEmpty ?? false)
+                      _buildTagHeader('Lager'),
+                    _buildDrinkGrid(context, randomDrinks['tag179']!),
+                    const SizedBox(height: 30),
                     if (randomDrinks['tag172']?.isNotEmpty ?? false)
-                      _buildDrinkGrid(context, randomDrinks['tag172']!),
-                    const SizedBox(height: 30),
-                    if (randomDrinks['tag173']?.isNotEmpty ?? false)
-                      _buildDrinkGrid(context, randomDrinks['tag173']!),
-                    const SizedBox(height: 30),
-                    if (randomDrinks['tag174']?.isNotEmpty ?? false)
-                      _buildDrinkGrid(context, randomDrinks['tag174']!),
+                      _buildTagHeader('Vodka'),
+                    _buildDrinkGrid(context, randomDrinks['tag172']!),
                     const SizedBox(height: 30),
                     if (randomDrinks['tag175']?.isNotEmpty ?? false)
-                      _buildDrinkGrid(context, randomDrinks['tag175']!),
+                      _buildTagHeader('Tequila'),
+                    _buildDrinkGrid(context, randomDrinks['tag175']!),
+                    const SizedBox(height: 30),
+                     if (randomDrinks['tag174']?.isNotEmpty ?? false)
+                      _buildTagHeader('Whiskey'),
+                    _buildDrinkGrid(context, randomDrinks['tag174']!),
+                    const SizedBox(height: 30),
+                    if (randomDrinks['tag173']?.isNotEmpty ?? false)
+                      _buildTagHeader('Gin'),
+                    _buildDrinkGrid(context, randomDrinks['tag173']!),
                     const SizedBox(height: 30),
                     if (randomDrinks['tag176']?.isNotEmpty ?? false)
-                      _buildDrinkGrid(context, randomDrinks['tag176']!),
+                      _buildTagHeader('Brandy'),
+                    _buildDrinkGrid(context, randomDrinks['tag176']!),
                     const SizedBox(height: 30),
                     if (randomDrinks['tag177']?.isNotEmpty ?? false)
-                      _buildDrinkGrid(context, randomDrinks['tag177']!),
+                      _buildTagHeader('Rum'),
+                    _buildDrinkGrid(context, randomDrinks['tag177']!),
+                    const SizedBox(height: 30),
+                     if (randomDrinks['tag186']?.isNotEmpty ?? false)
+                      _buildTagHeader('Seltzer'),
+                    _buildDrinkGrid(context, randomDrinks['tag186']!),
                     const SizedBox(height: 30),
                     if (randomDrinks['tag178']?.isNotEmpty ?? false)
-                      _buildDrinkGrid(context, randomDrinks['tag178']!),
-                    const SizedBox(height: 30),
-                    if (randomDrinks['tag179']?.isNotEmpty ?? false)
-                      _buildDrinkGrid(context, randomDrinks['tag179']!),
-                    const SizedBox(height: 30),
-                    if (randomDrinks['tag181']?.isNotEmpty ?? false)
-                      _buildDrinkGrid(context, randomDrinks['tag181']!),
-                    const SizedBox(height: 30),
-                    if (randomDrinks['tag182']?.isNotEmpty ?? false)
-                      _buildDrinkGrid(context, randomDrinks['tag182']!),
+                      _buildTagHeader('Ale'),
+                    _buildDrinkGrid(context, randomDrinks['tag178']!),
                     const SizedBox(height: 30),
                     if (randomDrinks['tag183']?.isNotEmpty ?? false)
-                      _buildDrinkGrid(context, randomDrinks['tag183']!),
+                      _buildTagHeader('Red Wine'),
+                    _buildDrinkGrid(context, randomDrinks['tag183']!),
                     const SizedBox(height: 30),
                     if (randomDrinks['tag184']?.isNotEmpty ?? false)
-                      _buildDrinkGrid(context, randomDrinks['tag184']!),
+                      _buildTagHeader('White Wine'),
+                    _buildDrinkGrid(context, randomDrinks['tag184']!),
                     const SizedBox(height: 30),
-                    if (randomDrinks['tag186']?.isNotEmpty ?? false)
-                      _buildDrinkGrid(context, randomDrinks['tag186']!),
+                    if (randomDrinks['tag181']?.isNotEmpty ?? false)
+                      _buildTagHeader('Virgin'),
+                    _buildDrinkGrid(context, randomDrinks['tag181']!),
                     const SizedBox(height: 30),
                   ],
                 );
@@ -256,59 +220,140 @@ class MenuPageState extends State<MenuPage>
             ),
           ),
         ),
+      ],
+    );
+  }
 
-        // BOTTOM BAR
-        Container(
-          height: 50,
-          child: BottomAppBar(
-            color: Colors.black,
-            child: Consumer<Cart>(
-              builder: (context, cart, _) {
-                if (cart.getTotalDrinkCount() == 0) {
-                  return const Center(
-                    child: Text(
-                      'DOUBLE TAP TO ADD DRINK',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+  Widget _buildTopBar() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.withOpacity(0.3),
+            width: 0.25,
+          ),
+        ),
+        color: Colors.black, // Removed gradient
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(
+              FontAwesomeIcons.caretLeft,
+              color: Colors.white,
+              size: 25,
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+          Center(
+            child: Text(
+              appBarTitle,
+              style: GoogleFonts.poppins(
+                color: Colors.white70,
+                fontSize: 18,
+                fontWeight: FontWeight.bold
+              ),
+            ),
+          ),
+          Consumer<Cart>(
+            builder: (context, cart, _) {
+              bool hasItemsInCart = cart.getTotalDrinkCount() > 0;
+              return IconButton(
+                onPressed: hasItemsInCart
+                    ? null
+                    : () {
+                        final user = Provider.of<User>(context, listen: false);
+                        user.triggerUIUpdate();
+                      },
+                icon: Icon(
+                  FontAwesomeIcons.forward,
+                  size: 20,
+                  color: hasItemsInCart ? Colors.grey : Colors.white,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTagHeader(String tagName) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15, left: 17.5),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          '`$tagName',
+          style: GoogleFonts.poppins(
+            color: Colors.white70,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+ Widget _buildBottomBar() {
+  return Consumer<Cart>(
+    builder: (context, cart, _) {
+      if (cart.getTotalDrinkCount() == 0) {
+        return const SizedBox.shrink();
+      } else {
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20.0),
+            child: GestureDetector(
+              onTap: () {
+                _submitOrder(context);
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: 350, // Control the width of the button
+                      maxHeight: 60, // Control the height of the button
                     ),
-                  );
-                } else {
-                  return GestureDetector(
-                    onTap: () {
-                      _submitOrder(context); // Trigger the order submission
-                    },
-                    child: Center(
-                      child: Container(
-                        height: 50,
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'Confirm',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withOpacity(0.3), // Semi-transparent background
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.5),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          'CONFIRM',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
-                  );
-                }
-              },
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-      ],
-    );
-  }
+        );
+      }
+    },
+  );
+}
 
   Widget _buildDrinkGrid(BuildContext context, List<int> drinkIds) {
     return GridView.custom(
@@ -347,6 +392,7 @@ class MenuPageState extends State<MenuPage>
               FocusScope.of(context).unfocus();
             },
             child: ClipRRect(
+              borderRadius: BorderRadius.circular(5),
               child: Stack(
                 children: [
                   Positioned.fill(
@@ -362,15 +408,17 @@ class MenuPageState extends State<MenuPage>
 
                         if (drinkQuantities > 0) {
                           return Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.black54,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(5),
                             ),
                             child: Center(
                               child: Text(
                                 'x$drinkQuantities',
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 40,
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w500
                                 ),
                               ),
                             ),
@@ -379,32 +427,6 @@ class MenuPageState extends State<MenuPage>
                           return const SizedBox.shrink();
                         }
                       },
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                '`${drink.name}',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  fontStyle: FontStyle.italic,
-                                  color: Colors.white54,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                            ),
-                            const SizedBox(width: 15)
-                          ],
-                        ),
-                      ],
                     ),
                   ),
                 ],
@@ -443,11 +465,6 @@ class MenuPageState extends State<MenuPage>
         );
       },
     );
-  }
-
-  void navigateToOrdersPage(BuildContext context) {
-    Navigator.of(context)
-        .pushNamedAndRemoveUntil('/orders', (Route<dynamic> route) => false);
   }
 
   @override
