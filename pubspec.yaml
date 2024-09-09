@@ -51,7 +51,7 @@ dependencies:
   get: ^4.6.5
   flutter_nfc_kit: ^3.5.2
   flutter_smart_dialog: ^4.9.7+9
-  
+  flutter_local_notifications: ^14.0.0
   
  
  

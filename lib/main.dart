@@ -17,6 +17,39 @@ import 'package:provider/provider.dart';
 import 'package:barzzy_app1/Backend/localdatabase.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy_app1/Backend/barhistory.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+
+Future<void> showNotification() async {
+const AndroidNotificationDetails androidNotificationDetails =
+AndroidNotificationDetails(
+'your_channel_id', // channel ID
+'your_channel_name', // channel name
+channelDescription: 'your_channel_description', // channel description
+importance: Importance.max,
+priority: Priority.high,
+ticker: 'ticker',
+);
+
+const DarwinNotificationDetails darwinNotificationDetails =
+DarwinNotificationDetails();
+
+const NotificationDetails platformChannelSpecifics = NotificationDetails(
+android: androidNotificationDetails,
+iOS: darwinNotificationDetails,
+);
+
+await flutterLocalNotificationsPlugin.show(
+0, // Notification ID
+'Hello!', // Notification title
+'Welcome to Barzzy!', // Notification body
+platformChannelSpecifics, // Notification details specific to each platform
+payload: 'app_started', // Payload to pass when the notification is tapped
+);
+}
 
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -65,6 +98,10 @@ void main() async {
   LocalDatabase localDatabase = LocalDatabase();
   User user = User();
   await sendGetRequest();
+
+await showNotification();
+
+
 
   runApp(
     MultiProvider(
