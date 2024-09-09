@@ -3,7 +3,9 @@ import 'package:barzzy_app1/Backend/activeorder.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for haptic feedback
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Import for shared preferences
 import '../Backend/localdatabase.dart';
 
 class PickupPage extends StatefulWidget {
@@ -16,6 +18,43 @@ class PickupPage extends StatefulWidget {
 class PickupPageState extends State<PickupPage> {
   bool _isGridView = true; // Toggle between Grid and Card view
   String? _selectedBarId; // Keep track of the selected bar ID
+
+  
+  @override
+void didChangeDependencies() {
+  super.didChangeDependencies();
+
+  // Load the selected bar ID from shared preferences
+  _loadAndSetSelectedBar();
+}
+
+Future<void> _loadAndSetSelectedBar() async {
+  // Load the bar ID from shared preferences
+  final prefs = await SharedPreferences.getInstance();
+  final savedBarId = prefs.getString('selected_bar_id');
+
+  // Get the barId from the arguments
+  // ignore: use_build_context_synchronously
+  final barId = ModalRoute.of(context)?.settings.arguments as String?;
+
+  // If a new barId is passed in arguments, use it; otherwise, fall back to saved barId
+  if (barId != null && barId != _selectedBarId) {
+    // Argument barId should take precedence
+    setState(() {
+      _selectedBarId = barId;
+      _isGridView = false;
+    });
+
+    // Save this new barId to shared preferences
+    await _saveSelectedBar(barId);
+  } else if (savedBarId != null && _selectedBarId == null) {
+    // No new barId, so use the saved one
+    setState(() {
+      _selectedBarId = savedBarId;
+      _isGridView = false;
+    });
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +69,9 @@ class PickupPageState extends State<PickupPage> {
                 builder: (context, hierarchy, child) {
                   if (!hierarchy.isConnected) {
                     return const Center(
-                      child: CircularProgressIndicator(
+                      child: SpinKitThreeBounce(
                         color: Colors.white,
+                        size: 30.0,
                       ),
                     );
                   }
@@ -99,6 +139,7 @@ class PickupPageState extends State<PickupPage> {
                   color: Colors.white,
                 ),
                 onPressed: () {
+                  _clearSelectedBar(); // Clear selected bar when switching back to grid view
                   setState(() {
                     _isGridView = true;
                   });
@@ -126,6 +167,8 @@ class PickupPageState extends State<PickupPage> {
 
         return GestureDetector(
           onTap: () {
+            debugPrint('Grid item tapped. Bar ID: $barId');
+            _saveSelectedBar(barId); // Save the selected bar ID
             setState(() {
               _selectedBarId = barId;
               _isGridView = false; // Switch to card view
@@ -167,29 +210,27 @@ class PickupPageState extends State<PickupPage> {
   }
 
   Widget _buildCardView(String barId) {
-    final localDatabase = LocalDatabase();
     final bar = LocalDatabase.getBarById(barId);
+    final localDatabase = LocalDatabase();
     final order = localDatabase.getOrderForBar(barId);
 
     if (bar == null || order == null) {
       return const Center(
-        child: Text(
-          'Data not found.',
-          style: TextStyle(color: Colors.white),
+        child: SpinKitThreeBounce(
+          color: Colors.white,
+          size: 30.0,
         ),
       );
     }
 
-    final drinkQuantities = order.drinkQuantities;
-    final status = order.status; // Assuming you have a 'status' field in the order object
-    final claimer = order.claimer; // Assuming you have a 'claimer' field in the order object
+    final status = order.status;
+    final claimer = order.claimer;
     final userId = order.userId;
 
     return GestureDetector(
       onLongPress: (status == "delivered" || status == "canceled")
           ? () {
-              // Trigger reorder and provide haptic feedback
-              HapticFeedback.heavyImpact();  // Provide haptic feedback
+              HapticFeedback.heavyImpact();
               _triggerReorder(order, context);
             }
           : null,
@@ -208,7 +249,8 @@ class PickupPageState extends State<PickupPage> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(60),
                         child: Image.network(
-                          bar.tagimg ?? 'https://www.barzzy.site/images/default.png',
+                          bar.tagimg ??
+                              'https://www.barzzy.site/images/default.png',
                           width: 105,
                           height: 105,
                           fit: BoxFit.cover,
@@ -227,25 +269,28 @@ class PickupPageState extends State<PickupPage> {
                       ),
                     ),
                     const SizedBox(height: 60),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: drinkQuantities.entries.map((entry) {
-                        final drink = localDatabase.getDrinkById(entry.key);
+                    
+
+                    Expanded( // Make the list of drinks scrollable
+                    child: ListView.builder(
+                      itemCount: order.drinks.length,
+                      itemBuilder: (context, index) {
+                        final drinkOrder = order.drinks[index];
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4.0),
                           child: Text(
-                            '${drink.getName() ?? 'Unknown'} x ${entry.value}',
+                            '${drinkOrder.drinkName} x ${drinkOrder.quantity}',
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 18,
                             ),
                           ),
                         );
-                      }).toList(),
+                      },
                     ),
-                    const Spacer(),
-                    const SizedBox(height: 16),
-                    // Show total price only when order is not delivered or canceled
+                  ),
+                    //const Spacer(),
+                    const SizedBox(height: 60),
                     if (status != "delivered" && status != "canceled")
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -266,16 +311,15 @@ class PickupPageState extends State<PickupPage> {
                   ],
                 ),
               ),
-              // Positioned button for precise control
               Positioned(
-                bottom: 0, // Adjust this value for vertical placement
-                right: 0, // Adjust this value for horizontal placement
-                child: _buildStatusButton(status, claimer, int.parse(barId), userId, context),
+                bottom: 0,
+                right: 0,
+                child: _buildStatusButton(
+                    status, claimer, int.parse(barId), userId, context),
               ),
-              // Positioned "HOLD TO ORDER AGAIN" text when status is delivered or canceled
               if (status == "delivered" || status == "canceled")
                 const Positioned(
-                  bottom: 5, // Adjust this value for vertical placement
+                  bottom: 5,
                   left: 0,
                   right: 0,
                   child: Center(
@@ -305,12 +349,15 @@ class PickupPageState extends State<PickupPage> {
     // Construct the order object for the reorder
     final reorder = {
       "action": "create",
-      "barId": int.parse(order.barId), // Assuming barId is a String, convert to int if needed
+      "barId": int.parse(
+          order.barId), // Assuming barId is a String, convert to int if needed
       "userId": userId,
-      "drinks": order.drinkQuantities.entries.map((entry) {
+      "drinks": order.drinks.map((drinkOrder) {
         return {
-          'drinkId': int.parse(entry.key),
-          'quantity': entry.value,
+          'drinkId':
+              int.parse(drinkOrder.id), // Convert drinkId to int if necessary
+          'quantity': int.parse(
+              drinkOrder.quantity), // Convert quantity to int if necessary
         };
       }).toList(),
     };
@@ -320,8 +367,10 @@ class PickupPageState extends State<PickupPage> {
   }
 
   // Method to build the dynamic button based on status and claimer
-  Widget _buildStatusButton(String status, String claimer, int barId, int userId, BuildContext context) {
-    final hierarchy = Provider.of<Hierarchy>(context, listen: false); // Get Hierarchy instance from Provider
+  Widget _buildStatusButton(String status, String claimer, int barId,
+      int userId, BuildContext context) {
+    final hierarchy = Provider.of<Hierarchy>(context,
+        listen: false); // Get Hierarchy instance from Provider
 
     // Case: Status is "unready" and claimer is empty
     if (status == "unready" && claimer.isEmpty) {
@@ -348,7 +397,8 @@ class PickupPageState extends State<PickupPage> {
                   fontWeight: FontWeight.bold,
                   fontSize: 17.5,
                 ),
-                textAlign: TextAlign.center, // Center text alignment if the text wraps
+                textAlign:
+                    TextAlign.center, // Center text alignment if the text wraps
               ),
             ),
           ),
@@ -389,3 +439,17 @@ class PickupPageState extends State<PickupPage> {
     return Container();
   }
 }
+
+// Method to save the selected bar from shared preferences
+
+Future<void> _saveSelectedBar(String barId) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('selected_bar_id', barId);
+}
+
+
+// Method to clear the selected bar from shared preferences
+  Future<void> _clearSelectedBar() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('selected_bar_id');
+  }
