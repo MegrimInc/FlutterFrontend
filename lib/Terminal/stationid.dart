@@ -45,7 +45,7 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
         context,
         MaterialPageRoute(
             builder: (context) => OrdersPage(
-                  bartenderID: bartenderID.toLowerCase(),
+                  bartenderID: bartenderID.toUpperCase(),
                   barID: barId,
                 )),
         (Route<dynamic> route) => false, // Remove all previous routes
