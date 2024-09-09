@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/AuthPages/components/toggle.dart';
 import 'package:barzzy_app1/Terminal/terminal.dart';
@@ -14,53 +12,23 @@ class BartenderIDScreen extends StatefulWidget {
 }
 
 class BartenderIDScreenState extends State<BartenderIDScreen> {
-  final TextEditingController _controller = TextEditingController();
-  final ValueNotifier<bool> isFocused = ValueNotifier<bool>(false);
-  final FocusNode focusNode = FocusNode();
+  final ValueNotifier<String?> selectedLetter = ValueNotifier<String?>(null);
 
-  @override
-  void initState() {
-    super.initState();
-    focusNode.addListener(() {
-      isFocused.value = focusNode.hasFocus;
-    });
-  }
-
-  @override
-  void dispose() {
-    focusNode.dispose();
-    isFocused.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleSubmit() async {
+  Future<void> _handleSubmit(String bartenderID) async {
     final loginData = LoginCache();
     final negativeBarID = await loginData.getUID();
     final barId = -1 * negativeBarID;
 
-    if (_controller.text.isNotEmpty) {
-      final String bartenderID = _controller.text;
-
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-            builder: (context) => OrdersPage(
-                  bartenderID: bartenderID.toUpperCase(),
-                  barID: barId,
-                )),
-        (Route<dynamic> route) => false, // Remove all previous routes
-      );
-    } else {
-      // Show a SnackBar with an error message if the text field is empty
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in the BartenderID text field.'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 3),
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrdersPage(
+          bartenderID: bartenderID.toUpperCase(),
+          barID: barId,
         ),
-      );
-    }
+      ),
+      (Route<dynamic> route) => false, // Remove all previous routes
+    );
   }
 
   void _logout() {
@@ -73,12 +41,6 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
       MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
       (Route<dynamic> route) => false, // Remove all previous routes
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Logged out successfully.'),
-        backgroundColor: Colors.green,
-      ),
-    );
   }
 
   @override
@@ -89,25 +51,11 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
           children: [
-const SizedBox(height: 50),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const SizedBox.shrink(), // Empty space to balance the Row
-                
-                IconButton(
-                  icon: const Icon(Icons.exit_to_app),
-                  onPressed: _logout,
-                  color: Colors.grey,
-                  iconSize: 27.5,
-                ),
-              ],
-            ),
-            const SizedBox(height: 75),
+            const SizedBox(height: 50),
+            const SizedBox(height: 150),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-              
                 Text(
                   'B A R Z Z Y',
                   style: GoogleFonts.megrim(
@@ -118,14 +66,13 @@ const SizedBox(height: 50),
                     ),
                   ),
                 ),
-                
               ],
             ),
-            const SizedBox(height: 100),
+            const SizedBox(height: 50),
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Enter Station Name',
+                '        Select Station ID',
                 style: TextStyle(
                   fontSize: 17.5,
                   color: Colors.white,
@@ -133,53 +80,75 @@ const SizedBox(height: 50),
               ),
             ),
             const SizedBox(height: 10),
-            ValueListenableBuilder<bool>(
-              valueListenable: isFocused,
-              builder: (context, focused, child) {
-                return TextField(
-                  controller: _controller,
-                  style: const TextStyle(color: Colors.white),
-                  cursorColor: Colors.white,
-                  focusNode: focusNode,
-                  decoration: InputDecoration(
-                    contentPadding:
-                        const EdgeInsets.symmetric(vertical: 11, horizontal: 10),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(
-                        color: Color.fromARGB(255, 60, 60, 60),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(color: Colors.white),
-                    ),
-                    fillColor: focused
-                        ? Colors.black
-                        : const Color.fromARGB(255, 60, 60, 60),
-                    filled: true,
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 75),
-            ElevatedButton(
-              onPressed: _handleSubmit,
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: Colors.black, // Button background color
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15), // Rounded corners
+            Expanded(
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 6, // 6 columns for the alphabet buttons
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
                 ),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 75, vertical: 15), // Button padding
+                itemCount: 30, // 26 letters + 4 additional spaces
+                itemBuilder: (context, index) {
+                  if (index < 26) {
+                    final letter = String.fromCharCode(65 + index); // A to Z
+                    return ValueListenableBuilder<String?>(
+                      valueListenable: selectedLetter,
+                      builder: (context, selected, child) {
+                        return ElevatedButton(
+                          onPressed: () {
+                            selectedLetter.value = letter;
+                            _handleSubmit(letter); // Automatically submit on selection
+                          },
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: selected == letter
+                                ? Colors.black
+                                : Colors.white,
+                            backgroundColor: selected == letter
+                                ? Colors.white
+                                : Colors.grey[800],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 20, horizontal: 10),
+                          ),
+                          child: Text(
+                            letter,
+                            style: GoogleFonts.poppins(
+                              textStyle: const TextStyle(
+                                fontSize: 24,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  } else if (index == 29) { // The 4th extra space (index 29)
+                    return ElevatedButton(
+                      onPressed: _logout,
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.red[800],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 20, horizontal: 10),
+                      ),
+                      child: Text(
+                        'ESC',
+                        style: GoogleFonts.poppins(
+                          textStyle: const TextStyle(
+                            fontSize: 24,
+                          ),
+                        ),
+                      ),
+                    );
+                  } else {
+                    return const SizedBox.shrink(); // Empty space for the other 3 positions
+                  }
+                },
               ),
-              child: Text('S u B m I T',
-              style: GoogleFonts.megrim(
-                textStyle: const TextStyle( 
-                fontSize: 25, 
-                color: Colors.white, 
-                fontWeight: FontWeight.bold)),)
             ),
           ],
         ),

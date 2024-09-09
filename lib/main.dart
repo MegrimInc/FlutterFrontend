@@ -7,7 +7,6 @@ import 'package:barzzy_app1/Backend/bar.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/searchengine.dart';
 import 'package:barzzy_app1/Backend/recommended.dart';
-import 'package:barzzy_app1/Terminal/orderprovider.dart';
 import 'package:barzzy_app1/backend/categories.dart';
 import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
@@ -75,7 +74,6 @@ void main() async {
         ChangeNotifierProvider(create: (context) => Recommended()),
         ChangeNotifierProvider(create: (context) => Hierarchy(context, navigatorKey)),
         ChangeNotifierProvider(create: (_) => LoginCache()),
-        //ChangeNotifierProvider(create: (context) => OrderProvider()),
         ChangeNotifierProvider(create: (context) => user),
         ProxyProvider<LocalDatabase, SearchService>(
           update: (_, localDatabase, __) => SearchService(localDatabase),
