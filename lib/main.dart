@@ -24,6 +24,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 
 Future<void> showNotification() async {
+  debugPrint('heyoooooo');
 const AndroidNotificationDetails androidNotificationDetails =
 AndroidNotificationDetails(
 'your_channel_id', // channel ID
@@ -59,8 +60,7 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
   final loginCache = LoginCache();
-  // await loginCache.clearAll();
-
+  
   bool loggedInAlready = true;
   await loginCache.getSignedIn() /* && HTTP REQUEST*/;
   final url = Uri.parse('https://www.barzzy.site/signup/login');
