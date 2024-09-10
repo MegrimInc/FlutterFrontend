@@ -2,11 +2,15 @@ import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Backend/activeorder.dart';
 import 'package:barzzy_app1/Backend/localdatabase.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:async';
 import 'dart:convert';
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 
 class Hierarchy extends ChangeNotifier {
   final String url = 'wss://www.barzzy.site/ws/orders';
@@ -174,6 +178,35 @@ class Hierarchy extends ChangeNotifier {
     }
   }
 
+  Future<void> showNotification(String status) async {
+  if( status == 'unready') return;
+const AndroidNotificationDetails androidNotificationDetails =
+AndroidNotificationDetails(
+'your_channel_id', // channel ID
+'your_channel_name', // channel name
+channelDescription: 'your_channel_description', // channel description
+importance: Importance.max,
+priority: Priority.high,
+ticker: 'ticker',
+);
+
+const DarwinNotificationDetails darwinNotificationDetails =
+DarwinNotificationDetails();
+
+const NotificationDetails platformChannelSpecifics = NotificationDetails(
+android: androidNotificationDetails,
+iOS: darwinNotificationDetails,
+);
+
+await flutterLocalNotificationsPlugin.show(
+0, // Notification ID
+'Order Status Change', // Notification title
+'Your order is now $status.', // Notification body
+platformChannelSpecifics, // Notification details specific to each platform
+payload: '', // Payload to pass when the notification is tapped
+);
+}
+
   // Method to handle create order responses
   void _createOrderResponse(Map<String, dynamic> data) async {
     try {
@@ -182,9 +215,19 @@ class Hierarchy extends ChangeNotifier {
       debugPrint('CustomerOrder created: $customerOrder');
 
       localDatabase.addOrUpdateOrderForBar(customerOrder);
+      
+
+
 
       // Directly update the map with the new timestamp for the barId
       _createdOrderBarIds[customerOrder.barId] = customerOrder.timestamp;
+
+      //NOTIFYUSER
+      //Title: Barzzy Order Updated
+      //Your order #(futureordernumber) is now Order.State== unready ? placed : Order.state== ready ? ready : Order.state == delivered : D
+
+
+      await showNotification(customerOrder.status);
 
       // Print statement to confirm addition
       debugPrint(
