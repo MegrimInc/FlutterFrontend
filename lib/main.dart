@@ -99,6 +99,39 @@ void main() async {
   User user = User();
   await sendGetRequest();
 
+    WidgetsFlutterBinding.ensureInitialized();
+
+    WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize the notifications
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+ final DarwinInitializationSettings initializationSettingsDarwin =
+      DarwinInitializationSettings(
+    onDidReceiveLocalNotification: (int id, String? title, String? body, String? payload) async {
+      // Handle the notification tapped event when the app is in foreground (iOS/macOS specific)
+      // You can navigate to a specific screen or perform some actions
+    },
+  );
+
+  final InitializationSettings initializationSettings =
+      InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: initializationSettingsDarwin,
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveNotificationResponse: (NotificationResponse response) async {
+      if (response.payload != null && response.payload == 'app_started') {
+        // Handle notification tap to open the app
+        runApp(Barzzy(loggedInAlready: loggedInAlready, isBar: isBar, navigatorKey: navigatorKey,));
+      }
+    },
+  );
+
+debugPrint("Sending notif");
 await showNotification();
 
 
