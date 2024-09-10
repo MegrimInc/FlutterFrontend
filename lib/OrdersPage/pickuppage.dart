@@ -19,42 +19,41 @@ class PickupPageState extends State<PickupPage> {
   bool _isGridView = true; // Toggle between Grid and Card view
   String? _selectedBarId; // Keep track of the selected bar ID
 
-  
   @override
-void didChangeDependencies() {
-  super.didChangeDependencies();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
 
-  // Load the selected bar ID from shared preferences
-  _loadAndSetSelectedBar();
-}
-
-Future<void> _loadAndSetSelectedBar() async {
-  // Load the bar ID from shared preferences
-  final prefs = await SharedPreferences.getInstance();
-  final savedBarId = prefs.getString('selected_bar_id');
-
-  // Get the barId from the arguments
-  // ignore: use_build_context_synchronously
-  final barId = ModalRoute.of(context)?.settings.arguments as String?;
-
-  // If a new barId is passed in arguments, use it; otherwise, fall back to saved barId
-  if (barId != null && barId != _selectedBarId) {
-    // Argument barId should take precedence
-    setState(() {
-      _selectedBarId = barId;
-      _isGridView = false;
-    });
-
-    // Save this new barId to shared preferences
-    await _saveSelectedBar(barId);
-  } else if (savedBarId != null && _selectedBarId == null) {
-    // No new barId, so use the saved one
-    setState(() {
-      _selectedBarId = savedBarId;
-      _isGridView = false;
-    });
+    // Load the selected bar ID from shared preferences
+    _loadAndSetSelectedBar();
   }
-}
+
+  Future<void> _loadAndSetSelectedBar() async {
+    // Load the bar ID from shared preferences
+    final prefs = await SharedPreferences.getInstance();
+    final savedBarId = prefs.getString('selected_bar_id');
+
+    // Get the barId from the arguments
+    // ignore: use_build_context_synchronously
+    final barId = ModalRoute.of(context)?.settings.arguments as String?;
+
+    // If a new barId is passed in arguments, use it; otherwise, fall back to saved barId
+    if (barId != null && barId != _selectedBarId) {
+      // Argument barId should take precedence
+      setState(() {
+        _selectedBarId = barId;
+        _isGridView = false;
+      });
+
+      // Save this new barId to shared preferences
+      await _saveSelectedBar(barId);
+    } else if (savedBarId != null && _selectedBarId == null) {
+      // No new barId, so use the saved one
+      setState(() {
+        _selectedBarId = savedBarId;
+        _isGridView = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -133,18 +132,24 @@ Future<void> _loadAndSetSelectedBar() async {
               ),
             ),
             if (!_isGridView)
-              IconButton(
-                icon: const Icon(
-                  Icons.grid_view,
-                  color: Colors.white,
-                ),
-                onPressed: () {
-                  _clearSelectedBar(); // Clear selected bar when switching back to grid view
-                  setState(() {
-                    _isGridView = true;
-                  });
-                },
-              ),
+              GestureDetector(
+  onTap: () {
+    _clearSelectedBar(); // Clear selected bar when switching back to grid view
+    setState(() {
+      _isGridView = true;
+    });
+  },
+  child: Container(
+    color: Colors.transparent,
+    height: 50, // Increase the height of the pressable area
+    width: 50, // Increase the width of the pressable area
+    alignment: Alignment.centerRight, // Center the icon within the container
+    child: const Icon(
+      Icons.grid_view,
+      color: Colors.white,
+    ),
+  ),
+),
           ],
         ),
       ),
@@ -269,44 +274,39 @@ Future<void> _loadAndSetSelectedBar() async {
                       ),
                     ),
                     const SizedBox(height: 60),
-                    
 
-                    Expanded( // Make the list of drinks scrollable
-                    child: ListView.builder(
-                      itemCount: order.drinks.length,
-                      itemBuilder: (context, index) {
-                        final drinkOrder = order.drinks[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: Text(
-                            '${drinkOrder.drinkName} x ${drinkOrder.quantity}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 18,
+                    Expanded(
+                      // Make the list of drinks scrollable
+                      child: ListView.builder(
+                        itemCount: order.drinks.length,
+                        itemBuilder: (context, index) {
+                          final drinkOrder = order.drinks[index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4.0),
+                            child: Text(
+                              '${drinkOrder.drinkName} x ${drinkOrder.quantity}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 18,
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
-                  ),
                     //const Spacer(),
                     const SizedBox(height: 60),
                     if (status != "delivered" && status != "canceled")
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4.0),
-                            child: Text(
-                              'Total: \$${order.getPrice()?.toStringAsFixed(2) ?? '0.00'}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 0),
+                        child: Text(
+                          '#${order.getUser() ?? '...'}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 35,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
+                        ),
                       ),
                   ],
                 ),
@@ -409,7 +409,7 @@ Future<void> _loadAndSetSelectedBar() async {
     // Case: Status is "unready" and claimer is not empty
     if (status == "unready" && claimer.isNotEmpty) {
       return Text(
-        claimer,
+        '@$claimer',
         style: const TextStyle(
           color: Colors.yellow,
           fontWeight: FontWeight.bold,
@@ -421,7 +421,7 @@ Future<void> _loadAndSetSelectedBar() async {
     // Case: Status is "ready" and claimer is not empty
     if (status == "ready" && claimer.isNotEmpty) {
       return Text(
-        claimer,
+        '@$claimer',
         style: const TextStyle(
           color: Colors.green,
           fontWeight: FontWeight.bold,
@@ -447,9 +447,8 @@ Future<void> _saveSelectedBar(String barId) async {
   await prefs.setString('selected_bar_id', barId);
 }
 
-
 // Method to clear the selected bar from shared preferences
-  Future<void> _clearSelectedBar() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('selected_bar_id');
-  }
+Future<void> _clearSelectedBar() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('selected_bar_id');
+}

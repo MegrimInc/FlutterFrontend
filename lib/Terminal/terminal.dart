@@ -198,6 +198,7 @@ class _OrdersPageState extends State<OrdersPage> {
                         _updateLists(); // Apply filters when changed
                       });
                     },
+                     activeColor: Colors.black,
                   ),
                 ],
               );
@@ -210,7 +211,7 @@ class _OrdersPageState extends State<OrdersPage> {
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Open'),
+                  const Text('            Open'),
                   Switch(
                     value: barOpenStatus,
                     onChanged: (bool value) {
@@ -221,6 +222,7 @@ class _OrdersPageState extends State<OrdersPage> {
                         _toggleBarStatus(); // Trigger Bar status toggle
                       });
                     },
+                    activeColor: Colors.black,
                   ),
                 ],
               );
@@ -275,43 +277,48 @@ class _OrdersPageState extends State<OrdersPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(
-            'Bar #${order.barId}',
-            style: const TextStyle(
-                fontSize: 24, fontWeight: FontWeight.bold), // Larger title
+          backgroundColor: const Color.fromARGB(135, 36, 36, 36),
+          title: Center(
+            child: Text(
+              'Order #${order.userId}',
+              style: const TextStyle(
+                  fontSize: 24, 
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white), // Larger title
+            ),
           ),
           content: SizedBox(
-            height: 200, // Increase the height of the dialog
+            height: 125, // Increase the height of the dialog
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                ElevatedButton(
-                  onPressed: () {},
-                  onLongPress: () {
-                    // Handle order cancellation here
-                    debugPrint("Order canceled!");
-                    socket!.sink.add(
-                      json.encode({
-                        'action': 'cancel',
-                        'bartenderID': widget.bartenderID.toString(),
-                        'orderID': order.userId,
-                        'barID': widget.barID,
-                      }),
-                    );
-                    Navigator.of(context)
-                        .pop(); // Close the dialog after the action
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8), // Smaller padding
-                  ),
-                  child: const Text(
-                    'Hold to cancel order',
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.white), // Smaller text
-                  ),
-                ),
+                // ElevatedButton(
+                //   onPressed: () {},
+                //   onLongPress: () {
+                //     // Handle order cancellation here
+                //     debugPrint("Order canceled!");
+                //     socket!.sink.add(
+                //       json.encode({
+                //         'action': 'cancel',
+                //         'bartenderID': widget.bartenderID.toString(),
+                //         'orderID': order.userId,
+                //         'barID': widget.barID,
+                //       }),
+                //     );
+                //     Navigator.of(context)
+                //         .pop(); // Close the dialog after the action
+                //   },
+                //   style: ElevatedButton.styleFrom(
+                //     backgroundColor: Colors.grey,
+                //     padding: const EdgeInsets.symmetric(
+                //         horizontal: 16, vertical: 8), // Smaller padding
+                //   ),
+                //   child: const Text(
+                //     'Hold to cancel order',
+                //     style: TextStyle(
+                //         fontSize: 12, color: Colors.white), // Smaller text
+                //   ),
+                // ),
                 const Spacer(), // Space at the top
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -384,13 +391,18 @@ class _OrdersPageState extends State<OrdersPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(
-            'Order #${order.userId}',
-            style: const TextStyle(
-                fontSize: 24, fontWeight: FontWeight.bold), // Larger title
+      backgroundColor: const Color.fromARGB(135, 36, 36, 36),
+          title: Center(
+            child: Text(
+              'Order #${order.userId}',
+              style: const TextStyle(
+                  fontSize: 24, 
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white), // Larger title
+            ),
           ),
           content: SizedBox(
-            height: 200, // Increase the height of the dialog
+            height: 125, // Increase the height of the dialog
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[

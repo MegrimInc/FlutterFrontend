@@ -50,6 +50,11 @@ class CustomerOrder {
     return price;
   }
 
+  // Getter methods
+  int? getUser() {
+    return userId;
+  }
+
   int getAge() {
     int currentTimestamp = DateTime.now().millisecondsSinceEpoch;
     Duration ageDuration = DateTime.fromMillisecondsSinceEpoch(currentTimestamp)
