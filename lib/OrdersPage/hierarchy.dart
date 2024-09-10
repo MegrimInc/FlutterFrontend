@@ -87,6 +87,13 @@ class Hierarchy extends ChangeNotifier {
                   _handleError(context, errorMessage);
                   break;
 
+                case 'update':
+                  debugPrint('Create response received.');
+                  final data = decodedMessage['data'];
+                  _createOrderResponse(
+                      data); // Trigger the createOrderResponse method
+                  break;
+
                 default:
                   debugPrint('Unknown message type: $messageType');
                   // Handle any other message types or log an error
