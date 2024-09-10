@@ -99,7 +99,6 @@ void main() async {
   User user = User();
   await sendGetRequest();
 
-    WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize the notifications
   const AndroidInitializationSettings initializationSettingsAndroid =
