@@ -73,80 +73,80 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 
   void _updateLists() {
-  setState(() {
-    // Sort `allOrders` by timestamp, older orders first
-    allOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    setState(() {
+      // Sort `allOrders` by timestamp, older orders first
+      allOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-    List<CustomerOrder> filteredOrders = allOrders;
+      List<CustomerOrder> filteredOrders = allOrders;
 
-    // Filter based on `filterReady`
-    if (filterReady) {
-      // Show only ready orders
-      filteredOrders =
-          filteredOrders.where((order) => order.status == 'ready').toList();
-    } else {
-      // Show only unready orders
-      filteredOrders =
-          filteredOrders.where((order) => order.status != 'ready').toList();
-    }
-
-    // Apply the "Your Orders Only" filter if `filterUnique` is true
-    if (filterUnique) {
-      filteredOrders = filteredOrders
-          .where((order) =>
-              order.claimer == widget.bartenderID ||
-              (order.claimer.isEmpty &&
-                  (order.userId % bartenderCount) == bartenderNumber))
-          .toList();
-    }
-
-    // Update the display list with the filtered orders
-    displayList = filteredOrders;
-
-    // Check if terminal is disabled and no orders are claimed by the bartender
-    if (disabledTerminal &&
-        !allOrders.any((order) => order.claimer == widget.bartenderID)) {
-      socket!.sink.add(
-        json.encode({
-          'action': 'dispose',
-          'barID': widget.barID,
-        }),
-      );
-
-      if (socket != null) {
-        socket!.sink.close(); // Close the WebSocket connection
-        socket = null; // Set the WebSocket reference to null
+      // Filter based on `filterReady`
+      if (filterReady) {
+        // Show only ready orders
+        filteredOrders =
+            filteredOrders.where((order) => order.status == 'ready').toList();
+      } else {
+        // Show only unready orders
+        filteredOrders =
+            filteredOrders.where((order) => order.status != 'ready').toList();
       }
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
-        (Route<dynamic> route) => false, // Remove all previous routes
-      );
-    }
+      // Apply the "Your Orders Only" filter if `filterUnique` is true
+      if (filterUnique) {
+        filteredOrders = filteredOrders
+            .where((order) =>
+                order.claimer == widget.bartenderID ||
+                (order.claimer.isEmpty &&
+                    (order.userId % bartenderCount) == bartenderNumber))
+            .toList();
+      }
 
-    if (testing) {
-      // Create a list of DrinkOrder objects
-      List<DrinkOrder> testDrinks = [
-        DrinkOrder('drink1', 'Cocktail', "1"),
-        DrinkOrder('drink2', 'Beer', "3"),
-      ];
+      // Update the display list with the filtered orders
+      displayList = filteredOrders;
 
-      // Create a CustomerOrder with the updated structure
-      CustomerOrder testOrder = CustomerOrder(
-          'bar123', // barId
-          456, // userId
-          29.99, // price
-          testDrinks, // drinks (List<DrinkOrder>)
-          'pending', // status
-          '', // claimer (empty since no one has claimed the order yet)
-          DateTime.now().millisecondsSinceEpoch // timestamp (current time)
-          );
+      // Check if terminal is disabled and no orders are claimed by the bartender
+      if (disabledTerminal &&
+          !allOrders.any((order) => order.claimer == widget.bartenderID)) {
+        socket!.sink.add(
+          json.encode({
+            'action': 'dispose',
+            'barID': widget.barID,
+          }),
+        );
 
-      allOrders.add(testOrder);
-    }
-  });
-}
+        if (socket != null) {
+          socket!.sink.close(); // Close the WebSocket connection
+          socket = null; // Set the WebSocket reference to null
+        }
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
+          (Route<dynamic> route) => false, // Remove all previous routes
+        );
+      }
+
+      if (testing) {
+        // Create a list of DrinkOrder objects
+        List<DrinkOrder> testDrinks = [
+          DrinkOrder('drink1', 'Cocktail', "1"),
+          DrinkOrder('drink2', 'Beer', "3"),
+        ];
+
+        // Create a CustomerOrder with the updated structure
+        CustomerOrder testOrder = CustomerOrder(
+            'bar123', // barId
+            456, // userId
+            29.99, // price
+            testDrinks, // drinks (List<DrinkOrder>)
+            'pending', // status
+            '', // claimer (empty since no one has claimed the order yet)
+            DateTime.now().millisecondsSinceEpoch // timestamp (current time)
+            );
+
+        allOrders.add(testOrder);
+      }
+    });
+  }
 
   void _disableTerminal() {
     // Check if there are any orders that are not marked as delivered or canceled
@@ -198,7 +198,7 @@ class _OrdersPageState extends State<OrdersPage> {
                         _updateLists(); // Apply filters when changed
                       });
                     },
-                     activeColor: Colors.black,
+                    activeColor: Colors.black,
                   ),
                 ],
               );
@@ -282,7 +282,7 @@ class _OrdersPageState extends State<OrdersPage> {
             child: Text(
               'Order #${order.userId}',
               style: const TextStyle(
-                  fontSize: 24, 
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.white), // Larger title
             ),
@@ -391,12 +391,12 @@ class _OrdersPageState extends State<OrdersPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-      backgroundColor: const Color.fromARGB(135, 36, 36, 36),
+          backgroundColor: const Color.fromARGB(135, 36, 36, 36),
           title: Center(
             child: Text(
               'Order #${order.userId}',
               style: const TextStyle(
-                  fontSize: 24, 
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.white), // Larger title
             ),
@@ -602,25 +602,25 @@ class _OrdersPageState extends State<OrdersPage> {
                               children: <Widget>[
                                 // Claimer or SpinKit
                                 order.claimer.isEmpty
-  ? const SpinKitThreeBounce(
-      color: Colors.white,
-      size: 30.0,
-    )
-  : Text(
-      '@${order.claimer}', // Add @ symbol
-      style: const TextStyle(
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-        shadows: [
-          Shadow(
-            color: Colors.black,
-            offset: Offset(1.0, 1.0),
-            blurRadius: 1.0,
-          ),
-        ],
-      ),
-    ),
+                                    ? const SpinKitThreeBounce(
+                                        color: Colors.white,
+                                        size: 30.0,
+                                      )
+                                    : Text(
+                                        '@${order.claimer}', // Add @ symbol
+                                        style: const TextStyle(
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black,
+                                              offset: Offset(1.0, 1.0),
+                                              blurRadius: 1.0,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
 
                                 // Drinks list centered
                                 Column(
@@ -822,9 +822,9 @@ class _OrdersPageState extends State<OrdersPage> {
             _reconnectAttempts =
                 0; // Reset the reconnect attempts on successful connection
           }
-           setState(() {
-      connected = true;
-    });
+          setState(() {
+            connected = true;
+          });
 
           debugPrint('Received: $event at ${DateTime.now()}');
 
@@ -944,11 +944,12 @@ class _OrdersPageState extends State<OrdersPage> {
               break;
 
             case 'updateTerminal':
-              // Update local values and refresh UI
-              setState(() {
-                bartenderCount = int.parse(response['bartenderCount']);
-                bartenderNumber = int.parse(response['bartenderNumber']);
-              });
+              debugPrint(
+                  'updateTerminal received: ${response['bartenderCount']}, ${response['bartenderNumber']}');
+              bartenderCount = int.parse(response['bartenderCount']);
+              bartenderNumber = int.parse(response['bartenderNumber']);
+              _updateLists();
+              debugPrint('Set state triggered for updateTerminal');
               break;
 
             default:
@@ -962,12 +963,9 @@ class _OrdersPageState extends State<OrdersPage> {
         onDone: () {
           debugPrint('WebSocket connection closed');
 
-        
-
-setState(() {
-      connected = false;
-    });
-
+          setState(() {
+            connected = false;
+          });
 
           if (!disabledTerminal) _attemptReconnect();
         },
@@ -975,9 +973,9 @@ setState(() {
       );
     } catch (e) {
       // Handle the error
-     setState(() {
-      connected = false;
-    });
+      setState(() {
+        connected = false;
+      });
       _attemptReconnect();
       debugPrint('Failed to connect to WebSocket: $e');
     }

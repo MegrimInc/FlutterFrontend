@@ -145,20 +145,21 @@ class DrinkFeedState extends State<DrinkFeed> with SingleTickerProviderStateMixi
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+    return  const Padding(
+      padding: EdgeInsets.all(16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          const Text(
-            '1 of 1',
+          Icon(
+            Icons.close, 
+            color: Colors.white
+            ),
+            
+           Text(
+            '1 / 1',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 19,
+              fontSize: 20,
               fontWeight: FontWeight.w500,
             ),
           ),

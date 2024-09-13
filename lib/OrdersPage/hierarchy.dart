@@ -88,10 +88,9 @@ class Hierarchy extends ChangeNotifier {
                   break;
 
                 case 'update':
-                  debugPrint('Create response received.');
+                  debugPrint('Update response received.');
                   final data = decodedMessage['data'];
-                  _createOrderResponse(
-                      data); // Trigger the createOrderResponse method
+                  _handleUpdateResponse(data); // Use the new method for updates
                   break;
 
                 default:
@@ -185,34 +184,82 @@ class Hierarchy extends ChangeNotifier {
     }
   }
 
-  Future<void> showNotification(String status) async {
-  if( status == 'unready') return;
-const AndroidNotificationDetails androidNotificationDetails =
-AndroidNotificationDetails(
-'your_channel_id', // channel ID
-'your_channel_name', // channel name
-channelDescription: 'your_channel_description', // channel description
-importance: Importance.max,
-priority: Priority.high,
-ticker: 'ticker',
-);
+  // Future<void> showNotification(String status) async {
+  //   if (status == 'unready') return;
+  //   const AndroidNotificationDetails androidNotificationDetails =
+  //       AndroidNotificationDetails(
+  //     'your_channel_id', // channel ID
+  //     'your_channel_name', // channel name
+  //     channelDescription: 'your_channel_description', // channel description
+  //     importance: Importance.max,
+  //     priority: Priority.high,
+  //     ticker: 'ticker',
+  //   );
 
-const DarwinNotificationDetails darwinNotificationDetails =
-DarwinNotificationDetails();
+  //   const DarwinNotificationDetails darwinNotificationDetails =
+  //       DarwinNotificationDetails();
 
-const NotificationDetails platformChannelSpecifics = NotificationDetails(
-android: androidNotificationDetails,
-iOS: darwinNotificationDetails,
-);
+  //   const NotificationDetails platformChannelSpecifics = NotificationDetails(
+  //     android: androidNotificationDetails,
+  //     iOS: darwinNotificationDetails,
+  //   );
 
-await flutterLocalNotificationsPlugin.show(
-0, // Notification ID
-'Order Status Change', // Notification title
-'Your order is now $status.', // Notification body
-platformChannelSpecifics, // Notification details specific to each platform
-payload: '', // Payload to pass when the notification is tapped
-);
+  //   await flutterLocalNotificationsPlugin.show(
+  //     0, // Notification ID
+  //     'Order Status Change', // Notification title
+  //     'Your order is now $status.', // Notification body
+  //     platformChannelSpecifics, // Notification details specific to each platform
+  //     payload: '', // Payload to pass when the notification is tapped
+  //   );
+  // }
+
+  
+Future<void> showNotification(String status, String claimer) async {
+  String notificationMessage;
+
+  // Determine the notification message based on the status and claimer
+  if (status == 'unready') {
+    if (claimer.isEmpty) {
+      notificationMessage = 'Your order has been unclaimed.';
+    } else {
+      notificationMessage = 'Your order has been claimed.';
+    }
+  } else if (status == 'ready') {
+    notificationMessage = 'Your order is now ready.';
+  } else if (status == 'delivered') {
+    notificationMessage = 'Your order has been delivered.';
+  } else {
+    // Handle any other status if needed, or return if there's nothing to notify
+    return;
+  }
+
+  const AndroidNotificationDetails androidNotificationDetails =
+      AndroidNotificationDetails(
+    'your_channel_id', // channel ID
+    'your_channel_name', // channel name
+    channelDescription: 'your_channel_description', // channel description
+    importance: Importance.max,
+    priority: Priority.high,
+    ticker: 'ticker',
+  );
+
+  const DarwinNotificationDetails darwinNotificationDetails =
+      DarwinNotificationDetails();
+
+  const NotificationDetails platformChannelSpecifics = NotificationDetails(
+    android: androidNotificationDetails,
+    iOS: darwinNotificationDetails,
+  );
+
+  await flutterLocalNotificationsPlugin.show(
+    0, // Notification ID
+    'Order Status Change', // Notification title
+    notificationMessage, // Notification body
+    platformChannelSpecifics, // Notification details specific to each platform
+    payload: '', // Payload to pass when the notification is tapped
+  );
 }
+
 
   // Method to handle create order responses
   void _createOrderResponse(Map<String, dynamic> data) async {
@@ -222,19 +269,9 @@ payload: '', // Payload to pass when the notification is tapped
       debugPrint('CustomerOrder created: $customerOrder');
 
       localDatabase.addOrUpdateOrderForBar(customerOrder);
-      
-
-
 
       // Directly update the map with the new timestamp for the barId
       _createdOrderBarIds[customerOrder.barId] = customerOrder.timestamp;
-
-      //NOTIFYUSER
-      //Title: Barzzy Order Updated
-      //Your order #(futureordernumber) is now Order.State== unready ? placed : Order.state== ready ? ready : Order.state == delivered : D
-
-
-      await showNotification(customerOrder.status);
 
       // Print statement to confirm addition
       debugPrint(
@@ -243,6 +280,23 @@ payload: '', // Payload to pass when the notification is tapped
       debugPrint('Error while creating CustomerOrder: $e');
     }
   }
+
+  // Method to handle update responses and send notifications
+void _handleUpdateResponse(Map<String, dynamic> data) async {
+  // Call createOrderResponse to handle the data processing
+  _createOrderResponse(data);
+
+  try {
+    // Extract the status and claimer from the data
+    final String status = data['status'];
+    final String claimer = data['claimer'] ?? '';
+
+    // Send a notification with both status and claimer
+    await showNotification(status, claimer);
+  } catch (e) {
+    debugPrint('Error while handling update response: $e');
+  }
+}
 
   void cancelOrder(int barId, int userId) {
     try {
@@ -303,7 +357,7 @@ payload: '', // Payload to pass when the notification is tapped
             errorMessage,
             style: const TextStyle(
               color: Colors.white70,
-              fontSize: 16,  
+              fontSize: 16,
             ),
             textAlign: TextAlign.center,
           ),

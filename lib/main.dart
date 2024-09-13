@@ -23,43 +23,15 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 
-// Future<void> showNotification() async {
-//   debugPrint('heyoooooo');
-// const AndroidNotificationDetails androidNotificationDetails =
-// AndroidNotificationDetails(
-// 'your_channel_id', // channel ID
-// 'your_channel_name', // channel name
-// channelDescription: 'your_channel_description', // channel description
-// importance: Importance.max,
-// priority: Priority.high,
-// ticker: 'ticker',
-// );
-
-// const DarwinNotificationDetails darwinNotificationDetails =
-// DarwinNotificationDetails();
-
-// const NotificationDetails platformChannelSpecifics = NotificationDetails(
-// android: androidNotificationDetails,
-// iOS: darwinNotificationDetails,
-// );
-
-// await flutterLocalNotificationsPlugin.show(
-// 0, // Notification ID
-// 'Hello!', // Notification title
-// 'Welcome to Barzzy!', // Notification body
-// platformChannelSpecifics, // Notification details specific to each platform
-// payload: 'app_started', // Payload to pass when the notification is tapped
-// );
-// }
-
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   debugPrint("current date: ${DateTime.now()}");
-
   WidgetsFlutterBinding.ensureInitialized();
   final loginCache = LoginCache();
+
+  //await loginCache.clearAll();
   
   bool loggedInAlready = true;
   await loginCache.getSignedIn() /* && HTTP REQUEST*/;
@@ -127,9 +99,6 @@ void main() async {
       }
     },
   );
-
-//debugPrint("Sending notif");
-//await showNotification();
 
 
 

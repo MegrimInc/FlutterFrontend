@@ -187,7 +187,7 @@ class _LoginPageState extends State<LoginPage> {
             MyTextField(
                 labeltext: 'Password',
                 controller: passwordController,
-                obscureText: true),
+                obscureText: true, ),
             const SizedBox(height: 10),
 
             // FORGOT PASSWORD
