@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class IOSStyleKeypad extends StatefulWidget {
   final TextEditingController controller;
   final Function(String)? onCompleted;
   final VoidCallback? onResend;
-
+  final VoidCallback? onCancel;
 
   const IOSStyleKeypad({
     super.key,
     required this.controller,
     this.onCompleted,
     this.onResend,
+    this.onCancel,
   });
 
   @override
@@ -34,7 +36,8 @@ class IOSStyleKeypadState extends State<IOSStyleKeypad> {
           Padding(
             padding: const EdgeInsets.only(bottom: 45),
             child: Text(
-              widget.controller.text, // This line now shows the actual digits entered by the user.
+              widget.controller
+                  .text, // This line now shows the actual digits entered by the user.
               style: const TextStyle(fontSize: 40, color: Colors.white),
             ),
           ),
@@ -85,8 +88,12 @@ class IOSStyleKeypadState extends State<IOSStyleKeypad> {
             // RESEND
             GestureDetector(
               onTap: () {
-                 if (widget.onResend != null) {
+                if (widget.onResend != null) {
                   widget.onResend!(); // Trigger the resend function
+                  HapticFeedback.heavyImpact();
+                  HapticFeedback.vibrate(); 
+                   
+                 
                 }
               },
               child: Container(
@@ -144,23 +151,29 @@ class IOSStyleKeypadState extends State<IOSStyleKeypad> {
   Widget _buildBackspaceKey() {
     return GestureDetector(
       onTap: () {
-        debugPrint('Backspace pressed');
         if (widget.controller.text.isNotEmpty) {
+          // Handle deletion
           setState(() {
-            widget.controller.text =
-                widget.controller.text.substring(0, widget.controller.text.length - 1);
+            widget.controller.text = widget.controller.text
+                .substring(0, widget.controller.text.length - 1);
+            debugPrint(
+                'Current input after backspace: ${widget.controller.text}');
           });
-          debugPrint('Current input after backspace: ${widget.controller.text}');
+        } else {
+          // Handle cancel
+          if (widget.onCancel != null) {
+            widget.onCancel!(); // Hide the overlay if cancel is tapped
+          }
         }
       },
       child: Container(
         width: 120,
         height: 60,
         color: Colors.transparent,
-        child: const Center(
+        child: Center(
           child: Text(
-            'delete',
-            style: TextStyle(color: Colors.white, fontSize: 20),
+            widget.controller.text.isNotEmpty ? 'delete' : 'cancel',
+            style: const TextStyle(color: Colors.white, fontSize: 20),
           ),
         ),
       ),

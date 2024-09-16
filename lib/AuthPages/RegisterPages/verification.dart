@@ -10,13 +10,11 @@ import 'dart:convert';
 
 
 class RegisterPage11 extends StatefulWidget {
-  final String message;
   final void Function()? hideOverlay;
   final VoidCallback? onResend;
 
   const RegisterPage11({
     super.key,
-    required this.message,
     this.hideOverlay,
     this.onResend,
   });
@@ -94,54 +92,52 @@ class _RegisterPageState11 extends State<RegisterPage11>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(147, 0, 0, 0),
-      body: GestureDetector(
-        onTap: widget.hideOverlay,
-        child: Stack(
-          children: [
-            BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0),
-              child: Container(
-                color: Colors.transparent,
-              ),
+      body: Stack(
+        children: [
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0),
+            child: Container(
+              color: Colors.transparent,
             ),
-            SafeArea(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 75),
-                    Text(
-                      widget.message,
-                      style: const TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                    const SizedBox(height: 50),
-
-                    // Display the IOS-style Keypad
-                    AnimatedBuilder(
-                      animation: _animation,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: _animation.value,
-                          child: FadeTransition(
-                            opacity: _animation,
-                            child: child,
-                          ),
-                        );
+          ),
+          SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 75),
+                  const Text(
+                    'Enter you verifcation code.',
+                    style: TextStyle(fontSize: 20, color: Colors.white),
+                  ),
+                  const SizedBox(height: 50),
+      
+                  // Display the IOS-style Keypad
+                  AnimatedBuilder(
+                    animation: _animation,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _animation.value,
+                        child: FadeTransition(
+                          opacity: _animation,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: IOSStyleKeypad(
+                      controller: verificationCode,
+                      onCompleted: (code) {
+                        attemptVerification();
                       },
-                      child: IOSStyleKeypad(
-                        controller: verificationCode,
-                        onCompleted: (code) {
-                          attemptVerification();
-                        },
-                         onResend: widget.onResend,
-                      ),
-                    )
-                  ],
-                ),
+                       onResend: widget.onResend,
+                       onCancel: widget.hideOverlay,
+                    ),
+                  )
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

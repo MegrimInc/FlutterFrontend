@@ -1,6 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
 
-
 import 'dart:convert';
 
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
@@ -13,14 +12,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
-
 class LoginPage extends StatefulWidget {
-  
   final Function()? onTap;
-  const LoginPage({super.key, required this.onTap});  
+  const LoginPage({super.key, required this.onTap});
 
   //final loginCache2 = LoginCache();
-
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -29,92 +25,89 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   // TEXT EDITING CONTROLLERS
 
-
-  
-
   final emailController = TextEditingController();
-
   final passwordController = TextEditingController();
-
+  final FocusNode emailFocusNode = FocusNode();
+  final FocusNode passwordFocusNode = FocusNode();
 
 
   //SIGN USER IN
 
   void signUserIn() async {
-  final cacher = LoginCache();
-  final url = Uri.parse('https://www.barzzy.site/signup/login');
-  final requestBody = jsonEncode({
-    'email': emailController.value.text,
-    'password': passwordController.value.text
-  });
-  
-  final response = await http.post(
-    url,
-    headers: {
-      'Content-Type': 'application/json', // Specify that the body is JSON
-    },
-    body: requestBody,
-  );
+    FocusScope.of(context).unfocus();
+    final cacher = LoginCache();
+    final url = Uri.parse('https://www.barzzy.site/signup/login');
+    final requestBody = jsonEncode({
+      'email': emailController.value.text,
+      'password': passwordController.value.text
+    });
 
-  if (response.statusCode == 200) {
-    debugPrint('login Request successful');
-    debugPrint('login Response body: ${response.body}');
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json', // Specify that the body is JSON
+      },
+      body: requestBody,
+    );
 
-    try {
-      // Added this: Parse the response body as an integer
-      int responseValue = int.parse(response.body);
+    if (response.statusCode == 200) {
+      debugPrint('login Request successful');
+      debugPrint('login Response body: ${response.body}');
 
-      // Added this: Proper integer comparison
-      if (responseValue > 0) {
-        cacher.setEmail(emailController.value.text);
-        cacher.setPW(passwordController.value.text);
-        cacher.setSignedIn(true);
-        cacher.setUID(responseValue);
+      try {
+        // Added this: Parse the response body as an integer
+        int responseValue = int.parse(response.body);
 
-        debugPrint("UserLogin");
-        // Navigate to AuthPage if responseValue is greater than 0
-        Navigator.pushReplacement(
-          context, 
-          MaterialPageRoute(builder: (context) => const AuthPage())
-        );
-      } else {
-        debugPrint("BarLogin");
+        // Added this: Proper integer comparison
+        if (responseValue > 0) {
+          cacher.setEmail(emailController.value.text);
+          cacher.setPW(passwordController.value.text);
+          cacher.setSignedIn(true);
+          cacher.setUID(responseValue);
 
-        cacher.setEmail(emailController.value.text);
-        cacher.setPW(passwordController.value.text);
-        cacher.setSignedIn(true);
-        cacher.setUID(responseValue);
+          debugPrint("UserLogin");
+          // Navigate to AuthPage if responseValue is greater than 0
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (context) => const AuthPage()));
+        } else {
+          debugPrint("BarLogin");
 
-        // Navigate to OrderDisplay if responseValue is 0 or negative
-        Navigator.pushReplacement(
-          context, 
-          MaterialPageRoute(builder: (context) => const BartenderIDScreen())
-        );
+          cacher.setEmail(emailController.value.text);
+          cacher.setPW(passwordController.value.text);
+          cacher.setSignedIn(true);
+          cacher.setUID(responseValue);
+
+          // Navigate to OrderDisplay if responseValue is 0 or negative
+          Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const BartenderIDScreen()));
+        }
+      } catch (e) {
+        // Handle any parsing or other errors
+        debugPrint('Error: $e');
+        failure();
       }
-    } catch (e) {
-      // Handle any parsing or other errors
-      debugPrint('Error: $e');
-      failure();
+    } else {
+      debugPrint('login Request failed with status: ${response.statusCode}');
+      debugPrint('login Response body: ${response.body}');
+      invalidCredentialsMessage();
     }
-  } else {
-    debugPrint('login Request failed with status: ${response.statusCode}');
-    debugPrint('login Response body: ${response.body}');
-    invalidCredentialsMessage();
   }
-}
 
-
-
-    void failure() {
+  void failure() {
     showDialog(
         context: context,
         builder: (context) {
           return const AlertDialog(
-            backgroundColor: Colors.white,
-          title: Center(child: 
-          Text('Oopsies. Looks like something went wrong. Please try again.', 
-          style:TextStyle(color: Color.fromARGB(255, 30, 30, 30),
-          fontWeight: FontWeight.bold,) )));
+              backgroundColor: Colors.white,
+              title: Center(
+                  child: Text(
+                      'Oopsies. Looks like something went wrong. Please try again.',
+                      style: TextStyle(
+                        color: Color.fromARGB(255, 30, 30, 30),
+                        fontWeight: FontWeight.bold,
+                      ))));
         });
   }
 
@@ -125,11 +118,14 @@ class _LoginPageState extends State<LoginPage> {
         context: context,
         builder: (context) {
           return const AlertDialog(
-            backgroundColor: Colors.white,
-          title: Center(child: 
-          Text('Looks like you may have typed in the wrong email or password. Please try again!', 
-          style:TextStyle(color: Color.fromARGB(255, 30, 30, 30),
-          fontWeight: FontWeight.bold,) )));
+              backgroundColor: Colors.white,
+              title: Center(
+                  child: Text(
+                      'Looks like you may have typed in the wrong email or password. Please try again!',
+                      style: TextStyle(
+                        color: Color.fromARGB(255, 30, 30, 30),
+                        fontWeight: FontWeight.bold,
+                      ))));
         });
   }
 
@@ -139,8 +135,6 @@ class _LoginPageState extends State<LoginPage> {
     final FocusNode passwordFocusNode = FocusNode();
     final ValueNotifier<bool> isEmailFocused = ValueNotifier<bool>(false);
     final ValueNotifier<bool> isPasswordFocused = ValueNotifier<bool>(false);
-
-
 
     emailFocusNode.addListener(() {
       isEmailFocused.value = emailFocusNode.hasFocus;
@@ -169,9 +163,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
 
-          const SizedBox(height: 125),
-
-            
+            const SizedBox(height: 125),
 
             // USER/EMAIL TEXTFIELD
 
@@ -179,15 +171,18 @@ class _LoginPageState extends State<LoginPage> {
               labeltext: 'Email',
               controller: emailController,
               obscureText: false,
+              focusNode: passwordFocusNode,
             ),
             const SizedBox(height: 10),
 
             // PASSWORD TEXTFIELD
 
             MyTextField(
-                labeltext: 'Password',
-                controller: passwordController,
-                obscureText: true, ),
+              labeltext: 'Password',
+              controller: passwordController,
+              obscureText: true,
+              focusNode: emailFocusNode,
+            ),
             const SizedBox(height: 10),
 
             // FORGOT PASSWORD
@@ -197,19 +192,20 @@ class _LoginPageState extends State<LoginPage> {
                 child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                   Text("Forgot Password?",
                       style: TextStyle(
-                        color: Color.fromARGB(255, 255, 255, 255), fontWeight: FontWeight.bold
-                      )),
+                          color: Color.fromARGB(255, 255, 255, 255),
+                          fontWeight: FontWeight.bold)),
                   SizedBox(height: 25),
                 ])),
             const SizedBox(height: 25),
 
             // SIGN IN
 
-            MyButton(text: 'Sign In', onTap: signUserIn,), const SizedBox(height: 25),
-            
+            MyButton(text: 'Sign In', onTap: signUserIn),
+
+            const SizedBox(height: 25),
+
             const SizedBox(height: 30),
 
-           
             const SizedBox(height: 50),
 
             // NOT A MEMBER REGISTER NOW
@@ -222,11 +218,24 @@ class _LoginPageState extends State<LoginPage> {
                 onTap: widget.onTap,
                 child: const Text('Register',
                     style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold)),
+                        color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ])
           ]),
         ))));
   }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    emailFocusNode.dispose();
+    passwordFocusNode.dispose();
+    super.dispose();
+  }
 }
+
+
+
+
+

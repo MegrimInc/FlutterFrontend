@@ -11,7 +11,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 class RegisterPage extends StatefulWidget {
   final Function()? onTap;
-  
 
   const RegisterPage({super.key, this.onTap});
 
@@ -29,7 +28,11 @@ class RegisterPageState extends State<RegisterPage>
   bool _showOverlay = false;
   late AnimationController _animationController;
   late Animation<double> _animation;
-  String _overlayMessage = '';
+
+  final FocusNode firstNameNode = FocusNode();
+  final FocusNode lastNameNode = FocusNode();
+  final FocusNode emailNode = FocusNode();
+  final FocusNode passwordNode = FocusNode();
 
   @override
   void initState() {
@@ -44,73 +47,64 @@ class RegisterPageState extends State<RegisterPage>
     );
   }
 
-  void _showOverlayWidget(String message) {
-  setState(() {
-    _showOverlay = true;
-  });
-  _animationController.forward().then((_) {
+  void _showOverlayWidget() {
+    FocusScope.of(context).unfocus();
     setState(() {
-      _overlayMessage = message; // Store the message for the overlay
+      _showOverlay = true;
     });
-  });
-}
-
+    _animationController.forward().then((_) {});
+  }
 
   //SIGN USER IN
 
   void registerNames() async {
-  if (firstName.value.text.isNotEmpty &&
-      lastName.value.text.isNotEmpty &&
-      firstName.value.text.length < 25 &&
-      lastName.value.text.length < 25 &&
-      validCharacters.hasMatch(firstName.value.text + lastName.value.text)) {
-    final loginCache2 = LoginCache();
-    loginCache2.setEmail(email.value.text.trim());
-    loginCache2.setFN(firstName.value.text.trim());
-    loginCache2.setPW(password.value.text);
-    loginCache2.setLN(lastName.value.text.trim());
-    loginCache2.setSignedIn(true);
+    FocusScope.of(context).unfocus();
+    if (firstName.value.text.isNotEmpty &&
+        lastName.value.text.isNotEmpty &&
+        firstName.value.text.length < 25 &&
+        lastName.value.text.length < 25 &&
+        validCharacters.hasMatch(firstName.value.text + lastName.value.text)) {
+      final loginCache2 = LoginCache();
+      loginCache2.setEmail(email.value.text.trim());
+      loginCache2.setFN(firstName.value.text.trim());
+      loginCache2.setPW(password.value.text);
+      loginCache2.setLN(lastName.value.text.trim());
+      loginCache2.setSignedIn(true);
 
-    final url = Uri.parse('https://www.barzzy.site/signup/register');
-    final requestBody = jsonEncode({
-      'email': email.value.text.trim(),
-    });
+      final url = Uri.parse('https://www.barzzy.site/signup/register');
+      final requestBody = jsonEncode({
+        'email': email.value.text.trim(),
+      });
 
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json', // Specify that the body is JSON
-      },
-      body: requestBody,
-    );
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json', // Specify that the body is JSON
+        },
+        body: requestBody,
+      );
 
-    if (response.statusCode == 200) {
-      debugPrint('Request successful');
-      debugPrint('Response body: ${response.body}');
-      String overlayMessage = '';
+      if (response.statusCode == 200) {
+        debugPrint('Request successful');
+        debugPrint('Response body: ${response.body}');
 
-      if (response.body == "sent email") {
-        overlayMessage = "Sent verification email.";
-      } else if (response.body == "Re-sent email") {
-        overlayMessage = "Re-sent verification email.";
+        if (response.body == "sent email") {
+          _showOverlayWidget();
+        } else if (response.body == "Re-sent email") {
+          _showOverlayWidget();
+        } else {
+          invalidEmail();
+          return;
+        }
       } else {
-        invalidEmail();
-        return;
+        debugPrint('01Request failed with status: ${response.statusCode}');
+        debugPrint('01Response body: ${response.body}');
+        failure();
       }
-
-      _showOverlayWidget(overlayMessage);
     } else {
-      debugPrint('01Request failed with status: ${response.statusCode}');
-      debugPrint('01Response body: ${response.body}');
-      failure();
+      invalidCredentialsMessage();
     }
-  } else {
-    invalidCredentialsMessage();
   }
-}
-
-
- 
 
   @override
   Widget build(BuildContext context) {
@@ -132,12 +126,9 @@ class RegisterPageState extends State<RegisterPage>
         body: SafeArea(
           child: Stack(
             children: [
+              _buildMainContent(),
 
-_buildMainContent(),
-
-
-
-// Overlay content
+              // Overlay content
               if (_showOverlay)
                 AnimatedBuilder(
                   animation: _animation,
@@ -161,15 +152,13 @@ _buildMainContent(),
                     );
                   },
                   child: RegisterPage11(
-                   message: _overlayMessage,
                     hideOverlay: _hideOverlayWidget,
                     onResend: registerNames,
                   ),
                 ),
             ],
           ),
-        )
-        );
+        ));
   }
 
   Widget _buildMainContent() {
@@ -195,29 +184,39 @@ _buildMainContent(),
                 labeltext: 'Enter First Name',
                 controller: firstName,
                 obscureText: false,
+                focusNode: firstNameNode,
               ),
               const SizedBox(height: 10),
               MyTextField(
                 labeltext: 'Enter Last Name',
                 controller: lastName,
                 obscureText: false,
+                focusNode: lastNameNode,
               ),
               const SizedBox(height: 10),
               MyTextField(
                 labeltext: 'Enter Email Address',
                 controller: email,
                 obscureText: false,
+                focusNode: emailNode,
               ),
               const SizedBox(height: 10),
               MyTextField(
                 labeltext: 'Create Password',
                 controller: password,
                 obscureText: true,
+                focusNode: passwordNode,
               ),
               const SizedBox(height: 10),
               MyButton(
                 text: 'Signup',
-                onTap: registerNames,
+                onTap: () {
+                  // Close the keyboard
+                  FocusScope.of(context).unfocus();
+
+                  // Call the registerNames method
+                  registerNames();
+                },
               ),
               const SizedBox(height: 25),
               const SizedBox(height: 45),
@@ -248,7 +247,7 @@ _buildMainContent(),
     );
   }
 
-   void failure() {
+  void failure() {
     showDialog(
         context: context,
         builder: (context) {
@@ -295,7 +294,8 @@ _buildMainContent(),
         });
   }
 
-   void _hideOverlayWidget() {
+  void _hideOverlayWidget() {
+    FocusScope.of(context).unfocus();
     _animationController.reverse().then((_) {
       setState(() {
         _showOverlay = false;
@@ -305,6 +305,15 @@ _buildMainContent(),
 
   @override
   void dispose() {
+    // Dispose of FocusNodes and controllers
+    firstNameNode.dispose();
+    lastNameNode.dispose();
+    emailNode.dispose();
+    passwordNode.dispose();
+    firstName.dispose();
+    lastName.dispose();
+    email.dispose();
+    password.dispose();
     _animationController.dispose();
     super.dispose();
   }

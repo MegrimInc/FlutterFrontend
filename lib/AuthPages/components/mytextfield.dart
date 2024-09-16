@@ -5,18 +5,19 @@ class MyTextField extends StatelessWidget {
   final String labeltext;
   final bool obscureText;
   final Color labelColor;
+  final FocusNode focusNode;  // Add this parameter
 
   const MyTextField({
     super.key,
     required this.controller,
     required this.obscureText,
     required this.labeltext,
+    required this.focusNode,  // Add this to the constructor
     this.labelColor = const Color.fromARGB(255, 255, 255, 255),
   });
 
   @override
   Widget build(BuildContext context) {
-    final FocusNode focusNode = FocusNode();
     final ValueNotifier<bool> isFocused = ValueNotifier<bool>(false);
 
     focusNode.addListener(() {
@@ -38,10 +39,9 @@ class MyTextField extends StatelessWidget {
               return TextField(
                 controller: controller,
                 obscureText: obscureText,
-                style:
-                    const TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
+                style: const TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
                 cursorColor: Colors.white,
-                focusNode: focusNode,
+                focusNode: focusNode,  // Use the passed focus node
                 decoration: InputDecoration(
                   contentPadding:
                       const EdgeInsets.symmetric(vertical: 11, horizontal: 10),
@@ -49,8 +49,7 @@ class MyTextField extends StatelessWidget {
                     borderRadius: BorderRadius.circular(5),
                     borderSide: const BorderSide(
                         color: Color.fromARGB(255, 60, 60, 60)
-                        //color: Colors.black
-                        ),
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(5),

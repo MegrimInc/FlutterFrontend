@@ -20,6 +20,7 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
     final barId = -1 * negativeBarID;
 
     Navigator.pushAndRemoveUntil(
+      // ignore: use_build_context_synchronously
       context,
       MaterialPageRoute(
         builder: (context) => OrdersPage(
