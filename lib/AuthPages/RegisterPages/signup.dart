@@ -21,7 +21,7 @@ class RegisterPage extends StatefulWidget {
 
 class RegisterPageState extends State<RegisterPage>
     with SingleTickerProviderStateMixin {
-  final validCharacters = RegExp(r'^[a-zA-Z]+$');
+  final validCharacters = RegExp(r'^[a-zA-Z]+[a-zA-Z ]*$');
   final firstName = TextEditingController();
   final lastName = TextEditingController();
   final email = TextEditingController();
@@ -65,15 +65,15 @@ class RegisterPageState extends State<RegisterPage>
       lastName.value.text.length < 25 &&
       validCharacters.hasMatch(firstName.value.text + lastName.value.text)) {
     final loginCache2 = LoginCache();
-    loginCache2.setEmail(email.value.text);
-    loginCache2.setFN(firstName.value.text);
+    loginCache2.setEmail(email.value.text.trim());
+    loginCache2.setFN(firstName.value.text.trim());
     loginCache2.setPW(password.value.text);
-    loginCache2.setLN(lastName.value.text);
+    loginCache2.setLN(lastName.value.text.trim());
     loginCache2.setSignedIn(true);
 
     final url = Uri.parse('https://www.barzzy.site/signup/register');
     final requestBody = jsonEncode({
-      'email': email.value.text,
+      'email': email.value.text.trim(),
     });
 
     final response = await http.post(
