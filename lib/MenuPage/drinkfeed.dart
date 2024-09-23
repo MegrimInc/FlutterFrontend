@@ -1,6 +1,8 @@
 import 'dart:ui';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
@@ -22,13 +24,14 @@ class DrinkFeed extends StatefulWidget {
   DrinkFeedState createState() => DrinkFeedState();
 }
 
-class DrinkFeedState extends State<DrinkFeed> with SingleTickerProviderStateMixin {
+class DrinkFeedState extends State<DrinkFeed>
+    with SingleTickerProviderStateMixin {
   Offset? _startPosition;
   static const double swipeThreshold = 50.0;
   late AnimationController _controller;
   late Animation<double> _blurAnimation;
   late Animation<double> _opacityAnimation;
-
+  
   @override
   void initState() {
     super.initState();
@@ -60,15 +63,13 @@ class DrinkFeedState extends State<DrinkFeed> with SingleTickerProviderStateMixi
       value: widget.cart,
       child: Scaffold(
         body: GestureDetector(
-          onTap: () {
+           onLongPress: () {
+            HapticFeedback.heavyImpact();
             Navigator.of(context).pop();
             FocusScope.of(context).unfocus();
           },
           onPanStart: (details) {
             _startPosition = details.globalPosition;
-          },
-          onPanUpdate: (details) {
-            // Optionally track the swipe progress here
           },
           onPanEnd: (details) {
             if (_startPosition == null) return;
@@ -78,7 +79,7 @@ class DrinkFeedState extends State<DrinkFeed> with SingleTickerProviderStateMixi
 
             if (dy.abs() > swipeThreshold) {
               if (dy < 0) {
-                widget.cart.addDrink(widget.drink.id);
+                widget.cart.addDrink(widget.drink.id, context);
               } else if (dy > 0) {
                 widget.cart.removeDrink(widget.drink.id);
               }
@@ -90,8 +91,8 @@ class DrinkFeedState extends State<DrinkFeed> with SingleTickerProviderStateMixi
               Positioned.fill(
                 child: Stack(
                   children: [
-                    Image.network(
-                      widget.drink.image,
+                    CachedNetworkImage(
+                      imageUrl: widget.drink.image,
                       fit: BoxFit.cover,
                       height: double.infinity,
                       width: double.infinity,
@@ -132,7 +133,9 @@ class DrinkFeedState extends State<DrinkFeed> with SingleTickerProviderStateMixi
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildHeader(context),
-                    Expanded(child: _buildDrinkInfo(context)),
+                    Expanded(
+                      child: _buildDrinkInfo(context),
+                    ),
                     _buildBottomBar(context),
                   ],
                 ),
@@ -145,22 +148,31 @@ class DrinkFeedState extends State<DrinkFeed> with SingleTickerProviderStateMixi
   }
 
   Widget _buildHeader(BuildContext context) {
-    return  const Padding(
-      padding: EdgeInsets.all(16.0),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(
-            Icons.close, 
-            color: Colors.white
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).pop();
+              FocusScope.of(context).unfocus();
+            },
+            child: Container(
+              color: Colors.transparent,
+              width: 75,
+              height: 50,
+              alignment: Alignment.centerLeft,
+              child: const Icon(
+                Icons.close, size: 29, color: Colors.white),
             ),
-            
-           Text(
-            '1 / 1',
+          ),
+          const Text(
+            '1 / 2',
             style: TextStyle(
-              color: Colors.white,
+              color: Colors.transparent,
               fontSize: 20,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -192,10 +204,31 @@ class DrinkFeedState extends State<DrinkFeed> with SingleTickerProviderStateMixi
           ),
           const SizedBox(height: 24),
           _buildPriceInfo(),
+          const SizedBox(height: 24),
+
+          Center(
+          child: Padding(
+            padding: const EdgeInsets.only(
+              left: 25, 
+              right: 25),
+            child: Text(
+              widget.drink.description,
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.normal,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+          
         ],
       ),
     );
   }
+
+
 
   Widget _buildPriceInfo() {
     return Row(
@@ -203,12 +236,14 @@ class DrinkFeedState extends State<DrinkFeed> with SingleTickerProviderStateMixi
       children: [
         _buildPriceCard('Regular', widget.drink.price),
         const SizedBox(width: 16),
-        _buildPriceCard('Happy Hour', widget.drink.happyhourprice, isHappyHour: true),
+        _buildPriceCard('Happy Hour', widget.drink.happyhourprice,
+            isHappyHour: true),
       ],
     );
   }
 
-  Widget _buildPriceCard(String label, double price, {bool isHappyHour = false}) {
+  Widget _buildPriceCard(String label, double price,
+      {bool isHappyHour = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -237,6 +272,8 @@ class DrinkFeedState extends State<DrinkFeed> with SingleTickerProviderStateMixi
       ),
     );
   }
+
+  
 
   Widget _buildBottomBar(BuildContext context) {
     return Container(

@@ -2,6 +2,7 @@
 import 'package:barzzy_app1/HomePage/bottomsheet.dart';
 import 'package:barzzy_app1/HomePage/hometopicons.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/heroicons_solid.dart';
@@ -137,8 +138,8 @@ class HomePageState extends State<HomePage> {
                                         fit: StackFit.expand,
                                         children: [
                                           // Always display the image
-                                          Image.network(
-                                            bar?.tagimg ??
+                                          CachedNetworkImage(
+                                            imageUrl: bar?.tagimg ??
                                                 'https://www.barzzy.site/images/default.png',
                                             fit: BoxFit.cover,
                                           ),
@@ -225,8 +226,8 @@ class HomePageState extends State<HomePage> {
                     color: Colors.black,
                   ),
                   child: Center(
-                    child: Image.network(
-                      LocalDatabase.getBarById(
+                    child: CachedNetworkImage(
+                      imageUrl: LocalDatabase.getBarById(
                             barHistory.currentTappedBarId!,
                           )?.barimg ??
                           'https://www.barzzy.site/images/champs/6.png',

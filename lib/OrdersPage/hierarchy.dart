@@ -2,6 +2,7 @@ import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Backend/activeorder.dart';
 import 'package:barzzy_app1/Backend/localdatabase.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 
@@ -184,36 +185,6 @@ class Hierarchy extends ChangeNotifier {
     }
   }
 
-  // Future<void> showNotification(String status) async {
-  //   if (status == 'unready') return;
-  //   const AndroidNotificationDetails androidNotificationDetails =
-  //       AndroidNotificationDetails(
-  //     'your_channel_id', // channel ID
-  //     'your_channel_name', // channel name
-  //     channelDescription: 'your_channel_description', // channel description
-  //     importance: Importance.max,
-  //     priority: Priority.high,
-  //     ticker: 'ticker',
-  //   );
-
-  //   const DarwinNotificationDetails darwinNotificationDetails =
-  //       DarwinNotificationDetails();
-
-  //   const NotificationDetails platformChannelSpecifics = NotificationDetails(
-  //     android: androidNotificationDetails,
-  //     iOS: darwinNotificationDetails,
-  //   );
-
-  //   await flutterLocalNotificationsPlugin.show(
-  //     0, // Notification ID
-  //     'Order Status Change', // Notification title
-  //     'Your order is now $status.', // Notification body
-  //     platformChannelSpecifics, // Notification details specific to each platform
-  //     payload: '', // Payload to pass when the notification is tapped
-  //   );
-  // }
-
-  
 Future<void> showNotification(String status, String claimer) async {
   String notificationMessage;
 
@@ -333,6 +304,7 @@ void _handleUpdateResponse(Map<String, dynamic> data) async {
     showDialog(
       context: safeContext,
       builder: (BuildContext context) {
+        HapticFeedback.heavyImpact();
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),

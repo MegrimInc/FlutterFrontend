@@ -1,9 +1,11 @@
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy_app1/Backend/activeorder.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for haptic feedback
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Import for shared preferences
 import '../Backend/localdatabase.dart';
@@ -114,7 +116,7 @@ class PickupPageState extends State<PickupPage> {
         border: Border(
           bottom: BorderSide(
             color: Colors.grey.withOpacity(0.3),
-            width: 0.25,
+            width: 0.2078,
           ),
         ),
       ),
@@ -147,6 +149,7 @@ class PickupPageState extends State<PickupPage> {
     child: const Icon(
       Icons.grid_view,
       color: Colors.white,
+      size: 30
     ),
   ),
 ),
@@ -186,8 +189,8 @@ class PickupPageState extends State<PickupPage> {
                   shape: BoxShape.circle,
                 ),
                 child: ClipOval(
-                  child: Image.network(
-                    bar?.tagimg ?? 'https://www.barzzy.site/images/default.png',
+                  child: CachedNetworkImage(
+                    imageUrl: bar?.tagimg ?? 'https://www.barzzy.site/images/default.png',
                     fit: BoxFit.cover,
                     width: 105, // Adjust as needed
                     height: 105, // Adjust as needed
@@ -253,8 +256,8 @@ class PickupPageState extends State<PickupPage> {
                     Center(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(60),
-                        child: Image.network(
-                          bar.tagimg ??
+                        child: CachedNetworkImage(
+                          imageUrl: bar.tagimg ??
                               'https://www.barzzy.site/images/default.png',
                           width: 105,
                           height: 105,
@@ -283,11 +286,13 @@ class PickupPageState extends State<PickupPage> {
                           final drinkOrder = order.drinks[index];
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4.0),
-                            child: Text(
-                              '${drinkOrder.drinkName} x ${drinkOrder.quantity}',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 18,
+                            child: Center(
+                              child: Text(
+                                '${drinkOrder.drinkName} x ${drinkOrder.quantity}',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 18,
+                                ),
                               ),
                             ),
                           );
@@ -319,7 +324,7 @@ class PickupPageState extends State<PickupPage> {
               ),
               if (status == "delivered" || status == "canceled")
                 const Positioned(
-                  bottom: 5,
+                  bottom: 15,
                   left: 0,
                   right: 0,
                   child: Center(
@@ -379,30 +384,24 @@ class PickupPageState extends State<PickupPage> {
           // Cancel action
           hierarchy.cancelOrder(barId, userId);
         },
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.red,
-              borderRadius: BorderRadius.circular(15),
-            ),
-            width: 120,
-            height: 40,
-            child: const Padding(
-              padding: EdgeInsets.only(top: 5.5),
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 17.5,
-                ),
-                textAlign:
-                    TextAlign.center, // Center text alignment if the text wraps
-              ),
-            ),
-          ),
+        child: Container(
+    color: Colors.transparent,
+    height: 50, // Increase the height of the pressable area
+    width: 50, // Increase the width of the pressable area
+    alignment: Alignment.bottomRight,
+    // child: const Icon(
+    //       Icons.remove,
+    //     color: Colors.red,
+    //     size: 55,)
+    child: const Padding(
+      padding:  EdgeInsets.only(bottom: 4),
+      child:  Icon(
+      FontAwesomeIcons.circleXmark, // Cancel icon
+      color: Colors.red, // Red color to emphasize cancel action
+      size: 42.5, // Adjust size as needed
         ),
+    ),
+  ),
       );
     }
 

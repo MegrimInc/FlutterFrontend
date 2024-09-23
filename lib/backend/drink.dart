@@ -6,8 +6,9 @@ class Drink {
   double price;
   double happyhourprice;
   final List<String> tagId;
+  String description; // New field for description
 
-  Drink(this.id, this.name, this.alcohol, this.image, this.price, this.happyhourprice, this.tagId);
+  Drink(this.id, this.name, this.alcohol, this.image, this.price, this.happyhourprice, this.tagId, this.description);
 
   // Getter methods
   String? getName() {
@@ -22,6 +23,10 @@ class Drink {
     return image;
   }
 
+  String? getDescription() {
+    return description;
+  }
+
   // JSON serialization
   Map<String, dynamic> toJson() {
     return {
@@ -31,21 +36,22 @@ class Drink {
       'drinkImage': image,
       'drinkPrice': price,
       'drinkTags': tagId,
-      'drinkDiscount': happyhourprice
+      'drinkDiscount': happyhourprice,
+      'description': description, // Include the new description field
     };
   }
 
   // JSON deserialization
   factory Drink.fromJson(Map<String, dynamic> json) {
     return Drink(
-        json['drinkId'].toString(),
-        json['drinkName'] as String,
-        json['alcoholContent'] as String,
-        json['drinkImage'] as String,
-        json['drinkPrice'] as double,
-        json['drinkDiscount'] as double,
-        (json['drinkTags'] as List<dynamic>)
-            .map((tag) => tag.toString())
-            .toList());
+      json['drinkId'].toString(),
+      json['drinkName'] as String,
+      json['alcoholContent'] as String,
+      json['drinkImage'] as String,
+      json['drinkPrice'] as double,
+      json['drinkDiscount'] as double,
+      (json['drinkTags'] as List<dynamic>).map((tag) => tag.toString()).toList(),
+      json['description'] as String, // Deserialize the new description field
+    );
   }
 }

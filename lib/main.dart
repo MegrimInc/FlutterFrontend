@@ -1,7 +1,5 @@
 import 'dart:convert';
-
 import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
-
 import 'package:barzzy_app1/AuthPages/components/toggle.dart';
 import 'package:barzzy_app1/Backend/bar.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
@@ -12,75 +10,79 @@ import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
 import 'package:barzzy_app1/Terminal/stationid.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:barzzy_app1/Backend/localdatabase.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy_app1/Backend/barhistory.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
-
+import 'package:firebase_core/firebase_core.dart'; // Firebase
+import 'package:firebase_crashlytics/firebase_crashlytics.dart'; // Crashlytics
 
 
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void main() async {
-  debugPrint("current date: ${DateTime.now()}");
-  WidgetsFlutterBinding.ensureInitialized();
-  final loginCache = LoginCache();
 
-  //await loginCache.clearAll();
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  debugPrint("current date: ${DateTime.now()}");
   
+if (Firebase.apps.isEmpty) {
+  await Firebase.initializeApp();
+   }
+  // Enable Crashlytics collection for Flutter errors
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
+
+  final loginCache = LoginCache();
   bool loggedInAlready = true;
-  await loginCache.getSignedIn() /* && HTTP REQUEST*/;
+  await loginCache.getSignedIn();
+
+  // Make HTTP request and initialize your application logic
   final url = Uri.parse('https://www.barzzy.site/signup/login');
   final initPW = await loginCache.getPW();
   final initEmail = await loginCache.getEmail();
 
   // Create the request body
   final requestBody = jsonEncode({'email': initEmail, 'password': initPW});
-  bool httprequest = false;
+  bool httpRequest = false;
+
   // Send the POST request
   final response = await http.post(
     url,
     headers: {
-      'Content-Type': 'application/json', // Specify that the body is JSON
+      'Content-Type': 'application/json',
     },
     body: requestBody,
   );
+
   // Check the response
   if (response.statusCode == 200) {
     debugPrint('Init Request successful');
-    debugPrint('Init Response body: ${response.body}');
-    if (int.parse(response.body) != 0) httprequest = true;
+    if (int.parse(response.body) != 0) httpRequest = true;
   } else {
     debugPrint('Init Request failed with status: ${response.statusCode}');
-    debugPrint('Init Response body: ${response.body}');
   }
 
   final uid = await loginCache.getUID();
   final isBar = uid < 0;
-  debugPrint("User ID: $uid, isBar: $isBar");
-
-  loggedInAlready = loggedInAlready && httprequest;
-  debugPrint("Final loggedInAlready after request: $loggedInAlready");
+  loggedInAlready = loggedInAlready && httpRequest;
 
   LocalDatabase localDatabase = LocalDatabase();
   User user = User();
   await sendGetRequest();
 
-
   // Initialize the notifications
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
 
- final DarwinInitializationSettings initializationSettingsDarwin =
+  final DarwinInitializationSettings initializationSettingsDarwin =
       DarwinInitializationSettings(
-    onDidReceiveLocalNotification: (int id, String? title, String? body, String? payload) async {
-      // Handle the notification tapped event when the app is in foreground (iOS/macOS specific)
-      // You can navigate to a specific screen or perform some actions
+    onDidReceiveLocalNotification:
+        (int id, String? title, String? body, String? payload) async {
+      // Handle the notification tapped event when the app is in foreground
     },
   );
 
@@ -94,13 +96,14 @@ void main() async {
     initializationSettings,
     onDidReceiveNotificationResponse: (NotificationResponse response) async {
       if (response.payload != null && response.payload == 'app_started') {
-        // Handle notification tap to open the app
-        runApp(Barzzy(loggedInAlready: loggedInAlready, isBar: isBar, navigatorKey: navigatorKey,));
+        runApp(Barzzy(
+          loggedInAlready: loggedInAlready,
+          isBar: isBar,
+          navigatorKey: navigatorKey,
+        ));
       }
     },
   );
-
-
 
   runApp(
     MultiProvider(
@@ -116,12 +119,13 @@ void main() async {
         ),
       ],
       child: Barzzy(
-        loggedInAlready: loggedInAlready, 
+        loggedInAlready: loggedInAlready,
         isBar: isBar,
-        navigatorKey: navigatorKey, 
-        ),
+        navigatorKey: navigatorKey,
+      ),
     ),
   );
+  
 }
 
 Future<void> sendGetRequest() async {
@@ -132,40 +136,41 @@ Future<void> sendGetRequest() async {
     if (response.statusCode == 200) {
       debugPrint('GET request successful');
 
-      // Print the raw JSON response
-      //debugPrint('Response body: ${response.body}');
-
-      // Decode and print formatted JSON
       final List<dynamic> jsonResponse = jsonDecode(response.body);
-      //final jsonResponse = jsonDecode(response.body);
-      debugPrint('Decoded JSON response: ${jsonResponse.toString()}');
-
       LocalDatabase barDatabase = LocalDatabase();
       for (var barJson in jsonResponse) {
         Bar bar = Bar.fromJson(barJson);
-        // debugPrint('Parsed Bar Name: ${bar.name}');
-        // debugPrint('Parsed Bar Image: ${bar.barimg}');
-        // debugPrint('Parsed Tag Image: ${bar.tagimg}');
         barDatabase.addBar(bar);
+
+        if (bar.barimg != null && bar.barimg!.isNotEmpty) {
+          final cachedImage = CachedNetworkImageProvider(bar.barimg!);
+          cachedImage.resolve(const ImageConfiguration()).addListener(
+            ImageStreamListener(
+              (ImageInfo image, bool synchronousCall) {
+                //debugPrint('Bar image successfully cached: ${bar.barimg}');
+              },
+              onError: (dynamic exception, StackTrace? stackTrace) {
+                //debugPrint('Failed to cache bar image: $exception');
+              },
+            ),
+          );
+        }
         await fetchTagsAndDrinks(bar.id!);
       }
-
-      debugPrint('All bars have been added to the database.');
     } else {
-      debugPrint('Failed to send GET request');
-      debugPrint('Response status code: ${response.statusCode}');
+      debugPrint('Failed to send GET request: ${response.statusCode}');
     }
   } catch (e) {
     debugPrint('Error sending GET request: $e');
   }
 }
 
-
 Future<void> fetchTagsAndDrinks(String barId) async {
+  debugPrint('Fetching drinks for bar ID: $barId');
   LocalDatabase barDatabase = LocalDatabase();
   User user = User();
 
-  // Corrected tagList with updated tag IDs
+
   // ignore: unused_local_variable
   List<MapEntry<int, String>> tagList = [
     const MapEntry(172, 'vodka'),
@@ -182,7 +187,6 @@ Future<void> fetchTagsAndDrinks(String barId) async {
     const MapEntry(186, 'seltzer'),
   ];
 
-  // Initialize a Categories object with the correct tags
   Categories categories = Categories(
     barId: int.parse(barId),
     tag172: [],
@@ -199,25 +203,38 @@ Future<void> fetchTagsAndDrinks(String barId) async {
     tag186: [],
   );
 
-  // Fetch all drinks for the bar
   final url = Uri.parse('https://www.barzzy.site/bars/getAllDrinksByBar/$barId');
   final response = await http.get(url);
 
   if (response.statusCode == 200) {
     final List<dynamic> jsonResponse = jsonDecode(response.body);
-    debugPrint('Response received for bar $barId: $jsonResponse');
+    debugPrint('Drinks JSON response for bar $barId: $jsonResponse');
 
     for (var drinkJson in jsonResponse) {
       String? drinkId = drinkJson['drinkId']?.toString();
+      debugPrint('Processing drink: $drinkJson');
+
       if (drinkId != null) {
-        // Deserialize the drink JSON into a Drink object
         Drink drink = Drink.fromJson(drinkJson);
-
-        // Add the drink object to the local database
         barDatabase.addDrink(drink);
+        debugPrint('Added drink with ID: $drinkId to bar $barId');
 
-        // Check the tags and add the drinkId to the appropriate tag list in Categories
+        if (drink.image.isNotEmpty) {
+          final cachedImage = CachedNetworkImageProvider(drink.image);
+          cachedImage.resolve(const ImageConfiguration()).addListener(
+            ImageStreamListener(
+              (ImageInfo image, bool synchronousCall) {
+                debugPrint('Drink image successfully cached: ${drink.image}');
+              },
+              onError: (dynamic exception, StackTrace? stackTrace) {
+                debugPrint('Failed to cache drink image: $exception');
+              },
+            ),
+          );
+        }
+
         for (String tagId in drink.tagId) {
+          debugPrint('Processing tagId: $tagId for drinkId: $drinkId');
           switch (int.parse(tagId)) {
             case 172:
               categories.tag172.add(int.parse(drinkId));
@@ -259,18 +276,13 @@ Future<void> fetchTagsAndDrinks(String barId) async {
               debugPrint('Unknown tagId: $tagId for drinkId: $drinkId');
           }
         }
-
-        debugPrint('Added drink to database: ${drink.name} (ID: $drinkId)');
       } else {
         debugPrint('Warning: Drink ID is null for drink: $drinkJson');
       }
     }
 
-    // Add the Categories object to the User map
     user.addCategories(barId, categories);
-
-    debugPrint(
-        'Drinks for bar $barId have been categorized and added to the User object.');
+    debugPrint('Drinks for bar $barId have been categorized and added to the User object.');
   } else {
     debugPrint('Failed to load drinks for bar $barId. Status code: ${response.statusCode}');
   }
@@ -285,18 +297,16 @@ class Barzzy extends StatelessWidget {
 
   const Barzzy({
     super.key,
-   required this.loggedInAlready, 
-   required this.isBar,
-   required this.navigatorKey,
-   });
+    required this.loggedInAlready,
+    required this.isBar,
+    required this.navigatorKey,
+  });
 
   @override
   Widget build(BuildContext context) {
     Provider.of<BarHistory>(context, listen: false).setContext(context);
-    Provider.of<Recommended>(context, listen: false)
-        .fetchRecommendedBars(context);
+    Provider.of<Recommended>(context, listen: false).fetchRecommendedBars(context);
 
-    // Decide the initial route
     final String initialRoute;
     if (!loggedInAlready) {
       initialRoute = '/login';
@@ -308,21 +318,13 @@ class Barzzy extends StatelessWidget {
 
     return MaterialApp(
       navigatorKey: navigatorKey,
-      //theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
-      //home: OrdersPage(bartenderID: "test"),
-      //ALREADY COMMENTED home: loggedInAlready ? (isBar ? const OrderDisplay() : const AuthPage()) : const LoginOrRegisterPage()//Make it so that when bars sign in, they get sent to
-      initialRoute: initialRoute, // Set the initial route based on the logic
-
+      initialRoute: initialRoute,
       routes: {
-        '/auth': (context) =>
-            const AuthPage(), // Your main app page for non-bar users
-        '/bar': (context) =>
-            const BartenderIDScreen(), // Orders page for bar users
-        '/login': (context) =>
-            const LoginOrRegisterPage(), // Login or Register page
+        '/auth': (context) => const AuthPage(),
+        '/bar': (context) => const BartenderIDScreen(),
+        '/login': (context) => const LoginOrRegisterPage(),
         '/orders': (context) => const AuthPage(selectedTab: 1),
-        // Add other routes here if needed
       },
     );
   }

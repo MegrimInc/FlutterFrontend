@@ -1,4 +1,4 @@
-import 'dart:math';
+
 
 class Categories {
   final int barId;
@@ -11,7 +11,6 @@ class Categories {
   final List<int> tag178;
   final List<int> tag179;
   final List<int> tag181;
-  // final List<int> tag182;
   final List<int> tag183;
   final List<int> tag184;
   final List<int> tag186;
@@ -34,29 +33,5 @@ class Categories {
   });
 
 
-  // Method to get 6 random drink IDs from each category list
-  Map<String, List<int>> getRandomDrinkIds() {
-    final random = Random();
-    return {
-      'tag172': _getRandomSubset(tag172, random),
-      'tag173': _getRandomSubset(tag173, random),
-      'tag174': _getRandomSubset(tag174, random),
-      'tag175': _getRandomSubset(tag175, random),
-      'tag176': _getRandomSubset(tag176, random),
-      'tag177': _getRandomSubset(tag177, random),
-      'tag178': _getRandomSubset(tag178, random),
-      'tag179': _getRandomSubset(tag179, random),
-      'tag181': _getRandomSubset(tag181, random),
-      // 'tag182': _getRandomSubset(tag182, random),
-      'tag183': _getRandomSubset(tag183, random),
-      'tag184': _getRandomSubset(tag184, random),
-      'tag186': _getRandomSubset(tag186, random),
-    };
-  }
-
-  // Helper method to return a random subset of 6 or fewer elements
-  List<int> _getRandomSubset(List<int> list, Random random) {
-    if (list.isEmpty) return [];
-    return (list..shuffle(random)).take(6).toList();
-  }
+  
 }
