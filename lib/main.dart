@@ -5,7 +5,7 @@ import 'package:barzzy_app1/Backend/bar.dart';
 import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:barzzy_app1/Backend/searchengine.dart';
 import 'package:barzzy_app1/Backend/recommended.dart';
-import 'package:barzzy_app1/backend/categories.dart';
+import 'package:barzzy_app1/Backend/categories.dart';
 import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
