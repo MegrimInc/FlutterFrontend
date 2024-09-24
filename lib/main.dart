@@ -71,7 +71,6 @@ if (Firebase.apps.isEmpty) {
   loggedInAlready = loggedInAlready && httpRequest;
 
   LocalDatabase localDatabase = LocalDatabase();
-  User user = User();
   await sendGetRequest();
 
   // Initialize the notifications
@@ -95,15 +94,12 @@ if (Firebase.apps.isEmpty) {
   await flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
     onDidReceiveNotificationResponse: (NotificationResponse response) async {
-      if (response.payload != null && response.payload == 'app_started') {
-        runApp(Barzzy(
-          loggedInAlready: loggedInAlready,
-          isBar: isBar,
-          navigatorKey: navigatorKey,
-        ));
+      // Check if the payload equals "pickup"
+      if (response.payload != null && response.payload == 'pickup') {
+       navigatorKey.currentState?.pushNamed('/orders');
       }
     },
-  );
+);
 
   runApp(
     MultiProvider(
@@ -113,7 +109,7 @@ if (Firebase.apps.isEmpty) {
         ChangeNotifierProvider(create: (context) => Recommended()),
         ChangeNotifierProvider(create: (context) => Hierarchy(context, navigatorKey)),
         ChangeNotifierProvider(create: (_) => LoginCache()),
-        ChangeNotifierProvider(create: (context) => user),
+        ChangeNotifierProvider(create: (context) => User()),
         ProxyProvider<LocalDatabase, SearchService>(
           update: (_, localDatabase, __) => SearchService(localDatabase),
         ),
@@ -155,7 +151,7 @@ Future<void> sendGetRequest() async {
             ),
           );
         }
-        await fetchTagsAndDrinks(bar.id!);
+        //await fetchTagsAndDrinks(bar.id!);
       }
     } else {
       debugPrint('Failed to send GET request: ${response.statusCode}');
@@ -212,29 +208,29 @@ Future<void> fetchTagsAndDrinks(String barId) async {
 
     for (var drinkJson in jsonResponse) {
       String? drinkId = drinkJson['drinkId']?.toString();
-      debugPrint('Processing drink: $drinkJson');
+      //debugPrint('Processing drink: $drinkJson');
 
       if (drinkId != null) {
         Drink drink = Drink.fromJson(drinkJson);
         barDatabase.addDrink(drink);
-        debugPrint('Added drink with ID: $drinkId to bar $barId');
+        //debugPrint('Added drink with ID: $drinkId to bar $barId');
 
         if (drink.image.isNotEmpty) {
           final cachedImage = CachedNetworkImageProvider(drink.image);
           cachedImage.resolve(const ImageConfiguration()).addListener(
             ImageStreamListener(
               (ImageInfo image, bool synchronousCall) {
-                debugPrint('Drink image successfully cached: ${drink.image}');
+                //debugPrint('Drink image successfully cached: ${drink.image}');
               },
               onError: (dynamic exception, StackTrace? stackTrace) {
-                debugPrint('Failed to cache drink image: $exception');
+                //debugPrint('Failed to cache drink image: $exception');
               },
             ),
           );
         }
 
         for (String tagId in drink.tagId) {
-          debugPrint('Processing tagId: $tagId for drinkId: $drinkId');
+          //debugPrint('Processing tagId: $tagId for drinkId: $drinkId');
           switch (int.parse(tagId)) {
             case 172:
               categories.tag172.add(int.parse(drinkId));
@@ -273,7 +269,7 @@ Future<void> fetchTagsAndDrinks(String barId) async {
               categories.tag186.add(int.parse(drinkId));
               break;
             default:
-              debugPrint('Unknown tagId: $tagId for drinkId: $drinkId');
+              //debugPrint('Unknown tagId: $tagId for drinkId: $drinkId');
           }
         }
       } else {

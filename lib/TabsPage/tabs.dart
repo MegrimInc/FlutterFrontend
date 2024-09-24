@@ -21,18 +21,18 @@ class _TabsPageState extends State<TabsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      // Add a button to trigger the crash
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            // Trigger a crash when the button is pressed
-            FirebaseCrashlytics.instance.crash();
-          },
-          child: const Text('Crash the App'),
-        ),
-      ),
+    return const Scaffold(
+       backgroundColor: Colors.black,
+      // // Add a button to trigger the crash
+      // body: Center(
+      //   child: ElevatedButton(
+      //     onPressed: () {
+      //       // Trigger a crash when the button is pressed
+      //       FirebaseCrashlytics.instance.crash();
+      //     },
+      //     child: const Text('Crash the App'),
+      //   ),
+      // ),
     );
   }
 }

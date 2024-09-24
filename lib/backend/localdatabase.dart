@@ -1,4 +1,3 @@
-
 import 'package:barzzy_app1/Backend/activeorder.dart';
 import 'package:barzzy_app1/backend/tags.dart';
 
@@ -7,20 +6,15 @@ import 'package:barzzy_app1/Backend/drink.dart';
 import 'package:flutter/material.dart';
 import 'bar.dart';
 
-
-
 class LocalDatabase with ChangeNotifier {
   static final LocalDatabase _singleton = LocalDatabase._internal();
-  
 
   factory LocalDatabase() {
     return _singleton;
   }
 
-  LocalDatabase._internal() {
-    // Automatically load orders when the class is instantiated
-    //loadOrdersFromSharedPreferences();
-  }
+
+  LocalDatabase._internal();
 
   final Map<String, Bar> _bars = {};
   final Map<String, Tag> tags = {};
@@ -33,7 +27,6 @@ class LocalDatabase with ChangeNotifier {
     notifyListeners();
   }
 
-
   CustomerOrder? getOrderForBar(String barId) {
     return _barOrders[barId];
   }
@@ -43,17 +36,19 @@ class LocalDatabase with ChangeNotifier {
     if (bar.id != null) {
       _bars[bar.id!] = bar;
       notifyListeners();
+      debugPrint('Bar with ID: ${bar.id} added by LocalDatabase instance: $hashCode.');
     } else {
       debugPrint('Bar ID is null, cannot add to database.');
     }
   }
 
   void addDrink(Drink drink) {
-    _drinks[drink.id] = drink;
-    notifyListeners();
-  }
+  _drinks[drink.id] = drink;
+  notifyListeners();
+  debugPrint('Drink with ID: ${drink.id} added by LocalDatabase instance: $hashCode. Total drinks: ${_drinks.length}');
+}
 
-void addTag(Tag tag) {
+  void addTag(Tag tag) {
     tags[tag.id] = tag;
     notifyListeners();
   }
@@ -74,8 +69,9 @@ void addTag(Tag tag) {
   }
 
   Drink getDrinkById(String id) {
+    debugPrint('Drink found for ID: $id in LocalDatabase instance: $hashCode');
     return _drinks[id]!;
   }
 
- 
+  
 }

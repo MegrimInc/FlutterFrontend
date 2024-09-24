@@ -47,7 +47,9 @@ class MenuPageState extends State<MenuPage>
   @override
   void initState() {
     super.initState();
-    _fetchBarData();
+
+    debugPrint('are you working or nah');
+     _fetchBarData();
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
@@ -66,10 +68,16 @@ class MenuPageState extends State<MenuPage>
 
   //LOADS DRINK IN
   Future<void> _fetchBarData() async {
+    debugPrint('Fetching bar data for barId: ${widget.barId}');
+
     currentBar = LocalDatabase.getBarById(widget.barId);
     if (currentBar != null) {
       appBarTitle = (currentBar!.tag ?? 'Menu Page').replaceAll(' ', '');
     }
+
+   await Provider.of<User>(context, listen: false).fetchTagsAndDrinks(widget.barId);
+    debugPrint('Finished fetching drinks for barId: ${widget.barId}');
+
     setState(() {
       isLoading = false;
     });
@@ -220,56 +228,60 @@ class MenuPageState extends State<MenuPage>
   }
 
   Widget _buildTopBar() {
-  return Container(
-    decoration: BoxDecoration(
-      border: Border(
-        bottom: BorderSide(
-          color: Colors.grey.withOpacity(0.3),
-          width: 0.25,
-        ),
-      ),
-      color: Colors.black, // Removed gradient
-    ),
-    padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 16.0),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          icon: const Icon(
-            FontAwesomeIcons.caretLeft,
-            color: Colors.white,
-            size: 25,
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.withOpacity(0.3),
+            width: 0.25,
           ),
-          onPressed: () => Navigator.pop(context),
         ),
-        Center(
-          child: Text(
-            appBarTitle,
-            style: GoogleFonts.poppins(
-              color: Colors.white70,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+        color: Colors.black, // Removed gradient
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(
+              FontAwesomeIcons.caretLeft,
+              color: Colors.white,
+              size: 25,
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+          Center(
+            child: Text(
+              appBarTitle,
+              style: GoogleFonts.poppins(
+                color: Colors.white70,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ),
-        Consumer<Cart>(
-          builder: (context, cart, _) {
-            int totalDrinks = cart.getTotalDrinkCount();
+          Consumer<Cart>(
+            builder: (context, cart, _) {
+              int totalDrinks = cart.getTotalDrinkCount();
 
-            return Padding(
-              padding: const EdgeInsets.only(right: 10.0, left: 13), // Add 20px padding to the right
-              child: Icon(
-                FontAwesomeIcons.lock, // Icon to represent max drinks
-                color: totalDrinks >= 3 ? Colors.transparent : Colors.transparent, // White if 3 drinks, transparent otherwise
-                size: 17.5, // Adjust the size as needed
-              ),
-            );
-          },
-        ),
-      ],
-    ),
-  );
-}
+              return Padding(
+                padding: const EdgeInsets.only(
+                    right: 10.0, left: 13), // Add 20px padding to the right
+                child: Icon(
+                  FontAwesomeIcons.lock, // Icon to represent max drinks
+                  color: totalDrinks >= 3
+                      ? Colors.transparent
+                      : Colors
+                          .transparent, // White if 3 drinks, transparent otherwise
+                  size: 17.5, // Adjust the size as needed
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildBottomBar() {
     return Consumer<Cart>(
@@ -356,16 +368,16 @@ class MenuPageState extends State<MenuPage>
                 ),
               ),
               if (pageCount > 1)
-              Text(
-                '${_currentPageIndices[tagName]! + 1} / $pageCount', // Current page index
-                style: GoogleFonts.poppins(
-                  color: Colors.white70,
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                ),
-              )
-            else
-              const SizedBox.shrink(),
+                Text(
+                  '${_currentPageIndices[tagName]! + 1} / $pageCount', // Current page index
+                  style: GoogleFonts.poppins(
+                    color: Colors.white70,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              else
+                const SizedBox.shrink(),
             ],
           ),
         ),
@@ -410,6 +422,8 @@ class MenuPageState extends State<MenuPage>
                     final drink = Provider.of<LocalDatabase>(context,
                             listen: false)
                         .getDrinkById(drinkIds[startIndex + index].toString());
+
+                        // final drink = LocalDatabase().getDrinkById(drinkIds[startIndex + index].toString());
 
                     return GestureDetector(
                       onLongPress: () {

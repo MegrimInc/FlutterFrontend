@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
-
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -227,7 +226,7 @@ Future<void> showNotification(String status, String claimer) async {
     'Order Status Change', // Notification title
     notificationMessage, // Notification body
     platformChannelSpecifics, // Notification details specific to each platform
-    payload: '', // Payload to pass when the notification is tapped
+    payload: 'pickup', // Payload to pass when the notification is tapped
   );
 }
 
