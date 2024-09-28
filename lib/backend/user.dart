@@ -62,18 +62,19 @@ if (categoriesExistForBar(barId)) {
 
   // ignore: unused_local_variable
   List<MapEntry<int, String>> tagList = [
+    const MapEntry(179, 'lager'),
     const MapEntry(172, 'vodka'),
-    const MapEntry(173, 'gin'),
-    const MapEntry(174, 'whiskey'),
     const MapEntry(175, 'tequila'),
+    const MapEntry(174, 'whiskey'),
+    const MapEntry(173, 'gin'),
     const MapEntry(176, 'brandy'),
     const MapEntry(177, 'rum'),
+    const MapEntry(186, 'seltzer'),
     const MapEntry(178, 'ale'),
-    const MapEntry(179, 'lager'),
-    const MapEntry(181, 'virgin'),
     const MapEntry(183, 'red wine'),
     const MapEntry(184, 'white wine'),
-    const MapEntry(186, 'seltzer'),
+    const MapEntry(181, 'virgin'),
+    
   ];
 
   Categories categories = Categories(
@@ -106,17 +107,17 @@ if (categoriesExistForBar(barId)) {
       if (drinkId != null) {
         Drink drink = Drink.fromJson(drinkJson);
         localDatabase.addDrink(drink);
-        debugPrint('Added drink with ID: $drinkId to bar $barId');
+        //debugPrint('Added drink with ID: $drinkId to bar $barId');
 
         if (drink.image.isNotEmpty) {
           final cachedImage = CachedNetworkImageProvider(drink.image);
           cachedImage.resolve(const ImageConfiguration()).addListener(
             ImageStreamListener(
               (ImageInfo image, bool synchronousCall) {
-                //debugPrint('Drink image successfully cached: ${drink.image}');
+                debugPrint('Drink image successfully cached: ${drink.image}');
               },
               onError: (dynamic exception, StackTrace? stackTrace) {
-                //debugPrint('Failed to cache drink image: $exception');
+                debugPrint('Failed to cache drink image: $exception');
               },
             ),
           );

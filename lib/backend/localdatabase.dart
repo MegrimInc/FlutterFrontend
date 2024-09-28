@@ -45,7 +45,7 @@ class LocalDatabase with ChangeNotifier {
   void addDrink(Drink drink) {
   _drinks[drink.id] = drink;
   notifyListeners();
-  debugPrint('Drink with ID: ${drink.id} added by LocalDatabase instance: $hashCode. Total drinks: ${_drinks.length}');
+  //debugPrint('Drink with ID: ${drink.id} added by LocalDatabase instance: $hashCode. Total drinks: ${_drinks.length}');
 }
 
   void addTag(Tag tag) {
@@ -69,7 +69,7 @@ class LocalDatabase with ChangeNotifier {
   }
 
   Drink getDrinkById(String id) {
-    debugPrint('Drink found for ID: $id in LocalDatabase instance: $hashCode');
+    //debugPrint('Drink found for ID: $id in LocalDatabase instance: $hashCode');
     return _drinks[id]!;
   }
 

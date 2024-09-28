@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart'; // Import Crashlytics
 
 class TabsPage extends StatefulWidget {
   const TabsPage({super.key});
