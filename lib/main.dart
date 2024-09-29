@@ -10,31 +10,75 @@ import 'package:barzzy_app1/Backend/user.dart';
 import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
 import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
 import 'package:barzzy_app1/Terminal/stationid.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:barzzy_app1/Backend/localdatabase.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy_app1/Backend/barhistory.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:firebase_core/firebase_core.dart'; // Firebase
 import 'package:firebase_crashlytics/firebase_crashlytics.dart'; // Crashlytics
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
-
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint("current date: ${DateTime.now()}");
+
   
-if (Firebase.apps.isEmpty) {
-  await Firebase.initializeApp();
-   }
+   try {
+    debugPrint("Starting Firebase Initialization");
+
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+
+    debugPrint("Firebase Initialization Completed");
+  } catch (e) {
+    debugPrint("Firebase Initialization Failed: $e");
+  }
+  
   // Enable Crashlytics collection for Flutter errors
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+  // Request permissions for iOS devices
+  NotificationSettings settings = await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+
+  if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+    debugPrint('User granted permission');
+  } else {
+    debugPrint('User declined or has not accepted permission');
+  }
+
+  // Retrieve and print the device token
+  String? deviceToken = await messaging.getToken();
+  debugPrint("Device Token: $deviceToken");
+  deviceToken = deviceToken ?? '';
+
+  // Set up notification handlers for different app states
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    debugPrint('Received a message while in foreground: ${message.data}');
+    if (message.notification != null) {
+      debugPrint(
+          'Message also contained a notification: ${message.notification}');
+      // You can handle the foreground notification here (e.g., show a dialog or snackbar)
+    }
+  });
+
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    debugPrint(
+        'Notification opened from terminated or background state: ${message.data}');
+    navigatorKey.currentState?.pushNamed(
+        '/orders'); // Navigate to orders page when notification is tapped
+  });
 
   final loginCache = LoginCache();
   bool loggedInAlready = true;
@@ -69,37 +113,10 @@ if (Firebase.apps.isEmpty) {
   final uid = await loginCache.getUID();
   final isBar = uid < 0;
   loggedInAlready = loggedInAlready && httpRequest;
+  await loginCache.setDeviceToken(deviceToken);
 
   LocalDatabase localDatabase = LocalDatabase();
   await sendGetRequest();
-
-  // Initialize the notifications
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-
-  final DarwinInitializationSettings initializationSettingsDarwin =
-      DarwinInitializationSettings(
-    onDidReceiveLocalNotification:
-        (int id, String? title, String? body, String? payload) async {
-      // Handle the notification tapped event when the app is in foreground
-    },
-  );
-
-  final InitializationSettings initializationSettings =
-      InitializationSettings(
-    android: initializationSettingsAndroid,
-    iOS: initializationSettingsDarwin,
-  );
-
-  await flutterLocalNotificationsPlugin.initialize(
-    initializationSettings,
-    onDidReceiveNotificationResponse: (NotificationResponse response) async {
-      // Check if the payload equals "pickup"
-      if (response.payload != null && response.payload == 'pickup') {
-       navigatorKey.currentState?.pushNamed('/orders');
-      }
-    },
-);
 
   runApp(
     MultiProvider(
@@ -107,7 +124,8 @@ if (Firebase.apps.isEmpty) {
         ChangeNotifierProvider(create: (context) => localDatabase),
         ChangeNotifierProvider(create: (context) => BarHistory()),
         ChangeNotifierProvider(create: (context) => Recommended()),
-        ChangeNotifierProvider(create: (context) => Hierarchy(context, navigatorKey)),
+        ChangeNotifierProvider(
+            create: (context) => Hierarchy(context, navigatorKey)),
         ChangeNotifierProvider(create: (_) => LoginCache()),
         ChangeNotifierProvider(create: (context) => User()),
         ProxyProvider<LocalDatabase, SearchService>(
@@ -121,7 +139,6 @@ if (Firebase.apps.isEmpty) {
       ),
     ),
   );
-  
 }
 
 Future<void> sendGetRequest() async {
@@ -141,15 +158,15 @@ Future<void> sendGetRequest() async {
         if (bar.barimg != null && bar.barimg!.isNotEmpty) {
           final cachedImage = CachedNetworkImageProvider(bar.barimg!);
           cachedImage.resolve(const ImageConfiguration()).addListener(
-            ImageStreamListener(
-              (ImageInfo image, bool synchronousCall) {
-                //debugPrint('Bar image successfully cached: ${bar.barimg}');
-              },
-              onError: (dynamic exception, StackTrace? stackTrace) {
-                //debugPrint('Failed to cache bar image: $exception');
-              },
-            ),
-          );
+                ImageStreamListener(
+                  (ImageInfo image, bool synchronousCall) {
+                    //debugPrint('Bar image successfully cached: ${bar.barimg}');
+                  },
+                  onError: (dynamic exception, StackTrace? stackTrace) {
+                    //debugPrint('Failed to cache bar image: $exception');
+                  },
+                ),
+              );
         }
         //await fetchTagsAndDrinks(bar.id!);
       }
@@ -165,7 +182,6 @@ Future<void> fetchTagsAndDrinks(String barId) async {
   debugPrint('Fetching drinks for bar ID: $barId');
   LocalDatabase barDatabase = LocalDatabase();
   User user = User();
-
 
   // ignore: unused_local_variable
   List<MapEntry<int, String>> tagList = [
@@ -199,7 +215,8 @@ Future<void> fetchTagsAndDrinks(String barId) async {
     tag186: [],
   );
 
-  final url = Uri.parse('https://www.barzzy.site/bars/getAllDrinksByBar/$barId');
+  final url =
+      Uri.parse('https://www.barzzy.site/bars/getAllDrinksByBar/$barId');
   final response = await http.get(url);
 
   if (response.statusCode == 200) {
@@ -218,15 +235,15 @@ Future<void> fetchTagsAndDrinks(String barId) async {
         if (drink.image.isNotEmpty) {
           final cachedImage = CachedNetworkImageProvider(drink.image);
           cachedImage.resolve(const ImageConfiguration()).addListener(
-            ImageStreamListener(
-              (ImageInfo image, bool synchronousCall) {
-                //debugPrint('Drink image successfully cached: ${drink.image}');
-              },
-              onError: (dynamic exception, StackTrace? stackTrace) {
-                //debugPrint('Failed to cache drink image: $exception');
-              },
-            ),
-          );
+                ImageStreamListener(
+                  (ImageInfo image, bool synchronousCall) {
+                    //debugPrint('Drink image successfully cached: ${drink.image}');
+                  },
+                  onError: (dynamic exception, StackTrace? stackTrace) {
+                    //debugPrint('Failed to cache drink image: $exception');
+                  },
+                ),
+              );
         }
 
         for (String tagId in drink.tagId) {
@@ -269,7 +286,7 @@ Future<void> fetchTagsAndDrinks(String barId) async {
               categories.tag186.add(int.parse(drinkId));
               break;
             default:
-              //debugPrint('Unknown tagId: $tagId for drinkId: $drinkId');
+            //debugPrint('Unknown tagId: $tagId for drinkId: $drinkId');
           }
         }
       } else {
@@ -278,9 +295,11 @@ Future<void> fetchTagsAndDrinks(String barId) async {
     }
 
     user.addCategories(barId, categories);
-    debugPrint('Drinks for bar $barId have been categorized and added to the User object.');
+    debugPrint(
+        'Drinks for bar $barId have been categorized and added to the User object.');
   } else {
-    debugPrint('Failed to load drinks for bar $barId. Status code: ${response.statusCode}');
+    debugPrint(
+        'Failed to load drinks for bar $barId. Status code: ${response.statusCode}');
   }
 
   debugPrint('Finished processing drinks for barId: $barId');
@@ -301,7 +320,8 @@ class Barzzy extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Provider.of<BarHistory>(context, listen: false).setContext(context);
-    Provider.of<Recommended>(context, listen: false).fetchRecommendedBars(context);
+    Provider.of<Recommended>(context, listen: false)
+        .fetchRecommendedBars(context);
 
     final String initialRoute;
     if (!loggedInAlready) {

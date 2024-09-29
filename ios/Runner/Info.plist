@@ -65,12 +65,8 @@
     </array>
     <key>aps-environment</key>
     <string>production</string>
-
-    <!-- iOS 10+ specific: Add this for handling notifications in the foreground -->
-    <key>UNUserNotificationCenter</key>
-    <dict>
-        <key>delegate</key>
-        <string>AppDelegate</string>
-    </dict>
+    <!-- Firebase Configuration -->
+    <key>FirebaseAppDelegateProxyEnabled</key>
+    <true/>
 </dict>
 </plist>

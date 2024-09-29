@@ -13,6 +13,7 @@ class LoginCache  with ChangeNotifier {
   static const _ln = 'lnKey';
   static const _signedIn = 'signedIn';
   static const _uid2 = 'UID2';
+  static const _deviceToken = 'deviceToken';
 
   // Method to clear all data from SharedPreferences
   Future<void> clearAll() async {
@@ -87,5 +88,18 @@ Future<void> setSignedIn(bool str) async {
     final prefs = await SharedPreferences.getInstance();
     final ln = prefs.getString(_ln);
     return ln ?? '';
+  }
+
+  // New method to set the device token
+  Future<void> setDeviceToken(String? token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_deviceToken, token ?? '');
+    notifyListeners();
+  }
+
+  // New method to get the device token
+  Future<String?> getDeviceToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_deviceToken);
   }
 }
