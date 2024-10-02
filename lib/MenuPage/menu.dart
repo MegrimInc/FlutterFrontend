@@ -2,13 +2,13 @@
 
 import 'dart:ui';
 
-import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy_app1/Backend/barhistory.dart';
-import 'package:barzzy_app1/Backend/drink.dart';
-import 'package:barzzy_app1/Backend/user.dart';
-import 'package:barzzy_app1/MenuPage/cart.dart';
-import 'package:barzzy_app1/MenuPage/drinkfeed.dart';
-import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
+import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy/Backend/barhistory.dart';
+import 'package:barzzy/Backend/drink.dart';
+import 'package:barzzy/Backend/user.dart';
+import 'package:barzzy/MenuPage/cart.dart';
+import 'package:barzzy/MenuPage/drinkfeed.dart';
+import 'package:barzzy/OrdersPage/hierarchy.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -49,7 +49,7 @@ class MenuPageState extends State<MenuPage>
     super.initState();
 
     debugPrint('are you working or nah');
-     _fetchBarData();
+    _fetchBarData();
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
@@ -75,7 +75,8 @@ class MenuPageState extends State<MenuPage>
       appBarTitle = (currentBar!.tag ?? 'Menu Page').replaceAll(' ', '');
     }
 
-   await Provider.of<User>(context, listen: false).fetchTagsAndDrinks(widget.barId);
+    await Provider.of<User>(context, listen: false)
+        .fetchTagsAndDrinks(widget.barId);
     debugPrint('Finished fetching drinks for barId: ${widget.barId}');
 
     setState(() {
@@ -423,7 +424,7 @@ class MenuPageState extends State<MenuPage>
                             listen: false)
                         .getDrinkById(drinkIds[startIndex + index].toString());
 
-                        // final drink = LocalDatabase().getDrinkById(drinkIds[startIndex + index].toString());
+                    // final drink = LocalDatabase().getDrinkById(drinkIds[startIndex + index].toString());
 
                     return GestureDetector(
                       onLongPress: () {

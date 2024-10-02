@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:barzzy_app1/Backend/drink.dart';
-import 'package:barzzy_app1/MenuPage/cart.dart';
+import 'package:barzzy/Backend/drink.dart';
+import 'package:barzzy/MenuPage/cart.dart';
 
 class DrinkFeed extends StatefulWidget {
   final Drink drink;
@@ -31,7 +31,7 @@ class DrinkFeedState extends State<DrinkFeed>
   late AnimationController _controller;
   late Animation<double> _blurAnimation;
   late Animation<double> _opacityAnimation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -63,7 +63,7 @@ class DrinkFeedState extends State<DrinkFeed>
       value: widget.cart,
       child: Scaffold(
         body: GestureDetector(
-           onLongPress: () {
+          onLongPress: () {
             HapticFeedback.heavyImpact();
             Navigator.of(context).pop();
             FocusScope.of(context).unfocus();
@@ -163,8 +163,7 @@ class DrinkFeedState extends State<DrinkFeed>
               width: 75,
               height: 50,
               alignment: Alignment.centerLeft,
-              child: const Icon(
-                Icons.close, size: 29, color: Colors.white),
+              child: const Icon(Icons.close, size: 29, color: Colors.white),
             ),
           ),
           const Text(
@@ -205,30 +204,24 @@ class DrinkFeedState extends State<DrinkFeed>
           const SizedBox(height: 24),
           _buildPriceInfo(),
           const SizedBox(height: 24),
-
           Center(
-          child: Padding(
-            padding: const EdgeInsets.only(
-              left: 25, 
-              right: 25),
-            child: Text(
-              widget.drink.description,
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.normal,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 25, right: 25),
+              child: Text(
+                widget.drink.description,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.normal,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
           ),
-        ),
-          
         ],
       ),
     );
   }
-
-
 
   Widget _buildPriceInfo() {
     return Row(
@@ -272,8 +265,6 @@ class DrinkFeedState extends State<DrinkFeed>
       ),
     );
   }
-
-  
 
   Widget _buildBottomBar(BuildContext context) {
     return Container(

@@ -1,7 +1,7 @@
-import 'package:barzzy_app1/Backend/activeorder.dart';
-import 'package:barzzy_app1/Backend/tags.dart';
+import 'package:barzzy/Backend/activeorder.dart';
+import 'package:barzzy/Backend/tags.dart';
 
-import 'package:barzzy_app1/Backend/drink.dart';
+import 'package:barzzy/Backend/drink.dart';
 
 import 'package:flutter/material.dart';
 import 'bar.dart';
@@ -12,7 +12,6 @@ class LocalDatabase with ChangeNotifier {
   factory LocalDatabase() {
     return _singleton;
   }
-
 
   LocalDatabase._internal();
 
@@ -36,17 +35,18 @@ class LocalDatabase with ChangeNotifier {
     if (bar.id != null) {
       _bars[bar.id!] = bar;
       notifyListeners();
-      debugPrint('Bar with ID: ${bar.id} added by LocalDatabase instance: $hashCode.');
+      debugPrint(
+          'Bar with ID: ${bar.id} added by LocalDatabase instance: $hashCode.');
     } else {
       debugPrint('Bar ID is null, cannot add to database.');
     }
   }
 
   void addDrink(Drink drink) {
-  _drinks[drink.id] = drink;
-  notifyListeners();
-  //debugPrint('Drink with ID: ${drink.id} added by LocalDatabase instance: $hashCode. Total drinks: ${_drinks.length}');
-}
+    _drinks[drink.id] = drink;
+    notifyListeners();
+    //debugPrint('Drink with ID: ${drink.id} added by LocalDatabase instance: $hashCode. Total drinks: ${_drinks.length}');
+  }
 
   void addTag(Tag tag) {
     tags[tag.id] = tag;
@@ -72,6 +72,4 @@ class LocalDatabase with ChangeNotifier {
     //debugPrint('Drink found for ID: $id in LocalDatabase instance: $hashCode');
     return _drinks[id]!;
   }
-
-  
 }

@@ -1,12 +1,10 @@
-import 'package:barzzy_app1/HomePage/home.dart';
-import 'package:barzzy_app1/OrdersPage/pickuppage.dart';
-import 'package:barzzy_app1/ProfilePage/profile.dart';
-import 'package:barzzy_app1/QrPage/qr.dart';
+import 'package:barzzy/HomePage/home.dart';
+import 'package:barzzy/OrdersPage/pickuppage.dart';
+import 'package:barzzy/ProfilePage/profile.dart';
+import 'package:barzzy/QrPage/qr.dart';
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-
 
 class AuthPage extends StatefulWidget {
   final int selectedTab;
@@ -18,14 +16,14 @@ class AuthPage extends StatefulWidget {
 
 class AuthPageState extends State<AuthPage> {
   late int _selectedIndex;
-  
+
   late List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.selectedTab;
-    
+
     _initPages();
   }
 
@@ -40,7 +38,6 @@ class AuthPageState extends State<AuthPage> {
 
   @override
   void dispose() {
-    
     super.dispose();
   }
 

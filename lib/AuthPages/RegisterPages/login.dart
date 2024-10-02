@@ -2,12 +2,12 @@
 
 import 'dart:convert';
 
-import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 
-import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
-import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
-import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
-import 'package:barzzy_app1/Terminal/stationid.dart';
+import 'package:barzzy/AuthPages/components/mybutton.dart';
+import 'package:barzzy/AuthPages/components/mytextfield.dart';
+import 'package:barzzy/Gnav%20Bar/bottombar.dart';
+import 'package:barzzy/Terminal/stationid.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -29,7 +29,6 @@ class _LoginPageState extends State<LoginPage> {
   final passwordController = TextEditingController();
   final FocusNode emailFocusNode = FocusNode();
   final FocusNode passwordFocusNode = FocusNode();
-
 
   //SIGN USER IN
 
@@ -234,8 +233,3 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 }
-
-
-
-
-

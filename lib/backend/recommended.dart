@@ -1,4 +1,4 @@
-import 'package:barzzy_app1/Backend/localdatabase.dart';
+import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'barhistory.dart';

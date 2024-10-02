@@ -1,6 +1,6 @@
 {
-    "name": "barzzy_app2",
-    "short_name": "barzzy_app2",
+    "name": "barzzy",
+    "short_name": "barzzy",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

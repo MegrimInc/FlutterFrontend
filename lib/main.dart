@@ -1,26 +1,26 @@
 import 'dart:convert';
-import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy_app1/AuthPages/components/toggle.dart';
-import 'package:barzzy_app1/Backend/bar.dart';
-import 'package:barzzy_app1/Backend/drink.dart';
-import 'package:barzzy_app1/Backend/searchengine.dart';
-import 'package:barzzy_app1/Backend/recommended.dart';
-import 'package:barzzy_app1/Backend/categories.dart';
-import 'package:barzzy_app1/Backend/user.dart';
-import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
-import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
-import 'package:barzzy_app1/Terminal/stationid.dart';
+import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy/AuthPages/components/toggle.dart';
+import 'package:barzzy/Backend/bar.dart';
+import 'package:barzzy/Backend/drink.dart';
+import 'package:barzzy/Backend/searchengine.dart';
+import 'package:barzzy/Backend/recommended.dart';
+import 'package:barzzy/Backend/categories.dart';
+import 'package:barzzy/Backend/user.dart';
+import 'package:barzzy/Gnav%20Bar/bottombar.dart';
+import 'package:barzzy/OrdersPage/hierarchy.dart';
+import 'package:barzzy/Terminal/stationid.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/services.dart';
 import 'firebase_options.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:barzzy_app1/Backend/localdatabase.dart';
+import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:http/http.dart' as http;
-import 'package:barzzy_app1/Backend/barhistory.dart';
+import 'package:barzzy/Backend/barhistory.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart'; // Crashlytics
 import 'package:firebase_messaging/firebase_messaging.dart';
-
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -28,8 +28,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint("current date: ${DateTime.now()}");
 
-  
-   try {
+  try {
     debugPrint("Starting Firebase Initialization");
 
     await Firebase.initializeApp(
@@ -40,7 +39,7 @@ Future<void> main() async {
   } catch (e) {
     debugPrint("Firebase Initialization Failed: $e");
   }
-  
+
   // Enable Crashlytics collection for Flutter errors
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
   FirebaseMessaging messaging = FirebaseMessaging.instance;
@@ -59,26 +58,9 @@ Future<void> main() async {
   }
 
   // Retrieve and print the device token
-  String? deviceToken = await messaging.getToken();
+  String? deviceToken = await messaging.getAPNSToken();
   debugPrint("Device Token: $deviceToken");
   deviceToken = deviceToken ?? '';
-
-  // Set up notification handlers for different app states
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    debugPrint('Received a message while in foreground: ${message.data}');
-    if (message.notification != null) {
-      debugPrint(
-          'Message also contained a notification: ${message.notification}');
-      // You can handle the foreground notification here (e.g., show a dialog or snackbar)
-    }
-  });
-
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    debugPrint(
-        'Notification opened from terminated or background state: ${message.data}');
-    navigatorKey.currentState?.pushNamed(
-        '/orders'); // Navigate to orders page when notification is tapped
-  });
 
   final loginCache = LoginCache();
   bool loggedInAlready = true;
@@ -114,9 +96,21 @@ Future<void> main() async {
   final isBar = uid < 0;
   loggedInAlready = loggedInAlready && httpRequest;
   await loginCache.setDeviceToken(deviceToken);
-
   LocalDatabase localDatabase = LocalDatabase();
   await sendGetRequest();
+
+  // Create the MethodChannel
+  const MethodChannel notificationChannel = MethodChannel('com.barzzy/notification');
+
+  // Set up a listener for when the notification is tapped
+  notificationChannel.setMethodCallHandler((MethodCall call) async {
+    if (call.method == 'navigateToOrders') {
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+    '/orders', 
+    (Route<dynamic> route) => false,  // This removes all previous routes.
+);
+    }
+  });
 
   runApp(
     MultiProvider(

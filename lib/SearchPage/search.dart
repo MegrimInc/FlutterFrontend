@@ -1,8 +1,8 @@
-import 'package:barzzy_app1/Backend/searchengine.dart';
-import 'package:barzzy_app1/SearchPage/searchbar.dart';
+import 'package:barzzy/Backend/searchengine.dart';
+import 'package:barzzy/SearchPage/searchbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:barzzy_app1/MenuPage/menu.dart';
+import 'package:barzzy/MenuPage/menu.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SearchPage extends StatefulWidget {
@@ -18,13 +18,13 @@ class SearchPageState extends State<SearchPage> {
 
   void _handleSearchChanged(String searchText) {
     final searchService = Provider.of<SearchService>(context, listen: false);
-    Map<String, Map<String, String>> filteredBars = searchService.searchBars(searchText);
+    Map<String, Map<String, String>> filteredBars =
+        searchService.searchBars(searchText);
 
     setState(() {
       _filteredBars = filteredBars;
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -44,11 +44,13 @@ class SearchPageState extends State<SearchPage> {
                 itemBuilder: (context, index) {
                   String barId = _filteredBars.keys.elementAt(index);
                   Map<String, String> barInfo = _filteredBars[barId]!;
-                  String displayText = "${barInfo['name']} - ${barInfo['address']}";
+                  String displayText =
+                      "${barInfo['name']} - ${barInfo['address']}";
                   return ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     tileColor: Colors.transparent,
-                    leading: const Icon(Icons.chevron_right, color: Colors.white),
+                    leading:
+                        const Icon(Icons.chevron_right, color: Colors.white),
                     title: Text(
                       displayText,
                       style: GoogleFonts.sourceSans3(color: Colors.grey),
@@ -57,10 +59,8 @@ class SearchPageState extends State<SearchPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          // ignore: prefer_const_constructors
-                          builder: (context) => MenuPage(barId: barId)
-                            
-                        ),
+                            // ignore: prefer_const_constructors
+                            builder: (context) => MenuPage(barId: barId)),
                       );
                     },
                   );

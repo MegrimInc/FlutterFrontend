@@ -1,14 +1,14 @@
-import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy_app1/Backend/activeorder.dart';
-import 'package:barzzy_app1/Backend/localdatabase.dart';
+// ignore_for_file: use_build_context_synchronously
+
+import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy/Backend/activeorder.dart';
+import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:async';
 import 'dart:convert';
-
-
 
 class Hierarchy extends ChangeNotifier {
   final String url = 'wss://www.barzzy.site/ws/orders';
@@ -55,7 +55,7 @@ class Hierarchy extends ChangeNotifier {
               switch (messageType) {
                 case 'ping':
                   debugPrint('Ping received, sending refresh message.');
-                  _sendRefreshMessage(context); // Handle the ping message
+                  sendRefreshMessage(context); // Handle the ping message
                   break;
 
                 case 'refresh':
@@ -109,6 +109,7 @@ class Hierarchy extends ChangeNotifier {
                 'WebSocket connection closed. Close code: ${_channel!.closeCode}, reason: ${_channel!.closeReason}');
             debugPrint('WebSocket connection closed');
             _isConnected = false;
+            _channel = null; // Ensure _channel is null before reconnecting
             _attemptReconnect(
                 context); // Handle connection loss and attempt reconnection
             notifyListeners();
@@ -118,6 +119,7 @@ class Hierarchy extends ChangeNotifier {
         // Catch any errors during connection
         debugPrint('Failed to connect: $e');
         _isConnected = false;
+        _channel = null; // Ensure _channel is null before reconnecting
         _attemptReconnect(
             context); // Attempt reconnection on connection failure
       }
@@ -135,25 +137,23 @@ class Hierarchy extends ChangeNotifier {
 
     Future.delayed(Duration(seconds: delay), () {
       debugPrint('Attempting to reconnect... (Attempt $_reconnectAttempts)');
-      _channel = null; // Ensure _channel is null before reconnecting
       connect(context); // Re-attempt the connection
     });
   }
 
   // Send the "refresh" message over the WebSocket connection
 
-  void _sendRefreshMessage(BuildContext context) async {
+  void sendRefreshMessage(BuildContext context) async {
     final loginCache = Provider.of<LoginCache>(context, listen: false);
     final userId = await loginCache.getUID();
-     final deviceToken = await loginCache.getDeviceToken();
-
+    final deviceToken = await loginCache.getDeviceToken();
 
     try {
       if (_channel != null) {
         final message = {
           "action": "refresh",
           "userId": userId,
-          "deviceToken": deviceToken 
+          "deviceToken": deviceToken
         };
         final jsonMessage =
             jsonEncode(message); // Use jsonEncode for proper JSON formatting
@@ -185,52 +185,6 @@ class Hierarchy extends ChangeNotifier {
     }
   }
 
-// Future<void> showNotification(String status, String claimer) async {
-//   String notificationMessage;
-
-//   // Determine the notification message based on the status and claimer
-//   if (status == 'unready') {
-//     if (claimer.isEmpty) {
-//       notificationMessage = 'Your order has been unclaimed.';
-//     } else {
-//       notificationMessage = 'Your order has been claimed.';
-//     }
-//   } else if (status == 'ready') {
-//     notificationMessage = 'Your order is now ready.';
-//   } else if (status == 'delivered') {
-//     notificationMessage = 'Your order has been delivered.';
-//   } else {
-//     // Handle any other status if needed, or return if there's nothing to notify
-//     return;
-//   }
-
-//   const AndroidNotificationDetails androidNotificationDetails =
-//       AndroidNotificationDetails(
-//     'your_channel_id', // channel ID
-//     'your_channel_name', // channel name
-//     channelDescription: 'your_channel_description', // channel description
-//     importance: Importance.max,
-//     priority: Priority.high,
-//     ticker: 'ticker',
-//   );
-
-//   const DarwinNotificationDetails darwinNotificationDetails =
-//       DarwinNotificationDetails();
-
-//   const NotificationDetails platformChannelSpecifics = NotificationDetails(
-//     android: androidNotificationDetails,
-//     iOS: darwinNotificationDetails,
-//   );
-
-//   await flutterLocalNotificationsPlugin.show(
-//     0, // Notification ID
-//     'Order Status Change', // Notification title
-//     notificationMessage, // Notification body
-//     platformChannelSpecifics, // Notification details specific to each platform
-//     payload: 'pickup', // Payload to pass when the notification is tapped
-//   );
-// }
-
 
   // Method to handle create order responses
   void _createOrderResponse(Map<String, dynamic> data) async {
@@ -253,21 +207,21 @@ class Hierarchy extends ChangeNotifier {
   }
 
   // Method to handle update responses and send notifications
-void _handleUpdateResponse(Map<String, dynamic> data) async {
-  // Call createOrderResponse to handle the data processing
-  _createOrderResponse(data);
+  void _handleUpdateResponse(Map<String, dynamic> data) async {
+    // Call createOrderResponse to handle the data processing
+    _createOrderResponse(data);
 
-  try {
-    // Extract the status and claimer from the data
-    final String status = data['status'];
-    final String claimer = data['claimer'] ?? '';
+    try {
+      // Extract the status and claimer from the data
+      final String status = data['status'];
+      final String claimer = data['claimer'] ?? '';
 
-    // Send a notification with both status and claimer
-    //await showNotification(status, claimer);
-  } catch (e) {
-    debugPrint('Error while handling update response: $e');
+      // Send a notification with both status and claimer
+      //await showNotification(status, claimer);
+    } catch (e) {
+      debugPrint('Error while handling update response: $e');
+    }
   }
-}
 
   void cancelOrder(int barId, int userId) {
     try {

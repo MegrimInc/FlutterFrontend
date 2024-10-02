@@ -54,10 +54,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAZvF6KW7x8_Cr3djGWPiG8fVkRdjVh3rw',
-    appId: '1:168243316465:ios:887bafba4d3d1ed6c50b50',
+    appId: '1:168243316465:ios:6da1c392f3e2ec63c50b50',
     messagingSenderId: '168243316465',
     projectId: 'barzzy-24036',
     storageBucket: 'barzzy-24036.appspot.com',
-    iosBundleId: 'com.example.barzzyApp9',
+    iosBundleId: 'com.example.barzzy',
   );
 }

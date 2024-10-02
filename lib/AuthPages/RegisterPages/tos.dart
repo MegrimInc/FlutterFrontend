@@ -1,8 +1,8 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:convert';
-import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy_app1/Gnav%20Bar/bottombar.dart';
+import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy/Gnav%20Bar/bottombar.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 

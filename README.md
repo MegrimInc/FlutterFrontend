@@ -1,4 +1,4 @@
-# barzzy_app2
+# barzzy
 
 A new Flutter project.
 

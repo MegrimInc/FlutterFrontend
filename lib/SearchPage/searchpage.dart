@@ -1,8 +1,8 @@
-import 'package:barzzy_app1/Backend/searchengine.dart';
-import 'package:barzzy_app1/SearchPage/searchbar.dart';
+import 'package:barzzy/Backend/searchengine.dart';
+import 'package:barzzy/SearchPage/searchbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:barzzy_app1/MenuPage/menu.dart';
+import 'package:barzzy/MenuPage/menu.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SearchPage extends StatefulWidget {
@@ -16,7 +16,6 @@ class SearchPage extends StatefulWidget {
 class SearchPageState extends State<SearchPage> {
   Map<String, Map<String, String>> _filteredBars = {};
   final FocusNode _focusNode = FocusNode();
-
 
   void _handleSearchChanged(String searchText) {
     final searchService = Provider.of<SearchService>(context, listen: false);

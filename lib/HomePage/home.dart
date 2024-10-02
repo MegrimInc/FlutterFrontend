@@ -1,17 +1,15 @@
-
-import 'package:barzzy_app1/HomePage/bottomsheet.dart';
-import 'package:barzzy_app1/HomePage/hometopicons.dart';
-import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
+import 'package:barzzy/HomePage/bottomsheet.dart';
+import 'package:barzzy/HomePage/hometopicons.dart';
+import 'package:barzzy/OrdersPage/hierarchy.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/heroicons_solid.dart';
 import 'package:provider/provider.dart';
-import 'package:barzzy_app1/Backend/barhistory.dart';
-import 'package:barzzy_app1/Backend/recommended.dart';
-import 'package:barzzy_app1/MenuPage/menu.dart';
+import 'package:barzzy/Backend/barhistory.dart';
+import 'package:barzzy/Backend/recommended.dart';
+import 'package:barzzy/MenuPage/menu.dart';
 import '../Backend/localdatabase.dart';
-
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -23,7 +21,6 @@ class HomePage extends StatefulWidget {
 class HomePageState extends State<HomePage> {
   List<String> masterList = [];
   List<String> tappedIds = [];
- 
 
   @override
   void initState() {
@@ -33,9 +30,9 @@ class HomePageState extends State<HomePage> {
   }
 
   Future<void> _connect() async {
-  final hierarchy = Provider.of<Hierarchy>(context, listen: false);
-  hierarchy.connect(context);  // No need to await since it returns void
-}
+    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+    hierarchy.connect(context); // No need to await since it returns void
+  }
 
   void _updateMasterList() async {
     final recommended = Provider.of<Recommended>(context, listen: false);
@@ -187,7 +184,8 @@ class HomePageState extends State<HomePage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 17),
                         child: Text(
-                          LocalDatabase.getBarById(barHistory.currentTappedBarId!)
+                          LocalDatabase.getBarById(
+                                      barHistory.currentTappedBarId!)
                                   ?.name ??
                               'No Name',
                           style: const TextStyle(
@@ -255,14 +253,16 @@ class HomePageState extends State<HomePage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 17),
                         child: Text(
-              LocalDatabase.getBarById(barHistory.currentTappedBarId!)
-                      ?.openhours ?? 'No Hours Available',
-              style: const TextStyle(
-                color: Colors.white,
-                //fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+                          LocalDatabase.getBarById(
+                                      barHistory.currentTappedBarId!)
+                                  ?.openhours ??
+                              'No Hours Available',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            //fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                       const Padding(
                         padding: EdgeInsets.only(right: 17),
                         child: Text(

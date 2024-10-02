@@ -1,11 +1,11 @@
-import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy_app1/Backend/activeorder.dart';
-import 'package:barzzy_app1/OrdersPage/hierarchy.dart';
+import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy/Backend/activeorder.dart';
+import 'package:barzzy/OrdersPage/hierarchy.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for haptic feedback
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Import for shared preferences
 import '../Backend/localdatabase.dart';
@@ -70,9 +70,8 @@ class PickupPageState extends State<PickupPage> {
                 builder: (context, hierarchy, child) {
                   if (!hierarchy.isConnected) {
                     return const Center(
-                      child: SpinKitThreeBounce(
+                      child: CircularProgressIndicator(
                         color: Colors.white,
-                        size: 30.0,
                       ),
                     );
                   }
@@ -135,24 +134,22 @@ class PickupPageState extends State<PickupPage> {
             ),
             if (!_isGridView)
               GestureDetector(
-  onTap: () {
-    _clearSelectedBar(); // Clear selected bar when switching back to grid view
-    setState(() {
-      _isGridView = true;
-    });
-  },
-  child: Container(
-    color: Colors.transparent,
-    height: 50, // Increase the height of the pressable area
-    width: 50, // Increase the width of the pressable area
-    alignment: Alignment.centerRight, // Center the icon within the container
-    child: const Icon(
-      Icons.grid_view,
-      color: Colors.white,
-      size: 30
-    ),
-  ),
-),
+                onTap: () {
+                  _clearSelectedBar(); // Clear selected bar when switching back to grid view
+                  setState(() {
+                    _isGridView = true;
+                  });
+                },
+                child: Container(
+                  color: Colors.transparent,
+                  height: 50, // Increase the height of the pressable area
+                  width: 50, // Increase the width of the pressable area
+                  alignment: Alignment
+                      .centerRight, // Center the icon within the container
+                  child: const Icon(Icons.grid_view,
+                      color: Colors.white, size: 30),
+                ),
+              ),
           ],
         ),
       ),
@@ -160,60 +157,76 @@ class PickupPageState extends State<PickupPage> {
   }
 
   Widget _buildGridView(List<String> barIds) {
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 5.0,
-        mainAxisSpacing: 10.0,
-        childAspectRatio: .1,
-      ),
-      padding: const EdgeInsets.only(top: 30),
-      itemCount: barIds.length,
-      itemBuilder: (context, index) {
-        final barId = barIds[index];
-        final bar = LocalDatabase.getBarById(barId);
+    return LiquidPullToRefresh(
+      onRefresh: () => _refreshCardView(context),
+      showChildOpacityTransition: false,
+      color: Colors.black,
+      height: 100,
+      animSpeedFactor: 5,
+      springAnimationDurationInMilliseconds: 1000,
 
-        return GestureDetector(
-          onTap: () {
-            debugPrint('Grid item tapped. Bar ID: $barId');
-            _saveSelectedBar(barId); // Save the selected bar ID
-            setState(() {
-              _selectedBarId = barId;
-              _isGridView = false; // Switch to card view
-            });
-          },
-          child: Column(
-            children: [
-              Container(
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
+      child: SingleChildScrollView(
+        child: SizedBox(
+          height: 667,
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 5.0,
+              mainAxisSpacing: 10.0,
+              childAspectRatio: .1,
+            ),
+            padding: const EdgeInsets.only(top: 30),
+            itemCount: barIds.length,
+            itemBuilder: (context, index) {
+              final barId = barIds[index];
+              final bar = LocalDatabase.getBarById(barId);
+          
+              return GestureDetector(
+                onTap: () {
+                  debugPrint('Grid item tapped. Bar ID: $barId');
+                  _saveSelectedBar(barId); // Save the selected bar ID
+                  setState(() {
+                    _selectedBarId = barId;
+                    _isGridView = false; // Switch to card view
+                  });
+                },
+                child: Column(
+                  children: [
+                    Container(
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                      ),
+                      child: ClipOval(
+                        child: CachedNetworkImage(
+                          imageUrl: bar?.tagimg ??
+                              'https://www.barzzy.site/images/default.png',
+                          fit: BoxFit.cover,
+                          width: 105, // Adjust as needed
+                          height: 105, // Adjust as needed
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Flexible(
+                      child: Text(
+                        bar?.tag ?? 'No Tag',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                        ),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis, // Handle long text
+                        maxLines: 1, // Ensure text doesn't overflow
+                      ),
+                    ),
+                  ],
                 ),
-                child: ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: bar?.tagimg ?? 'https://www.barzzy.site/images/default.png',
-                    fit: BoxFit.cover,
-                    width: 105, // Adjust as needed
-                    height: 105, // Adjust as needed
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Flexible(
-                child: Text(
-                  bar?.tag ?? 'No Tag',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                  ),
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis, // Handle long text
-                  maxLines: 1, // Ensure text doesn't overflow
-                ),
-              ),
-            ],
+              );
+            },
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -224,9 +237,8 @@ class PickupPageState extends State<PickupPage> {
 
     if (bar == null || order == null) {
       return const Center(
-        child: SpinKitThreeBounce(
+        child: CircularProgressIndicator(
           color: Colors.white,
-          size: 30.0,
         ),
       );
     }
@@ -236,114 +248,166 @@ class PickupPageState extends State<PickupPage> {
     final userId = order.userId;
 
     return GestureDetector(
-      onLongPress: (status == "delivered" || status == "canceled")
-          ? () {
-              HapticFeedback.heavyImpact();
-              _triggerReorder(order, context);
-            }
-          : null,
-      child: Container(
-        color: Colors.transparent,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-          child: Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(60),
-                        child: CachedNetworkImage(
-                          imageUrl: bar.tagimg ??
-                              'https://www.barzzy.site/images/default.png',
-                          width: 105,
-                          height: 105,
-                          fit: BoxFit.cover,
+      onLongPress: () {
+        final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+        if (status == "delivered" || status == "canceled") {
+          _triggerReorder(order,
+              context); // Trigger reorder for delivered or canceled orders
+          HapticFeedback.heavyImpact();
+        } else if (status == "unready" && claimer.isEmpty) {
+          hierarchy.cancelOrder(int.parse(barId), userId);
+          HapticFeedback.heavyImpact();
+        }
+      },
+      child: LiquidPullToRefresh(
+      onRefresh: () => _refreshCardView(context),
+      showChildOpacityTransition: false,
+      color: Colors.black,
+      height: 100,
+      animSpeedFactor: 5,
+      springAnimationDurationInMilliseconds: 1000,
+     
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+            child: Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(60),
+                          child: CachedNetworkImage(
+                            imageUrl: bar.tagimg ??
+                                'https://www.barzzy.site/images/default.png',
+                            width: 105,
+                            height: 105,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Center(
-                      child: Text(
-                        bar.getName() ?? 'Unknown',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 60),
-
-                    Expanded(
-                      // Make the list of drinks scrollable
-                      child: ListView.builder(
-                        itemCount: order.drinks.length,
-                        itemBuilder: (context, index) {
-                          final drinkOrder = order.drinks[index];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4.0),
-                            child: Center(
-                              child: Text(
-                                '${drinkOrder.drinkName} x ${drinkOrder.quantity}',
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    //const Spacer(),
-                    const SizedBox(height: 60),
-                    if (status != "delivered" && status != "canceled")
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 0),
+                      const SizedBox(height: 16),
+                      Center(
                         child: Text(
-                          '#${order.getUser() ?? '...'}',
+                          bar.getName() ?? 'Unknown',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 35,
+                            fontSize: 26,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                  ],
+                      const SizedBox(height: 60),
+            
+                      SizedBox(
+                        height: 409,
+                        child: ListView.builder(
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: order.drinks.length,
+                          itemBuilder: (context, index) {
+                            final drinkOrder = order.drinks[index];
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                              child: Center(
+                                child: Text(
+                                  '${drinkOrder.drinkName} x ${drinkOrder.quantity}',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),  
+                    ],
+                  ),
                 ),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: _buildStatusButton(
-                    status, claimer, int.parse(barId), userId, context),
-              ),
-              if (status == "delivered" || status == "canceled")
-                const Positioned(
-                  bottom: 15,
-                  left: 0,
+        
+                if (status != "delivered" &&
+                          status != "canceled" &&
+                          claimer != "")
+                        Positioned(
+                         bottom: 0,
+                        left: 0,
+                          child: Text(
+                            '#${order.getUser() ?? '...'}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 35,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+        
+                Positioned(
+                  bottom: 1.5,
                   right: 0,
-                  child: Center(
-                    child: Text(
-                      'HOLD TO REORDER',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                  child: _buildStatusButton(
+                      status, claimer, int.parse(barId), userId, context),
+                ),
+            
+                // Add "HOLD TO CANCEL" text at the bottom
+                if (status == "unready" && claimer.isEmpty)
+                   const Positioned(
+                    bottom: 15,
+                    left: 0,
+                    right: 0,
+                    child: Column(
+                      children: [
+                       Padding(
+                         padding:  EdgeInsets.only(bottom: 25),
+                         child:  Center(
+                            child: SpinKitThreeBounce(
+                              color: Colors.white,
+                              size: 25,
+                            ),
+                          ),
+                       ),
+                        
+                        Center(
+                          child: Text(
+                            'HOLD TO CANCEL ORDER',
+                            style: TextStyle(
+                                color: Color.fromARGB(255, 255, 137, 129),
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+            
+                // Add "HOLD TO REORDER" text for delivered or canceled orders
+                if (status == "delivered" || status == "canceled")
+                  const Positioned(
+                    bottom: 15,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Text(
+                        'HOLD TO REORDER',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+
+  
 
   // Method to trigger reorder by creating an order
   void _triggerReorder(CustomerOrder order, BuildContext context) async {
@@ -374,37 +438,6 @@ class PickupPageState extends State<PickupPage> {
   // Method to build the dynamic button based on status and claimer
   Widget _buildStatusButton(String status, String claimer, int barId,
       int userId, BuildContext context) {
-    final hierarchy = Provider.of<Hierarchy>(context,
-        listen: false); // Get Hierarchy instance from Provider
-
-    // Case: Status is "unready" and claimer is empty
-    if (status == "unready" && claimer.isEmpty) {
-      return GestureDetector(
-        onTap: () {
-          // Cancel action
-          hierarchy.cancelOrder(barId, userId);
-        },
-        child: Container(
-    color: Colors.transparent,
-    height: 50, // Increase the height of the pressable area
-    width: 50, // Increase the width of the pressable area
-    alignment: Alignment.bottomRight,
-    // child: const Icon(
-    //       Icons.remove,
-    //     color: Colors.red,
-    //     size: 55,)
-    child: const Padding(
-      padding:  EdgeInsets.only(bottom: 4),
-      child:  Icon(
-      FontAwesomeIcons.circleXmark, // Cancel icon
-      color: Colors.red, // Red color to emphasize cancel action
-      size: 42.5, // Adjust size as needed
-        ),
-    ),
-  ),
-      );
-    }
-
     // Case: Status is "unready" and claimer is not empty
     if (status == "unready" && claimer.isNotEmpty) {
       return Text(
@@ -412,7 +445,7 @@ class PickupPageState extends State<PickupPage> {
         style: const TextStyle(
           color: Colors.yellow,
           fontWeight: FontWeight.bold,
-          fontSize: 35,
+          fontSize: 34.5,
         ),
       );
     }
@@ -424,7 +457,7 @@ class PickupPageState extends State<PickupPage> {
         style: const TextStyle(
           color: Colors.green,
           fontWeight: FontWeight.bold,
-          fontSize: 35,
+          fontSize: 34.5,
         ),
       );
     }
@@ -450,4 +483,10 @@ Future<void> _saveSelectedBar(String barId) async {
 Future<void> _clearSelectedBar() async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.remove('selected_bar_id');
+}
+
+Future<void> _refreshCardView(BuildContext context) async {
+  final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+  hierarchy.sendRefreshMessage(context);
+  debugPrint('Card view has been refreshed.');
 }

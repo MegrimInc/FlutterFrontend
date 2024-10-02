@@ -1,13 +1,12 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:ui';
-import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy_app1/AuthPages/RegisterPages/tos.dart';
-import 'package:barzzy_app1/AuthPages/components/keypad.dart';
+import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy/AuthPages/RegisterPages/tos.dart';
+import 'package:barzzy/AuthPages/components/keypad.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
 
 class RegisterPage11 extends StatefulWidget {
   final void Function()? hideOverlay;
@@ -83,8 +82,8 @@ class _RegisterPageState11 extends State<RegisterPage11>
       debugPrint('Response body: ${response.body}');
       failure();
       setState(() {
-          verificationCode.clear();
-        });
+        verificationCode.clear();
+      });
     }
   }
 
@@ -111,7 +110,7 @@ class _RegisterPageState11 extends State<RegisterPage11>
                     style: TextStyle(fontSize: 20, color: Colors.white),
                   ),
                   const SizedBox(height: 50),
-      
+
                   // Display the IOS-style Keypad
                   AnimatedBuilder(
                     animation: _animation,
@@ -129,8 +128,8 @@ class _RegisterPageState11 extends State<RegisterPage11>
                       onCompleted: (code) {
                         attemptVerification();
                       },
-                       onResend: widget.onResend,
-                       onCancel: widget.hideOverlay,
+                      onResend: widget.onResend,
+                      onCancel: widget.hideOverlay,
                     ),
                   )
                 ],

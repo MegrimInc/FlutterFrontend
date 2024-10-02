@@ -1,9 +1,7 @@
-import 'package:barzzy_app1/Backend/recommended.dart';
+import 'package:barzzy/Backend/recommended.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-
 
 class BarHistory with ChangeNotifier {
   String? _currentTappedBarId;
@@ -16,17 +14,13 @@ class BarHistory with ChangeNotifier {
     _loadTappedBarId();
   }
 
-  
-
   // Method to load the tapped bar ID from SharedPreferences
   Future<void> _loadTappedBarId() async {
     final prefs = await SharedPreferences.getInstance();
     _currentTappedBarId = prefs.getString('currentTappedBarId');
-  _updateRecommendations();
+    _updateRecommendations();
     notifyListeners();
     // Fetch recommended bars after loading tapped bar ID
-    
-    
   }
 
   // Method to save the tapped bar ID to SharedPreferences
@@ -49,20 +43,19 @@ class BarHistory with ChangeNotifier {
     });
   }
 
-
-   // Method to clear the current tapped bar ID from memory and SharedPreferences
+  // Method to clear the current tapped bar ID from memory and SharedPreferences
   Future<void> clearTappedBarId() async {
     _currentTappedBarId = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('currentTappedBarId');
     _updateRecommendations();
     notifyListeners();
-   
   }
 
   void _updateRecommendations() {
     if (_context != null) {
-      Provider.of<Recommended>(_context!, listen: false).fetchRecommendedBars(_context!);
+      Provider.of<Recommended>(_context!, listen: false)
+          .fetchRecommendedBars(_context!);
     }
   }
 

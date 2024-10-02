@@ -1,5 +1,5 @@
-import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy_app1/AuthPages/components/toggle.dart';
+import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:flutter/material.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -32,11 +32,14 @@ class _ProfilePageState extends State<ProfilePage> {
           clearSharedPrefs(); // Call the function when logging out
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()), // Assuming you have this page elsewhere
+            MaterialPageRoute(
+                builder: (context) =>
+                    const LoginOrRegisterPage()), // Assuming you have this page elsewhere
             (Route<dynamic> route) => false, // Remove all previous routes
           );
         },
-        child: const Icon(Icons.exit_to_app, color: Colors.white), // Icon for logout
+        child: const Icon(Icons.exit_to_app,
+            color: Colors.white), // Icon for logout
       ),
     );
   }

@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'package:barzzy_app1/AuthPages/RegisterPages/verification.dart';
+import 'package:barzzy/AuthPages/RegisterPages/verification.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:barzzy_app1/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 
-import 'package:barzzy_app1/AuthPages/components/mybutton.dart';
-import 'package:barzzy_app1/AuthPages/components/mytextfield.dart';
+import 'package:barzzy/AuthPages/components/mybutton.dart';
+import 'package:barzzy/AuthPages/components/mytextfield.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
