@@ -295,33 +295,6 @@ class _OrdersPageState extends State<OrdersPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                // ElevatedButton(
-                //   onPressed: () {},
-                //   onLongPress: () {
-                //     // Handle order cancellation here
-                //     debugPrint("Order canceled!");
-                //     socket!.sink.add(
-                //       json.encode({
-                //         'action': 'cancel',
-                //         'bartenderID': widget.bartenderID.toString(),
-                //         'orderID': order.userId,
-                //         'barID': widget.barID,
-                //       }),
-                //     );
-                //     Navigator.of(context)
-                //         .pop(); // Close the dialog after the action
-                //   },
-                //   style: ElevatedButton.styleFrom(
-                //     backgroundColor: Colors.grey,
-                //     padding: const EdgeInsets.symmetric(
-                //         horizontal: 16, vertical: 8), // Smaller padding
-                //   ),
-                //   child: const Text(
-                //     'Hold to cancel order',
-                //     style: TextStyle(
-                //         fontSize: 12, color: Colors.white), // Smaller text
-                //   ),
-                // ),
                 const Spacer(), // Space at the top
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
