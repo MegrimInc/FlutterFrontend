@@ -23,7 +23,7 @@ class _LoginOrRegistrationPageState extends State<LoginOrRegisterPage> {
   }
 
   void verifyCode(String enteredCode) {
-    const String correctCode = '197302'; // Replace with actual code logic
+    const String correctCode = '030504'; // Replace with actual code logic
     if (enteredCode == correctCode) {
       setState(() {
         isCodeVerified = true;

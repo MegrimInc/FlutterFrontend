@@ -44,7 +44,7 @@ class _LoginPageState extends State<LoginPage> {
     final response = await http.post(
       url,
       headers: {
-        'Content-Type': 'application/json', // Specify that the body is JSON
+        'Content-Type': 'application/json', 
       },
       body: requestBody,
     );

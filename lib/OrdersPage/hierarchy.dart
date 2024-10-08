@@ -210,17 +210,6 @@ class Hierarchy extends ChangeNotifier {
   void _handleUpdateResponse(Map<String, dynamic> data) async {
     // Call createOrderResponse to handle the data processing
     _createOrderResponse(data);
-
-    try {
-      // Extract the status and claimer from the data
-      final String status = data['status'];
-      final String claimer = data['claimer'] ?? '';
-
-      // Send a notification with both status and claimer
-      //await showNotification(status, claimer);
-    } catch (e) {
-      debugPrint('Error while handling update response: $e');
-    }
   }
 
   void cancelOrder(int barId, int userId) {
