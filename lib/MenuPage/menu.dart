@@ -427,12 +427,12 @@ class MenuPageState extends State<MenuPage>
                     // final drink = LocalDatabase().getDrinkById(drinkIds[startIndex + index].toString());
 
                     return GestureDetector(
-                      onLongPress: () {
-                        HapticFeedback.heavyImpact();
+                      onTap: () {
                         final cart = Provider.of<Cart>(context, listen: false);
                         Navigator.of(context).push(_createRoute(drink, cart));
                       },
-                      onTap: () {
+                      onLongPress: () {
+                        HapticFeedback.heavyImpact();
                         Provider.of<Cart>(context, listen: false)
                             .addDrink(drink.id, context);
                         FocusScope.of(context).unfocus();

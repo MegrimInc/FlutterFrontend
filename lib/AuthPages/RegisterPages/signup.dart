@@ -209,7 +209,7 @@ class RegisterPageState extends State<RegisterPage>
               ),
               const SizedBox(height: 10),
               MyButton(
-                text: 'Signup',
+                text: 'Create Account',
                 onTap: () {
                   // Close the keyboard
                   FocusScope.of(context).unfocus();

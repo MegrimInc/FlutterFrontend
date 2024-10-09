@@ -45,6 +45,8 @@ class _RegisterPageState11 extends State<RegisterPage11>
     _animationController.forward();
   }
 
+
+
   void attemptVerification() async {
     final url = Uri.parse('https://www.barzzy.site/signup/verify');
     final requestBody = jsonEncode({
@@ -104,10 +106,14 @@ class _RegisterPageState11 extends State<RegisterPage11>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 75),
+                  const SizedBox(height: 50),
                   const Text(
-                    'Enter you verifcation code.',
+                    'Enter your verification code.',
                     style: TextStyle(fontSize: 20, color: Colors.white),
+                  ),
+                  const  Text(
+                    'Verification email has been sent.',  
+                    style: TextStyle(fontSize: 14, color: Colors.white54),
                   ),
                   const SizedBox(height: 50),
 

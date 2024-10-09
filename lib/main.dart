@@ -101,15 +101,16 @@ Future<void> main() async {
   await sendGetRequest();
 
   // Create the MethodChannel
-  const MethodChannel notificationChannel = MethodChannel('com.barzzy/notification');
+  const MethodChannel notificationChannel =
+      MethodChannel('com.barzzy/notification');
 
   // Set up a listener for when the notification is tapped
   notificationChannel.setMethodCallHandler((MethodCall call) async {
     if (call.method == 'navigateToOrders') {
-    navigatorKey.currentState?.pushNamedAndRemoveUntil(
-    '/orders', 
-    (Route<dynamic> route) => false,  // This removes all previous routes.
-);
+      navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/orders',
+        (Route<dynamic> route) => false, // This removes all previous routes.
+      );
     }
   });
 
@@ -163,7 +164,6 @@ Future<void> sendGetRequest() async {
                 ),
               );
         }
-        //await fetchTagsAndDrinks(bar.id!);
       }
     } else {
       debugPrint('Failed to send GET request: ${response.statusCode}');

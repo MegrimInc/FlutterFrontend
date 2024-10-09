@@ -1,4 +1,5 @@
 import 'package:barzzy/Backend/recommended.dart';
+import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,6 +19,7 @@ class BarHistory with ChangeNotifier {
   Future<void> _loadTappedBarId() async {
     final prefs = await SharedPreferences.getInstance();
     _currentTappedBarId = prefs.getString('currentTappedBarId');
+    _ensureTappedBarIdExists();
     _updateRecommendations();
     notifyListeners();
     // Fetch recommended bars after loading tapped bar ID
@@ -56,6 +58,19 @@ class BarHistory with ChangeNotifier {
     if (_context != null) {
       Provider.of<Recommended>(_context!, listen: false)
           .fetchRecommendedBars(_context!);
+    }
+  }
+
+  // Ensure there's always a valid tapped bar ID
+  void _ensureTappedBarIdExists() {
+    if (_currentTappedBarId == null || _currentTappedBarId!.isEmpty) {
+      final barIds = LocalDatabase().getAllBarIds();
+      if (barIds.isNotEmpty) {
+        setTappedBarId(barIds.first); // Set the first bar ID as the tapped bar ID
+        debugPrint('Tapped bar ID set to: ${barIds.first}');
+      } else {
+        debugPrint('No bars available in the LocalDatabase to set as tapped bar.');
+      }
     }
   }
 

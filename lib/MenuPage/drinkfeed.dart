@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:barzzy/Backend/drink.dart';
@@ -63,11 +62,6 @@ class DrinkFeedState extends State<DrinkFeed>
       value: widget.cart,
       child: Scaffold(
         body: GestureDetector(
-          onLongPress: () {
-            HapticFeedback.heavyImpact();
-            Navigator.of(context).pop();
-            FocusScope.of(context).unfocus();
-          },
           onPanStart: (details) {
             _startPosition = details.globalPosition;
           },
@@ -88,6 +82,7 @@ class DrinkFeedState extends State<DrinkFeed>
           child: Stack(
             children: [
               // Full-screen background image with blur effect
+
               Positioned.fill(
                 child: Stack(
                   children: [
@@ -127,6 +122,25 @@ class DrinkFeedState extends State<DrinkFeed>
                   ),
                 ),
               ),
+
+              // Positioned widget on the left side for swipe detection
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 100, // Adjust this width as needed
+            child: GestureDetector(
+              onHorizontalDragEnd: (details) {
+                if (details.velocity.pixelsPerSecond.dx > -50) {
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Container(
+                color: Colors
+                    .transparent,
+              ),
+            ),
+          ),
               // Content
               SafeArea(
                 child: Column(
@@ -136,16 +150,29 @@ class DrinkFeedState extends State<DrinkFeed>
                     Expanded(
                       child: _buildDrinkInfo(context),
                     ),
-                    _buildBottomBar(context),
+                   // _buildBottomBar(context),
+                   Padding(
+                     padding: const EdgeInsets.only(bottom: 30),
+                     child: _buildQuantityControlButtons(context),
+                   ),
+                   _buildBottomBar(context),
+                   const SizedBox(height: 25)
                   ],
                 ),
               ),
+
+              // Positioned(
+              //         bottom: 105,
+              //         left: 39.5,
+              //         child: _buildQuantityControlButtons(context)),
             ],
           ),
         ),
       ),
     );
   }
+
+
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
@@ -266,6 +293,38 @@ class DrinkFeedState extends State<DrinkFeed>
     );
   }
 
+
+   Widget _buildQuantityControlButtons(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          FloatingActionButton(
+            heroTag: 'decrease',
+            backgroundColor: Colors.white54,
+            shape: const CircleBorder(),
+            onPressed: () {
+              widget.cart.removeDrink(widget.drink.id);
+            },
+            child: const Icon(Icons.remove, color: Colors.black),
+          ),
+          const SizedBox(width: 100),
+          FloatingActionButton(
+            heroTag: 'increase',
+            backgroundColor: Colors.white54,
+            shape: const CircleBorder(),
+            onPressed: () {
+              widget.cart.addDrink(widget.drink.id, context);
+            },
+            child: const Icon(Icons.add, color: Colors.black),
+          ),
+        ],
+      ),
+    );
+  }
+
+
   Widget _buildBottomBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -288,4 +347,7 @@ class DrinkFeedState extends State<DrinkFeed>
       ),
     );
   }
+
 }
+
+

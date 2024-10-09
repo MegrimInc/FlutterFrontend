@@ -81,8 +81,10 @@ class PickupPageState extends State<PickupPage> {
                   if (orders.isEmpty) {
                     return const Center(
                       child: Text(
-                        'No orders found.',
-                        style: TextStyle(color: Colors.white),
+                        'No orders have been placed yet.',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 17),
                       ),
                     );
                   }
@@ -330,7 +332,9 @@ class PickupPageState extends State<PickupPage> {
         
                 if (status != "delivered" &&
                           status != "canceled" &&
-                          claimer != "")
+                          claimer != "" &&
+                          status != "unready"
+                          )
                         Positioned(
                          bottom: 0,
                         left: 0,
@@ -349,6 +353,55 @@ class PickupPageState extends State<PickupPage> {
                   right: 0,
                   child: _buildStatusButton(
                       status, claimer, int.parse(barId), userId, context),
+                ),
+
+ if (status == "unready" && claimer.isNotEmpty)
+                 Positioned(
+                  bottom: 15, 
+                  right: 0,
+                  left: 15,
+                  child: Column(
+                      children: [
+                      const Padding(
+                         padding:  EdgeInsets.only(bottom: 25),
+                         child:  Center(
+                            child: SpinKitThreeBounce(
+                              color: Colors.white,
+                              size: 25,
+                            ),
+                          ),
+                       ),
+                        
+                        Center(
+                          child: Text(
+                            '#${order.getUser() ?? '...'} IS BEING PREPARED @$claimer',
+                            style: const TextStyle(
+                                color: Color.fromARGB(255, 255, 241, 118),
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold
+                          ),
+                        ),)
+                      ],
+                    ),
+
+                ),
+
+        if (status == "ready" && claimer.isNotEmpty)
+                const Positioned(
+                  bottom: 50, 
+                  right: 0,
+                  left: 15,
+                  child: Center(
+                    child: Text(
+                      'READY',
+                      style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold
+                    ),
+                  )
+                  ),
+
                 ),
             
                 // Add "HOLD TO CANCEL" text at the bottom
@@ -439,16 +492,16 @@ class PickupPageState extends State<PickupPage> {
   Widget _buildStatusButton(String status, String claimer, int barId,
       int userId, BuildContext context) {
     // Case: Status is "unready" and claimer is not empty
-    if (status == "unready" && claimer.isNotEmpty) {
-      return Text(
-        '@$claimer',
-        style: const TextStyle(
-          color: Colors.yellow,
-          fontWeight: FontWeight.bold,
-          fontSize: 34.5,
-        ),
-      );
-    }
+    // if (status == "unready" && claimer.isNotEmpty) {
+    //   return Text(
+    //     '@$claimer',
+    //     style: const TextStyle(
+    //       color: Colors.white,
+    //       fontWeight: FontWeight.bold,
+    //       fontSize: 34.5,
+    //     ),
+    //   );
+    // }
 
     // Case: Status is "ready" and claimer is not empty
     if (status == "ready" && claimer.isNotEmpty) {
