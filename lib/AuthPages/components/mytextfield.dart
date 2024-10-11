@@ -38,7 +38,7 @@ class MyTextField extends StatelessWidget {
             builder: (context, focused, child) {
               return TextField(
                 controller: controller,
-                obscureText: obscureText,
+                obscureText: !focused && obscureText,
                 style: const TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
                 cursorColor: Colors.white,
                 focusNode: focusNode,  // Use the passed focus node

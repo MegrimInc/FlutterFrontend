@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:barzzy/AuthPages/RegisterPages/verification.dart';
+import 'package:barzzy/HomePage/home.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
@@ -59,6 +60,37 @@ class RegisterPageState extends State<RegisterPage>
 
   void registerNames() async {
     FocusScope.of(context).unfocus();
+
+// Check if the entered email ends with '@vt.edu'
+if (!email.value.text.trim().endsWith('@vt.edu')) {
+    // Show an alert dialog if the email is not a @vt.edu email
+    showDialog(
+      context: context,
+      builder: (context) {
+        return const AlertDialog(
+          backgroundColor: Colors.white,
+          title: Center(
+            child: Text(
+              'Invalid Email',
+              style: TextStyle(
+                color: Color.fromARGB(255, 30, 30, 30),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          content: Text(
+            'We only accept @vt.edu email addresses.',
+            style: TextStyle(
+              color: Color.fromARGB(255, 30, 30, 30),
+            ),
+             textAlign: TextAlign.center,
+          ),
+        );
+      },
+    );
+    return; // Exit the method if email is not valid
+  }
+
     if (firstName.value.text.isNotEmpty &&
         lastName.value.text.isNotEmpty &&
         firstName.value.text.length < 25 &&
@@ -71,7 +103,7 @@ class RegisterPageState extends State<RegisterPage>
       loginCache2.setLN(lastName.value.text.trim());
       loginCache2.setSignedIn(true);
 
-      final url = Uri.parse('https://www.barzzy.site/signup/register');
+      final url = Uri.parse('https://www.barzzy.site/newsignup/register');
       final requestBody = jsonEncode({
         'email': email.value.text.trim(),
       });
@@ -168,7 +200,7 @@ class RegisterPageState extends State<RegisterPage>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 50),
+              const SizedBox(height: 75),
               Center(
                 child: Text(
                   'B A R Z Z Y',
@@ -179,7 +211,7 @@ class RegisterPageState extends State<RegisterPage>
                   ),
                 ),
               ),
-              const SizedBox(height: 100),
+              const SizedBox(height: 75),
               MyTextField(
                 labeltext: 'Enter First Name',
                 controller: firstName,
@@ -218,8 +250,7 @@ class RegisterPageState extends State<RegisterPage>
                   registerNames();
                 },
               ),
-              const SizedBox(height: 25),
-              const SizedBox(height: 45),
+              const SizedBox(height: 55),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -239,6 +270,38 @@ class RegisterPageState extends State<RegisterPage>
                     ),
                   ),
                 ],
+              ),
+              const Padding(
+                padding: EdgeInsets.only(top: 5),
+                child: Text(
+                  'or',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 5),
+                child: GestureDetector(
+                  onTap: () {
+                    // Navigate to HomePage when the button is tapped
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const HomePage(),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    'Login as Guest',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

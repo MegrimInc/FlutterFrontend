@@ -40,13 +40,14 @@ class _ProfilePageState extends State<ProfilePage> {
     final loginData = LoginCache();
     loginData.setEmail("");
     loginData.setPW("");
+    loginData.setUID(0);  
     loginData.setSignedIn(false);
   }
 
   // Function to delete user account and log out
   Future<void> deleteAccount() async {
     final response = await http.post(
-      Uri.parse('https://www.barzzy.site/signup/deleteaccount'),
+      Uri.parse('https://www.barzzy.site/newsignup/deleteaccount'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'email': email, 'password': password}),
     );

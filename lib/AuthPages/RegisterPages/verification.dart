@@ -48,7 +48,7 @@ class _RegisterPageState11 extends State<RegisterPage11>
 
 
   void attemptVerification() async {
-    final url = Uri.parse('https://www.barzzy.site/signup/verify');
+    final url = Uri.parse('https://www.barzzy.site/newsignup/verify');
     final requestBody = jsonEncode({
       'email': await loginCache4.getEmail(),
       'verificationCode': verificationCode.value.text,

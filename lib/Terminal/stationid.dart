@@ -37,6 +37,7 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
     loginData.setEmail("");
     loginData.setPW("");
     loginData.setSignedIn(false);
+    loginData.setUID(0);
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),

@@ -35,7 +35,7 @@ class _LoginPageState extends State<LoginPage> {
   void signUserIn() async {
     FocusScope.of(context).unfocus();
     final cacher = LoginCache();
-    final url = Uri.parse('https://www.barzzy.site/signup/login');
+    final url = Uri.parse('https://www.barzzy.site/newsignup/login');
     final requestBody = jsonEncode({
       'email': emailController.value.text,
       'password': passwordController.value.text

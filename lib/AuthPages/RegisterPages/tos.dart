@@ -43,7 +43,7 @@ class _RegisterPageState2 extends State<RegisterPage2> {
   void acceptTOS() async {
     if (!_isAtEndOfPage) return;
 
-    final url = Uri.parse('https://www.barzzy.site/signup/accept-tos');
+    final url = Uri.parse('https://www.barzzy.site/newsignup/accept-tos');
     final loginCache8 = LoginCache();
     final tosEmail = await loginCache8.getEmail();
 

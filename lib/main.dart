@@ -68,7 +68,7 @@ Future<void> main() async {
   await loginCache.getSignedIn();
 
   // Make HTTP request and initialize your application logic
-  final url = Uri.parse('https://www.barzzy.site/signup/login');
+  final url = Uri.parse('https://www.barzzy.site/newsignup/login');
   final initPW = await loginCache.getPW();
   final initEmail = await loginCache.getEmail();
 

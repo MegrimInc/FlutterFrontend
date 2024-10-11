@@ -3,6 +3,7 @@
 import 'dart:ui';
 
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:barzzy/Backend/barhistory.dart';
 import 'package:barzzy/Backend/drink.dart';
 import 'package:barzzy/Backend/user.dart';
@@ -91,6 +92,16 @@ class MenuPageState extends State<MenuPage>
     final userId = await loginCache.getUID();
     final cart = Provider.of<Cart>(context, listen: false);
     final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+
+    if (userId == 0) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => const LoginOrRegisterPage(),
+      ),
+      (route) => false,
+    );
+    return;
+  }
 
     final barId = widget.barId;
 
