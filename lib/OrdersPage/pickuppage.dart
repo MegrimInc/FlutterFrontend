@@ -82,9 +82,7 @@ class PickupPageState extends State<PickupPage> {
                     return const Center(
                       child: Text(
                         'No orders have been placed yet.',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 17),
+                        style: TextStyle(color: Colors.white, fontSize: 17),
                       ),
                     );
                   }
@@ -166,7 +164,6 @@ class PickupPageState extends State<PickupPage> {
       height: 100,
       animSpeedFactor: 5,
       springAnimationDurationInMilliseconds: 1000,
-
       child: SingleChildScrollView(
         child: SizedBox(
           height: 667,
@@ -183,7 +180,7 @@ class PickupPageState extends State<PickupPage> {
             itemBuilder: (context, index) {
               final barId = barIds[index];
               final bar = LocalDatabase.getBarById(barId);
-          
+
               return GestureDetector(
                 onTap: () {
                   debugPrint('Grid item tapped. Bar ID: $barId');
@@ -262,16 +259,16 @@ class PickupPageState extends State<PickupPage> {
         }
       },
       child: LiquidPullToRefresh(
-      onRefresh: () => _refreshCardView(context),
-      showChildOpacityTransition: false,
-      color: Colors.black,
-      height: 100,
-      animSpeedFactor: 5,
-      springAnimationDurationInMilliseconds: 1000,
-     
+        onRefresh: () => _refreshCardView(context),
+        showChildOpacityTransition: false,
+        color: Colors.black,
+        height: 100,
+        animSpeedFactor: 5,
+        springAnimationDurationInMilliseconds: 1000,
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
             child: Stack(
               children: [
                 Padding(
@@ -303,7 +300,6 @@ class PickupPageState extends State<PickupPage> {
                         ),
                       ),
                       const SizedBox(height: 60),
-            
                       SizedBox(
                         height: 409,
                         child: ListView.builder(
@@ -312,7 +308,8 @@ class PickupPageState extends State<PickupPage> {
                           itemBuilder: (context, index) {
                             final drinkOrder = order.drinks[index];
                             return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 4.0),
                               child: Center(
                                 child: Text(
                                   '${drinkOrder.drinkName} x ${drinkOrder.quantity}',
@@ -325,29 +322,28 @@ class PickupPageState extends State<PickupPage> {
                             );
                           },
                         ),
-                      ),  
+                      ),
                     ],
                   ),
                 ),
-        
+
                 if (status != "delivered" &&
-                          status != "canceled" &&
-                          claimer != "" &&
-                          status != "unready"
-                          )
-                        Positioned(
-                         bottom: 0,
-                        left: 0,
-                          child: Text(
-                            '#${order.getUser() ?? '...'}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 35,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-        
+                    status != "canceled" &&
+                    claimer != "" &&
+                    status != "unready")
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    child: Text(
+                      '#${order.getUser() ?? '...'}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 35,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
                 Positioned(
                   bottom: 1.5,
                   right: 0,
@@ -355,73 +351,67 @@ class PickupPageState extends State<PickupPage> {
                       status, claimer, int.parse(barId), userId, context),
                 ),
 
- if (status == "unready" && claimer.isNotEmpty)
-                 Positioned(
-                  bottom: 15, 
-                  right: 0,
-                  left: 15,
-                  child: Column(
+                if (status == "unready" && claimer.isNotEmpty)
+                  Positioned(
+                    bottom: 15,
+                    right: 0,
+                    left: 15,
+                    child: Column(
                       children: [
-                      const Padding(
-                         padding:  EdgeInsets.only(bottom: 25),
-                         child:  Center(
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 25),
+                          child: Center(
                             child: SpinKitThreeBounce(
                               color: Colors.white,
                               size: 25,
                             ),
                           ),
-                       ),
-                        
+                        ),
                         Center(
                           child: Text(
                             '#${order.getUser() ?? '...'} IS BEING PREPARED @$claimer',
                             style: const TextStyle(
                                 color: Color.fromARGB(255, 255, 241, 118),
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold
+                                fontWeight: FontWeight.bold),
                           ),
-                        ),)
+                        )
                       ],
                     ),
+                  ),
 
-                ),
-
-        if (status == "ready" && claimer.isNotEmpty)
-                const Positioned(
-                  bottom: 50, 
-                  right: 0,
-                  left: 15,
-                  child: Center(
-                    child: Text(
+                if (status == "ready" && claimer.isNotEmpty)
+                  const Positioned(
+                    bottom: 50,
+                    right: 0,
+                    left: 15,
+                    child: Center(
+                        child: Text(
                       'READY',
                       style: TextStyle(
                           color: Colors.white54,
                           fontSize: 18,
-                          fontWeight: FontWeight.bold
-                    ),
-                  )
+                          fontWeight: FontWeight.bold),
+                    )),
                   ),
 
-                ),
-            
                 // Add "HOLD TO CANCEL" text at the bottom
                 if (status == "unready" && claimer.isEmpty)
-                   const Positioned(
+                  const Positioned(
                     bottom: 15,
                     left: 0,
                     right: 0,
                     child: Column(
                       children: [
-                       Padding(
-                         padding:  EdgeInsets.only(bottom: 25),
-                         child:  Center(
+                        Padding(
+                          padding: EdgeInsets.only(bottom: 25),
+                          child: Center(
                             child: SpinKitThreeBounce(
                               color: Colors.white,
                               size: 25,
                             ),
                           ),
-                       ),
-                        
+                        ),
                         Center(
                           child: Text(
                             'HOLD TO CANCEL ORDER',
@@ -434,7 +424,7 @@ class PickupPageState extends State<PickupPage> {
                       ],
                     ),
                   ),
-            
+
                 // Add "HOLD TO REORDER" text for delivered or canceled orders
                 if (status == "delivered" || status == "canceled")
                   const Positioned(
@@ -459,8 +449,6 @@ class PickupPageState extends State<PickupPage> {
       ),
     );
   }
-
-  
 
   // Method to trigger reorder by creating an order
   void _triggerReorder(CustomerOrder order, BuildContext context) async {

@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'package:barzzy/OrdersPage/hierarchy.dart';
+import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:barzzy/main.dart';
 import 'package:flutter/material.dart';
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -37,11 +40,15 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // Function to clear shared preferences and log out
   void clearSharedPrefs() {
+    final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
     final loginData = LoginCache();
+    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
     loginData.setEmail("");
     loginData.setPW("");
     loginData.setUID(0);  
     loginData.setSignedIn(false);
+    hierarchy.disconnect(); 
+    localDatabase.clearOrders();
   }
 
   // Function to delete user account and log out
@@ -94,7 +101,7 @@ class _ProfilePageState extends State<ProfilePage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          backgroundColor: Colors.black87,
+          backgroundColor: Colors.white,
           title: Center(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -102,13 +109,13 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 Icon(
                   actionType == 'Log Out' ? Icons.exit_to_app : Icons.delete_forever,
-                  color: Colors.white,
+                  color: Colors.black,
                 ),
                 const SizedBox(width: 10),
                 Text(
                   actionType == 'Log Out' ? 'Confirm Logout' : 'Confirm Delete',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Colors.black,
                     fontWeight: FontWeight.bold,
                     fontSize: 22,
                   ),
@@ -121,7 +128,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ? 'Are you sure you want to log out?'
                 : 'Are you sure you want to delete your account?',
             style: const TextStyle(
-              color: Colors.white70,
+              color: Colors.black,
               fontSize: 16,
             ),
             textAlign: TextAlign.center,
@@ -151,7 +158,7 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(width: 10),
             TextButton(
               style: TextButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),

@@ -252,16 +252,16 @@ class Hierarchy extends ChangeNotifier {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          backgroundColor: Colors.black87,
+          backgroundColor: Colors.white,
           title: const Row(
             children: [
               SizedBox(width: 75),
-              Icon(Icons.error_outline, color: Colors.redAccent),
+              Icon(Icons.error_outline, color: Colors.black),
               SizedBox(width: 5),
               Text(
                 'Oops :/',
                 style: TextStyle(
-                  color: Colors.redAccent,
+                  color: Colors.black,
                   fontWeight: FontWeight.bold,
                   fontSize: 22,
                 ),
@@ -271,7 +271,7 @@ class Hierarchy extends ChangeNotifier {
           content: Text(
             errorMessage,
             style: const TextStyle(
-              color: Colors.white70,
+              color: Colors.black,
               fontSize: 16,
             ),
             textAlign: TextAlign.center,
@@ -279,19 +279,21 @@ class Hierarchy extends ChangeNotifier {
           actions: <Widget>[
             TextButton(
               style: TextButton.styleFrom(
-                backgroundColor: Colors.redAccent,
+                backgroundColor: Colors.black,
                 padding:
                     const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text(
-                'OK',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              child: const Center(
+                child: Text(
+                  'OK',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               onPressed: () {
@@ -302,6 +304,16 @@ class Hierarchy extends ChangeNotifier {
         );
       },
     );
+  }
+
+   void disconnect() {
+    if (_channel != null) {
+      debugPrint('Closing WebSocket connection.');
+      _channel!.sink.close(); // Close the WebSocket connection
+      _isConnected = false;
+      _channel = null;
+      notifyListeners(); // Notify listeners that the connection has been closed
+    }
   }
 
   // Method to retrieve the list of barIds for created orders

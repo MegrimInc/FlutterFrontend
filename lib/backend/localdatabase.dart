@@ -2,6 +2,7 @@ import 'package:barzzy/Backend/activeorder.dart';
 import 'package:barzzy/Backend/tags.dart';
 
 import 'package:barzzy/Backend/drink.dart';
+import 'package:barzzy/backend/point.dart';
 
 import 'package:flutter/material.dart';
 import 'bar.dart';
@@ -19,10 +20,10 @@ class LocalDatabase with ChangeNotifier {
   final Map<String, Tag> tags = {};
   final Map<String, Drink> _drinks = {};
   final Map<String, CustomerOrder> _barOrders = {};
+  final Map<String, Point> _userPoints = {};
 
   void addOrUpdateOrderForBar(CustomerOrder order) async {
     _barOrders[order.barId] = order;
-    //await _saveOrdersToSharedPreferences();
     notifyListeners();
   }
 
@@ -71,5 +72,29 @@ class LocalDatabase with ChangeNotifier {
   Drink getDrinkById(String id) {
     //debugPrint('Drink found for ID: $id in LocalDatabase instance: $hashCode');
     return _drinks[id]!;
+  }
+
+  void clearOrders() {
+    _barOrders.clear();
+    notifyListeners();
+    debugPrint("All orders have been cleared.");
+    _userPoints.clear();
+    debugPrint("All points have been cleared.");
+  }
+
+  void addOrUpdatePoints(String barId, int points) {
+    _userPoints[barId] = Point(barId: barId, points: points);
+    notifyListeners();
+    debugPrint('Points updated for bar $barId: $points points');
+  }
+
+  // Method to get points for a specific bar
+  Point? getPointsForBar(String barId) {
+    return _userPoints[barId];
+  }
+
+  // Method to get all points for the user
+  Map<String, Point> getAllPoints() {
+    return _userPoints;
   }
 }

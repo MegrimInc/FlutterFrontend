@@ -7,13 +7,36 @@ import 'package:flutter/services.dart';
 class Cart extends ChangeNotifier {
   String? barId;
   Map<String, int> barCart = {}; // Maps drinkId to quantity
+  int? barPoints;
+   bool points = false;
+  
 
   void setBar(String newBarId) {
     if (barId != newBarId) {
       barId = newBarId;
       barCart.clear(); // Clear the cart when switching bars
+       _fetchPointsForBar(newBarId);
       notifyListeners();
     }
+  }
+
+   // Method to toggle points
+  void togglePoints(bool value) {
+    points = value;
+    notifyListeners(); // Notify listeners of the state change
+  }
+
+  Future<void> _fetchPointsForBar(String barId) async {
+    final localDatabase = LocalDatabase();
+    final points = localDatabase.getPointsForBar(barId);
+    if (points != null) {
+      barPoints = points.points; // Store the points in the Cart
+      debugPrint('Points for bar $barId: ${points.points}');
+    } else {
+      barPoints = 0; // If no points found, set to 0 or handle accordingly
+      debugPrint('No points found for bar $barId');
+    }
+    notifyListeners(); // Notify listeners to update UI or perform other actions
   }
 
   int getTotalDrinkCount() {
@@ -39,16 +62,16 @@ class Cart extends ChangeNotifier {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
-            backgroundColor: Colors.black87,
+            backgroundColor: Colors.white,
             title: const Row(
               children: [
                 SizedBox(width: 75),
-                Icon(Icons.error_outline, color: Colors.redAccent),
+                Icon(Icons.error_outline, color: Colors.black),
                 SizedBox(width: 5),
                 Text(
                   'Oops :/',
                   style: TextStyle(
-                    color: Colors.redAccent,
+                    color: Colors.black,
                     fontWeight: FontWeight.bold,
                     fontSize: 22,
                   ),
@@ -58,7 +81,7 @@ class Cart extends ChangeNotifier {
             content: const Text(
               'You can only add up to 3 drinks.',
               style: TextStyle(
-                color: Colors.white70,
+                color: Colors.black,
                 fontSize: 16,
               ),
               textAlign: TextAlign.center,
@@ -66,19 +89,21 @@ class Cart extends ChangeNotifier {
             actions: <Widget>[
               TextButton(
                 style: TextButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: Colors.black,
                   padding:
                       const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: const Text(
-                  'OK',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                child: const Center(
+                  child: Text(
+                    'OK',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 onPressed: () {

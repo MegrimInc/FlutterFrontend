@@ -251,23 +251,43 @@ class DrinkFeedState extends State<DrinkFeed>
   }
 
   Widget _buildPriceInfo() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildPriceCard('Regular', widget.drink.price),
-        const SizedBox(width: 16),
-        _buildPriceCard('Happy Hour', widget.drink.happyhourprice,
-            isHappyHour: true),
-      ],
-    );
-  }
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Consumer<Cart>(
+        builder: (context, cart, _) {
+          return _buildPriceCard(
+            'Regular',
+            widget.drink.price,
+            isUsingPoints: !cart.points, // If points are not being used
+            onTap: () => cart.togglePoints(false), // Switch to Regular price
+            showDollarSign: true, // Always show $ for regular price
+          );
+        },
+      ),
+      const SizedBox(width: 16),
+      Consumer<Cart>(
+        builder: (context, cart, _) {
+          return _buildPriceCard(
+            '   Points    ',
+            widget.drink.points, // Assuming points price
+            isUsingPoints: cart.points, // If points are being used
+            onTap: () => cart.togglePoints(true), // Switch to Points price
+            showDollarSign: false, // Never show $ for points
+          );
+        },
+      ),
+    ],
+  );
+}
 
-  Widget _buildPriceCard(String label, double price,
-      {bool isHappyHour = false}) {
-    return Container(
+Widget _buildPriceCard(String label, num price, {required bool isUsingPoints, required VoidCallback onTap, required bool showDollarSign}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isHappyHour ? Colors.amber : Colors.white24,
+        color: isUsingPoints ? Colors.amber : Colors.white24,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -275,23 +295,28 @@ class DrinkFeedState extends State<DrinkFeed>
           Text(
             label,
             style: GoogleFonts.poppins(
-              color: isHappyHour ? Colors.black : Colors.white,
+              color: isUsingPoints ? Colors.black : Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
           ),
           Text(
-            '\$${price.toStringAsFixed(2)}',
+            // Display price or points based on context
+            showDollarSign
+              ? '\$${price.toStringAsFixed(2)}'  // Always display price as double with $ sign
+              : '${price.toInt()}', // Always display points as integer with no $ sign
             style: GoogleFonts.poppins(
-              color: isHappyHour ? Colors.black : Colors.white,
+              color: isUsingPoints ? Colors.black : Colors.white70,
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
 
    Widget _buildQuantityControlButtons(BuildContext context) {

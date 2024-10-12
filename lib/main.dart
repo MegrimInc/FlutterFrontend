@@ -2,14 +2,13 @@ import 'dart:convert';
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:barzzy/Backend/bar.dart';
-import 'package:barzzy/Backend/drink.dart';
 import 'package:barzzy/Backend/searchengine.dart';
 import 'package:barzzy/Backend/recommended.dart';
-import 'package:barzzy/Backend/categories.dart';
 import 'package:barzzy/Backend/user.dart';
 import 'package:barzzy/Gnav%20Bar/bottombar.dart';
 import 'package:barzzy/OrdersPage/hierarchy.dart';
 import 'package:barzzy/Terminal/stationid.dart';
+import 'package:barzzy/backend/point.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
@@ -99,6 +98,7 @@ Future<void> main() async {
   await loginCache.setDeviceToken(deviceToken);
   LocalDatabase localDatabase = LocalDatabase();
   await sendGetRequest();
+  await sendGetRequest2();
 
   // Create the MethodChannel
   const MethodChannel notificationChannel =
@@ -146,10 +146,10 @@ Future<void> sendGetRequest() async {
       debugPrint('GET request successful');
 
       final List<dynamic> jsonResponse = jsonDecode(response.body);
-      LocalDatabase barDatabase = LocalDatabase();
+      LocalDatabase localDatabase = LocalDatabase();
       for (var barJson in jsonResponse) {
         Bar bar = Bar.fromJson(barJson);
-        barDatabase.addBar(bar);
+        localDatabase.addBar(bar);
 
         if (bar.barimg != null && bar.barimg!.isNotEmpty) {
           final cachedImage = CachedNetworkImageProvider(bar.barimg!);
@@ -173,131 +173,58 @@ Future<void> sendGetRequest() async {
   }
 }
 
-Future<void> fetchTagsAndDrinks(String barId) async {
-  debugPrint('Fetching drinks for bar ID: $barId');
-  LocalDatabase barDatabase = LocalDatabase();
-  User user = User();
+Future<void> sendGetRequest2() async {
+  try {
+    final loginCache = LoginCache();
+    final userId = await loginCache.getUID();
 
-  // ignore: unused_local_variable
-  List<MapEntry<int, String>> tagList = [
-    const MapEntry(172, 'vodka'),
-    const MapEntry(173, 'gin'),
-    const MapEntry(174, 'whiskey'),
-    const MapEntry(175, 'tequila'),
-    const MapEntry(176, 'brandy'),
-    const MapEntry(177, 'rum'),
-    const MapEntry(178, 'ale'),
-    const MapEntry(179, 'lager'),
-    const MapEntry(181, 'virgin'),
-    const MapEntry(183, 'red wine'),
-    const MapEntry(184, 'white wine'),
-    const MapEntry(186, 'seltzer'),
-  ];
-
-  Categories categories = Categories(
-    barId: int.parse(barId),
-    tag172: [],
-    tag173: [],
-    tag174: [],
-    tag175: [],
-    tag176: [],
-    tag177: [],
-    tag178: [],
-    tag179: [],
-    tag181: [],
-    tag183: [],
-    tag184: [],
-    tag186: [],
-  );
-
-  final url =
-      Uri.parse('https://www.barzzy.site/bars/getAllDrinksByBar/$barId');
-  final response = await http.get(url);
-
-  if (response.statusCode == 200) {
-    final List<dynamic> jsonResponse = jsonDecode(response.body);
-    debugPrint('Drinks JSON response for bar $barId: $jsonResponse');
-
-    for (var drinkJson in jsonResponse) {
-      String? drinkId = drinkJson['drinkId']?.toString();
-      //debugPrint('Processing drink: $drinkJson');
-
-      if (drinkId != null) {
-        Drink drink = Drink.fromJson(drinkJson);
-        barDatabase.addDrink(drink);
-        //debugPrint('Added drink with ID: $drinkId to bar $barId');
-
-        if (drink.image.isNotEmpty) {
-          final cachedImage = CachedNetworkImageProvider(drink.image);
-          cachedImage.resolve(const ImageConfiguration()).addListener(
-                ImageStreamListener(
-                  (ImageInfo image, bool synchronousCall) {
-                    //debugPrint('Drink image successfully cached: ${drink.image}');
-                  },
-                  onError: (dynamic exception, StackTrace? stackTrace) {
-                    //debugPrint('Failed to cache drink image: $exception');
-                  },
-                ),
-              );
-        }
-
-        for (String tagId in drink.tagId) {
-          //debugPrint('Processing tagId: $tagId for drinkId: $drinkId');
-          switch (int.parse(tagId)) {
-            case 172:
-              categories.tag172.add(int.parse(drinkId));
-              break;
-            case 173:
-              categories.tag173.add(int.parse(drinkId));
-              break;
-            case 174:
-              categories.tag174.add(int.parse(drinkId));
-              break;
-            case 175:
-              categories.tag175.add(int.parse(drinkId));
-              break;
-            case 176:
-              categories.tag176.add(int.parse(drinkId));
-              break;
-            case 177:
-              categories.tag177.add(int.parse(drinkId));
-              break;
-            case 178:
-              categories.tag178.add(int.parse(drinkId));
-              break;
-            case 179:
-              categories.tag179.add(int.parse(drinkId));
-              break;
-            case 181:
-              categories.tag181.add(int.parse(drinkId));
-              break;
-            case 183:
-              categories.tag183.add(int.parse(drinkId));
-              break;
-            case 184:
-              categories.tag184.add(int.parse(drinkId));
-              break;
-            case 186:
-              categories.tag186.add(int.parse(drinkId));
-              break;
-            default:
-            //debugPrint('Unknown tagId: $tagId for drinkId: $drinkId');
-          }
-        }
-      } else {
-        debugPrint('Warning: Drink ID is null for drink: $drinkJson');
-      }
+    if (userId == 0) {
+      debugPrint('User ID is 0, skipping GET request for points.');
+      return;
     }
 
-    user.addCategories(barId, categories);
-    debugPrint(
-        'Drinks for bar $barId have been categorized and added to the User object.');
-  } else {
-    debugPrint(
-        'Failed to load drinks for bar $barId. Status code: ${response.statusCode}');
-  }
+    final url = Uri.parse('https://www.barzzy.site/points/$userId');
+    final response = await http.get(url);
 
-  debugPrint('Finished processing drinks for barId: $barId');
+    if (response.statusCode == 200) {
+      debugPrint('GET request for points successful: ${response.body}');
+
+      // Parse the response body into a Map
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      debugPrint('Decoded JSON response: $jsonResponse');
+
+      // Check if the user ID from the response matches the one in LoginCache
+      final String userIdString = userId.toString();
+      if (!jsonResponse.containsKey(userIdString)) {
+        debugPrint('User ID from response does not match the logged-in user.');
+        return;
+      }
+
+      // Get the points map for the user (barId -> points)
+      final Map<String, dynamic> userPointsMap = jsonResponse[userIdString];
+
+      // Add or update points in the LocalDatabase for each bar
+      LocalDatabase localDatabase = LocalDatabase();
+
+      // Iterate over the user points map (barId -> points)
+      userPointsMap.forEach((barId, points) {
+        try {
+          final Point point = Point(barId: barId.toString(), points: points);
+          debugPrint('Successfully serialized Point: Bar ID: ${point.barId}, Points: ${point.points}');
+
+          // Add or update the points in the LocalDatabase
+          localDatabase.addOrUpdatePoints(point.barId, point.points);
+        } catch (e) {
+          debugPrint('Error serializing Point object from JSON: $e');
+        }
+      });
+
+    } else {
+      debugPrint('Failed to send GET request for points: ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('Error sending GET request for points: $e');
+  }
 }
 
 class Barzzy extends StatelessWidget {

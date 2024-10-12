@@ -6,9 +6,11 @@ class Drink {
   double price;
   double happyhourprice;
   final List<String> tagId;
+  int points;
   String description; // New field for description
 
-  Drink(this.id, this.name, this.alcohol, this.image, this.price, this.happyhourprice, this.tagId, this.description);
+  Drink(this.id, this.name, this.alcohol, this.image, this.price,
+      this.happyhourprice, this.tagId, this.description, this.points);
 
   // Getter methods
   String? getName() {
@@ -27,6 +29,8 @@ class Drink {
     return description;
   }
 
+
+
   // JSON serialization
   Map<String, dynamic> toJson() {
     return {
@@ -38,6 +42,7 @@ class Drink {
       'drinkTags': tagId,
       'drinkDiscount': happyhourprice,
       'description': description, // Include the new description field
+      'point': points
     };
   }
 
@@ -50,8 +55,11 @@ class Drink {
       json['drinkImage'] as String,
       json['drinkPrice'] as double,
       json['drinkDiscount'] as double,
-      (json['drinkTags'] as List<dynamic>).map((tag) => tag.toString()).toList(),
+      (json['drinkTags'] as List<dynamic>)
+          .map((tag) => tag.toString())
+          .toList(),
       json['description'] as String, // Deserialize the new description field
+      json['point'] as int
     );
   }
 }

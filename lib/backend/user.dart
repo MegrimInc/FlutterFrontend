@@ -53,10 +53,14 @@ class User extends ChangeNotifier {
 
     LocalDatabase localDatabase = LocalDatabase();
 
+    
+
     if (categoriesExistForBar(barId)) {
       debugPrint('Categories already exist for bar $barId, skipping fetch.');
       return; // Exit early if categories already exist
     }
+
+    debugPrint('why are you being gey bruh');
 
     // ignore: unused_local_variable
     List<MapEntry<int, String>> tagList = [
@@ -96,7 +100,7 @@ class User extends ChangeNotifier {
 
     if (response.statusCode == 200) {
       final List<dynamic> jsonResponse = jsonDecode(response.body);
-      //debugPrint('Drinks JSON response for bar $barId: $jsonResponse');
+      debugPrint('Drinks JSON response for bar $barId: $jsonResponse');
 
       for (var drinkJson in jsonResponse) {
         String? drinkId = drinkJson['drinkId']?.toString();

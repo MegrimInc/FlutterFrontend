@@ -2,6 +2,7 @@
 
 import 'dart:ui';
 
+import 'package:another_flushbar/flushbar.dart';
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:barzzy/Backend/barhistory.dart';
@@ -94,14 +95,14 @@ class MenuPageState extends State<MenuPage>
     final hierarchy = Provider.of<Hierarchy>(context, listen: false);
 
     if (userId == 0) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (context) => const LoginOrRegisterPage(),
-      ),
-      (route) => false,
-    );
-    return;
-  }
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => const LoginOrRegisterPage(),
+        ),
+        (route) => false,
+      );
+      return;
+    }
 
     final barId = widget.barId;
 
@@ -257,7 +258,7 @@ class MenuPageState extends State<MenuPage>
           IconButton(
             icon: const Icon(
               FontAwesomeIcons.caretLeft,
-              color: Colors.white,
+              color: Colors.white54,
               size: 25,
             ),
             onPressed: () => Navigator.pop(context),
@@ -274,19 +275,43 @@ class MenuPageState extends State<MenuPage>
           ),
           Consumer<Cart>(
             builder: (context, cart, _) {
-              int totalDrinks = cart.getTotalDrinkCount();
-
-              return Padding(
-                padding: const EdgeInsets.only(
-                    right: 10.0, left: 13), // Add 20px padding to the right
-                child: Icon(
-                  FontAwesomeIcons.lock, // Icon to represent max drinks
-                  color: totalDrinks >= 3
-                      ? Colors.transparent
-                      : Colors
-                          .transparent, // White if 3 drinks, transparent otherwise
-                  size: 17.5, // Adjust the size as needed
+              return IconButton(
+                icon: Icon(
+                  FontAwesomeIcons.solidStar,
+                  color: cart.points
+                      ? Colors.amber
+                      : Colors.white24, // Change color based on points
+                  size: 18,
                 ),
+                onPressed: () {
+                  Flushbar(
+                    messageText: Row(
+                      children: [
+                        const Spacer(),
+                        Icon(
+                            Icons.star,
+                            color: cart.points ? Colors.amber : Colors.white24,
+                          ),
+                          const SizedBox(width: 7),
+                        Text(
+                          "You have ${cart.barPoints} points!",
+                          style: const TextStyle(
+                            color: Colors.white, // Customize the message color
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign
+                              .center, // Ensure the text is centered within the widget
+                        ),
+                          const Spacer(),
+                      ],
+                    ),
+                    backgroundColor: Colors.black,
+                    duration: const Duration(seconds: 2),
+                    flushbarPosition: FlushbarPosition.TOP,
+                    borderRadius: BorderRadius.circular(8),
+                    margin: const EdgeInsets.all(10),
+                  ).show(context);
+                },
               );
             },
           ),
