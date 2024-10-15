@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 
+import 'package:barzzy/AuthPages/RegisterPages/forgotpw.dart';
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 
 import 'package:barzzy/AuthPages/components/mybutton.dart';
@@ -186,16 +187,31 @@ class _LoginPageState extends State<LoginPage> {
 
             // FORGOT PASSWORD
 
-            const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 25.0),
-                child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                  Text("Forgot Password?",
-                      style: TextStyle(
-                          color: Color.fromARGB(255, 255, 255, 255),
-                          fontWeight: FontWeight.bold)),
-                  SizedBox(height: 25),
-                ])),
-            const SizedBox(height: 25),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 25.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ForgotPassword()),
+                      (Route<dynamic> route) => false,
+                    );
+                  },
+                  child: const Text(
+                    "Forgot Password?",
+                    style: TextStyle(
+                        color: Color.fromARGB(255, 255, 255, 255),
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 25),
+              ],
+            ),
+          ),
+
 
             // SIGN IN
 

@@ -1,3 +1,4 @@
+import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:flutter/material.dart';
 
 class ForgotPassword extends StatefulWidget {
@@ -57,7 +58,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       if (resetSuccess) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const LoginPage()), // Navigate to LoginPage
+          MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()), // Navigate to LoginPage
           (Route<dynamic> route) => false,
         );
         ScaffoldMessenger.of(context).showSnackBar(
@@ -81,7 +82,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
           onPressed: () {
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (context) => const LoginPage()), // Your LoginPage
+              MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()), // Your LoginPage
               (Route<dynamic> route) => false,
             );
           },
