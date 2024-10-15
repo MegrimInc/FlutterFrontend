@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class ForgotPassword extends StatefulWidget {
   const ForgotPassword({super.key});
@@ -18,58 +20,129 @@ class _ForgotPasswordState extends State<ForgotPassword> {
   bool isNewPasswordEnabled = false;
   bool isSubmitEmailDisabled = false;
   bool isVerificationSuccess = false;
-  bool isVerifying = false;
+  bool isSubmitButtonEnabled = true;  // Manage submit button state
 
-  // Placeholder functions
-  void notifyServerEmailNeedsReset() {
-    debugPrint('Request to reset password sent for: ${emailController.text}');
-  }
+  // Notify server to reset email
+  Future<void> notifyServerEmailNeedsReset() async {
+    final url = Uri.parse('https://www.barzzy.site/newsignup/reset-password-validate-email');
+    await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': emailController.text.trim()}),
+    );
 
-  void checkVerificationCode(String email, String code) {
-    debugPrint('Verifying code $code for email $email...');
     setState(() {
-      isVerifying = true;
+      isVerificationCodeEnabled = true;
+      isSubmitEmailDisabled = true;
     });
 
-    // Simulate backend response delay
-    Future.delayed(const Duration(seconds: 2), () {
+    // Snackbar to notify verification code is sent
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Verification code sent to your email. Check your Spam/Junk folder.'),
+      ),
+    );
+  }
+
+  // Check verification code
+  Future<void> checkVerificationCode() async {
+    setState(() {
+      isSubmitButtonEnabled = false; // Disable submit button during verification
+    });
+
+    final url = Uri.parse('https://www.barzzy.site/newsignup/reset-password-validate-code');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': emailController.text.trim(),
+        'code': verificationCodeController.text.trim(),
+      }),
+    );
+
+    // Snackbar while verifying code
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Checking code...')),
+    );
+
+    if (response.statusCode == 200) {
       setState(() {
-        isVerifying = false;
-        if (code == "123456") { // Simulated correct code
-          isVerificationSuccess = true;
-          isVerificationCodeEnabled = false; // Lock the verification field
-          isNewPasswordEnabled = true; // Enable password fields
-        } else {
-          isVerificationSuccess = false;
-        }
+        isVerificationSuccess = true;
+        isVerificationCodeEnabled = false; // Grey out the verification code field
+        isNewPasswordEnabled = true; // Enable password fields
+        isSubmitButtonEnabled = true; // Re-enable submit button
       });
-    });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Code verified!')),
+      );
+    } else {
+      setState(() {
+        isVerificationSuccess = false;
+        isVerificationCodeEnabled = true; // Re-enable the verification field
+        isSubmitButtonEnabled = true; // Re-enable submit button
+      });
+
+      // AlertDialog to notify invalid code
+      showDialog(
+        context: context,
+        builder: (context) => const AlertDialog(
+          title: Text('Invalid Code'),
+          content: Text('Verification code is incorrect. Please try again.'),
+        ),
+      );
+    }
   }
 
+  // Validate password and confirm password
   bool checkValidInput() {
-    final passwordPattern = RegExp(r'^[a-zA-Z0-9_]+$');
-    return passwordPattern.hasMatch(newPasswordController.text);
+    if (newPasswordController.text.length <= 6) {
+      showDialog(
+        context: context,
+        builder: (context) => const AlertDialog(
+          title: Text('Error'),
+          content: Text('Password must be at least 7 characters long.'),
+        ),
+      );
+      return false;
+    } else if (newPasswordController.text != confirmPasswordController.text) {
+      showDialog(
+        context: context,
+        builder: (context) => const AlertDialog(
+          title: Text('Error'),
+          content: Text('Passwords do not match.'),
+        ),
+      );
+      return false;
+    }
+    return true;
   }
 
-  void newPassword() {
-    debugPrint('Setting new password...');
-    Future.delayed(const Duration(seconds: 2), () {
-      bool resetSuccess = newPasswordController.text == confirmPasswordController.text;
-      if (resetSuccess) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()), // Navigate to LoginPage
-          (Route<dynamic> route) => false,
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Successful password reset')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed password reset')),
-        );
-      }
-    });
+  // Submit new password
+  Future<void> newPassword() async {
+    if (!checkValidInput()) {
+      return;
+    }
+
+    final url = Uri.parse('https://www.barzzy.site/newsignup/reset-password-final');
+    await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': emailController.text.trim(),
+        'code': verificationCodeController.text.trim(),
+        'password': newPasswordController.text.trim(),
+      }),
+    );
+
+    // Navigate to LoginPage and show a success snackbar
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()), // Navigate to LoginPage
+      (Route<dynamic> route) => false,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Successfully reset password')),
+    );
   }
 
   @override
@@ -102,6 +175,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
             TextField(
               controller: verificationCodeController,
               decoration: const InputDecoration(labelText: 'Verification Code'),
+              keyboardType: TextInputType.number, // Numeric input only
               enabled: isVerificationCodeEnabled,
             ),
             const SizedBox(height: 10),
@@ -120,21 +194,9 @@ class _ForgotPasswordState extends State<ForgotPassword> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
+              onPressed: isSubmitButtonEnabled ? () async {
                 if (!isSubmitEmailDisabled) {
-                  notifyServerEmailNeedsReset();
-                  setState(() {
-                    isVerificationCodeEnabled = true;
-                    isSubmitEmailDisabled = true;
-                  });
-                  showDialog(
-                    context: context,
-                    builder: (context) => const AlertDialog(
-                      title: Text('Notification'),
-                      content: Text(
-                          'If your email exists, a verification code has been sent. Check your Spam/Junk folder!'),
-                    ),
-                  );
+                  await notifyServerEmailNeedsReset();
                 } else if (!isNewPasswordEnabled) {
                   showDialog(
                     context: context,
@@ -142,10 +204,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                       title: Text('Verifying code...'),
                     ),
                   );
-                  checkVerificationCode(
-                    emailController.text.trim(),
-                    verificationCodeController.text.trim(),
-                  );
+                  await checkVerificationCode();
                 } else {
                   if (checkValidInput()) {
                     showDialog(
@@ -154,19 +213,10 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                         title: Text('Changing Password...'),
                       ),
                     );
-                    newPassword();
-                  } else {
-                    showDialog(
-                      context: context,
-                      builder: (context) => const AlertDialog(
-                        title: Text('Error'),
-                        content: Text(
-                            'Passwords can only contain a-z, A-Z, 0-9, and underscores'),
-                      ),
-                    );
+                    await newPassword();
                   }
                 }
-              },
+              } : null, // Disable button if not enabled
               child: const Text('Submit'),
             ),
           ],
