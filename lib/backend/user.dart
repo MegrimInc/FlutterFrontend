@@ -100,7 +100,7 @@ class User extends ChangeNotifier {
 
     if (response.statusCode == 200) {
       final List<dynamic> jsonResponse = jsonDecode(response.body);
-      debugPrint('Drinks JSON response for bar $barId: $jsonResponse');
+      //debugPrint('Drinks JSON response for bar $barId: $jsonResponse');
 
       for (var drinkJson in jsonResponse) {
         String? drinkId = drinkJson['drinkId']?.toString();

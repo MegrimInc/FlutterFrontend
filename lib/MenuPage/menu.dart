@@ -306,7 +306,7 @@ class MenuPageState extends State<MenuPage>
                       ],
                     ),
                     backgroundColor: Colors.black,
-                    duration: const Duration(seconds: 2),
+                    duration: const Duration(seconds: 1),
                     flushbarPosition: FlushbarPosition.TOP,
                     borderRadius: BorderRadius.circular(8),
                     margin: const EdgeInsets.all(10),
