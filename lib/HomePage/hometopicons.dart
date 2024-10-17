@@ -59,22 +59,22 @@ class _MyTopIconsState extends State<MyTopIcons> {
             ),
           ),
 
-          const SizedBox(width: 15),
+          //const SizedBox(width: 15),
 
-          //TAB BUTTON
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const TabsPage()),
-              );
-            },
-            child: const Iconify(
-              HeroiconsSolid.clipboard_list,
-              size: 24.9,
-              color: Colors.grey,
-            ),
-          ),
+          // //TAB BUTTON
+          // GestureDetector(
+          //   onTap: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(builder: (context) => const TabsPage()),
+          //     );
+          //   },
+          //   child: const Iconify(
+          //     HeroiconsSolid.clipboard_list,
+          //     size: 24.9,
+          //     color: Colors.grey,
+          //   ),
+          // ),
         ],
       ),
     );

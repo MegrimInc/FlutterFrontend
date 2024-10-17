@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_null_comparison
+
 import 'package:barzzy/Backend/bar.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:flutter/material.dart';
@@ -160,6 +162,36 @@ class Cart extends ChangeNotifier {
           'Drink ID: $drinkId, Price: ${drink.price}, Quantity: $quantity, Subtotal: ${drink.price * quantity}');
     });
     debugPrint('Total Cart Price: $total');
+    return double.parse(total.toStringAsFixed(2));
+  }
+
+
+  double calculatePriceForDrink(String drinkId) {
+    Drink? drink = LocalDatabase().getDrinkById(drinkId);
+    int quantity = barCart[drinkId] ?? 0;
+    if (drink != null) {
+      return double.parse((drink.price * quantity).toStringAsFixed(2));
+    }
+    return 0.0;
+  }
+
+   double calculatePriceForDrinkInPoints(String drinkId) {
+    Drink? drink = LocalDatabase().getDrinkById(drinkId);
+    int quantity = barCart[drinkId] ?? 0;
+    if (drink != null) {
+      return double.parse((drink.points.toDouble() * quantity).toStringAsFixed(2));
+    }
+    return 0.0;
+  }
+
+  double calculateTotalPriceInPoints() {
+    double total = 0.0;
+    barCart.forEach((drinkId, quantity) {
+      Drink? drink = LocalDatabase().getDrinkById(drinkId);
+      if (drink != null) {
+        total += drink.points.toDouble() * quantity;
+      }
+    });
     return double.parse(total.toStringAsFixed(2));
   }
 }

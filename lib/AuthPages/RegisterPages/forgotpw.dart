@@ -17,12 +17,22 @@ class _ForgotPasswordState extends State<ForgotPassword> {
   final verificationCodeController = TextEditingController();
   final newPasswordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
+  final FocusNode emailFocusNode = FocusNode();
 
   bool isVerificationCodeEnabled = false;
   bool isNewPasswordEnabled = false;
   bool isSubmitEmailDisabled = false;
   bool isVerificationSuccess = false;
   bool isSubmitButtonEnabled = true;  // Manage submit button state
+
+  @override
+  void initState() {
+    super.initState();
+    // Automatically focus the email text field when the page is loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      emailFocusNode.requestFocus();
+    });
+  }
 
   // Notify server to reset email
   Future<void> notifyServerEmailNeedsReset() async {
@@ -40,10 +50,23 @@ class _ForgotPasswordState extends State<ForgotPassword> {
 
     // Snackbar to notify verification code is sent
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Verification code sent to your email. Check your Spam/Junk folder.'),
+  const SnackBar(
+    backgroundColor: Colors.white, // Set background to white
+    behavior: SnackBarBehavior.floating, // Makes it float above content
+    content: Center( // Center the text horizontally
+      child: Text(
+        'Verification code sent to your email. Check your Spam/Junk folder.',
+        textAlign: TextAlign.center, // Center the text inside the SnackBar
+        style: TextStyle(
+          color: Colors.black, // Set text color to black for contrast
+          fontSize: 14,
+          //fontWeight: FontWeight.w500,
+        ),
       ),
-    );
+    ),
+    duration: Duration(seconds: 3), // Adjust duration if needed
+  ),
+);
   }
 
   // Check verification code
@@ -62,10 +85,10 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       }),
     );
 
-    // Snackbar while verifying code
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Checking code...')),
-    );
+    // // Snackbar while verifying code
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   const SnackBar(content: Text('Checking code...')),
+    // );
 
     if (response.statusCode == 200) {
       setState(() {
@@ -74,9 +97,9 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         isNewPasswordEnabled = true; // Enable password fields
         isSubmitButtonEnabled = true; // Re-enable submit button
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Code verified!')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(content: Text('Code verified!')),
+      // );
     } else {
       setState(() {
         isVerificationSuccess = false;
@@ -150,10 +173,19 @@ class _ForgotPasswordState extends State<ForgotPassword> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Forgot Password'),
+        title: const Text('Forgot Password',
+        style: TextStyle(
+        color: Colors.white
+
+        )
+        ),
+        backgroundColor: Colors.black,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back,
+          color: Colors.white,
+          ),
           onPressed: () {
             Navigator.pushAndRemoveUntil(
               context,
@@ -168,58 +200,132 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+           const SizedBox(height: 50),
             TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-              enabled: !isSubmitEmailDisabled,
-            ),
+  controller: emailController,
+  focusNode: emailFocusNode, 
+  cursorColor: Colors.white, // Change cursor color
+  style: const TextStyle(
+    color: Colors.white, // Change text color
+    fontSize: 14, // Adjust text size if needed
+  ), 
+  enabled: !isSubmitEmailDisabled,
+  decoration: const InputDecoration(
+    labelText: 'Email',
+    labelStyle: TextStyle(
+      color: Colors.grey, // Default label color
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.white, width: 2.0),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.grey, width: 1.0),
+    ),
+    border: OutlineInputBorder(),
+  ),
+),
             const SizedBox(height: 10),
             TextField(
               controller: verificationCodeController,
-              decoration: const InputDecoration(labelText: 'Verification Code'),
+              cursorColor: Colors.white, // Change cursor color
+  style: const TextStyle(
+    color: Colors.white, // Change text color
+    fontSize: 14, // Adjust text size if needed
+  ),
+              decoration: const InputDecoration(labelText: 'Verification Code',
+              
+              
+              labelStyle: TextStyle(
+      color: Colors.grey, // Default label color
+    ),
+              focusedBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.white, width: 2.0),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.grey, width: 1.0),
+    ),
+    border: OutlineInputBorder(),
+              ),
               keyboardType: TextInputType.number, // Numeric input only
               enabled: isVerificationCodeEnabled,
             ),
             const SizedBox(height: 10),
             TextField(
               controller: newPasswordController,
-              decoration: const InputDecoration(labelText: 'New Password'),
+              cursorColor: Colors.white, // Change cursor color
+  style: const TextStyle(
+    color: Colors.white, // Change text color
+    fontSize: 14, // Adjust text size if needed
+  ), 
+              decoration: const InputDecoration(labelText: 'New Password',
+              labelStyle: TextStyle(
+      color: Colors.grey, // Default label color
+    ),
+              focusedBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.white, width: 2.0),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.grey, width: 1.0),
+    ),
+    border: OutlineInputBorder(),
+              ),
               obscureText: true,
               enabled: isNewPasswordEnabled,
             ),
             const SizedBox(height: 10),
             TextField(
               controller: confirmPasswordController,
-              decoration: const InputDecoration(labelText: 'New Password Again'),
+              cursorColor: Colors.white, // Change cursor color
+  style: const TextStyle(
+    color: Colors.white, // Change text color
+    fontSize: 14, // Adjust text size if needed
+  ), 
+              decoration: const InputDecoration(labelText: 'New Password Again',
+              labelStyle: TextStyle(
+      color: Colors.grey, // Default label color
+    ),
+              focusedBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.white, width: 2.0),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.grey, width: 1.0),
+    ),
+    border: OutlineInputBorder(),
+              ),
               obscureText: true,
               enabled: isNewPasswordEnabled,
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: isSubmitButtonEnabled ? () async {
-                if (!isSubmitEmailDisabled) {
-                  await notifyServerEmailNeedsReset();
-                } else if (!isNewPasswordEnabled) {
-                  showDialog(
-                    context: context,
-                    builder: (context) => const AlertDialog(
-                      title: Text('Verifying code...'),
-                    ),
-                  );
-                  await checkVerificationCode();
-                } else {
-                  if (checkValidInput()) {
-                    showDialog(
-                      context: context,
-                      builder: (context) => const AlertDialog(
-                        title: Text('Changing Password...'),
-                      ),
-                    );
-                    await newPassword();
+            Center(
+              child: ElevatedButton(
+                onPressed: isSubmitButtonEnabled ? () async {
+                  if (!isSubmitEmailDisabled) {
+                    await notifyServerEmailNeedsReset();
+                  } else if (!isNewPasswordEnabled) {
+                    // showDialog(
+                    //   context: context,
+                    //   builder: (context) => const AlertDialog(
+                    //     title: Text('Verifying code...'),
+                    //   ),
+                    // );
+                    await checkVerificationCode();
+                  } else {
+                    if (checkValidInput()) {
+                      // showDialog(
+                      //   context: context,
+                      //   builder: (context) => const AlertDialog(
+                      //     title: Text('Changing Password...'),
+                      //   ),
+                      // );
+                      await newPassword();
+                    }
                   }
-                }
-              } : null, // Disable button if not enabled
-              child: const Text('Submit'),
+                } : null, // Disable button if not enabled
+                child: const Text('Submit', 
+                style: TextStyle(
+                  color: Colors.black
+                  )),
+              ),
             ),
           ],
         ),

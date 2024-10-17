@@ -196,8 +196,8 @@ class HomePageState extends State<HomePage> {
                     Padding(
                       padding: const EdgeInsets.only(right: 2),
                       child: IconButton(
-                          icon: const Icon(Icons.history_rounded,
-                              size: 28, color: Colors.grey),
+                          icon: const Icon(Icons.notifications_active,
+                              size: 23.75, color: Colors.grey),
                           onPressed: () {
                             showBottomSheet(
                                 context, barHistory.currentTappedBarId!);

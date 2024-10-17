@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:convert';
 import 'package:barzzy/AuthPages/RegisterPages/verification.dart';
 import 'package:barzzy/HomePage/home.dart';
@@ -122,8 +124,45 @@ if (!email.value.text.trim().endsWith('@vt.edu')) {
 
         if (response.body == "sent email") {
           _showOverlayWidget();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+  const SnackBar(
+    backgroundColor: Colors.white, // Set background to white
+    behavior: SnackBarBehavior.floating, // Makes it float above content
+    content: Center( // Center the text horizontally
+      child: Text(
+        'Verification code sent to your email. Check your Spam/Junk folder.',
+        textAlign: TextAlign.center, // Center the text inside the SnackBar
+        style: TextStyle(
+          color: Colors.black, // Set text color to black for contrast
+          fontSize: 14,
+          //fontWeight: FontWeight.w500,
+        ),
+      ),
+    ),
+    duration: Duration(seconds: 3), // Adjust duration if needed
+  ),
+);
         } else if (response.body == "Re-sent email") {
           _showOverlayWidget();
+          ScaffoldMessenger.of(context).showSnackBar(
+  const SnackBar(
+    backgroundColor: Colors.white, // Set background to white
+    behavior: SnackBarBehavior.floating, // Makes it float above content
+    content: Center( // Center the text horizontally
+      child: Text(
+        'Verification code sent to your email. Check your Spam/Junk folder.',
+        textAlign: TextAlign.center, // Center the text inside the SnackBar
+        style: TextStyle(
+          color: Colors.black, // Set text color to black for contrast
+          fontSize: 14,
+          //fontWeight: FontWeight.w500,
+        ),
+      ),
+    ),
+    duration: Duration(seconds: 3), // Adjust duration if needed
+  ),
+);
         } else {
           invalidEmail();
           return;

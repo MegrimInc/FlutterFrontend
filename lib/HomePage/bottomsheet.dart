@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
-
 class BarBottomSheet extends StatelessWidget {
   final String barId;
-  
 
   const BarBottomSheet({
     super.key,
@@ -12,8 +10,6 @@ class BarBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
-    
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.718,
       child: Column(
@@ -33,7 +29,6 @@ class BarBottomSheet extends StatelessWidget {
                 ),
               ),
               child: Column(children: [
-                
                 //DRAG BAR
 
                 Container(
@@ -45,9 +40,19 @@ class BarBottomSheet extends StatelessWidget {
                   ),
                 ),
               ])),
+
+               const SizedBox(height: 150),
+
+                const Center(
+                  child: Text('No Specials Available!',
+                  style: TextStyle(
+                    color: Colors.white54, 
+                    fontSize: 21, fontWeight: 
+                    FontWeight.bold
+                    
+                    )))
         ],
       ),
     );
   }
 }
-

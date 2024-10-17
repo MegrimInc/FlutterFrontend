@@ -1,7 +1,7 @@
 import 'package:barzzy/HomePage/home.dart';
 import 'package:barzzy/OrdersPage/pickuppage.dart';
 import 'package:barzzy/ProfilePage/profile.dart';
-import 'package:barzzy/QrPage/qr.dart';
+import 'package:barzzy/BankPage/bank.dart';
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -31,7 +31,8 @@ class AuthPageState extends State<AuthPage> {
     _pages = [
       const HomePage(),
       const PickupPage(),
-      const QrPage(),
+      //const BankPage(),
+       BankPage(key: UniqueKey()),
       const ProfilePage(),
     ];
   }
@@ -72,6 +73,10 @@ class AuthPageState extends State<AuthPage> {
           onTabChange: (index) {
             setState(() {
               _selectedIndex = index;
+               if (index == 2) {
+                // Force BankPage to rebuild by assigning a new key
+                _pages[2] = BankPage(key: UniqueKey());
+              }
             });
           },
           tabs: [
@@ -102,9 +107,9 @@ class AuthPageState extends State<AuthPage> {
               ),
             ),
             GButton(
-              icon: Icons.qr_code,
-              iconSize: 23.7,
-              text: 'QR',
+              icon: Icons.attach_money,
+              iconSize: 26,
+              text: 'Bank',
               iconActiveColor: Colors.white,
               textStyle: GoogleFonts.sourceSans3(
                   fontSize: 15,
