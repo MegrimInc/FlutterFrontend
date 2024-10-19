@@ -114,12 +114,15 @@ class MenuPageState extends State<MenuPage>
       };
     }).toList();
 
+     final points = cart.points;
+
     // Construct the order object
     final order = {
       "action": "create",
       "barId": barId,
       "userId": userId,
       "drinks": drinkQuantities,
+      "points": points,
     };
 
     // Pass the order object to the createOrder method

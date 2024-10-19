@@ -1,4 +1,5 @@
 import 'package:barzzy/MenuPage/menu.dart';
+import 'package:barzzy/main.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -25,6 +26,12 @@ class _BankPageState extends State<BankPage>  {
     });
   }
 
+  Future<void> _refreshData() async {
+    // Call sendGetRequest2 to fetch the latest data
+    await sendGetRequest2();
+    setState(() {}); // Rebuild the UI with the new data
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -48,45 +55,49 @@ class _BankPageState extends State<BankPage>  {
             _buildSearchBar(),
             const SizedBox(height: 35),
             Expanded(
-              child: ListView.separated(
-                itemCount: filteredBars.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final barId = filteredBars[index].key;
-                  final barName =
-                      filteredBars[index].value['name'] ?? 'Unknown';
-                  final points =
-                      localDatabase.getPointsForBar(barId)?.points ?? 0;
-                  final tagImage = LocalDatabase.getBarById(barId)?.tagimg ??
-                      'https://www.barzzy.site/images/default.png';
-
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MenuPage(barId: barId),
-                        ),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          radius: 30,
-                          backgroundColor: Colors.transparent,
-                          backgroundImage: CachedNetworkImageProvider(tagImage),
-                        ),
-                        title: Text(
-                          '$barName - $points pts',
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 18),
+              child: RefreshIndicator(
+                 onRefresh: _refreshData,
+                  color: Colors.black,
+                child: ListView.separated(
+                  itemCount: filteredBars.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final barId = filteredBars[index].key;
+                    final barName =
+                        filteredBars[index].value['name'] ?? 'Unknown';
+                    final points =
+                        localDatabase.getPointsForBar(barId)?.points ?? 0;
+                    final tagImage = LocalDatabase.getBarById(barId)?.tagimg ??
+                        'https://www.barzzy.site/images/default.png';
+                
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MenuPage(barId: barId),
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            radius: 30,
+                            backgroundColor: Colors.transparent,
+                            backgroundImage: CachedNetworkImageProvider(tagImage),
+                          ),
+                          title: Text(
+                            '$barName - $points pts',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 18),
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ],

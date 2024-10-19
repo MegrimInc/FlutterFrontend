@@ -3,6 +3,7 @@
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/Backend/activeorder.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
+import 'package:barzzy/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -89,6 +90,14 @@ class Hierarchy extends ChangeNotifier {
                   debugPrint('Update response received.');
                   final data = decodedMessage['data'];
                   _handleUpdateResponse(data); // Use the new method for updates
+                  break;
+
+                case 'broke':
+                  debugPrint('Broke response received.');
+                  final String errorMessage = decodedMessage['message'];
+                  final data = decodedMessage['data'];
+                  _handleBrokeResponse(context, errorMessage,
+                      data); // Use the new method for updates
                   break;
 
                 default:
@@ -185,7 +194,6 @@ class Hierarchy extends ChangeNotifier {
     }
   }
 
-
   // Method to handle create order responses
   void _createOrderResponse(Map<String, dynamic> data) async {
     try {
@@ -201,6 +209,7 @@ class Hierarchy extends ChangeNotifier {
       // Print statement to confirm addition
       debugPrint(
           'CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
+          await sendGetRequest2();
     } catch (e) {
       debugPrint('Error while creating CustomerOrder: $e');
     }
@@ -212,26 +221,57 @@ class Hierarchy extends ChangeNotifier {
     _createOrderResponse(data);
   }
 
-  void cancelOrder(int barId, int userId) {
-    try {
-      if (_channel != null) {
-        final message = {
-          "action": "delete",
-          "barId": barId,
-          "userId": userId,
-        };
-        final jsonMessage = jsonEncode(message); // Encode message to JSON
-        debugPrint('Sending cancel order message: $jsonMessage');
-        _channel!.sink.add(jsonMessage); // Send the JSON encoded string
-        debugPrint('Cancel order message sent.');
-      } else {
-        debugPrint(
-            'Failed to send cancel order message: WebSocket is not connected');
-      }
-    } catch (e) {
-      debugPrint('Error while sending cancel order message: $e');
+  // void cancelOrder(int barId, int userId) {
+  //   try {
+  //     if (_channel != null) {
+  //       final message = {
+  //         "action": "delete",
+  //         "barId": barId,
+  //         "userId": userId,
+  //       };
+  //       final jsonMessage = jsonEncode(message); // Encode message to JSON
+  //       debugPrint('Sending cancel order message: $jsonMessage');
+  //       _channel!.sink.add(jsonMessage); // Send the JSON encoded string
+  //       debugPrint('Cancel order message sent.');
+  //     } else {
+  //       debugPrint(
+  //           'Failed to send cancel order message: WebSocket is not connected');
+  //     }
+  //   } catch (e) {
+  //     debugPrint('Error while sending cancel order message: $e');
+  //   }
+  // }
+
+  void cancelOrder(CustomerOrder order) {
+  try {
+    if (_channel != null) {
+      // Construct the order object with the 'delete' action
+      final orderObject = {
+        "action": "delete",
+        "barId": int.parse(order.barId), // Ensure it's an int
+        "userId": order.userId,
+        "points": order.points,
+        "isHappyHour": false,
+        "drinks": order.drinks.map((drinkOrder) {
+          return {
+            'drinkId': int.parse(drinkOrder.id), // Ensure it's an int
+            'quantity': int.parse(drinkOrder.quantity), // Ensure it's an int
+          };
+        }).toList(),
+      };
+
+      // Encode the order object to JSON
+      final jsonOrder = jsonEncode(orderObject);
+      debugPrint('Sending cancel order: $jsonOrder');
+      _channel!.sink.add(jsonOrder); // Send over WebSocket
+      debugPrint('Cancel order message sent.');
+    } else {
+      debugPrint('Failed to send cancel order: WebSocket is not connected');
     }
+  } catch (e) {
+    debugPrint('Error while sending cancel order: $e');
   }
+}
 
   void _handleError(BuildContext context, String errorMessage) {
     // Use the global navigator key to get a safe context
@@ -306,7 +346,124 @@ class Hierarchy extends ChangeNotifier {
     );
   }
 
-   void disconnect() {
+  void _handleBrokeResponse(
+      BuildContext context, String message, Map<String, dynamic> orderData) {
+    final safeContext = navigatorKey.currentContext;
+
+    if (safeContext == null) {
+      debugPrint('Safe context is null. Cannot show dialog.');
+      return;
+    }
+
+    showDialog(
+      context: safeContext,
+      builder: (BuildContext context) {
+        HapticFeedback.heavyImpact();
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: Colors.white,
+          title: const Row(
+            children: [
+              SizedBox(width: 75),
+              Icon(Icons.error_outline, color: Colors.black),
+              SizedBox(width: 5),
+              Text(
+                'Oops :/',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          actions: <Widget>[
+            Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+              TextButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  minimumSize: const Size(100, 50),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  'No',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop(); // Dismiss the dialog
+                },
+              ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  minimumSize: const Size(100, 50),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  'Yes',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                onPressed: () async {
+                  final loginCache = Provider.of<LoginCache>(context, listen: false);
+                  final userId = await loginCache.getUID();
+
+                  // Reconstruct the order object as expected
+                  final reorder = {
+                    "action": "create",
+                    "barId": int.parse(orderData['barId']
+                        .toString()), // Ensure barId is an int
+                    "userId": userId,
+                    "points":
+                        false, // Override points to false for this attempt
+                    "drinks":
+                        (orderData['drinks'] as List<dynamic>).map((drink) {
+                      return {
+                        "drinkId": int.parse(
+                            drink['id'].toString()), // Ensure drinkId is int
+                        "quantity": int.parse(drink['quantity']
+                            .toString()), // Ensure quantity is int
+                      };
+                    }).toList(),
+                  };
+
+                  Navigator.of(context).pop(); // Dismiss the dialog
+                  createOrder(reorder); // Create the order
+                },
+              ),
+            ])
+          ],
+        );
+      },
+    );
+  }
+
+  void disconnect() {
     if (_channel != null) {
       debugPrint('Closing WebSocket connection.');
       _channel!.sink.close(); // Close the WebSocket connection

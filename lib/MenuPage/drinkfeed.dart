@@ -84,12 +84,15 @@ class DrinkFeedState extends State<DrinkFeed>
       };
     }).toList();
 
+    final points = cart.points;
+
     // Construct the order object
     final order = {
       "action": "create",
       "barId": barId,
       "userId": userId,
       "drinks": drinkQuantities,
+      "points": points,
     };
 
     // Pass the order object to the createOrder method
@@ -445,15 +448,7 @@ class DrinkFeedState extends State<DrinkFeed>
             );
           },
         ),
-        const SizedBox(width: 12),
-        Text('or',
-        style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.normal,
-                ),
-        ),
-         const SizedBox(width: 13),
+        const SizedBox(width: 16),
         Consumer<Cart>(
           builder: (context, cart, _) {
             return _buildPriceCard(

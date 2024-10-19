@@ -254,7 +254,8 @@ class PickupPageState extends State<PickupPage> {
               context); // Trigger reorder for delivered or canceled orders
           HapticFeedback.heavyImpact();
         } else if (status == "unready" && claimer.isEmpty) {
-          hierarchy.cancelOrder(int.parse(barId), userId);
+          //hierarchy.cancelOrder(int.parse(barId), userId);
+          hierarchy.cancelOrder(order);
           HapticFeedback.heavyImpact();
         }
       },
@@ -459,9 +460,9 @@ class PickupPageState extends State<PickupPage> {
     // Construct the order object for the reorder
     final reorder = {
       "action": "create",
-      "barId": int.parse(
-          order.barId), // Assuming barId is a String, convert to int if needed
+      "barId": int.parse(order.barId), // Assuming barId is a String, convert to int if needed
       "userId": userId,
+      "points": order.points,
       "drinks": order.drinks.map((drinkOrder) {
         return {
           'drinkId':
