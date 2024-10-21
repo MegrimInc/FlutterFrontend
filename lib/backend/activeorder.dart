@@ -10,6 +10,7 @@ class CustomerOrder {
   String status;
   String claimer;
   int timestamp;
+  bool points;
 
   CustomerOrder(
     this.barId,
@@ -19,6 +20,7 @@ class CustomerOrder {
     this.status,
     this.claimer,
     this.timestamp,
+     this.points,
   );
 
   // Factory constructor for creating a CustomerOrder from JSON data
@@ -42,6 +44,7 @@ class CustomerOrder {
       json['status'] as String,
       json['claimer'] as String,
       int.parse(json['timestamp']),
+      json['points'] as bool,
     );
   }
 
@@ -53,6 +56,71 @@ class CustomerOrder {
   // Getter methods
   int? getUser() {
     return userId;
+  }
+
+
+// Getter methods
+  String getBarId() {
+    return barId;
+  }
+
+  int getUserId() {
+    return userId;
+  }
+
+  
+
+  List<DrinkOrder> getDrinks() {
+    return drinks;
+  }
+
+  String getStatus() {
+    return status;
+  }
+
+  String getClaimer() {
+    return claimer;
+  }
+
+  int getTimestamp() {
+    return timestamp;
+  }
+
+  bool getPoints() {
+    return points;
+  }
+
+  // Setter methods
+  void setBarId(String value) {
+    barId = value;
+  }
+
+  void setUserId(int value) {
+    userId = value;
+  }
+
+  void setPrice(double value) {
+    price = value;
+  }
+
+  void setDrinks(List<DrinkOrder> value) {
+    drinks = value;
+  }
+
+  void setStatus(String value) {
+    status = value;
+  }
+
+  void setClaimer(String value) {
+    claimer = value;
+  }
+
+  void setTimestamp(int value) {
+    timestamp = value;
+  }
+
+  void setPoints(bool value) {
+    points = value;
   }
 
   int getAge() {
@@ -68,8 +136,6 @@ class CustomerOrder {
             orElse: () => DrinkOrder('', '', '0'))
         .quantity as int;
   }
-
-  
 }
 
 class DrinkOrder {
@@ -91,4 +157,6 @@ class DrinkOrder {
       json['quantity'].toString(),   // Convert quantity to String
     );
   }
+
+  
 }

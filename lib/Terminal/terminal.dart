@@ -128,26 +128,26 @@ class _OrdersPageState extends State<OrdersPage> {
         );
       }
 
-      if (testing) {
-        // Create a list of DrinkOrder objects
-        List<DrinkOrder> testDrinks = [
-          DrinkOrder('drink1', 'Cocktail', "1"),
-          DrinkOrder('drink2', 'Beer', "3"),
-        ];
+      // if (testing) {
+      //   // Create a list of DrinkOrder objects
+      //   List<DrinkOrder> testDrinks = [
+      //     DrinkOrder('drink1', 'Cocktail', "1"),
+      //     DrinkOrder('drink2', 'Beer', "3"),
+      //   ];
 
-        // Create a CustomerOrder with the updated structure
-        CustomerOrder testOrder = CustomerOrder(
-            'bar123', // barId
-            456, // userId
-            29.99, // price
-            testDrinks, // drinks (List<DrinkOrder>)
-            'pending', // status
-            '', // claimer (empty since no one has claimed the order yet)
-            DateTime.now().millisecondsSinceEpoch // timestamp (current time)
-            );
+      //   // Create a CustomerOrder with the updated structure
+      //   CustomerOrder testOrder = CustomerOrder(
+      //       'bar123', // barId
+      //       456, // userId
+      //       29.99, // price
+      //       testDrinks, // drinks (List<DrinkOrder>)
+      //       'pending', // status
+      //       '', // claimer (empty since no one has claimed the order yet)
+      //       DateTime.now().millisecondsSinceEpoch // timestamp (current time)
+      //       );
 
-        allOrders.add(testOrder);
-      }
+      //   allOrders.add(testOrder);
+      // }
     });
   }
 

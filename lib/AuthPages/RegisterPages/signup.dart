@@ -64,34 +64,34 @@ class RegisterPageState extends State<RegisterPage>
     FocusScope.of(context).unfocus();
 
 // Check if the entered email ends with '@vt.edu'
-if (!email.value.text.trim().endsWith('@vt.edu')) {
-    // Show an alert dialog if the email is not a @vt.edu email
-    showDialog(
-      context: context,
-      builder: (context) {
-        return const AlertDialog(
-          backgroundColor: Colors.white,
-          title: Center(
-            child: Text(
-              'Invalid Email',
-              style: TextStyle(
-                color: Color.fromARGB(255, 30, 30, 30),
-                fontWeight: FontWeight.bold,
+    if (!email.value.text.trim().endsWith('@vt.edu')) {
+      // Show an alert dialog if the email is not a @vt.edu email
+      showDialog(
+        context: context,
+        builder: (context) {
+          return const AlertDialog(
+            backgroundColor: Colors.white,
+            title: Center(
+              child: Text(
+                'Invalid Email',
+                style: TextStyle(
+                  color: Color.fromARGB(255, 30, 30, 30),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-          content: Text(
-            'We only accept @vt.edu email addresses.',
-            style: TextStyle(
-              color: Color.fromARGB(255, 30, 30, 30),
+            content: Text(
+              'We only accept @vt.edu email addresses.',
+              style: TextStyle(
+                color: Color.fromARGB(255, 30, 30, 30),
+              ),
+              textAlign: TextAlign.center,
             ),
-             textAlign: TextAlign.center,
-          ),
-        );
-      },
-    );
-    return; // Exit the method if email is not valid
-  }
+          );
+        },
+      );
+      return; // Exit the method if email is not valid
+    }
 
     if (firstName.value.text.isNotEmpty &&
         lastName.value.text.isNotEmpty &&
@@ -122,51 +122,28 @@ if (!email.value.text.trim().endsWith('@vt.edu')) {
         debugPrint('Request successful');
         debugPrint('Response body: ${response.body}');
 
-        if (response.body == "sent email") {
-          _showOverlayWidget();
+        _showOverlayWidget();
 
-          ScaffoldMessenger.of(context).showSnackBar(
-  const SnackBar(
-    backgroundColor: Colors.white, // Set background to white
-    behavior: SnackBarBehavior.floating, // Makes it float above content
-    content: Center( // Center the text horizontally
-      child: Text(
-        'Verification code sent to your email. Check your Spam/Junk folder.',
-        textAlign: TextAlign.center, // Center the text inside the SnackBar
-        style: TextStyle(
-          color: Colors.black, // Set text color to black for contrast
-          fontSize: 14,
-          //fontWeight: FontWeight.w500,
-        ),
-      ),
-    ),
-    duration: Duration(seconds: 3), // Adjust duration if needed
-  ),
-);
-        } else if (response.body == "Re-sent email") {
-          _showOverlayWidget();
-          ScaffoldMessenger.of(context).showSnackBar(
-  const SnackBar(
-    backgroundColor: Colors.white, // Set background to white
-    behavior: SnackBarBehavior.floating, // Makes it float above content
-    content: Center( // Center the text horizontally
-      child: Text(
-        'Verification code sent to your email. Check your Spam/Junk folder.',
-        textAlign: TextAlign.center, // Center the text inside the SnackBar
-        style: TextStyle(
-          color: Colors.black, // Set text color to black for contrast
-          fontSize: 14,
-          //fontWeight: FontWeight.w500,
-        ),
-      ),
-    ),
-    duration: Duration(seconds: 3), // Adjust duration if needed
-  ),
-);
-        } else {
-          invalidEmail();
-          return;
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.white, // Set background to white
+            behavior: SnackBarBehavior.floating, // Makes it float above content
+            content: Center(
+              // Center the text horizontally
+              child: Text(
+                'Verification code sent to your email. Check your Spam/Junk folder.',
+                textAlign:
+                    TextAlign.center, // Center the text inside the SnackBar
+                style: TextStyle(
+                  color: Colors.black, // Set text color to black for contrast
+                  fontSize: 14,
+                  //fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            duration: Duration(seconds: 3), // Adjust duration if needed
+          ),
+        );
       } else {
         debugPrint('01Request failed with status: ${response.statusCode}');
         debugPrint('01Response body: ${response.body}');
