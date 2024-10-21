@@ -34,42 +34,66 @@ class _ForgotPasswordState extends State<ForgotPassword> {
     });
   }
 
-  // Notify server to reset email
-  Future<void> notifyServerEmailNeedsReset() async {
-    final url = Uri.parse('https://www.barzzy.site/newsignup/reset-password-validate-email');
-    await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': emailController.text.trim()}),
-    );
+Future<void> notifyServerEmailNeedsReset() async {
+  setState(() {
+    isSubmitButtonEnabled = false; // Disable submit button during email submission
+  });
 
+  final url = Uri.parse('https://www.barzzy.site/newsignup/reset-password-validate-email');
+  final response = await http.post(
+    url,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'action': 'checkEmail',
+      'email': emailController.text.trim()
+    }),
+  );
+
+  if (response.statusCode == 200) {
     setState(() {
       isVerificationCodeEnabled = true;
-      isSubmitEmailDisabled = true;
+      isSubmitEmailDisabled = true; // Disable email field
+      isSubmitButtonEnabled = true; // Re-enable submit button for the next step
     });
 
-    // Snackbar to notify verification code is sent
+    // Show success snackbar
     ScaffoldMessenger.of(context).showSnackBar(
-  const SnackBar(
-    backgroundColor: Colors.white, // Set background to white
-    behavior: SnackBarBehavior.floating, // Makes it float above content
-    content: Center( // Center the text horizontally
-      child: Text(
-        'Verification code sent to your email. Check your Spam/Junk folder.',
-        textAlign: TextAlign.center, // Center the text inside the SnackBar
-        style: TextStyle(
-          color: Colors.black, // Set text color to black for contrast
-          fontSize: 14,
-          //fontWeight: FontWeight.w500,
+      const SnackBar(
+        backgroundColor: Colors.white,
+        behavior: SnackBarBehavior.floating,
+        content: Center(
+          child: Text(
+            'Verification code sent to your email. Check your Spam/Junk folder.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 14,
+            ),
+          ),
         ),
+        duration: Duration(seconds: 3),
       ),
-    ),
-    duration: Duration(seconds: 3), // Adjust duration if needed
-  ),
-);
-  }
+    );
+  } else {
+    setState(() {
+      isSubmitButtonEnabled = true; // Re-enable submit button on failure
+    });
 
-  // Check verification code
+    // Show alert dialog with error message from the response body
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(response.body), // Show the error message from the response body
+      ),
+    );
+  }
+}
+
+
+
+
+
   Future<void> checkVerificationCode() async {
     setState(() {
       isSubmitButtonEnabled = false; // Disable submit button during verification
@@ -80,15 +104,11 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
+        'action': 'checkCode',
         'email': emailController.text.trim(),
         'code': verificationCodeController.text.trim(),
       }),
     );
-
-    // // Snackbar while verifying code
-    // ScaffoldMessenger.of(context).showSnackBar(
-    //   const SnackBar(content: Text('Checking code...')),
-    // );
 
     if (response.statusCode == 200) {
       setState(() {
@@ -97,9 +117,6 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         isNewPasswordEnabled = true; // Enable password fields
         isSubmitButtonEnabled = true; // Re-enable submit button
       });
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   const SnackBar(content: Text('Code verified!')),
-      // );
     } else {
       setState(() {
         isVerificationSuccess = false;
@@ -107,16 +124,25 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         isSubmitButtonEnabled = true; // Re-enable submit button
       });
 
-      // AlertDialog to notify invalid code
+      // Display AlertDialog with the response body message
       showDialog(
         context: context,
-        builder: (context) => const AlertDialog(
-          title: Text('Invalid Code'),
-          content: Text('Verification code is incorrect. Please try again.'),
+        builder: (context) => AlertDialog(
+          title: const Text('Invalid Code'),
+          content: Text('Error: ${response.body}'), // Display response body in the dialog
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('OK'),
+            ),
+          ],
         ),
       );
     }
   }
+
 
   // Validate password and confirm password
   bool checkValidInput() {
@@ -142,33 +168,52 @@ class _ForgotPasswordState extends State<ForgotPassword> {
     return true;
   }
 
-  // Submit new password
-  Future<void> newPassword() async {
-    if (!checkValidInput()) {
-      return;
-    }
+// Submit new password
+Future<void> newPassword() async {
+  // Check if input is valid before proceeding
+  if (!checkValidInput()) {
+    return;
+  }
 
-    final url = Uri.parse('https://www.barzzy.site/newsignup/reset-password-final');
-    await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': emailController.text.trim(),
-        'code': verificationCodeController.text.trim(),
-        'password': newPasswordController.text.trim(),
-      }),
-    );
+  final url = Uri.parse('https://www.barzzy.site/newsignup/reset-password-final');
+  final response = await http.post(
+    url,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'action': 'resetPW',
+      'email': emailController.text.trim(),
+      'code': verificationCodeController.text.trim(),
+      'password': newPasswordController.text.trim(),
+    }),
+  );
 
-    // Navigate to LoginPage and show a success snackbar
+  if (response.statusCode == 200) {
+    // If the response is successful, navigate to the LoginPage
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()), // Navigate to LoginPage
       (Route<dynamic> route) => false,
     );
+
+    // Show success snackbar
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Successfully reset password')),
+      const SnackBar(
+        content: Text('Successfully reset password'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  } else {
+    // If the response is unsuccessful, show the error message in an AlertDialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(response.body), // Show the error message from the response body
+      ),
     );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
