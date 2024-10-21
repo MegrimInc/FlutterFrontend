@@ -4,7 +4,6 @@ import 'dart:async'; // Import the async package for Timer
 import 'dart:convert'; //TODO check bar is active
 import 'dart:io';
 
-
 import 'package:barzzy/Backend/activeorder.dart';
 import 'package:barzzy/Terminal/stationid.dart';
 import 'package:flutter/material.dart';
@@ -471,6 +470,11 @@ class _OrdersPageState extends State<OrdersPage> {
       return Colors.grey[700]!;
     }
 
+    // If the order is ready and has points, display as gold
+    if (order.status == 'ready' && order.points) {
+    return Colors.purple; // Gold-like color
+    }
+
     if (order.status == 'ready') return Colors.green;
     if (ageInSeconds <= 180) return Colors.yellow[200]!; // 0-3 minutes old
     if (ageInSeconds <= 300) return Colors.orange[200]!; // 3-5 minutes old
@@ -847,6 +851,7 @@ class _OrdersPageState extends State<OrdersPage> {
               break;
 
             case 'barId':
+              debugPrint('when are you triggering');
               final Map<String, dynamic> ordersJson = response;
 
               final incomingOrder = CustomerOrder.fromJson(ordersJson);

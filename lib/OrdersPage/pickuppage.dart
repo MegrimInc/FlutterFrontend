@@ -1,3 +1,4 @@
+import 'package:another_flushbar/flushbar.dart';
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/Backend/activeorder.dart';
 import 'package:barzzy/OrdersPage/hierarchy.dart';
@@ -5,7 +6,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for haptic feedback
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Import for shared preferences
 import '../Backend/localdatabase.dart';
@@ -64,7 +66,8 @@ class PickupPageState extends State<PickupPage> {
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
+            if (_isGridView) _buildHeader(),
+            if (!_isGridView) _buildHeader2(),
             Expanded(
               child: Consumer<Hierarchy>(
                 builder: (context, hierarchy, child) {
@@ -119,51 +122,118 @@ class PickupPageState extends State<PickupPage> {
           ),
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              _isGridView ? 'Tabs' : 'Order Details',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (!_isGridView)
+      child: Row(children: [
+        const Spacer(),
+        Text(
+          'Orders',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 23,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const Spacer()
+      ]),
+    );
+  }
+
+ Widget _buildHeader2() {
+  return Consumer<LocalDatabase>(
+    builder: (context, localDatabase, child) {
+      final barId = _selectedBarId ?? 'defaultBarId';
+      final order = localDatabase.getOrderForBar(barId);
+      final points = localDatabase.getPointsForBar(barId)?.points ?? 0;
+
+
+      // Fallback widget if the order is not found
+      if (order == null) {
+        return const Center(
+          child: Text(
+            'Order not found',
+            style: TextStyle(color: Colors.white),
+          ),
+        );
+      }
+
+      return Container(
+        height: 55,
+        decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.withOpacity(0.3),
+            width: 0.2078,
+          ),
+        ),
+      ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
               GestureDetector(
                 onTap: () {
-                  _clearSelectedBar(); // Clear selected bar when switching back to grid view
+                  _clearSelectedBar(); // Clear selected bar
                   setState(() {
-                    _isGridView = true;
+                    _isGridView = true; // Switch to grid view
                   });
                 },
                 child: Container(
                   color: Colors.transparent,
-                  height: 50, // Increase the height of the pressable area
-                  width: 50, // Increase the width of the pressable area
-                  alignment: Alignment
-                      .centerRight, // Center the icon within the container
-                  child: const Icon(Icons.grid_view,
-                      color: Colors.white, size: 30),
+                  height: 50, // Increase touch area height
+                  width: 50, // Increase touch area width
+                  alignment: Alignment.centerLeft, // Align icon to the left
+                  child: const Icon(Icons.close, color: Colors.white, size: 30),
                 ),
               ),
-          ],
+              IconButton(
+                icon: Icon(
+                  FontAwesomeIcons.solidStar,
+                  // Update color based on order points usage
+                  color: order.getPoints() ? Colors.amber : Colors.white24,
+                  size: 21.5,
+                ),
+                onPressed: () {
+                  Flushbar(
+                    messageText: Row(
+                      children: [
+                        const Spacer(),
+                        Icon(
+                            Icons.star,
+                            color: order.getPoints() ? Colors.amber : Colors.white24,
+                          ),
+                          const SizedBox(width: 7),
+                        Text(
+                          "You have $points points!",
+                          style: const TextStyle(
+                            color: Colors.white, // Customize the message color
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign
+                              .center, // Ensure the text is centered within the widget
+                        ),
+                          const Spacer(),
+                      ],
+                    ),
+                    backgroundColor: Colors.black,
+                    duration: const Duration(seconds: 1),
+                    flushbarPosition: FlushbarPosition.TOP,
+                    borderRadius: BorderRadius.circular(8),
+                    margin: const EdgeInsets.all(10),
+                  ).show(context);
+                },
+              )
+            ],
+          ),
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 
   Widget _buildGridView(List<String> barIds) {
-    return LiquidPullToRefresh(
+    return RefreshIndicator(
       onRefresh: () => _refreshCardView(context),
-      showChildOpacityTransition: false,
       color: Colors.black,
-      height: 100,
-      animSpeedFactor: 5,
-      springAnimationDurationInMilliseconds: 1000,
       child: SingleChildScrollView(
         child: SizedBox(
           height: 667,
@@ -250,8 +320,7 @@ class PickupPageState extends State<PickupPage> {
       onLongPress: () {
         final hierarchy = Provider.of<Hierarchy>(context, listen: false);
         if (status == "delivered" || status == "canceled") {
-          _triggerReorder(order,
-              context); // Trigger reorder for delivered or canceled orders
+          _showReorderDialog(order, context);
           HapticFeedback.heavyImpact();
         } else if (status == "unready" && claimer.isEmpty) {
           //hierarchy.cancelOrder(int.parse(barId), userId);
@@ -259,13 +328,9 @@ class PickupPageState extends State<PickupPage> {
           HapticFeedback.heavyImpact();
         }
       },
-      child: LiquidPullToRefresh(
-        onRefresh: () => _refreshCardView(context),
-        showChildOpacityTransition: false,
-        color: Colors.black,
-        height: 100,
-        animSpeedFactor: 5,
-        springAnimationDurationInMilliseconds: 1000,
+      child: RefreshIndicator(
+      onRefresh: () => _refreshCardView(context),
+      color: Colors.black,
         child: SingleChildScrollView(
           child: Padding(
             padding:
@@ -451,47 +516,97 @@ class PickupPageState extends State<PickupPage> {
     );
   }
 
+  void _showReorderDialog(CustomerOrder order, BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        backgroundColor: Colors.black,
+        title: const Center(
+          child: Text(
+            'Reorder Options',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 22,
+              ),
+          ),
+        ),
+        content: const Text(
+          'Would you like to pay with points or regular pricing?',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 16
+          ),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+
+          Row(
+            children: [
+              const Spacer(),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
+              _triggerReorder(order, context, false); // Pay with regular pricing
+            },
+            child: const Text(
+              'Regular',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 17
+                ),
+            ),
+          ),
+           const Spacer(),
+           TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
+              _triggerReorder(order, context, true); // Pay with points
+            },
+            child: const Text(
+              'Points',
+              style: TextStyle(
+                color: Colors.amber,
+                fontSize: 17),
+            ),
+          ),
+          const Spacer(),
+          ],)
+          
+        ],
+      );
+    },
+  );
+}
+
   // Method to trigger reorder by creating an order
-  void _triggerReorder(CustomerOrder order, BuildContext context) async {
-    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
-    final loginCache = Provider.of<LoginCache>(context, listen: false);
-    final userId = await loginCache.getUID();
+ void _triggerReorder(CustomerOrder order, BuildContext context, bool usePoints) async {
+  final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+  final loginCache = Provider.of<LoginCache>(context, listen: false);
+  final userId = await loginCache.getUID();
 
-    // Construct the order object for the reorder
-    final reorder = {
-      "action": "create",
-      "barId": int.parse(order.barId), // Assuming barId is a String, convert to int if needed
-      "userId": userId,
-      "points": order.points,
-      "drinks": order.drinks.map((drinkOrder) {
-        return {
-          'drinkId':
-              int.parse(drinkOrder.id), // Convert drinkId to int if necessary
-          'quantity': int.parse(
-              drinkOrder.quantity), // Convert quantity to int if necessary
-        };
-      }).toList(),
-    };
+  // Construct the order object with selected payment method
+  final reorder = {
+    "action": "create",
+    "barId": int.parse(order.barId),
+    "userId": userId,
+    "points": usePoints, // Set points based on user choice
+    "drinks": order.drinks.map((drinkOrder) {
+      return {
+        'drinkId': int.parse(drinkOrder.id),
+        'quantity': int.parse(drinkOrder.quantity),
+      };
+    }).toList(),
+  };
 
-    // Pass the order object to the createOrder method
-    hierarchy.createOrder(reorder);
-  }
+  // Send the order to the backend
+  hierarchy.createOrder(reorder);
+}
 
   // Method to build the dynamic button based on status and claimer
   Widget _buildStatusButton(String status, String claimer, int barId,
       int userId, BuildContext context) {
-    // Case: Status is "unready" and claimer is not empty
-    // if (status == "unready" && claimer.isNotEmpty) {
-    //   return Text(
-    //     '@$claimer',
-    //     style: const TextStyle(
-    //       color: Colors.white,
-    //       fontWeight: FontWeight.bold,
-    //       fontSize: 34.5,
-    //     ),
-    //   );
-    // }
-
     // Case: Status is "ready" and claimer is not empty
     if (status == "ready" && claimer.isNotEmpty) {
       return Text(
@@ -532,3 +647,5 @@ Future<void> _refreshCardView(BuildContext context) async {
   hierarchy.sendRefreshMessage(context);
   debugPrint('Card view has been refreshed.');
 }
+
+

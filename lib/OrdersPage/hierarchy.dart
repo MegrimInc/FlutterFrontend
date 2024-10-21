@@ -221,26 +221,6 @@ class Hierarchy extends ChangeNotifier {
     _createOrderResponse(data);
   }
 
-  // void cancelOrder(int barId, int userId) {
-  //   try {
-  //     if (_channel != null) {
-  //       final message = {
-  //         "action": "delete",
-  //         "barId": barId,
-  //         "userId": userId,
-  //       };
-  //       final jsonMessage = jsonEncode(message); // Encode message to JSON
-  //       debugPrint('Sending cancel order message: $jsonMessage');
-  //       _channel!.sink.add(jsonMessage); // Send the JSON encoded string
-  //       debugPrint('Cancel order message sent.');
-  //     } else {
-  //       debugPrint(
-  //           'Failed to send cancel order message: WebSocket is not connected');
-  //     }
-  //   } catch (e) {
-  //     debugPrint('Error while sending cancel order message: $e');
-  //   }
-  // }
 
   void cancelOrder(CustomerOrder order) {
   try {
@@ -463,6 +443,8 @@ class Hierarchy extends ChangeNotifier {
     );
   }
 
+  
+
   void disconnect() {
     if (_channel != null) {
       debugPrint('Closing WebSocket connection.');
@@ -472,6 +454,7 @@ class Hierarchy extends ChangeNotifier {
       notifyListeners(); // Notify listeners that the connection has been closed
     }
   }
+
 
   // Method to retrieve the list of barIds for created orders
   List<String> getOrders() {

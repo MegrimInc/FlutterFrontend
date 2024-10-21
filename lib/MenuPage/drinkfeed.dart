@@ -443,8 +443,10 @@ class DrinkFeedState extends State<DrinkFeed>
               'Regular',
               widget.drink.price,
               isUsingPoints: !cart.points, // If points are not being used
-              onTap: () => cart.togglePoints(false), // Switch to Regular price
+              onTogglePoints: () => cart.togglePoints(false), // Switch to Regular price
               showDollarSign: true, // Always show $ for regular price
+              targetPage: 1,
+              cart: cart,
             );
           },
         ),
@@ -455,8 +457,10 @@ class DrinkFeedState extends State<DrinkFeed>
               '   Points    ',
               widget.drink.points, // Assuming points price
               isUsingPoints: cart.points, // If points are being used
-              onTap: () => cart.togglePoints(true), // Switch to Points price
+              onTogglePoints: () => cart.togglePoints(true), // Switch to Points price
               showDollarSign: false, // Never show $ for points
+              targetPage: 1,
+              cart: cart,
             );
           },
         ),
@@ -465,15 +469,30 @@ class DrinkFeedState extends State<DrinkFeed>
   }
 
   Widget _buildPriceCard(String label, num price,
-      {required bool isUsingPoints,
-      required VoidCallback onTap,
-      required bool showDollarSign}) {
+      {
+      required bool isUsingPoints,
+      required VoidCallback onTogglePoints, // Keep the toggle logic
+      required bool showDollarSign,
+      required int targetPage, // Page to swipe to
+       required Cart cart,
+      }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+      // Toggle between points and regular pricing
+      onTogglePoints();
+
+     if (cart.getTotalDrinkCount() > 0) {
+        _pageController.animateToPage(
+          targetPage,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isUsingPoints ? Colors.amber : Colors.white24,
+          color: isUsingPoints ? Colors.white : Colors.white24,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
