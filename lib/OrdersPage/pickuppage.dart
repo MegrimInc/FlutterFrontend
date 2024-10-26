@@ -398,7 +398,7 @@ class PickupPageState extends State<PickupPage> {
                     claimer != "" &&
                     status != "unready")
                   Positioned(
-                    bottom: 0,
+                    bottom: 30,
                     left: 0,
                     child: Text(
                       '#${order.getUser() ?? '...'}',
@@ -411,7 +411,7 @@ class PickupPageState extends State<PickupPage> {
                   ),
 
                 Positioned(
-                  bottom: 1.5,
+                  bottom: 31.5,
                   right: 0,
                   child: _buildStatusButton(
                       status, claimer, int.parse(barId), userId, context),
@@ -419,7 +419,7 @@ class PickupPageState extends State<PickupPage> {
 
                 if (status == "unready" && claimer.isNotEmpty)
                   Positioned(
-                    bottom: 15,
+                    bottom: 45,
                     right: 0,
                     left: 15,
                     child: Column(
@@ -448,7 +448,7 @@ class PickupPageState extends State<PickupPage> {
 
                 if (status == "ready" && claimer.isNotEmpty)
                   const Positioned(
-                    bottom: 50,
+                    bottom: 80,
                     right: 0,
                     left: 15,
                     child: Center(
@@ -464,7 +464,7 @@ class PickupPageState extends State<PickupPage> {
                 // Add "HOLD TO CANCEL" text at the bottom
                 if (status == "unready" && claimer.isEmpty)
                   const Positioned(
-                    bottom: 15,
+                    bottom: 45,
                     left: 0,
                     right: 0,
                     child: Column(
@@ -494,7 +494,7 @@ class PickupPageState extends State<PickupPage> {
                 // Add "HOLD TO REORDER" text for delivered or canceled orders
                 if (status == "delivered" || status == "canceled")
                   const Positioned(
-                    bottom: 15,
+                    bottom: 45,
                     left: 0,
                     right: 0,
                     child: Center(

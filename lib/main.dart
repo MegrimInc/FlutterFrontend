@@ -174,7 +174,11 @@ Future<void> sendGetRequest() async {
 }
 
 Future<void> sendGetRequest2() async {
+
   try {
+     // Add or update points in the LocalDatabase for each bar
+      LocalDatabase localDatabase = LocalDatabase();
+
     final loginCache = LoginCache();
     final userId = await loginCache.getUID();
 
@@ -193,6 +197,13 @@ Future<void> sendGetRequest2() async {
       final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
       debugPrint('Decoded JSON response: $jsonResponse');
 
+
+      if (jsonResponse.isEmpty || !jsonResponse.containsKey(userId.toString())) {
+        debugPrint('No points found, clearing the points map.');
+        localDatabase.clearPoints();
+        return;
+      }
+
       // Check if the user ID from the response matches the one in LoginCache
       final String userIdString = userId.toString();
       if (!jsonResponse.containsKey(userIdString)) {
@@ -203,8 +214,7 @@ Future<void> sendGetRequest2() async {
       // Get the points map for the user (barId -> points)
       final Map<String, dynamic> userPointsMap = jsonResponse[userIdString];
 
-      // Add or update points in the LocalDatabase for each bar
-      LocalDatabase localDatabase = LocalDatabase();
+
 
       // Iterate over the user points map (barId -> points)
       userPointsMap.forEach((barId, points) {

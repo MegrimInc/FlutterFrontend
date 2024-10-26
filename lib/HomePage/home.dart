@@ -209,21 +209,21 @@ class HomePageState extends State<HomePage> {
           // MAIN MOST RECENT BAR
       
           if (barHistory.currentTappedBarId != null)
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MenuPage(
-                    barId: barHistory.currentTappedBarId!,
+            Expanded(
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MenuPage(
+                      barId: barHistory.currentTappedBarId!,
+                    ),
                   ),
                 ),
-              ),
-              child: Container(
-                height: 401,
-                decoration: const BoxDecoration(
-                  color: Colors.black,
-                ),
-                child: Center(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.black,
+                    
+                  ),
                   child: CachedNetworkImage(
                     imageUrl: LocalDatabase.getBarById(
                           barHistory.currentTappedBarId!,
@@ -277,15 +277,15 @@ class HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-  
-
+        
+      
           FutureBuilder<int>(
-  future: Provider.of<LoginCache>(context, listen: false).getUID(),
-  builder: (context, snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
+        future: Provider.of<LoginCache>(context, listen: false).getUID(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
       return const SizedBox.shrink(); // Return nothing while waiting
-    }
-    if (snapshot.hasData && snapshot.data == 0) {
+          }
+          if (snapshot.hasData && snapshot.data == 0) {
       return const Center(
         child: Text(
           'WARNING: VIEW ONLY',
@@ -296,10 +296,10 @@ class HomePageState extends State<HomePage> {
           ),
         ),
       );
-    }
-    return const SizedBox.shrink(); // Return nothing if userId is not 0
-  },
-)
+          }
+          return const SizedBox.shrink(); // Return nothing if userId is not 0
+        },
+      )
         ],
       ),
     );

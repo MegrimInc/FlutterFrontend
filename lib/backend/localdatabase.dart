@@ -97,4 +97,10 @@ class LocalDatabase with ChangeNotifier {
   Map<String, Point> getAllPoints() {
     return _userPoints;
   }
+
+  void clearPoints() {
+  _userPoints.clear();
+  notifyListeners();
+  debugPrint('All points have been cleared.');
+}
 }

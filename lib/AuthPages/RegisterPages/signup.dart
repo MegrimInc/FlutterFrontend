@@ -1,6 +1,7 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, unused_element
 
 import 'dart:convert';
+import 'package:barzzy/AuthPages/RegisterPages/tos.dart';
 import 'package:barzzy/AuthPages/RegisterPages/verification.dart';
 import 'package:barzzy/HomePage/home.dart';
 import 'package:http/http.dart' as http;
@@ -60,44 +61,66 @@ class RegisterPageState extends State<RegisterPage>
 
   //SIGN USER IN
 
-  void registerNames() async {
-    FocusScope.of(context).unfocus();
+ void registerNames() async {
+  FocusScope.of(context).unfocus();
 
-// Check if the entered email ends with '@vt.edu'
-    if (!email.value.text.trim().endsWith('@vt.edu')) {
-      // Show an alert dialog if the email is not a @vt.edu email
-      showDialog(
-        context: context,
-        builder: (context) {
-          return const AlertDialog(
-            backgroundColor: Colors.white,
-            title: Center(
-              child: Text(
-                'Invalid Email',
-                style: TextStyle(
-                  color: Color.fromARGB(255, 30, 30, 30),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            content: Text(
-              'We only accept @vt.edu email addresses.',
+  // Check if the entered email ends with '@vt.edu'
+  if (!email.value.text.trim().endsWith('@vt.edu')) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return const AlertDialog(
+          backgroundColor: Colors.white,
+          title: Center(
+            child: Text(
+              'Invalid Email',
               style: TextStyle(
                 color: Color.fromARGB(255, 30, 30, 30),
+                fontWeight: FontWeight.bold,
               ),
-              textAlign: TextAlign.center,
             ),
-          );
-        },
-      );
-      return; // Exit the method if email is not valid
-    }
+          ),
+          content: Text(
+            'We only accept @vt.edu email addresses.',
+            style: TextStyle(
+              color: Color.fromARGB(255, 30, 30, 30),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        );
+      },
+    );
+    return; // Exit if email is invalid
+  }
 
-    if (firstName.value.text.isNotEmpty &&
-        lastName.value.text.isNotEmpty &&
-        firstName.value.text.length < 25 &&
-        lastName.value.text.length < 25 &&
-        validCharacters.hasMatch(firstName.value.text + lastName.value.text)) {
+  if (firstName.value.text.isNotEmpty &&
+      lastName.value.text.isNotEmpty &&
+      firstName.value.text.length < 25 &&
+      lastName.value.text.length < 25 &&
+      validCharacters.hasMatch(firstName.value.text + lastName.value.text)) {
+
+    final url = Uri.parse('https://www.barzzy.site/newsignup/register2');
+    
+    final requestBody = jsonEncode({
+      'email': email.value.text.trim(),
+      'firstName': firstName.value.text.trim(),
+      'lastName': lastName.value.text.trim(),
+      'password': password.value.text,
+    });
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: requestBody,
+    );
+
+    if (response.statusCode == 200) {
+      debugPrint('Account created successfully');
+      debugPrint('Response body: ${response.body}');
+
+      // Store the user ID in the login cache
       final loginCache2 = LoginCache();
       loginCache2.setEmail(email.value.text.trim());
       loginCache2.setFN(firstName.value.text.trim());
@@ -105,54 +128,24 @@ class RegisterPageState extends State<RegisterPage>
       loginCache2.setLN(lastName.value.text.trim());
       loginCache2.setSignedIn(true);
 
-      final url = Uri.parse('https://www.barzzy.site/newsignup/register');
-      final requestBody = jsonEncode({
-        'email': email.value.text.trim(),
-      });
+      // Store the user ID returned from the backend
+      final userId = int.parse(response.body);
+      loginCache2.setUID(userId);
 
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json', // Specify that the body is JSON
-        },
-        body: requestBody,
+      // Navigate to the next page
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const RegisterPage2()),
       );
-
-      if (response.statusCode == 200) {
-        debugPrint('Request successful');
-        debugPrint('Response body: ${response.body}');
-
-        _showOverlayWidget();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Colors.white, // Set background to white
-            behavior: SnackBarBehavior.floating, // Makes it float above content
-            content: Center(
-              // Center the text horizontally
-              child: Text(
-                'Verification code sent to your email. Check your Spam/Junk folder.',
-                textAlign:
-                    TextAlign.center, // Center the text inside the SnackBar
-                style: TextStyle(
-                  color: Colors.black, // Set text color to black for contrast
-                  fontSize: 14,
-                  //fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            duration: Duration(seconds: 3), // Adjust duration if needed
-          ),
-        );
-      } else {
-        debugPrint('01Request failed with status: ${response.statusCode}');
-        debugPrint('01Response body: ${response.body}');
-        failure();
-      }
     } else {
-      invalidCredentialsMessage();
+      debugPrint('Request failed with status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
+      failure();
     }
+  } else {
+    invalidCredentialsMessage();
   }
+}
 
   @override
   Widget build(BuildContext context) {
