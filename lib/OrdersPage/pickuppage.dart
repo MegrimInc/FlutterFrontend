@@ -144,16 +144,16 @@ class PickupPageState extends State<PickupPage> {
       final order = localDatabase.getOrderForBar(barId);
       final points = localDatabase.getPointsForBar(barId)?.points ?? 0;
 
-
-      // Fallback widget if the order is not found
       if (order == null) {
+        debugPrint('No order found for barId: $barId');
         return const Center(
           child: Text(
-            'Order not found',
+            '',
             style: TextStyle(color: Colors.white),
           ),
         );
       }
+
 
       return Container(
         height: 55,

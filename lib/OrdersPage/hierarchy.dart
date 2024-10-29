@@ -3,6 +3,7 @@
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/Backend/activeorder.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
+//import 'package:barzzy/Backend/user.dart';
 import 'package:barzzy/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -72,12 +73,15 @@ class Hierarchy extends ChangeNotifier {
                   final data = decodedMessage['data'];
                   _createOrderResponse(
                       data); // Trigger the createOrderResponse method
+                 // _updateCategoryRanks(context, data, increase: true);
+
                   break;
 
                 case 'delete':
                   debugPrint('Delete response received.');
                   final data = decodedMessage['data'];
                   _createOrderResponse(data);
+                 // _updateCategoryRanks(context, data, increase: false);
                   break;
 
                 case 'error':
@@ -209,7 +213,7 @@ class Hierarchy extends ChangeNotifier {
       // Print statement to confirm addition
       debugPrint(
           'CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
-          await sendGetRequest2();
+      await sendGetRequest2();
     } catch (e) {
       debugPrint('Error while creating CustomerOrder: $e');
     }
@@ -221,37 +225,36 @@ class Hierarchy extends ChangeNotifier {
     _createOrderResponse(data);
   }
 
-
   void cancelOrder(CustomerOrder order) {
-  try {
-    if (_channel != null) {
-      // Construct the order object with the 'delete' action
-      final orderObject = {
-        "action": "delete",
-        "barId": int.parse(order.barId), // Ensure it's an int
-        "userId": order.userId,
-        "points": order.points,
-        "isHappyHour": false,
-        "drinks": order.drinks.map((drinkOrder) {
-          return {
-            'drinkId': int.parse(drinkOrder.id), // Ensure it's an int
-            'quantity': int.parse(drinkOrder.quantity), // Ensure it's an int
-          };
-        }).toList(),
-      };
+    try {
+      if (_channel != null) {
+        // Construct the order object with the 'delete' action
+        final orderObject = {
+          "action": "delete",
+          "barId": int.parse(order.barId), // Ensure it's an int
+          "userId": order.userId,
+          "points": order.points,
+          "isHappyHour": false,
+          "drinks": order.drinks.map((drinkOrder) {
+            return {
+              'drinkId': int.parse(drinkOrder.id), // Ensure it's an int
+              'quantity': int.parse(drinkOrder.quantity), // Ensure it's an int
+            };
+          }).toList(),
+        };
 
-      // Encode the order object to JSON
-      final jsonOrder = jsonEncode(orderObject);
-      debugPrint('Sending cancel order: $jsonOrder');
-      _channel!.sink.add(jsonOrder); // Send over WebSocket
-      debugPrint('Cancel order message sent.');
-    } else {
-      debugPrint('Failed to send cancel order: WebSocket is not connected');
+        // Encode the order object to JSON
+        final jsonOrder = jsonEncode(orderObject);
+        debugPrint('Sending cancel order: $jsonOrder');
+        _channel!.sink.add(jsonOrder); // Send over WebSocket
+        debugPrint('Cancel order message sent.');
+      } else {
+        debugPrint('Failed to send cancel order: WebSocket is not connected');
+      }
+    } catch (e) {
+      debugPrint('Error while sending cancel order: $e');
     }
-  } catch (e) {
-    debugPrint('Error while sending cancel order: $e');
   }
-}
 
   void _handleError(BuildContext context, String errorMessage) {
     // Use the global navigator key to get a safe context
@@ -296,31 +299,6 @@ class Hierarchy extends ChangeNotifier {
             ),
             textAlign: TextAlign.center,
           ),
-          actions: <Widget>[
-            TextButton(
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.black,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Center(
-                child: Text(
-                  'OK',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop(); // Dismiss the dialog
-              },
-            ),
-          ],
         );
       },
     );
@@ -410,7 +388,8 @@ class Hierarchy extends ChangeNotifier {
                   ),
                 ),
                 onPressed: () async {
-                  final loginCache = Provider.of<LoginCache>(context, listen: false);
+                  final loginCache =
+                      Provider.of<LoginCache>(context, listen: false);
                   final userId = await loginCache.getUID();
 
                   // Reconstruct the order object as expected
@@ -443,8 +422,6 @@ class Hierarchy extends ChangeNotifier {
     );
   }
 
-  
-
   void disconnect() {
     if (_channel != null) {
       debugPrint('Closing WebSocket connection.');
@@ -455,7 +432,6 @@ class Hierarchy extends ChangeNotifier {
     }
   }
 
-
   // Method to retrieve the list of barIds for created orders
   List<String> getOrders() {
     // Return the list of bar IDs sorted by timestamp in descending order
@@ -463,6 +439,25 @@ class Hierarchy extends ChangeNotifier {
       ..sort(
           (a, b) => _createdOrderBarIds[b]!.compareTo(_createdOrderBarIds[a]!));
   }
+
+  // void _updateCategoryRanks(BuildContext context, Map<String, dynamic> data,
+  //     {required bool increase}) {
+  //   final drinks = data['drinks'] as List<dynamic>; // Extract drink list
+  //   final delta = increase ? 2 : -1; // Set delta based on action
+
+  //   final user =
+  //       Provider.of<User>(context, listen: false); // Access User provider
+
+  //   for (var drink in drinks) {
+  //     final drinkId = int.parse(drink['id'].toString());
+  //     final drinkData = localDatabase.getDrinkById(drinkId.toString());
+
+  //     for (String tag in drinkData.tagId) {
+  //       user.updateCategoryRank(
+  //           int.parse(tag), delta); // Update rank via User provider
+  //     }
+  //   }
+  // }
 
   bool get isConnected => _isConnected;
 }

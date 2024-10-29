@@ -1,25 +1,20 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'dart:ui';
-
 import 'package:another_flushbar/flushbar.dart';
-import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:barzzy/Backend/barhistory.dart';
 import 'package:barzzy/Backend/drink.dart';
 import 'package:barzzy/Backend/user.dart';
 import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/MenuPage/drinkfeed.dart';
-import 'package:barzzy/OrdersPage/hierarchy.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../Backend/bar.dart';
 import '../Backend/localdatabase.dart';
-import 'package:flutter/services.dart';
 
 class MenuPage extends StatefulWidget {
   final String barId;
@@ -88,54 +83,6 @@ class MenuPageState extends State<MenuPage>
     barHistory.setTappedBarId(widget.barId);
   }
 
-  void _submitOrder(BuildContext context) async {
-    final loginCache = Provider.of<LoginCache>(context, listen: false);
-    final userId = await loginCache.getUID();
-    final cart = Provider.of<Cart>(context, listen: false);
-    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
-
-    if (userId == 0) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (context) => const LoginOrRegisterPage(),
-        ),
-        (route) => false,
-      );
-      return;
-    }
-
-    final barId = widget.barId;
-
-    // Create the drink quantities list
-    final drinkQuantities = cart.barCart.entries.map((entry) {
-      return {
-        'drinkId': int.parse(entry.key),
-        'quantity': entry.value,
-      };
-    }).toList();
-
-     final points = cart.points;
-
-    // Construct the order object
-    final order = {
-      "action": "create",
-      "barId": barId,
-      "userId": userId,
-      "drinks": drinkQuantities,
-      "points": points,
-    };
-
-    // Pass the order object to the createOrder method
-    hierarchy.createOrder(order);
-
-    // Navigate to orders page and pass the barId
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      '/orders',
-      (Route<dynamic> route) => false,
-      arguments: barId, // Pass the barId to the PickupPage
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -150,7 +97,6 @@ class MenuPageState extends State<MenuPage>
           body: Stack(
             children: [
               _buildMainContent(),
-              _buildBottomBar(),
             ],
           ),
         ),
@@ -243,6 +189,64 @@ class MenuPageState extends State<MenuPage>
     );
   }
 
+//   Widget _buildMainContent() {
+//   return Column(
+//     children: [
+//       _buildTopBar(),
+//       Expanded(
+//         child: SingleChildScrollView(
+//           key: _listKey,
+//           controller: _scrollController,
+//           child: Consumer<User>(
+//             builder: (context, user, _) {
+//               // Get the sorted drink list based on categories from User
+//               final sortedDrinks = user.getFullDrinkListByBarId(widget.barId);
+
+//               // Map for tag IDs to their display names
+//               final Map<String, String> tagNames = {
+//                 'tag172': 'Vodka',
+//                 'tag173': 'Gin',
+//                 'tag174': 'Whiskey',
+//                 'tag175': 'Tequila',
+//                 'tag176': 'Brandy',
+//                 'tag177': 'Rum',
+//                 'tag178': 'Ale',
+//                 'tag179': 'Lager',
+//                 'tag181': 'Virgin',
+//                 'tag183': 'Red Wine',
+//                 'tag184': 'White Wine',
+//                 'tag186': 'Seltzer',
+//               };
+
+//               // Build the sections dynamically based on the sorted drink list
+//               return Column(
+//                 children: sortedDrinks.entries.map((entry) {
+//                   final tag = entry.key;  // Example: 'tag172'
+//                   final drinkIds = entry.value;  // List of drink IDs
+
+//                   // Only build a section if there are drinks for the category
+//                   if (drinkIds.isEmpty) return const SizedBox.shrink();
+
+//                   // Get the display name for the tag
+//                   final tagName = tagNames[tag] ?? 'Unknown';
+
+//                   return Column(
+//                     children: [
+//                        const SizedBox(height: 30),
+//                       _buildDrinkSection(context, tagName, drinkIds),
+//                       const SizedBox(height: 25),
+//                     ],
+//                   );
+//                 }).toList(), // Convert the map entries to a list of widgets
+//               );
+//             },
+//           ),
+//         ),
+//       ),
+//     ],
+//   );
+// }
+
   Widget _buildTopBar() {
     return Container(
       decoration: BoxDecoration(
@@ -279,23 +283,18 @@ class MenuPageState extends State<MenuPage>
           Consumer<Cart>(
             builder: (context, cart, _) {
               return IconButton(
-                icon: Icon(
+                icon: const Icon(
                   FontAwesomeIcons.solidStar,
-                  color: cart.points
-                      ? Colors.amber
-                      : Colors.white24, // Change color based on points
-                  size: 18,
+                  color: Colors.amber,
+                  size: 17.5,
                 ),
                 onPressed: () {
                   Flushbar(
                     messageText: Row(
                       children: [
                         const Spacer(),
-                        Icon(
-                            Icons.star,
-                            color: cart.points ? Colors.amber : Colors.white24,
-                          ),
-                          const SizedBox(width: 7),
+                        const Icon(Icons.star, color: Colors.amber),
+                        const SizedBox(width: 7),
                         Text(
                           "You have ${cart.barPoints} points!",
                           style: const TextStyle(
@@ -305,7 +304,7 @@ class MenuPageState extends State<MenuPage>
                           textAlign: TextAlign
                               .center, // Ensure the text is centered within the widget
                         ),
-                          const Spacer(),
+                        const Spacer(),
                       ],
                     ),
                     backgroundColor: Colors.black,
@@ -320,64 +319,6 @@ class MenuPageState extends State<MenuPage>
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildBottomBar() {
-    return Consumer<Cart>(
-      builder: (context, cart, _) {
-        if (cart.getTotalDrinkCount() == 0) {
-          return const SizedBox.shrink();
-        } else {
-          return Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20.0),
-              child: GestureDetector(
-                onTap: () {
-                  _submitOrder(context);
-                },
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: 350, // Control the width of the button
-                        maxHeight: 60, // Control the height of the button
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey
-                              .withOpacity(0.3), // Semi-transparent background
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.5),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            'CONFIRM',
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-      },
     );
   }
 
@@ -402,7 +343,7 @@ class MenuPageState extends State<MenuPage>
               Text(
                 tagName,
                 style: GoogleFonts.poppins(
-                  color: Colors.white70,
+                  color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -471,52 +412,84 @@ class MenuPageState extends State<MenuPage>
                         Navigator.of(context).push(_createRoute(drink, cart));
                       },
                       onLongPress: () {
+                        final cart = Provider.of<Cart>(context, listen: false);
                         HapticFeedback.heavyImpact();
-                        Provider.of<Cart>(context, listen: false)
-                            .addDrink(drink.id, context);
-                        FocusScope.of(context).unfocus();
-                      },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(5),
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: CachedNetworkImage(
-                                imageUrl: drink.image,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            Positioned.fill(
-                              child: Consumer<Cart>(
-                                builder: (context, cart, _) {
-                                  int drinkQuantities =
-                                      cart.getDrinkQuantity(drink.id);
 
-                                  if (drinkQuantities > 0) {
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.6),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          'x$drinkQuantities',
-                                          style: GoogleFonts.poppins(
-                                            color: Colors.white,
-                                            fontSize: 30,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  } else {
-                                    return const SizedBox.shrink();
-                                  }
-                                },
+                        // Navigate to DrinkFeed with targetPage set to 1
+                        if (cart.getTotalDrinkCount() < 3) {
+                          Navigator.of(context).push(
+                            _createRoute(drink, cart, targetPage: 1),
+                          );
+                        }
+
+                        cart.addDrink(drink.id, context);
+                      },
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(5),
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: CachedNetworkImage(
+                                      imageUrl: drink.image,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  Positioned.fill(
+                                    child: Consumer<Cart>(
+                                      builder: (context, cart, _) {
+                                        int drinkQuantities =
+                                            cart.getDrinkQuantity(drink.id);
+
+                                        if (drinkQuantities > 0) {
+                                          return Container(
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  Colors.black.withOpacity(0.6),
+                                              borderRadius:
+                                                  BorderRadius.circular(5),
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                'x$drinkQuantities',
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.white,
+                                                  fontSize: 30,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        } else {
+                                          return const SizedBox.shrink();
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+
+                          //ADDED THIS
+                          const SizedBox(height: 5),
+                          Text(
+                            drink.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1, // Ensures only one line is shown
+                            overflow: TextOverflow
+                                .ellipsis, // Adds ellipsis if text overflows
+                            textAlign: TextAlign.center,
+                          ),
+
+                          const SizedBox(height: 5),
+                        ],
                       ),
                     );
                   },
@@ -531,12 +504,13 @@ class MenuPageState extends State<MenuPage>
     );
   }
 
-  Route _createRoute(Drink drink, Cart cart) {
+  Route _createRoute(Drink drink, Cart cart, {int targetPage = 0}) {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => DrinkFeed(
         drink: drink,
         cart: cart,
         barId: widget.barId,
+        initialPage: targetPage,
       ),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         var begin = 0.0;

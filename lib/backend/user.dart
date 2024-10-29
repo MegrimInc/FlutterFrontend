@@ -14,6 +14,17 @@ class User extends ChangeNotifier {
     return _singleton;
   }
 
+   // ignore: unused_field
+   final List<int> _defaultTagOrder = [
+    179, 172, 175, 174, 173, 176, 
+    177, 186, 178, 183, 184, 181
+  ];
+
+   final Map<int, int> categoryRanks = {
+    172: 0, 173: 0, 174: 0, 175: 0, 176: 0, 177: 0, 
+    178: 0, 179: 0, 181: 0, 183: 0, 184: 0, 186: 0
+  };
+
   User._internal();
 
   // Map to store Categories objects with barId as the key
@@ -48,19 +59,91 @@ class User extends ChangeNotifier {
     };
   }
 
+//   Map<String, List<int>> getFullDrinkListByBarId(String barId) {
+//   final categories = categoriesMap[barId];
+//   if (categories == null) return {}; // Handle null case
+
+//   // Determine if all ranks are zero
+//   bool allRanksZero = categoryRanks.values.every((rank) => rank == 0);
+//    debugPrint('All ranks zero: $allRanksZero'); // Debug statement
+
+//    categoryRanks.forEach((key, value) {
+//       debugPrint('Category $key Rank: $value');
+//     });
+
+//   // Get the sorted category order
+//   List<int> sortedCategories;
+//   if (allRanksZero) {
+//     // Use default order if all ranks are zero
+//     sortedCategories = List<int>.from(_defaultTagOrder);
+//   } else {
+//     // Sort categories by rank in descending order
+//     List<MapEntry<int, int>> entries = categoryRanks.entries.toList();
+//     entries.sort((a, b) => b.value.compareTo(a.value));
+
+//     // Extract the sorted category keys
+//     sortedCategories = entries.map((entry) => entry.key).toList();
+//   }
+
+//   // Build the drink list map according to the sorted category order
+//   Map<String, List<int>> sortedDrinkMap = {};
+
+//   for (int tag in sortedCategories) {
+//     switch (tag) {
+//       case 172:
+//         sortedDrinkMap['tag172'] = categories.tag172;
+//         break;
+//       case 173:
+//         sortedDrinkMap['tag173'] = categories.tag173;
+//         break;
+//       case 174:
+//         sortedDrinkMap['tag174'] = categories.tag174;
+//         break;
+//       case 175:
+//         sortedDrinkMap['tag175'] = categories.tag175;
+//         break;
+//       case 176:
+//         sortedDrinkMap['tag176'] = categories.tag176;
+//         break;
+//       case 177:
+//         sortedDrinkMap['tag177'] = categories.tag177;
+//         break;
+//       case 178:
+//         sortedDrinkMap['tag178'] = categories.tag178;
+//         break;
+//       case 179:
+//         sortedDrinkMap['tag179'] = categories.tag179;
+//         break;
+//       case 181:
+//         sortedDrinkMap['tag181'] = categories.tag181;
+//         break;
+//       case 183:
+//         sortedDrinkMap['tag183'] = categories.tag183;
+//         break;
+//       case 184:
+//         sortedDrinkMap['tag184'] = categories.tag184;
+//         break;
+//       case 186:
+//         sortedDrinkMap['tag186'] = categories.tag186;
+//         break;
+//     }
+//   }
+
+//   return sortedDrinkMap;
+// }
+
+
+
+
   Future<void> fetchTagsAndDrinks(String barId) async {
     debugPrint('Fetching drinks for bar ID: $barId');
 
     LocalDatabase localDatabase = LocalDatabase();
 
-    
-
     if (categoriesExistForBar(barId)) {
       debugPrint('Categories already exist for bar $barId, skipping fetch.');
       return; // Exit early if categories already exist
     }
-
-    debugPrint('why are you being gey bruh');
 
     // ignore: unused_local_variable
     List<MapEntry<int, String>> tagList = [
@@ -183,5 +266,14 @@ class User extends ChangeNotifier {
     }
 
     debugPrint('Finished processing drinks for barId: $barId');
+  }
+
+
+  // New: Update category rank by a delta (increase or decrease)
+  void updateCategoryRank(int tagId, int delta) {
+    if (categoryRanks.containsKey(tagId)) {
+      categoryRanks[tagId] = (categoryRanks[tagId] ?? 0) + delta;
+      notifyListeners();
+    }
   }
 }

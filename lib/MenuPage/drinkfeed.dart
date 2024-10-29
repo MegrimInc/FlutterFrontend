@@ -7,8 +7,10 @@ import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:barzzy/OrdersPage/hierarchy.dart';
+import 'package:barzzy/main.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:barzzy/Backend/drink.dart';
@@ -18,12 +20,14 @@ class DrinkFeed extends StatefulWidget {
   final Drink drink;
   final Cart cart;
   final String barId;
+   final int initialPage;
 
   const DrinkFeed({
     super.key,
     required this.drink,
     required this.cart,
     required this.barId,
+    this.initialPage = 0,
   });
 
   @override
@@ -43,7 +47,9 @@ class DrinkFeedState extends State<DrinkFeed>
   void initState() {
     super.initState();
 
-    _pageController = PageController(initialPage: 0);
+    _pageController = PageController(
+      initialPage: widget.initialPage, // NEW: Use the initialPage from widget
+    );
 
     _controller = AnimationController(
       vsync: this,
@@ -57,8 +63,7 @@ class DrinkFeedState extends State<DrinkFeed>
     _controller.forward();
   }
 
-
-  void _submitOrder(BuildContext context) async {
+  void _submitOrder(BuildContext context, {required bool usePoints}) async {
     final loginCache = Provider.of<LoginCache>(context, listen: false);
     final userId = await loginCache.getUID();
     final cart = Provider.of<Cart>(context, listen: false);
@@ -66,47 +71,34 @@ class DrinkFeedState extends State<DrinkFeed>
 
     if (userId == 0) {
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (context) => const LoginOrRegisterPage(),
-        ),
+        MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
         (route) => false,
       );
+      _showLoginAlertDialog(context);
       return;
     }
 
     final barId = widget.barId;
-
-    // Create the drink quantities list
     final drinkQuantities = cart.barCart.entries.map((entry) {
-      return {
-        'drinkId': int.parse(entry.key),
-        'quantity': entry.value,
-      };
+      return {'drinkId': int.parse(entry.key), 'quantity': entry.value};
     }).toList();
 
-    final points = cart.points;
-
-    // Construct the order object
     final order = {
       "action": "create",
       "barId": barId,
       "userId": userId,
       "drinks": drinkQuantities,
-      "points": points,
+      "points": usePoints, // Use the passed-in points flag
     };
 
-    // Pass the order object to the createOrder method
     hierarchy.createOrder(order);
 
-    // Navigate to orders page and pass the barId
     Navigator.of(context).pushNamedAndRemoveUntil(
       '/orders',
       (Route<dynamic> route) => false,
-      arguments: barId, // Pass the barId to the PickupPage
+      arguments: barId,
     );
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -233,30 +225,25 @@ class DrinkFeedState extends State<DrinkFeed>
                                   builder: (context, cart, _) {
                                     final cartItems = cart.barCart.keys
                                         .toList(); // Get unique drink IDs
-                                    double totalPrice = cart.points
-                                        ? cart.calculateTotalPriceInPoints()
-                                        : cart
-                                            .calculateTotalPrice(); // Total based on selected mode
 
                                     return Column(
                                       children: [
-                                        const SizedBox(height: 25),
+                                        const SizedBox(height: 75),
                                         Text(
-                                          'Summary',
+                                          'Summary:',
                                           style: GoogleFonts.poppins(
-                                            color: Colors.white54,
+                                            color: Colors.white,
                                             fontSize: 25,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
-                                        const Padding(
-                                          padding: EdgeInsets.all(30),
-                                          child: Divider(
-                                              color: Colors.white54,
-                                              thickness: .5),
-                                        ),
-
-                                        // Loop through each drink in the cart
+                                        // const Padding(
+                                        //   padding: EdgeInsets.all(30),
+                                        //   child: Divider(
+                                        //       color: Colors.white54,
+                                        //       thickness: .5),
+                                        // ),
+                                        const SizedBox(height: 50),
                                         for (var drinkId in cartItems)
                                           Padding(
                                             padding: const EdgeInsets.symmetric(
@@ -267,17 +254,16 @@ class DrinkFeedState extends State<DrinkFeed>
                                                     .getDrinkById(drinkId);
                                                 int quantity = cart
                                                     .getDrinkQuantity(drinkId);
-                                                double price = cart.points
-                                                    ? cart
-                                                        .calculatePriceForDrinkInPoints(
-                                                            drinkId)
-                                                    : cart
-                                                        .calculatePriceForDrink(
-                                                            drinkId);
+                                                double ptPrice = cart
+                                                    .calculatePriceForDrinkInPoints(
+                                                        drinkId);
+                                                double regPrice =
+                                                    cart.calculatePriceForDrink(
+                                                        drinkId);
 
                                                 return Center(
                                                   child: Text(
-                                                    '${drink.name} x $quantity - ${cart.points ? '${price.toStringAsFixed(0)} pts' : '\$${price.toStringAsFixed(2)}'}',
+                                                    '$quantity ${quantity > 1 ? "${drink.name}s" : drink.name} - \$$regPrice or ${ptPrice.toInt()} pts',
                                                     style: GoogleFonts.poppins(
                                                       color: Colors.white,
                                                       fontSize: 18,
@@ -291,30 +277,23 @@ class DrinkFeedState extends State<DrinkFeed>
                                             ),
                                           ),
 
-                                        const SizedBox(height: 20),
+                                    const Spacer(),
 
-                                        // Display total price with "+ tax"
-                                        Center(
-                                          child: Text(
-                                            cart.points
-                                                ? 'Total: ${totalPrice.toStringAsFixed(0)} pts'
-                                                : 'Total: \$${totalPrice.toStringAsFixed(2)} + tax',
-                                            style: GoogleFonts.poppins(
-                                              color: Colors.white,
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
+                                        
+                                        const Padding(
+                                          padding: EdgeInsets.all(30),
+                                          child: Divider(
+                                              color: Colors.white54,
+                                              thickness: .5),
                                         ),
+                                        _buildPriceOptionButtons(context),
 
-                                        const Spacer(),
+                                         const SizedBox(height: 150),
 
-                                        _buildConfirmButton(),
+                                        
 
-                                       const SizedBox(height: 75)
-
-
+                              
+                                        
                                       ],
                                     );
                                   },
@@ -442,8 +421,6 @@ class DrinkFeedState extends State<DrinkFeed>
             return _buildPriceCard(
               'Regular',
               widget.drink.price,
-              isUsingPoints: !cart.points, // If points are not being used
-              onTogglePoints: () => cart.togglePoints(false), // Switch to Regular price
               showDollarSign: true, // Always show $ for regular price
               targetPage: 1,
               cart: cart,
@@ -456,8 +433,6 @@ class DrinkFeedState extends State<DrinkFeed>
             return _buildPriceCard(
               '   Points    ',
               widget.drink.points, // Assuming points price
-              isUsingPoints: cart.points, // If points are being used
-              onTogglePoints: () => cart.togglePoints(true), // Switch to Points price
               showDollarSign: false, // Never show $ for points
               targetPage: 1,
               cart: cart,
@@ -468,56 +443,41 @@ class DrinkFeedState extends State<DrinkFeed>
     );
   }
 
-  Widget _buildPriceCard(String label, num price,
-      {
-      required bool isUsingPoints,
-      required VoidCallback onTogglePoints, // Keep the toggle logic
-      required bool showDollarSign,
-      required int targetPage, // Page to swipe to
-       required Cart cart,
-      }) {
-    return GestureDetector(
-      onTap: () {
-      // Toggle between points and regular pricing
-      onTogglePoints();
-
-     if (cart.getTotalDrinkCount() > 0) {
-        _pageController.animateToPage(
-          targetPage,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-      }
-    },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isUsingPoints ? Colors.white : Colors.white24,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                color: isUsingPoints ? Colors.black : Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+  Widget _buildPriceCard(
+    String label,
+    num price, {
+    required bool showDollarSign,
+    required int targetPage, // Page to swipe to
+    required Cart cart,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white24,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
-            Text(
-              // Display price or points based on context
-              showDollarSign
-                  ? '\$${price.toStringAsFixed(2)}' // Always display price as double with $ sign
-                  : '${price.toInt()}', // Always display points as integer with no $ sign
-              style: GoogleFonts.poppins(
-                color: isUsingPoints ? Colors.black : Colors.white70,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+          ),
+          Text(
+            // Display price or points based on context
+            showDollarSign
+                ? '\$${price.toStringAsFixed(2)}' // Always display price as double with $ sign
+                : '${price.toInt()}', // Always display points as integer with no $ sign
+            style: GoogleFonts.poppins(
+              color: Colors.white70,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -576,68 +536,123 @@ class DrinkFeedState extends State<DrinkFeed>
     );
   }
 
-   Widget _buildConfirmButton() {
-    return Consumer<Cart>(
-      builder: (context, cart, _) {
-        if (cart.getTotalDrinkCount() == 0) {
-          return const SizedBox.shrink();
-        } else {
-          return Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20.0),
-              child: GestureDetector(
-                onTap: () {
-                  _submitOrder(context);
-                },
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: 350, // Control the width of the button
-                        maxHeight: 60, // Control the height of the button
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey
-                              .withOpacity(0.3), // Semi-transparent background
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.5),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            'CONFIRM',
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-      },
+  // Replace _buildConfirmButton() with this method
+  Widget _buildPriceOptionButtons(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildPriceOption(
+          context,
+          label: 'Pay @ bar',
+          price: widget.cart.calculateTotalPrice(),
+          isPoints: false, // Indicates this is the cash option
+          onTap: () => _submitOrder(context, usePoints: false),
+        ),
+        _buildPriceOption(
+          context,
+          label: 'Pay with pts',
+          price: widget.cart.calculateTotalPriceInPoints(),
+          isPoints: true, // Indicates this is the points option
+          onTap: () => _submitOrder(context, usePoints: true),
+        ),
+      ],
     );
   }
 
-   @override
+  Widget _buildPriceOption(
+    BuildContext context, {
+    required String label,
+    required double price,
+    required bool isPoints, // Determines if the display is for points
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                color: Colors.black,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isPoints
+                  ? '${price.toInt()}' // Display points as an integer
+                  : '\$${price.toStringAsFixed(2)}', // Display cash as dollars
+                
+              style: GoogleFonts.poppins(
+                color: Colors.black,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _showLoginAlertDialog(BuildContext context) {
+    final safeContext = navigatorKey.currentContext;
+
+    if (safeContext == null) {
+      debugPrint('Safe context is null. Cannot show dialog.');
+      return;
+    }
+
+    //debugPrint('Showing error dialog with safe context: $safeContext');
+
+    showDialog(
+      context: safeContext,
+      builder: (BuildContext context) {
+        HapticFeedback.heavyImpact();
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: Colors.white,
+          title: const Row(
+            children: [
+              SizedBox(width: 75),
+              Icon(Icons.error_outline, color: Colors.black),
+              SizedBox(width: 5),
+              Text(
+                'Oops :/',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Log in or register to place an order.',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        );
+      },
+    );
   }
 }

@@ -61,18 +61,25 @@ class BarHistory with ChangeNotifier {
     }
   }
 
-  // Ensure there's always a valid tapped bar ID
   void _ensureTappedBarIdExists() {
-    if (_currentTappedBarId == null || _currentTappedBarId!.isEmpty) {
-      final barIds = LocalDatabase().getAllBarIds();
-      if (barIds.isNotEmpty) {
-        setTappedBarId(barIds.first); // Set the first bar ID as the tapped bar ID
-        debugPrint('Tapped bar ID set to: ${barIds.first}');
+  if (_currentTappedBarId == null || _currentTappedBarId!.isEmpty) {
+    final barIds = LocalDatabase().getAllBarIds();
+    
+    if (barIds.isNotEmpty) {
+      // Check if bar_id 95 exists
+      if (barIds.contains('95')) {
+        setTappedBarId('95'); // Set bar_id 95 as the tapped bar ID
+        debugPrint('Tapped bar ID set to: 95');
       } else {
-        debugPrint('No bars available in the LocalDatabase to set as tapped bar.');
+        // If bar_id 95 doesn't exist, fallback to the first available bar ID
+        setTappedBarId(barIds.first);
+        debugPrint('Tapped bar ID set to: ${barIds.first}');
       }
+    } else {
+      debugPrint('No bars available in the LocalDatabase to set as tapped bar.');
     }
   }
+}
 
   void setContext(BuildContext context) {
     _context = context;

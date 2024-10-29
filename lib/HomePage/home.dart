@@ -286,14 +286,22 @@ class HomePageState extends State<HomePage> {
       return const SizedBox.shrink(); // Return nothing while waiting
           }
           if (snapshot.hasData && snapshot.data == 0) {
-      return const Center(
-        child: Text(
-          'WARNING: VIEW ONLY',
-          style: TextStyle(
-            color: Colors.white54,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
+      return const SizedBox(
+        height: 80,
+        
+        child: Column(
+          children: [
+            SizedBox(height: 5),
+            Text(
+              'WARNING: VIEW ONLY',
+              style: TextStyle(
+                color: Colors.white54,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            Spacer()
+          ],
         ),
       );
           }

@@ -64,35 +64,6 @@ class RegisterPageState extends State<RegisterPage>
  void registerNames() async {
   FocusScope.of(context).unfocus();
 
-  // Check if the entered email ends with '@vt.edu'
-  if (!email.value.text.trim().endsWith('@vt.edu')) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return const AlertDialog(
-          backgroundColor: Colors.white,
-          title: Center(
-            child: Text(
-              'Invalid Email',
-              style: TextStyle(
-                color: Color.fromARGB(255, 30, 30, 30),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          content: Text(
-            'We only accept @vt.edu email addresses.',
-            style: TextStyle(
-              color: Color.fromARGB(255, 30, 30, 30),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        );
-      },
-    );
-    return; // Exit if email is invalid
-  }
-
   if (firstName.value.text.isNotEmpty &&
       lastName.value.text.isNotEmpty &&
       firstName.value.text.length < 25 &&

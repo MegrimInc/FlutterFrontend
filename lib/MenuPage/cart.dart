@@ -10,9 +10,8 @@ class Cart extends ChangeNotifier {
   String? barId;
   Map<String, int> barCart = {}; // Maps drinkId to quantity
   int? barPoints;
-   bool points = false;
-  
 
+  
   void setBar(String newBarId) {
     if (barId != newBarId) {
       barId = newBarId;
@@ -22,11 +21,6 @@ class Cart extends ChangeNotifier {
     }
   }
 
-   // Method to toggle points
-  void togglePoints(bool value) {
-    points = value;
-    notifyListeners(); // Notify listeners of the state change
-  }
 
   Future<void> _fetchPointsForBar(String barId) async {
     final localDatabase = LocalDatabase();
@@ -81,38 +75,13 @@ class Cart extends ChangeNotifier {
               ],
             ),
             content: const Text(
-              'You can only add up to 3 drinks.',
+              'You can only add up to 3 drinks per order!',
               style: TextStyle(
                 color: Colors.black,
                 fontSize: 16,
               ),
               textAlign: TextAlign.center,
             ),
-            actions: <Widget>[
-              TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Center(
-                  child: Text(
-                    'OK',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop(); // Dismiss the dialog
-                },
-              ),
-            ],
           );
         },
       );
