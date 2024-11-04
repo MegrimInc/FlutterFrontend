@@ -2,7 +2,7 @@ import 'package:barzzy/Backend/activeorder.dart';
 import 'package:barzzy/Backend/tags.dart';
 
 import 'package:barzzy/Backend/drink.dart';
-import 'package:barzzy/backend/point.dart';
+import 'package:barzzy/Backend/point.dart';
 
 import 'package:flutter/material.dart';
 import 'bar.dart';
@@ -22,7 +22,7 @@ class LocalDatabase with ChangeNotifier {
   final Map<String, CustomerOrder> _barOrders = {};
   final Map<String, Point> _userPoints = {};
 
-  void addOrUpdateOrderForBar(CustomerOrder order) async {
+  void addOrUpdateOrderForBar(CustomerOrder order) {
     _barOrders[order.barId] = order;
     notifyListeners();
   }
@@ -46,7 +46,7 @@ class LocalDatabase with ChangeNotifier {
   void addDrink(Drink drink) {
     _drinks[drink.id] = drink;
     notifyListeners();
-    //debugPrint('Drink with ID: ${drink.id} added by LocalDatabase instance: $hashCode. Total drinks: ${_drinks.length}');
+    debugPrint('Drink with ID: ${drink.id} added to LocalDatabase. Total drinks: ${_drinks.length}');
   }
 
   void addTag(Tag tag) {

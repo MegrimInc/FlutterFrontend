@@ -20,7 +20,7 @@ class DrinkFeed extends StatefulWidget {
   final Drink drink;
   final Cart cart;
   final String barId;
-   final int initialPage;
+  final int initialPage;
 
   const DrinkFeed({
     super.key,
@@ -166,6 +166,7 @@ class DrinkFeedState extends State<DrinkFeed>
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
+                                    const SizedBox(height: 20),
                                     Center(
                                       child: SizedBox(
                                         height: 40,
@@ -181,7 +182,7 @@ class DrinkFeedState extends State<DrinkFeed>
                                                     child: AnimatedTextKit(
                                                       animatedTexts: [
                                                         FadeAnimatedText(
-                                                          'Swipe To Confirm>',
+                                                          'Swipe Left To View Summary',
                                                           textStyle: GoogleFonts
                                                               .poppins(
                                                             color:
@@ -237,49 +238,72 @@ class DrinkFeedState extends State<DrinkFeed>
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
-                                        // const Padding(
-                                        //   padding: EdgeInsets.all(30),
-                                        //   child: Divider(
-                                        //       color: Colors.white54,
-                                        //       thickness: .5),
-                                        // ),
                                         const SizedBox(height: 50),
                                         for (var drinkId in cartItems)
                                           Padding(
                                             padding: const EdgeInsets.symmetric(
                                                 vertical: 8.0),
-                                            child: Builder(
-                                              builder: (context) {
-                                                Drink? drink = LocalDatabase()
-                                                    .getDrinkById(drinkId);
-                                                int quantity = cart
-                                                    .getDrinkQuantity(drinkId);
-                                                double ptPrice = cart
-                                                    .calculatePriceForDrinkInPoints(
-                                                        drinkId);
-                                                double regPrice =
-                                                    cart.calculatePriceForDrink(
-                                                        drinkId);
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Expanded(
+                                                  child: Column(
+                                                    children: [
+                                                      Builder(
+                                                        builder: (context) {
+                                                          Drink? drink =
+                                                              LocalDatabase()
+                                                                  .getDrinkById(
+                                                                      drinkId);
+                                                          int quantity = cart
+                                                              .getDrinkQuantity(
+                                                                  drinkId);
+                                                          double ptPrice = cart
+                                                              .calculatePriceForDrinkInPoints(
+                                                                  drinkId);
+                                                          double regPrice = cart
+                                                              .calculatePriceForDrink(
+                                                                  drinkId);
 
-                                                return Center(
-                                                  child: Text(
-                                                    '$quantity ${quantity > 1 ? "${drink.name}s" : drink.name} - \$$regPrice or ${ptPrice.toInt()} pts',
-                                                    style: GoogleFonts.poppins(
-                                                      color: Colors.white,
-                                                      fontSize: 18,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                                    textAlign: TextAlign.center,
+                                                          return Center(
+                                                            child: Text(
+                                                              '$quantity ${quantity > 1 ? "${drink.name}s" : drink.name} - \$$regPrice or ${ptPrice.toInt()} pts',
+                                                              style: GoogleFonts
+                                                                  .poppins(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontSize: 18,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                              ),
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .center,
+                                                              softWrap:
+                                                                  true, // Enables wrapping
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .visible,
+                                                            ),
+                                                          );
+                                                        },
+                                                      ),
+                                                    ],
                                                   ),
-                                                );
-                                              },
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(Icons.delete,
+                                                      color: Colors.white),
+                                                  onPressed: () {
+                                                    cart.removeDrink(drinkId);
+                                                  },
+                                                ),
+                                              ],
                                             ),
                                           ),
-
-                                    const Spacer(),
-
-                                        
+                                        const Spacer(),
                                         const Padding(
                                           padding: EdgeInsets.all(30),
                                           child: Divider(
@@ -287,13 +311,7 @@ class DrinkFeedState extends State<DrinkFeed>
                                               thickness: .5),
                                         ),
                                         _buildPriceOptionButtons(context),
-
-                                         const SizedBox(height: 150),
-
-                                        
-
-                              
-                                        
+                                        const SizedBox(height: 150),
                                       ],
                                     );
                                   },
@@ -589,7 +607,7 @@ class DrinkFeedState extends State<DrinkFeed>
               isPoints
                   ? '${price.toInt()}' // Display points as an integer
                   : '\$${price.toStringAsFixed(2)}', // Display cash as dollars
-                
+
               style: GoogleFonts.poppins(
                 color: Colors.black,
                 fontSize: 24,

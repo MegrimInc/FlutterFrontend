@@ -205,15 +205,16 @@ class Hierarchy extends ChangeNotifier {
       final customerOrder = CustomerOrder.fromJson(data);
       debugPrint('CustomerOrder created: $customerOrder');
 
-      localDatabase.addOrUpdateOrderForBar(customerOrder);
-
+     localDatabase.addOrUpdateOrderForBar(customerOrder);
       // Directly update the map with the new timestamp for the barId
       _createdOrderBarIds[customerOrder.barId] = customerOrder.timestamp;
 
       // Print statement to confirm addition
       debugPrint(
           'CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
+          debugPrint(' hierarchy localDatabase instance ID: ${localDatabase.hashCode}');
       await sendGetRequest2();
+       notifyListeners();
     } catch (e) {
       debugPrint('Error while creating CustomerOrder: $e');
     }

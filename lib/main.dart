@@ -8,7 +8,7 @@ import 'package:barzzy/Backend/user.dart';
 import 'package:barzzy/Gnav%20Bar/bottombar.dart';
 import 'package:barzzy/OrdersPage/hierarchy.dart';
 import 'package:barzzy/Terminal/stationid.dart';
-import 'package:barzzy/backend/point.dart';
+import 'package:barzzy/Backend/point.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';

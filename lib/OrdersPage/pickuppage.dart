@@ -1,16 +1,12 @@
-import 'package:another_flushbar/flushbar.dart';
-import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy/Backend/activeorder.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:barzzy/OrdersPage/hierarchy.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:barzzy/Backend/activeorder.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Import for haptic feedback
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Import for shared preferences
-import '../Backend/localdatabase.dart';
+import 'package:barzzy/Backend/localdatabase.dart';
 
 class PickupPage extends StatefulWidget {
   const PickupPage({super.key});
@@ -20,43 +16,12 @@ class PickupPage extends StatefulWidget {
 }
 
 class PickupPageState extends State<PickupPage> {
-  bool _isGridView = true; // Toggle between Grid and Card view
-  String? _selectedBarId; // Keep track of the selected bar ID
+  late PageController _pageController; // Define a PageController
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    // Load the selected bar ID from shared preferences
-    _loadAndSetSelectedBar();
-  }
-
-  Future<void> _loadAndSetSelectedBar() async {
-    // Load the bar ID from shared preferences
-    final prefs = await SharedPreferences.getInstance();
-    final savedBarId = prefs.getString('selected_bar_id');
-
-    // Get the barId from the arguments
-    // ignore: use_build_context_synchronously
-    final barId = ModalRoute.of(context)?.settings.arguments as String?;
-
-    // If a new barId is passed in arguments, use it; otherwise, fall back to saved barId
-    if (barId != null && barId != _selectedBarId) {
-      // Argument barId should take precedence
-      setState(() {
-        _selectedBarId = barId;
-        _isGridView = false;
-      });
-
-      // Save this new barId to shared preferences
-      await _saveSelectedBar(barId);
-    } else if (savedBarId != null && _selectedBarId == null) {
-      // No new barId, so use the saved one
-      setState(() {
-        _selectedBarId = savedBarId;
-        _isGridView = false;
-      });
-    }
+  void initState() {
+    super.initState();
+    _pageController = PageController(); // Initialize the controller
   }
 
   @override
@@ -66,8 +31,7 @@ class PickupPageState extends State<PickupPage> {
       body: SafeArea(
         child: Column(
           children: [
-            if (_isGridView) _buildHeader(),
-            if (!_isGridView) _buildHeader2(),
+            _buildHeader(),
             Expanded(
               child: Consumer<Hierarchy>(
                 builder: (context, hierarchy, child) {
@@ -90,18 +54,29 @@ class PickupPageState extends State<PickupPage> {
                     );
                   }
 
-                  if (_isGridView) {
-                    return _buildGridView(orders);
-                  } else if (_selectedBarId != null) {
-                    return _buildCardView(_selectedBarId!);
-                  } else {
-                    return const Center(
-                      child: Text(
-                        'Select a bar to view details.',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    );
-                  }
+                  return Consumer<LocalDatabase>(
+                    builder: (context, localDatabase, child) {
+                      return RefreshIndicator(
+                        onRefresh: () => _refreshOrders(context),
+                        color: Colors.black,
+                        child: PageView.builder(
+                          controller: _pageController,
+                          scrollDirection: Axis.vertical,
+                          itemCount: orders.length,
+                          itemBuilder: (context, verticalIndex) {
+                            final barId = orders[verticalIndex];
+                            final order = localDatabase.getOrderForBar(barId);
+
+                            if (order == null) {
+                              return const SizedBox(); // Skip if no order is found for the barId
+                            }
+
+                            return _buildOrderCard(order);
+                          },
+                        ),
+                      );
+                    },
+                  );
                 },
               ),
             ),
@@ -122,530 +97,349 @@ class PickupPageState extends State<PickupPage> {
           ),
         ),
       ),
-      child: Row(children: [
-        const Spacer(),
-        Text(
-          'Orders',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontSize: 23,
-            fontWeight: FontWeight.bold,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Orders',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 23,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const Spacer()
-      ]),
+        ],
+      ),
     );
   }
 
- Widget _buildHeader2() {
-  return Consumer<LocalDatabase>(
-    builder: (context, localDatabase, child) {
-      final barId = _selectedBarId ?? 'defaultBarId';
-      final order = localDatabase.getOrderForBar(barId);
-      final points = localDatabase.getPointsForBar(barId)?.points ?? 0;
+  Future<void> _refreshOrders(BuildContext context) async {
+    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+    hierarchy.sendRefreshMessage(context);
+    debugPrint('Order list has been refreshed.');
+  }
 
-      if (order == null) {
-        debugPrint('No order found for barId: $barId');
-        return const Center(
-          child: Text(
-            '',
-            style: TextStyle(color: Colors.white),
-          ),
-        );
-      }
+  Widget _buildOrderCard(CustomerOrder order) {
+    final bar = LocalDatabase.getBarById(order.barId);
 
-
-      return Container(
-        height: 55,
-        decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.grey.withOpacity(0.3),
-            width: 0.2078,
-          ),
-        ),
-      ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      color: Colors.black,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 45),
+          Column(
             children: [
-              GestureDetector(
-                onTap: () {
-                  _clearSelectedBar(); // Clear selected bar
-                  setState(() {
-                    _isGridView = true; // Switch to grid view
-                  });
-                },
-                child: Container(
-                  color: Colors.transparent,
-                  height: 50, // Increase touch area height
-                  width: 50, // Increase touch area width
-                  alignment: Alignment.centerLeft, // Align icon to the left
-                  child: const Icon(Icons.close, color: Colors.white, size: 30),
+              ClipOval(
+                child: CachedNetworkImage(
+                  imageUrl: bar?.tagimg ??
+                      'https://www.barzzy.site/images/default.png',
+                  fit: BoxFit.cover,
+                  width: 100,
+                  height: 100,
                 ),
               ),
-              IconButton(
-                icon: Icon(
-                  FontAwesomeIcons.solidStar,
-                  // Update color based on order points usage
-                  color: order.getPoints() ? Colors.amber : Colors.white24,
-                  size: 21.5,
+              const SizedBox(height: 15),
+              Text(
+                bar?.name ?? 'No Tag',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
                 ),
-                onPressed: () {
-                  Flushbar(
-                    messageText: Row(
-                      children: [
-                        const Spacer(),
-                        Icon(
-                            Icons.star,
-                            color: order.getPoints() ? Colors.amber : Colors.white24,
-                          ),
-                          const SizedBox(width: 7),
-                        Text(
-                          "You have $points points!",
-                          style: const TextStyle(
-                            color: Colors.white, // Customize the message color
-                            fontSize: 16,
-                          ),
-                          textAlign: TextAlign
-                              .center, // Ensure the text is centered within the widget
-                        ),
-                          const Spacer(),
-                      ],
-                    ),
-                    backgroundColor: Colors.black,
-                    duration: const Duration(seconds: 1),
-                    flushbarPosition: FlushbarPosition.TOP,
-                    borderRadius: BorderRadius.circular(8),
-                    margin: const EdgeInsets.all(10),
-                  ).show(context);
-                },
-              )
+              ),
             ],
           ),
-        ),
-      );
-    },
-  );
-}
-
-  Widget _buildGridView(List<String> barIds) {
-    return RefreshIndicator(
-      onRefresh: () => _refreshCardView(context),
-      color: Colors.black,
-      child: SingleChildScrollView(
-        child: SizedBox(
-          height: 667,
-          child: GridView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 5.0,
-              mainAxisSpacing: 10.0,
-              childAspectRatio: .1,
-            ),
-            padding: const EdgeInsets.only(top: 30),
-            itemCount: barIds.length,
-            itemBuilder: (context, index) {
-              final barId = barIds[index];
-              final bar = LocalDatabase.getBarById(barId);
-
-              return GestureDetector(
-                onTap: () {
-                  debugPrint('Grid item tapped. Bar ID: $barId');
-                  _saveSelectedBar(barId); // Save the selected bar ID
-                  setState(() {
-                    _selectedBarId = barId;
-                    _isGridView = false; // Switch to card view
-                  });
-                },
-                child: Column(
-                  children: [
-                    Container(
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                      ),
-                      child: ClipOval(
-                        child: CachedNetworkImage(
-                          imageUrl: bar?.tagimg ??
-                              'https://www.barzzy.site/images/default.png',
-                          fit: BoxFit.cover,
-                          width: 105, // Adjust as needed
-                          height: 105, // Adjust as needed
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Flexible(
-                      child: Text(
-                        bar?.tag ?? 'No Tag',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                        ),
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis, // Handle long text
-                        maxLines: 1, // Ensure text doesn't overflow
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCardView(String barId) {
-    final bar = LocalDatabase.getBarById(barId);
-    final localDatabase = LocalDatabase();
-    final order = localDatabase.getOrderForBar(barId);
-
-    if (bar == null || order == null) {
-      return const Center(
-        child: CircularProgressIndicator(
-          color: Colors.white,
-        ),
-      );
-    }
-
-    final status = order.status;
-    final claimer = order.claimer;
-    final userId = order.userId;
-
-    return GestureDetector(
-      onLongPress: () {
-        final hierarchy = Provider.of<Hierarchy>(context, listen: false);
-        if (status == "delivered" || status == "canceled") {
-          _showReorderDialog(order, context);
-          HapticFeedback.heavyImpact();
-        } else if (status == "unready" && claimer.isEmpty) {
-          //hierarchy.cancelOrder(int.parse(barId), userId);
-          hierarchy.cancelOrder(order);
-          HapticFeedback.heavyImpact();
-        }
-      },
-      child: RefreshIndicator(
-      onRefresh: () => _refreshCardView(context),
-      color: Colors.black,
-        child: SingleChildScrollView(
-          child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-            child: Stack(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(60),
-                          child: CachedNetworkImage(
-                            imageUrl: bar.tagimg ??
-                                'https://www.barzzy.site/images/default.png',
-                            width: 105,
-                            height: 105,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: Text(
-                          bar.getName() ?? 'Unknown',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 60),
-                      SizedBox(
-                        height: 409,
-                        child: ListView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: order.drinks.length,
-                          itemBuilder: (context, index) {
-                            final drinkOrder = order.drinks[index];
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 4.0),
-                              child: Center(
-                                child: Text(
-                                  '${drinkOrder.drinkName} x ${drinkOrder.quantity}',
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                if (status != "delivered" &&
-                    status != "canceled" &&
-                    claimer != "" &&
-                    status != "unready")
-                  Positioned(
-                    bottom: 30,
-                    left: 0,
-                    child: Text(
-                      '#${order.getUser() ?? '...'}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 35,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-
-                Positioned(
-                  bottom: 31.5,
-                  right: 0,
-                  child: _buildStatusButton(
-                      status, claimer, int.parse(barId), userId, context),
-                ),
-
-                if (status == "unready" && claimer.isNotEmpty)
-                  Positioned(
-                    bottom: 45,
-                    right: 0,
-                    left: 15,
-                    child: Column(
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 25),
-                          child: Center(
-                            child: SpinKitThreeBounce(
-                              color: Colors.white,
-                              size: 25,
-                            ),
-                          ),
-                        ),
-                        Center(
-                          child: Text(
-                            '#${order.getUser() ?? '...'} IS BEING PREPARED @$claimer',
-                            style: const TextStyle(
-                                color: Color.fromARGB(255, 255, 241, 118),
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-
-                if (status == "ready" && claimer.isNotEmpty)
-                  const Positioned(
-                    bottom: 80,
-                    right: 0,
-                    left: 15,
-                    child: Center(
-                        child: Text(
-                      'READY',
-                      style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold),
-                    )),
-                  ),
-
-                // Add "HOLD TO CANCEL" text at the bottom
-                if (status == "unready" && claimer.isEmpty)
-                  const Positioned(
-                    bottom: 45,
-                    left: 0,
-                    right: 0,
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.only(bottom: 25),
-                          child: Center(
-                            child: SpinKitThreeBounce(
-                              color: Colors.white,
-                              size: 25,
-                            ),
-                          ),
-                        ),
-                        Center(
-                          child: Text(
-                            'HOLD TO CANCEL ORDER',
-                            style: TextStyle(
-                                color: Color.fromARGB(255, 255, 137, 129),
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // Add "HOLD TO REORDER" text for delivered or canceled orders
-                if (status == "delivered" || status == "canceled")
-                  const Positioned(
-                    bottom: 45,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Text(
-                        'HOLD TO REORDER',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showReorderDialog(CustomerOrder order, BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        backgroundColor: Colors.black,
-        title: const Center(
-          child: Text(
-            'Reorder Options',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 22,
-              ),
-          ),
-        ),
-        content: const Text(
-          'Would you like to pay with points or regular pricing?',
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: 16
-          ),
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-
+          const SizedBox(height: 35),
+          _buildStatusBar(order.status, order.claimer),
+          const SizedBox(height: 35),
           Row(
             children: [
               const Spacer(),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close the dialog
-              _triggerReorder(order, context, false); // Pay with regular pricing
-            },
-            child: const Text(
-              'Regular',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 17
-                ),
-            ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Text(
+                    'Order #${order.userId}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 21,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    'Station: ${order.claimer.isNotEmpty ? order.claimer : 'N/A'}',
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 21,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+            ],
           ),
-           const Spacer(),
-           TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close the dialog
-              _triggerReorder(order, context, true); // Pay with points
-            },
-            child: const Text(
-              'Points',
-              style: TextStyle(
-                color: Colors.amber,
-                fontSize: 17),
-            ),
+          const SizedBox(height: 25),
+          const Divider(color: Colors.white, thickness: .25),
+          const Spacer(),
+          Column(
+            children: order.drinks.map((drinkOrder) {
+              return Text(
+                '${drinkOrder.drinkName} x ${drinkOrder.quantity}',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16,
+                ),
+              );
+            }).toList(),
           ),
           const Spacer(),
-          ],)
-          
+          _buildBottomButton(order),
+          const Spacer(),
         ],
-      );
-    },
-  );
-}
+      ),
+    );
+  }
 
-  // Method to trigger reorder by creating an order
- void _triggerReorder(CustomerOrder order, BuildContext context, bool usePoints) async {
-  final hierarchy = Provider.of<Hierarchy>(context, listen: false);
-  final loginCache = Provider.of<LoginCache>(context, listen: false);
-  final userId = await loginCache.getUID();
+  Widget _buildStatusBar(String status, String claimer) {
+    // Define colors and icons for each stage
+    Color inactiveColor = Colors.grey;
+    Color inQueueColor = Colors.orange;
+    Color claimedColor = Colors.yellow;
+    Color readyColor = Colors.green;
 
-  // Construct the order object with selected payment method
-  final reorder = {
-    "action": "create",
-    "barId": int.parse(order.barId),
-    "userId": userId,
-    "points": usePoints, // Set points based on user choice
-    "drinks": order.drinks.map((drinkOrder) {
-      return {
-        'drinkId': int.parse(drinkOrder.id),
-        'quantity': int.parse(drinkOrder.quantity),
-      };
-    }).toList(),
-  };
+    IconData inQueueIcon = Icons.access_time;
+    IconData claimedIcon = Icons.directions_run;
+    IconData readyIcon = Icons.check_circle;
 
-  // Send the order to the backend
-  hierarchy.createOrder(reorder);
-}
+    bool isInQueue = status == "unready" && claimer.isEmpty;
+    bool isClaimed = status == "unready" && claimer.isNotEmpty;
+    bool isReady = status == "ready" && claimer.isNotEmpty;
+    bool isDeliveredOrCanceled =
+        (status == "delivered" || status == "canceled") && claimer.isNotEmpty;
 
-  // Method to build the dynamic button based on status and claimer
-  Widget _buildStatusButton(String status, String claimer, int barId,
-      int userId, BuildContext context) {
-    // Case: Status is "ready" and claimer is not empty
-    if (status == "ready" && claimer.isNotEmpty) {
-      return Text(
-        '@$claimer',
-        style: const TextStyle(
-          color: Colors.green,
-          fontWeight: FontWeight.bold,
-          fontSize: 34.5,
+    if (isDeliveredOrCanceled) {
+      return ElevatedButton(
+        onPressed: () {},
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.grey[700],
+        ),
+        child: Text(
+          status == "delivered" ? "Delivered" : "Canceled",
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+          ),
         ),
       );
     }
 
-    // Case: Status is "delivered" or "canceled"
-    if (status == "delivered" || status == "canceled") {
-      return Container(); // No button needed in this state, only "HOLD TO ORDER AGAIN" text is shown.
+    Color queueColor;
+    Color claimedStageColor;
+    Color readyStageColor;
+    Color firstConnectorColor;
+    Color secondConnectorColor;
+
+    if (isReady) {
+      queueColor = readyColor;
+      claimedStageColor = readyColor;
+      readyStageColor = readyColor;
+      firstConnectorColor = readyColor;
+      secondConnectorColor = readyColor;
+    } else if (isClaimed) {
+      queueColor = claimedColor;
+      claimedStageColor = claimedColor;
+      readyStageColor = inactiveColor;
+      firstConnectorColor = claimedColor;
+      secondConnectorColor = inactiveColor;
+    } else if (isInQueue) {
+      queueColor = inQueueColor;
+      claimedStageColor = inactiveColor;
+      readyStageColor = inactiveColor;
+      firstConnectorColor = inactiveColor;
+      secondConnectorColor = inactiveColor;
+    } else {
+      queueColor = inactiveColor;
+      claimedStageColor = inactiveColor;
+      readyStageColor = inactiveColor;
+      firstConnectorColor = inactiveColor;
+      secondConnectorColor = inactiveColor;
     }
 
-    // Default case if none of the conditions match
-    return Container();
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Column(
+          children: [
+            Icon(
+              inQueueIcon,
+              color: queueColor,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "In Queue",
+              style: TextStyle(
+                fontSize: 12,
+                color: queueColor,
+              ),
+            ),
+          ],
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 15.0),
+            child: Container(
+              height: 2,
+              color: firstConnectorColor,
+            ),
+          ),
+        ),
+        Column(
+          children: [
+            Icon(
+              claimedIcon,
+              color: claimedStageColor,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Claimed",
+              style: TextStyle(
+                fontSize: 12,
+                color: claimedStageColor,
+              ),
+            ),
+          ],
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 15.0),
+            child: Container(
+              height: 2,
+              color: secondConnectorColor,
+            ),
+          ),
+        ),
+        Column(
+          children: [
+            Icon(
+              readyIcon,
+              color: readyStageColor,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Ready",
+              style: TextStyle(
+                fontSize: 12,
+                color: readyStageColor,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomButton(CustomerOrder order) {
+    Color activeColor;
+    if (order.status == "ready" && order.claimer.isNotEmpty) {
+      activeColor = Colors.green;
+    } else if (order.status == "unready" && order.claimer.isNotEmpty) {
+      activeColor = Colors.yellow;
+    } else if (order.status == "unready" && order.claimer.isEmpty) {
+      activeColor = Colors.orange;
+    } else {
+      activeColor = Colors.grey;
+    }
+
+    if ((order.status == "delivered" || order.status == "canceled") &&
+        order.claimer.isNotEmpty) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildReorderButton("Reorder with \$", false, order),
+          _buildReorderButton("Reorder with pts", true, order),
+        ],
+      );
+    } else if (order.status == "unready") {
+      return Center(
+        child: SpinKitThreeBounce(
+          color: activeColor,
+          size: 25,
+        ),
+      );
+    } else if (order.status == "ready" && order.claimer.isNotEmpty) {
+      return Center(
+        child: SizedBox(
+          height: 40,
+          child: AnimatedTextKit(
+            animatedTexts: [
+              FadeAnimatedText(
+                'Order #${order.userId} is ready',
+                textStyle: GoogleFonts.poppins(
+                  color: activeColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                duration: const Duration(milliseconds: 3000),
+              ),
+            ],
+            isRepeatingAnimation: true,
+            repeatForever: true,
+          ),
+        ),
+      );
+    } else {
+      return Container();
+    }
+  }
+
+  Widget _buildReorderButton(String label, bool usePoints, CustomerOrder order) {
+    return GestureDetector(
+      onTap: () => _triggerReorder(order, usePoints),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                color: Colors.black,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _triggerReorder(CustomerOrder order, bool usePoints) async {
+    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+    final reorder = {
+      "action": "create",
+      "barId": int.parse(order.barId),
+      "userId": order.userId,
+      "points": usePoints,
+      "drinks": order.drinks.map((drinkOrder) {
+        return {
+          'drinkId': int.parse(drinkOrder.id),
+          'quantity': int.parse(drinkOrder.quantity),
+        };
+      }).toList(),
+    };
+
+    hierarchy.createOrder(reorder);
+    _pageController.jumpToPage(0);
   }
 }
-
-// Method to save the selected bar from shared preferences
-
-Future<void> _saveSelectedBar(String barId) async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('selected_bar_id', barId);
-}
-
-// Method to clear the selected bar from shared preferences
-Future<void> _clearSelectedBar() async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.remove('selected_bar_id');
-}
-
-Future<void> _refreshCardView(BuildContext context) async {
-  final hierarchy = Provider.of<Hierarchy>(context, listen: false);
-  hierarchy.sendRefreshMessage(context);
-  debugPrint('Card view has been refreshed.');
-}
-
-

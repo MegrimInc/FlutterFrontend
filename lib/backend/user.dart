@@ -192,7 +192,8 @@ class User extends ChangeNotifier {
         if (drinkId != null) {
           Drink drink = Drink.fromJson(drinkJson);
           localDatabase.addDrink(drink);
-          //debugPrint('Added drink with ID: $drinkId to bar $barId');
+         
+          debugPrint('Drink with ID: ${drink.id} added to LocalDatabase.');
 
           if (drink.image.isNotEmpty) {
             final cachedImage = CachedNetworkImageProvider(drink.image);
