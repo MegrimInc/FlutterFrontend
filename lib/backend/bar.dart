@@ -7,6 +7,7 @@ class Bar {
   String? tagimg;
   String? barimg;
   String? openhours;
+   Map<String, String?>? happyHours;
   
 
   Bar(
@@ -17,7 +18,8 @@ class Bar {
       this.tag,
       this.tagimg,
       this.barimg,
-      this.openhours
+      this.openhours,
+      this.happyHours,
       }
       );
 
@@ -41,7 +43,8 @@ class Bar {
       'barTag': tag,
       'tagImage': tagimg,
       'barImage': barimg,
-      'openHours': openhours
+      'openHours': openhours,
+      'happyHours': happyHours,
       
     };
   }
@@ -56,6 +59,9 @@ class Bar {
       tagimg: json['tagImage'] as String?,
       barimg: json['barImage'] as String?,
       openhours: json['openHours'] as String?,
+      happyHours: json['happyHours'] != null
+          ? Map<String, String?>.from(json['happyHours'])
+          : null, // Deserialize happy hours map
     );
   }
 

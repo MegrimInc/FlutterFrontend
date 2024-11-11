@@ -8,7 +8,6 @@ import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/MenuPage/drinkfeed.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -408,17 +407,7 @@ if (drinkIds.length <= 3) {
                     final cart = Provider.of<Cart>(context, listen: false);
                     Navigator.of(context).push(_createRoute(drink, cart));
                   },
-                  onLongPress: () {
-                    final cart = Provider.of<Cart>(context, listen: false);
-                    HapticFeedback.heavyImpact();
-
-                    if (cart.getTotalDrinkCount() < 3) {
-                      Navigator.of(context).push(
-                        _createRoute(drink, cart, targetPage: 1),
-                      );
-                    }
-                    cart.addDrink(drink.id, context);
-                  },
+        
                   child: Column(
                     children: [
                       Expanded(
@@ -436,7 +425,7 @@ if (drinkIds.length <= 3) {
                                 child: Consumer<Cart>(
                                   builder: (context, cart, _) {
                                     int drinkQuantities =
-                                        cart.getDrinkQuantity(drink.id);
+                                        cart.getTotalQuantityForDrink(drink.id);
 
                                     if (drinkQuantities > 0) {
                                       return Container(

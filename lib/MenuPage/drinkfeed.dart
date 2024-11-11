@@ -42,6 +42,7 @@ class DrinkFeedState extends State<DrinkFeed>
   late Animation<double> _blurAnimation;
   late PageController _pageController; // Controller for the PageView
   final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
+  final List<int> simpleCategoryTags = [179, 186, 183, 184, 178, 181];
 
   @override
   void initState() {
@@ -117,10 +118,9 @@ class DrinkFeedState extends State<DrinkFeed>
 
             if (dy.abs() > swipeThreshold) {
               if (dy < 0) {
-                //widget.cart.addDrink(widget.drink.id, context);
                 Navigator.of(context).pop();
               } else if (dy > 0) {
-                //widget.cart.removeDrink(widget.drink.id);
+                // Possible action on swipe down
               }
             }
           },
@@ -141,183 +141,225 @@ class DrinkFeedState extends State<DrinkFeed>
                   color: Colors.black.withOpacity(0.2),
                 ),
               ),
-
-              // PageView with the content
               SafeArea(
                 child: Column(
                   children: [
-                    _buildHeader(
-                      context,
-                    ),
+                    //const SizedBox(height: 20),
+                    _buildHeader(context),
                     Expanded(
                       child: Consumer<Cart>(
                         builder: (context, cart, _) {
-                          return PageView.builder(
+                          final hasItems = cart.getTotalDrinkCount() > 0;
+                          final totalPrice = cart.calculateTotalDollars();
+                          final totalPoints = cart.calculateTotalPoints();
+
+                          String totalText;
+                          if (totalPrice > 0 && totalPoints > 0) {
+                            totalText =
+                                'Total: \$${totalPrice.toStringAsFixed(2)} and ${totalPoints.toInt()} pts';
+                          } else if (totalPrice > 0) {
+                            totalText =
+                                'Total: \$${totalPrice.toStringAsFixed(2)}';
+                          } else if (totalPoints > 0) {
+                            totalText = 'Total: ${totalPoints.toInt()} pts';
+                          } else {
+                            totalText = '';
+                          }
+
+                          return PageView(
                             controller: _pageController,
-                            itemCount: cart.getTotalDrinkCount() == 0 ? 1 : 2,
                             onPageChanged: (int page) {
                               _currentPageNotifier.value =
                                   page; // Notify the change
                             },
-                            itemBuilder: (context, index) {
-                              if (index == 0) {
-                                // First page: Full content
-                                return Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    const SizedBox(height: 20),
-                                    Center(
-                                      child: SizedBox(
-                                        height: 40,
-                                        child: Consumer<Cart>(
-                                          builder: (context, cart, _) {
-                                            return cart.getTotalDrinkCount() ==
-                                                    0
-                                                ? const SizedBox()
-                                                : Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            top: 12),
-                                                    child: AnimatedTextKit(
-                                                      animatedTexts: [
-                                                        FadeAnimatedText(
-                                                          'Swipe Left To View Summary',
-                                                          textStyle: GoogleFonts
-                                                              .poppins(
-                                                            color:
-                                                                Colors.white54,
-                                                            fontSize: 21,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                          ),
-                                                          duration:
-                                                              const Duration(
-                                                                  milliseconds:
-                                                                      3000),
-                                                        ),
-                                                      ],
-                                                      isRepeatingAnimation:
-                                                          true, // Repeat animation
-                                                      repeatForever:
-                                                          true, // Loop infinitely
-                                                    ),
-                                                  );
-                                          },
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    child: _buildDrinkInfo(context),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 50),
+                                    child:
+                                        _buildQuantityControlButtons(context),
+                                  ),
+                                  _buildBottomBar(context),
+                                  const SizedBox(height: 25),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const SizedBox(height: 25),
+                                  Consumer<LocalDatabase>(
+                                    builder: (context, localDatabase, _) {
+                                      final pointBalance = localDatabase
+                                              .getPointsForBar(widget.barId)
+                                              ?.points ??
+                                          0;
+                                      return Center(
+                                        child: SizedBox(
+                                          height: 30,
+                                          child: AnimatedTextKit(
+                                            animatedTexts: [
+                                              FadeAnimatedText(
+                                                'Available Balance: $pointBalance pts',
+                                                textStyle: GoogleFonts.poppins(
+                                                  color: Colors.white54,
+                                                  fontSize: 21,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                duration: const Duration(
+                                                    milliseconds: 3000),
+                                              ),
+                                            ],
+                                            isRepeatingAnimation: true,
+                                            repeatForever: true,
+                                          ),
                                         ),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(height: 50),
+                                  Center(
+                                    child: Text(
+                                      'Summary:',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontSize: 25,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
+                                  ),
+                                  hasItems
+                                      ? const SizedBox(height: 25)
+                                      : const Spacer(),
+                                  if (hasItems)
+                                    // Inside your PageView's summary section
                                     Expanded(
-                                      child: _buildDrinkInfo(context),
-                                    ),
-                                    Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 30),
-                                      child:
-                                          _buildQuantityControlButtons(context),
-                                    ),
-                                    _buildBottomBar(context),
-                                    const SizedBox(height: 25),
-                                  ],
-                                );
-                              } else {
-                                // Summary page: Display cart items with dynamic price and points
-                                return Consumer<Cart>(
-                                  builder: (context, cart, _) {
-                                    final cartItems = cart.barCart.keys
-                                        .toList(); // Get unique drink IDs
+                                      flex:
+                                          20, // Allows the list area to occupy more space
+                                      child: SingleChildScrollView(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children:
+                                              cart.barCart.keys.map((drinkId) {
+                                            return Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.center,
+                                              children: cart
+                                                  .barCart[drinkId]!.entries
+                                                  .map((entry) {
+                                                final drink = LocalDatabase()
+                                                    .getDrinkById(drinkId);
+                                                final drinkName =
+                                                    entry.value > 1
+                                                        ? '${drink.name}s'
+                                                        : drink.name;
 
-                                    return Column(
-                                      children: [
-                                        const SizedBox(height: 75),
-                                        Text(
-                                          'Summary:',
-                                          style: GoogleFonts.poppins(
-                                            color: Colors.white,
-                                            fontSize: 25,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 50),
-                                        for (var drinkId in cartItems)
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 8.0),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Expanded(
-                                                  child: Column(
-                                                    children: [
-                                                      Builder(
-                                                        builder: (context) {
-                                                          Drink? drink =
-                                                              LocalDatabase()
-                                                                  .getDrinkById(
-                                                                      drinkId);
-                                                          int quantity = cart
-                                                              .getDrinkQuantity(
-                                                                  drinkId);
-                                                          double ptPrice = cart
-                                                              .calculatePriceForDrinkInPoints(
-                                                                  drinkId);
-                                                          double regPrice = cart
-                                                              .calculatePriceForDrink(
-                                                                  drinkId);
+                                                // Determine if the size label should be omitted
+                                                bool shouldOmitSizeLabel(
+                                                    Drink drink) {
+                                                  return drink.tagId
+                                                      .map((tag) =>
+                                                          int.tryParse(tag) ??
+                                                          -1)
+                                                      .any((tag) =>
+                                                          simpleCategoryTags
+                                                              .contains(tag));
+                                                }
 
-                                                          return Center(
-                                                            child: Text(
-                                                              '$quantity ${quantity > 1 ? "${drink.name}s" : drink.name} - \$$regPrice or ${ptPrice.toInt()} pts',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontSize: 18,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                              ),
-                                                              textAlign:
-                                                                  TextAlign
-                                                                      .center,
-                                                              softWrap:
-                                                                  true, // Enables wrapping
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .visible,
-                                                            ),
-                                                          );
-                                                        },
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(Icons.delete,
-                                                      color: Colors.white),
-                                                  onPressed: () {
-                                                    cart.removeDrink(drinkId);
+                                                // Conditionally display size label based on shouldOmitSizeLabel
+                                                final sizeText =
+                                                    shouldOmitSizeLabel(drink)
+                                                        ? '' // Omit (single)/(double) for specified categories
+                                                        : (entry.key.contains(
+                                                                "single")
+                                                            ? " (single)"
+                                                            : " (double)");
+
+                                                final priceOrPoints = entry.key
+                                                        .contains("points")
+                                                    ? "${(entry.value * drink.points).toInt()} pts"
+                                                    : "\$${(entry.value * drink.price).toStringAsFixed(2)}";
+
+                                                return GestureDetector(
+                                                  onTap: () {
+                                                    _showQuantityRemovalDialog(
+                                                        context,
+                                                        drink, // Pass the Drink object
+                                                        entry
+                                                            .key, // Pass the type key (e.g., single_points or double_dollars)
+                                                        entry
+                                                            .value // Pass the quantity of this specific drink type
+                                                        );
                                                   },
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        const Spacer(),
-                                        const Padding(
-                                          padding: EdgeInsets.all(30),
-                                          child: Divider(
-                                              color: Colors.white54,
-                                              thickness: .5),
+                                                  child: Padding(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        vertical: 4.0),
+                                                    child: Text(
+                                                      '${entry.value} $drinkName$sizeText - $priceOrPoints',
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        color: Colors.white70,
+                                                        fontSize: 18,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                    ),
+                                                  ),
+                                                );
+                                              }).toList(),
+                                            );
+                                          }).toList(),
                                         ),
-                                        _buildPriceOptionButtons(context),
-                                        const SizedBox(height: 150),
-                                      ],
-                                    );
-                                  },
-                                );
-                              }
-                            },
+                                      ),
+                                    )
+                                  else
+                                    Center(
+                                      child: Text(
+                                        'Your cart is currently empty.',
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.white70,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  const Spacer(),
+                                  const Padding(
+                                    padding:
+                                        EdgeInsets.fromLTRB(30, 7.5, 30, 15),
+                                    child: Divider(
+                                      color: Colors.white54,
+                                      thickness: 0.5,
+                                    ),
+                                  ),
+                                  Center(
+                                    child: Text(
+                                      totalText, // Displays "Total: $6.99 and 500 pts" or equivalent
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  const SizedBox(height: 50),
+                                  _buildPriceOptionButtons(context),
+                                  if (hasItems) const SizedBox(height: 132),
+                                  if (!hasItems) const SizedBox(height: 75),
+                                  const Spacer(),
+                                ],
+                              ),
+                            ],
                           );
                         },
                       ),
@@ -333,96 +375,130 @@ class DrinkFeedState extends State<DrinkFeed>
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Consumer<Cart>(
-      builder: (context, cart, _) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  Navigator.of(context).pop();
-                  FocusScope.of(context).unfocus();
-                },
-                child: Container(
-                  color: Colors.transparent,
-                  width: 75,
-                  height: 50,
-                  alignment: Alignment.centerLeft,
-                  child: const Icon(Icons.close, size: 29, color: Colors.white),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const SizedBox(
+            height: 50),
+          ValueListenableBuilder<int>(
+            valueListenable: _currentPageNotifier,
+            builder: (context, currentPage, child) {
+              return SizedBox(
+                child: Text(
+                  '${currentPage + 1} / 2 ', // Updates to show the current page out of total pages
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              ValueListenableBuilder<int>(
-                valueListenable: _currentPageNotifier,
-                builder: (context, currentPage, child) {
-                  return currentPage == 0
-                      ? Text(
-                          '1 / 2 ',
-                          style: TextStyle(
-                            color: cart.getTotalDrinkCount() == 0
-                                ? Colors.transparent
-                                : Colors.white, // Transparent if no drinks
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        )
-                      : Text(
-                          '2 / 2 ',
-                          style: TextStyle(
-                            color: cart.getTotalDrinkCount() == 0
-                                ? Colors.transparent
-                                : Colors.white, // Transparent if no drinks
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        );
-                },
-              ),
-            ],
+              );
+            },
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
   Widget _buildDrinkInfo(BuildContext context) {
     return Center(
       child: Column(
+        children: [
+          Expanded(
+            child: Column(
+              children: [
+                const SizedBox(height: 22),
+                SizedBox(
+                  height: 30,
+                  child: AnimatedTextKit(
+                    animatedTexts: [
+                      FadeAnimatedText(
+                        'Swipe Left To View Cart',
+                        textStyle: GoogleFonts.poppins(
+                          color: Colors.white54,
+                          fontSize: 21,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        duration: const Duration(milliseconds: 3000),
+                      ),
+                    ],
+                    isRepeatingAnimation: true, // Repeat animation
+                    repeatForever: true, // Loop infinitely
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 8,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  widget.drink.name,
+                  style: GoogleFonts.playfairDisplay(
+                    color: Colors.white,
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+
+
+                Consumer<Cart>(
+    builder: (context, cart, _) {
+      final totalQuantity = cart.getTotalQuantityForDrink(widget.drink.id);
+
+      return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            widget.drink.name,
-            style: GoogleFonts.playfairDisplay(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
+          if (totalQuantity > 0)
+            GestureDetector(
+              onTap: () {
+                cart.undoLastAddition(widget.drink.id);
+              },
+              child: const Icon(
+                Icons.remove_circle,
+                color: Colors.white,
+                size: 30
+                ),
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(width: 8), // Add some space between icons
           Text(
-            'ABV: ${widget.drink.alcohol}%',
+            '$totalQuantity', // Display the quantity count
             style: GoogleFonts.poppins(
               color: Colors.white70,
-              fontSize: 20,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 24),
-          _buildPriceInfo(),
-          const SizedBox(height: 24),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 25, right: 25),
-              child: Text(
-                widget.drink.description,
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.normal,
+          const SizedBox(width: 8),
+          
+        ],
+      );
+    },
+  ),
+                const SizedBox(height: 24),
+                _buildPriceInfo(),
+                const SizedBox(height: 24),
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 25, right: 25),
+                    child: Text(
+                      widget.drink.description,
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.normal,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
+              ],
             ),
           ),
         ],
@@ -431,192 +507,383 @@ class DrinkFeedState extends State<DrinkFeed>
   }
 
   Widget _buildPriceInfo() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Consumer<Cart>(
-          builder: (context, cart, _) {
-            return _buildPriceCard(
-              'Regular',
-              widget.drink.price,
-              showDollarSign: true, // Always show $ for regular price
-              targetPage: 1,
-              cart: cart,
-            );
-          },
-        ),
-        const SizedBox(width: 16),
-        Consumer<Cart>(
-          builder: (context, cart, _) {
-            return _buildPriceCard(
-              '   Points    ',
-              widget.drink.points, // Assuming points price
-              showDollarSign: false, // Never show $ for points
-              targetPage: 1,
-              cart: cart,
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPriceCard(
-    String label,
-    num price, {
-    required bool showDollarSign,
-    required int targetPage, // Page to swipe to
-    required Cart cart,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white24,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+    return Consumer<Cart>(
+      builder: (context, cart, _) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: () {
+                cart.toggleAddWithPoints();
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color:
+                      !cart.isAddingWithPoints ? Colors.white : Colors.white24,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Regular',
+                      style: GoogleFonts.poppins(
+                        color: cart.isAddingWithPoints
+                            ? Colors.white
+                            : Colors.black,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      '\$${widget.drink.price.toStringAsFixed(2)}',
+                      style: GoogleFonts.poppins(
+                        color: cart.isAddingWithPoints
+                            ? Colors.white70
+                            : Colors.black,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-          Text(
-            // Display price or points based on context
-            showDollarSign
-                ? '\$${price.toStringAsFixed(2)}' // Always display price as double with $ sign
-                : '${price.toInt()}', // Always display points as integer with no $ sign
-            style: GoogleFonts.poppins(
-              color: Colors.white70,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+            const SizedBox(width: 16),
+            GestureDetector(
+              onTap: () {
+                cart.toggleAddWithPoints();
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color:
+                      cart.isAddingWithPoints ? Colors.white : Colors.white24,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '   Points   ',
+                      style: GoogleFonts.poppins(
+                        color: cart.isAddingWithPoints
+                            ? Colors.black
+                            : Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      '${widget.drink.points}',
+                      style: GoogleFonts.poppins(
+                        color: cart.isAddingWithPoints
+                            ? Colors.black
+                            : Colors.white70,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildQuantityControlButtons(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          FloatingActionButton(
-            heroTag: 'decrease',
-            backgroundColor: Colors.white54,
-            shape: const CircleBorder(),
-            onPressed: () {
-              widget.cart.removeDrink(widget.drink.id);
+    // Check if the current drink's tag ID matches any in simpleCategoryTags
+    final bool isSimpleCategory = widget.drink.tagId
+        .any((tag) => simpleCategoryTags.contains(int.parse(tag)));
+
+    return isSimpleCategory
+        ? _buildSimpleQuantityButtons(context)
+        : _buildRegularQuantityButtons(context);
+  }
+
+  Widget _buildRegularQuantityButtons(BuildContext context) {
+    return Consumer<Cart>(
+      builder: (context, cart, _) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            // Add 1 Double Button
+            GestureDetector(
+              onTap: () {
+                widget.cart.addDrink(
+                  widget.drink.id,
+                  isDouble: true,
+                  usePoints: cart.isAddingWithPoints,
+                );
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Add 1 Double',
+                  style: GoogleFonts.poppins(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+
+            // Add 1 Single Button
+            GestureDetector(
+              onTap: () {
+                widget.cart.addDrink(
+                  widget.drink.id,
+                  isDouble: false,
+                  usePoints: cart.isAddingWithPoints,
+                );
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  ' Add 1 Single ',
+                  style: GoogleFonts.poppins(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSimpleQuantityButtons(BuildContext context) {
+    return Consumer<Cart>(
+      builder: (context, cart, _) {
+        const isDouble = false; // Always assume single for this menu
+        final usePoints = cart.isAddingWithPoints;
+
+        return Center(
+          child: GestureDetector(
+            onTap: () {
+              widget.cart.addDrink(widget.drink.id,
+                  isDouble: isDouble, usePoints: usePoints);
             },
-            child: const Icon(Icons.remove, color: Colors.black),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 19),
+              decoration: BoxDecoration(
+                color: Colors.white, // Use theme-appropriate color
+                borderRadius: BorderRadius.circular(12), // Rounded corners
+              ),
+              child: Text(
+                'Add 1',
+                style: GoogleFonts.poppins(
+                  color: Colors.black, // Text color for contrast
+                  fontSize: 14, // Adjust size for a balanced look
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ),
-          const SizedBox(width: 100),
-          FloatingActionButton(
-            heroTag: 'increase',
-            backgroundColor: Colors.white54,
-            shape: const CircleBorder(),
-            onPressed: () {
-              widget.cart.addDrink(widget.drink.id, context);
-            },
-            child: const Icon(Icons.add, color: Colors.black),
-          ),
-        ],
-      ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPriceOptionButtons(BuildContext context) {
+    return Consumer<Cart>(
+      builder: (context, cart, _) {
+        final isCartEmpty = cart.getTotalDrinkCount() == 0;
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            // Pay @ bar button
+            GestureDetector(
+              onTap: isCartEmpty
+                  ? null
+                  : () => _submitOrder(context, usePoints: false),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                decoration: BoxDecoration(
+                  color: isCartEmpty ? Colors.white24 : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Pay @ bar',
+                      style: GoogleFonts.poppins(
+                        color: isCartEmpty ? Colors.white70 : Colors.black,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Pay in app button
+            GestureDetector(
+              onTap: isCartEmpty
+                  ? null
+                  : () => _submitOrder(context, usePoints: true),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                decoration: BoxDecoration(
+                  color: isCartEmpty ? Colors.white24 : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Pay in app',
+                      style: GoogleFonts.poppins(
+                        color: isCartEmpty ? Colors.white70 : Colors.black,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildBottomBar(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Spacer(),
-          const SizedBox(width: 7.5),
-          Consumer<Cart>(
-            builder: (context, cart, _) => Text(
-              '${cart.getDrinkQuantity(widget.drink.id)}',
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.of(context).pop();
+        },
+        child: Center(
+          child: Text(
+            'Order More',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showQuantityRemovalDialog(
+      BuildContext context, Drink drink, String typeKey, int quantity) {
+    // Determine if the size label should be omitted based on the category
+    bool shouldOmitSizeLabel(Drink drink) {
+      return drink.tagId
+          .map((tag) => int.tryParse(tag) ?? -1)
+          .any((tag) => simpleCategoryTags.contains(tag));
+    }
+
+    // Determine size text (single/double) based on typeKey and omit if category matches simpleCategoryTags
+    final sizeText = shouldOmitSizeLabel(drink)
+        ? '' // No size if the category doesn't require it
+        : (typeKey.contains("single") ? "single" : "double");
+
+    // Determine payment type as "pts" or "$" based on typeKey
+    final paymentType = typeKey.contains("points") ? "pts" : "\$";
+
+    // Add plural "s" to drink name if quantity is greater than 1
+    final drinkName = quantity > 1 ? '${drink.name}s' : drink.name;
+
+    // Generate full description in parentheses with "size & payment" if both are present
+    final description =
+        (sizeText.isNotEmpty ? "$sizeText & " : "") + paymentType;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+           backgroundColor: Colors.white,
+            title: Center(
+            child: Text(
+              '($description)',
+              style: const TextStyle(
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
           ),
-          const Spacer(),
-        ],
-      ),
-    );
-  }
-
-  // Replace _buildConfirmButton() with this method
-  Widget _buildPriceOptionButtons(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildPriceOption(
-          context,
-          label: 'Pay @ bar',
-          price: widget.cart.calculateTotalPrice(),
-          isPoints: false, // Indicates this is the cash option
-          onTap: () => _submitOrder(context, usePoints: false),
-        ),
-        _buildPriceOption(
-          context,
-          label: 'Pay with pts',
-          price: widget.cart.calculateTotalPriceInPoints(),
-          isPoints: true, // Indicates this is the points option
-          onTap: () => _submitOrder(context, usePoints: true),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPriceOption(
-    BuildContext context, {
-    required String label,
-    required double price,
-    required bool isPoints, // Determines if the display is for points
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                color: Colors.black,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+          content: Text(
+            'Remove $quantity $drinkName?',
+            style: GoogleFonts.poppins(
+              fontSize: 21,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
             ),
-            const SizedBox(height: 8),
-            Text(
-              isPoints
-                  ? '${price.toInt()}' // Display points as an integer
-                  : '\$${price.toStringAsFixed(2)}', // Display cash as dollars
+            textAlign: TextAlign.center,
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+            TextButton(
+               onPressed: () { 
+                    Navigator.of(context).pop(); // Close dialog
+                  },
+              child: Text(
+                      'No',
+                      style: GoogleFonts.poppins(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                      ),
+                    ),
+            ),
 
-              style: GoogleFonts.poppins(
-                color: Colors.black,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+                TextButton(
+                  onPressed: () {
+                    widget.cart.removeDrink(drink.id,
+                        isDouble: typeKey.contains("double"),
+                        usePoints: typeKey.contains("points"));
+                    Navigator.of(context).pop(); // Close dialog
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 0), // Adjusted padding for compactness
+                  ),
+                  child: Text(
+                    'Yes',
+                    style: GoogleFonts.poppins(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 

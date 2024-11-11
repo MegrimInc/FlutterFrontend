@@ -1,26 +1,115 @@
-// ignore_for_file: unnecessary_null_comparison
-
-import 'package:barzzy/Backend/bar.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:flutter/material.dart';
-import 'package:barzzy/Backend/drink.dart';
-import 'package:flutter/services.dart';
 
 class Cart extends ChangeNotifier {
-  String? barId;
-  Map<String, int> barCart = {}; // Maps drinkId to quantity
   int? barPoints;
+  String? barId;
+  Map<String, Map<String, int>> barCart = {}; // Maps drinkId to type and quantity
+  Map<String, double> typeTotals = {}; // Track totals for each type combination
+  bool isAddingWithPoints = false;
+  Map<String, List<String>> lastAddedTypes = {};
 
-  
+  // Set the current bar ID and clear the cart when switching bars
   void setBar(String newBarId) {
     if (barId != newBarId) {
       barId = newBarId;
       barCart.clear(); // Clear the cart when switching bars
-       _fetchPointsForBar(newBarId);
+      typeTotals.clear(); // Reset type totals
+       lastAddedTypes.clear();
+      _fetchPointsForBar(newBarId);
       notifyListeners();
     }
   }
 
+ void addDrink(String drinkId, {required bool isDouble, required bool usePoints}) {
+  if (barId == null) {
+    debugPrint('Bar ID is not set.');
+    return;
+  }
+
+  // Define a unique type key based on both size and payment method
+  final typeKey = '${isDouble ? 'double' : 'single'}_${usePoints ? 'points' : 'dollars'}';
+
+  // Initialize the drink's map if it doesn't exist
+  barCart.putIfAbsent(drinkId, () => {});
+  barCart[drinkId]!.update(typeKey, (quantity) => quantity + 1, ifAbsent: () => 1);
+
+  lastAddedTypes.putIfAbsent(drinkId, () => []).add(typeKey);
+
+  // Update the specific price total based on single/double and points/dollars
+  final drink = LocalDatabase().getDrinkById(drinkId);
+  final price = (isDouble ? (usePoints ? drink.points * 2 : drink.price * 2) : (usePoints ? drink.points : drink.price)).toDouble();
+
+  typeTotals.update(typeKey, (total) => total + price, ifAbsent: () => price);
+
+  debugPrint('Added $typeKey of drink ID $drinkId. Updated typeTotals: $typeTotals');
+  notifyListeners();
+}
+
+void removeDrink(String drinkId, {required bool isDouble, required bool usePoints}) {
+  if (barId == null) {
+    debugPrint('Bar ID is not set.');
+    return;
+  }
+
+  final typeKey = '${isDouble ? 'double' : 'single'}_${usePoints ? 'points' : 'dollars'}';
+
+  // Remove the entire entry for this type if it exists
+  if (barCart.containsKey(drinkId) && barCart[drinkId]!.containsKey(typeKey)) {
+    barCart[drinkId]!.remove(typeKey);
+
+    // Remove the entry entirely if no quantities remain for the drink
+    if (barCart[drinkId]!.isEmpty) {
+      barCart.remove(drinkId);
+    }
+
+     lastAddedTypes[drinkId]?.removeWhere((key) => key == typeKey);
+      if (lastAddedTypes[drinkId]?.isEmpty ?? true) {
+        lastAddedTypes.remove(drinkId);
+      }
+
+
+    // Remove total from typeTotals
+    typeTotals.remove(typeKey);
+    
+    debugPrint('Removed all quantities of $typeKey for drink ID $drinkId.');
+    notifyListeners();
+  } else {
+    debugPrint('Drink with ID $drinkId and type $typeKey not in cart.');
+  }
+}
+  // Retrieves quantity for a specific drink and type (e.g., single/double with dollars/points)
+  int getDrinkQuantity(String drinkId, {required bool isDouble, required bool usePoints}) {
+    final typeKey = "${isDouble ? 'double' : 'single'}_${usePoints ? 'points' : 'dollars'}";
+    return barCart[drinkId]?[typeKey] ?? 0;
+  }
+
+  // New method: Retrieves the total quantity for a specific drink ID across all types
+  int getTotalQuantityForDrink(String drinkId) {
+    if (!barCart.containsKey(drinkId)) return 0;
+    return barCart[drinkId]!.values.fold(0, (total, quantity) => total + quantity);
+  }
+
+  // Calculates total dollar amount across all types that use dollars
+  double calculateTotalDollars() {
+    final total = typeTotals.entries
+        .where((entry) => entry.key.contains('dollars'))
+        .fold(0.0, (sum, entry) => sum + entry.value);
+    return double.parse(total.toStringAsFixed(2));
+  }
+
+  // Calculates total points amount across all types that use points
+  double calculateTotalPoints() {
+    final total = typeTotals.entries
+        .where((entry) => entry.key.contains('points'))
+        .fold(0.0, (sum, entry) => sum + entry.value);
+    return double.parse(total.toStringAsFixed(2));
+  }
+
+  // Returns a breakdown of quantities by type and payment method for each drink
+  Map<String, Map<String, int>> getCartDetails() {
+    return barCart;
+  }
 
   Future<void> _fetchPointsForBar(String barId) async {
     final localDatabase = LocalDatabase();
@@ -35,132 +124,55 @@ class Cart extends ChangeNotifier {
     notifyListeners(); // Notify listeners to update UI or perform other actions
   }
 
+  // Counts the total number of unique drinks (across types) in the cart
   int getTotalDrinkCount() {
-    return barCart.values.fold(0, (total, quantity) => total + quantity);
+    return barCart.values.fold(0, (total, priceMap) => total + priceMap.length);
   }
 
-  void addDrink(String drinkId, BuildContext context) {
-    if (barId == null) {
-      debugPrint('Bar ID is not set.');
-      return;
-    }
-
-// Check if the total number of drinks (across all drink IDs) is already 3
-    int totalDrinks = getTotalDrinkCount();
-    if (totalDrinks >= 3) {
-      HapticFeedback.heavyImpact();
-      debugPrint('Cannot add more drinks. The cart already contains 3 drinks.');
-      // Trigger a SnackBar if totalDrinks is 3 or more
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            backgroundColor: Colors.white,
-            title: const Row(
-              children: [
-                SizedBox(width: 75),
-                Icon(Icons.error_outline, color: Colors.black),
-                SizedBox(width: 5),
-                Text(
-                  'Oops :/',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                  ),
-                ),
-              ],
-            ),
-            content: const Text(
-              'You can only add up to 3 drinks per order!',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 16,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          );
-        },
-      );
-      return;
-    }
-    Bar? bar = LocalDatabase.getBarById(barId!);
-    if (bar != null) {
-      LocalDatabase().getDrinkById(drinkId);
-      barCart.update(drinkId, (quantity) => quantity + 1, ifAbsent: () => 1);
-      debugPrint('Drink with ID $drinkId added to the cart.');
-      notifyListeners();
-    } else {
-      debugPrint('Bar with ID $barId not found.');
-    }
+  void toggleAddWithPoints() {
+    isAddingWithPoints = !isAddingWithPoints;
+    notifyListeners();
   }
 
-  void removeDrink(String drinkId) {
-    if (barId == null) {
-      debugPrint('Bar ID is not set.');
+   
+  void undoLastAddition(String drinkId) {
+    if (!lastAddedTypes.containsKey(drinkId) || lastAddedTypes[drinkId]!.isEmpty) {
+      debugPrint('No recent addition to undo for drink ID $drinkId');
       return;
     }
 
-    if (barCart.containsKey(drinkId)) {
-      int currentQuantity = barCart[drinkId]!;
-      if (currentQuantity > 1) {
-        barCart.update(drinkId, (quantity) => quantity - 1);
+    // Get the last typeKey for the drinkId and remove it from the lastAddedTypes list
+    final typeKey = lastAddedTypes[drinkId]!.removeLast();
+
+    // Check if the drink type exists in barCart before modifying
+    if (barCart[drinkId] != null && barCart[drinkId]![typeKey] != null) {
+      // Decrease the quantity or remove the type entry entirely
+      if (barCart[drinkId]![typeKey]! > 1) {
+        barCart[drinkId]![typeKey] = barCart[drinkId]![typeKey]! - 1;
       } else {
-        barCart.remove(drinkId);
+        barCart[drinkId]!.remove(typeKey);
+        if (barCart[drinkId]!.isEmpty) {
+          barCart.remove(drinkId);
+        }
       }
-      debugPrint('Drink with ID $drinkId removed from the cart.');
+      
+      // Safely adjust the total for this typeKey if it exists in typeTotals
+      if (typeTotals[typeKey] != null) {
+        final pricePerUnit = typeTotals[typeKey]! / (barCart[drinkId]?[typeKey] ?? 1);
+        typeTotals.update(typeKey, (total) => total - pricePerUnit);
+
+        // Remove from typeTotals if the total reaches zero or below
+        if (typeTotals[typeKey]! <= 0) {
+          typeTotals.remove(typeKey);
+        }
+      }
+
+      debugPrint('Undo last addition of $typeKey for drink ID $drinkId. Updated typeTotals: $typeTotals');
       notifyListeners();
     } else {
-      debugPrint('Drink with ID $drinkId not in cart.');
+      debugPrint('Error: Type $typeKey for drink ID $drinkId is not in the cart.');
     }
   }
 
-  int getDrinkQuantity(String drinkId) {
-    return barCart[drinkId] ?? 0;
-  }
 
-  double calculateTotalPrice() {
-    double total = 0.0;
-    barCart.forEach((drinkId, quantity) {
-      Drink? drink = LocalDatabase().getDrinkById(drinkId);
-      total += drink.price * quantity;
-      debugPrint(
-          'Drink ID: $drinkId, Price: ${drink.price}, Quantity: $quantity, Subtotal: ${drink.price * quantity}');
-    });
-    debugPrint('Total Cart Price: $total');
-    return double.parse(total.toStringAsFixed(2));
-  }
-
-
-  double calculatePriceForDrink(String drinkId) {
-    Drink? drink = LocalDatabase().getDrinkById(drinkId);
-    int quantity = barCart[drinkId] ?? 0;
-    if (drink != null) {
-      return double.parse((drink.price * quantity).toStringAsFixed(2));
-    }
-    return 0.0;
-  }
-
-   double calculatePriceForDrinkInPoints(String drinkId) {
-    Drink? drink = LocalDatabase().getDrinkById(drinkId);
-    int quantity = barCart[drinkId] ?? 0;
-    if (drink != null) {
-      return double.parse((drink.points.toDouble() * quantity).toStringAsFixed(2));
-    }
-    return 0.0;
-  }
-
-  double calculateTotalPriceInPoints() {
-    double total = 0.0;
-    barCart.forEach((drinkId, quantity) {
-      Drink? drink = LocalDatabase().getDrinkById(drinkId);
-      if (drink != null) {
-        total += drink.points.toDouble() * quantity;
-      }
-    });
-    return double.parse(total.toStringAsFixed(2));
-  }
 }

@@ -28,60 +28,65 @@ class PickupPageState extends State<PickupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: Consumer<Hierarchy>(
-                builder: (context, hierarchy, child) {
-                  if (!hierarchy.isConnected) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                      ),
-                    );
-                  }
-
-                  final orders = hierarchy.getOrders();
-
-                  if (orders.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No orders have been placed yet.',
-                        style: TextStyle(color: Colors.white, fontSize: 17),
-                      ),
-                    );
-                  }
-
-                  return Consumer<LocalDatabase>(
-                    builder: (context, localDatabase, child) {
-                      return RefreshIndicator(
-                        onRefresh: () => _refreshOrders(context),
-                        color: Colors.black,
-                        child: PageView.builder(
-                          controller: _pageController,
-                          scrollDirection: Axis.vertical,
-                          itemCount: orders.length,
-                          itemBuilder: (context, verticalIndex) {
-                            final barId = orders[verticalIndex];
-                            final order = localDatabase.getOrderForBar(barId);
-
-                            if (order == null) {
-                              return const SizedBox(); // Skip if no order is found for the barId
-                            }
-
-                            return _buildOrderCard(order);
-                          },
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: true,
+        elevation: 2.0,
+        title: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(
+            'Orders',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 23,
+              fontWeight: FontWeight.bold,
             ),
-          ],
+          ),
         ),
+      ),
+      body: Consumer<Hierarchy>(
+        builder: (context, hierarchy, child) {
+          if (!hierarchy.isConnected) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+              ),
+            );
+          }
+          final orders = hierarchy.getOrders();
+            
+          return Consumer<LocalDatabase>(
+            builder: (context, localDatabase, child) {
+              return RefreshIndicator(
+                onRefresh: () => _refreshOrders(context),
+                color: Colors.black,
+                child: PageView.builder(
+                  controller: _pageController,
+                  scrollDirection: Axis.vertical,
+                  itemCount: orders.length,
+                  itemBuilder: (context, verticalIndex) {
+                    final barId = orders[verticalIndex];
+                    final order = localDatabase.getOrderForBar(barId);
+            
+            
+                     if (orders.isEmpty || order == null) {
+              return const Center(
+                child: Text(
+                  'No orders have been placed yet.',
+                  style: TextStyle(color: Colors.white, fontSize: 17),
+                ),
+              );
+            }
+            
+            
+                    return _buildOrderCard(order);
+                  },
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
