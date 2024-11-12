@@ -4,9 +4,10 @@ import 'dart:async'; // Import the async package for Timer
 import 'dart:convert'; //TODO check bar is active
 import 'dart:io';
 
-import 'package:barzzy/Backend/activeorder.dart';
+import 'package:barzzy/Backend/customerorder2.dart';
 import 'package:barzzy/Terminal/stationid.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -25,9 +26,9 @@ class OrdersPage extends StatefulWidget {
 }
 
 class _OrdersPageState extends State<OrdersPage> {
-  List<CustomerOrder> allOrders = [];
+  List<CustomerOrder2> allOrders = [];
 
-  List<CustomerOrder> displayList = [];
+  List<CustomerOrder2> displayList = [];
 
 //TESTING VARIABLE
   bool testing = false;
@@ -45,6 +46,214 @@ class _OrdersPageState extends State<OrdersPage> {
 
   Timer? _timer;
   WebSocket? websocket;
+
+
+void claimTips() {
+  bool isSubmitting = false; // Track button status within the dialog
+
+  showDialog(
+    context: context,
+    barrierDismissible: false, // Prevent closing by tapping outside
+    builder: (BuildContext context) {
+      final TextEditingController nameController = TextEditingController();
+      final TextEditingController emailController = TextEditingController();
+
+      return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return AlertDialog(
+            title: Text(
+              'Claim Tips for Station ${widget.bartenderID} at Bar #${widget.barID}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: "Your Name"),
+                  onChanged: (value) {
+                    setState(() {
+                      // Enable Submit if name field is not empty
+                      isSubmitting = value.isEmpty;
+                    });
+                  },
+                ),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(labelText: "Your Email (optional)"),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSubmitting
+                    ? null // Disable if currently submitting
+                    : () {
+                        if (nameController.text.isNotEmpty) {
+                          setState(() {
+                            isSubmitting = true; // Temporarily disable button
+                          });
+
+                          final Map<String, dynamic> request = {
+                            'action': 'Claim Tips',
+                            'name': nameController.text,
+                            'email': emailController.text,
+                            'bartenderID': int.parse(widget.bartenderID),
+                            'barID': widget.barID,
+                          };
+
+                          // Send request to backend
+                          socket!.sink.add(json.encode(request));
+                        }
+                      },
+                style: TextButton.styleFrom(
+                  backgroundColor: isSubmitting ? Colors.grey : Colors.blue,
+                ),
+                child: const Text("Submit", style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  ).then((_) {
+    // Reset the button state when the dialog is closed
+    setState(() {
+      isSubmitting = false;
+    });
+  });
+}
+
+
+  void showReceiptDialog(Map<String, dynamic> response) {
+    List<CustomerOrder2> orders = (response['orders'] as List)
+        .map((orderJson) => CustomerOrder2.fromJson(orderJson))
+        .toList();
+    double totalTip = orders.fold(0, (sum, order) => sum + order.tip);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.black,
+          title: const Text(
+            'Tips Claimed!',
+            style: TextStyle(color: Colors.yellowAccent, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8.0),
+                  decoration: BoxDecoration(
+                    color: Colors.yellow[700],
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: Column(
+                    children: [
+                      Text('Receipt', style: TextStyle(fontSize: 18, color: Colors.black)),
+                      Text('Bar #${response['barID']}'),
+                      Text('Bartender: ${response['bartenderID']} (${response['bartenderName']})'),
+                      Text(
+                        'Date: ${DateTime.fromMillisecondsSinceEpoch(response['dateClaimed']).toLocal()}',
+                      ),
+                      Text('Total Tip Amount: \$${totalTip.toStringAsFixed(2)}'),
+                      SizedBox(
+                        height: 200.0,
+                        child: ListView(
+                          children: orders.map((order) {
+                            return ListTile(
+                              title: Text(
+                                'Order ${order.userId}: \$${order.tip.toStringAsFixed(2)}',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              subtitle: Text(
+                                '@ ${DateTime.fromMillisecondsSinceEpoch(order.timestamp).toLocal()}',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      Text('Server Signature: ${response['digitalSignature']}'),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(color: Colors.red, fontSize: 20),
+                  ),
+                ),
+                TextButton(
+                  onPressed: showServerSignatureInfo,
+                  child: const Text(
+                    'What is a Server Signature?',
+                    style: TextStyle(color: Colors.yellow),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+void showServerSignatureInfo() {
+  const publicKey = 'MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAqePMRYC7/28i9reLDqd77xHIuwHOEGL6sTO6MCSSrjNBJHH6xJnDPs8is3VyfbyZc01ql6H7k565W30OnGgkxBgPdAcaSySLm+G7MMJlviiw2jY6UmuEdOkA5e21GrOikQG3aBz1TtK4fbDL8R7wlKkHEpBzFLDRXHOlK3qyFVph3osU1bTB6nd+z5PRfRbJsUiOOXKJjUa7hXYQI6Z4PwasHDEWBy2HycdIRLdjOmlSjnsX22LsOo0/FEtF2VQU+CiDNXs1evBxDIi9JRMwwETq8L6y5EhRb8LlxpgL5sLaCyzyecyK3NIWwPsLJgOcJWDByUg2FWp/72UYp4mIutraXgEIcO0F/y4FViw8c38DN7V7SX0cUdYJdmkzByApQg0/s8D1krdrE3oyrP2BQ/s7x0SDT4QYt1hoeyZ2PKK6zjLG7nXhbWljhl3fehXuWXRDhcbkPCU0kBu7jk2nYuhRroPy5Brxc5ylwSNZZsqQxZMTxxh/n/T7zWMrdYXSbYsGjk8U6/W1Dru1f8LBMnSQNI8h7uWlv3/uSxsinUg3xeMl9AqPVugH8yGR8EJlJLEftpGmmjNBPtSIN3VWldvJ6NFWT0cX9rxyfT5oxeNScSJPwKUTKfFxC/mzW8KoDGsJjlg+ULFZxv2+5kgfR4XwJ9UxqfM+s6Z1c1CmjFMCAwEAAQ==';
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('What is a Server Signature?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              '''A digital signature (Server Signature) is a guarantee that only an entity with a private key (like Barzzy) can generate a message that validates for a public key. To verify:
+
+1. Copy our permanent public key:
+2. Go to https://8gwifi.org/RSAFunctionality?rsasignverifyfunctions=rsasignverifyfunctions&keysize=4096 or any other RSA signature verifier of your choice.
+3. Click "Verify Signature"
+4. Paste our permanent public key into the "Public Key" field. You may ignore the private key field. We do not intend to give this out.
+5. Paste the "Receipt Verification Plaintext" from your email receipt into the "ClearText Message" field.
+6. Paste the Digital Signature from your email receipt into the "Provide Signature Value (Base64)" field.
+7. Select the "SHA256withRSA" option below.
+8. You will see that page says "Signature Verification Passed". That means we generated the report!
+9. If it says signature verification failed, try some of the steps below.
+- Check options: Make sure you're on "Verify Signature", "4096 bit key", "SHA256withRSA"
+- Check fields: Make sure you put the public key in the public key field, and the plaintext in the plaintext, and so on.
+- Remove extra input: You may have inserted an extra line into the Plaintext Section. You should remove that if you may have put it in accidentally.
+- Other websites: Our signature is in BASE64, key format is PEM, charset is UTF-8, and our plaintext is STRING.
+- If it still says "Signature Verification Failed" then we didn't generate the report. You should inquire with the person who gave you the report as to where they got it from, because the report was clearly modified by a bad actor. If you got the report directly from emails ending with @barzzy.site, then send an inquiry to barzzy.llc@gmail.com explaining your issue, and forward the receipt email as well.''',
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                Clipboard.setData(const ClipboardData(text: publicKey));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Public key copied to clipboard')),
+                );
+              },
+              child: const Text('Click to Copy Public Key'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   @override
   void initState() {
@@ -77,22 +286,22 @@ class _OrdersPageState extends State<OrdersPage> {
   void _updateLists() {
     setState(() {
       // Separate `allOrders` into two lists based on whether the order is claimed by the current bartender
-      List<CustomerOrder> claimedOrders = allOrders.where((order) => order.claimer == widget.bartenderID).toList();
-      List<CustomerOrder> unclaimedOrders = allOrders.where((order) => order.claimer != widget.bartenderID).toList();
+      List<CustomerOrder2> claimedOrders = allOrders.where((order) => order.claimer == widget.bartenderID).toList();
+      List<CustomerOrder2> unclaimedOrders = allOrders.where((order) => order.claimer != widget.bartenderID).toList();
 
       // Sort each section by timestamp, older orders first
       claimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
       // Combine both sections: claimed orders at the top, unclaimed orders at the bottom
-      List<CustomerOrder> sortedOrders = [
+      List<CustomerOrder2> sortedOrders = [
         ...claimedOrders,
         ...unclaimedOrders,
       ];
 
       // Apply further filters based on `filterReady` and `filterUnique`
 
-      List<CustomerOrder> filteredOrders = sortedOrders;
+      List<CustomerOrder2> filteredOrders = sortedOrders;
 
       // Filter based on `filterReady`
       if (filterReady) {
@@ -250,7 +459,7 @@ class _OrdersPageState extends State<OrdersPage> {
     setState(() {});
   }
 
-  void _executeFunctionForUnclaimed(CustomerOrder order) {
+  void _executeFunctionForUnclaimed(CustomerOrder2 order) {
     // Construct the message
     final claimRequest = {
       'action': 'claim',
@@ -265,7 +474,7 @@ class _OrdersPageState extends State<OrdersPage> {
     debugPrint("attempting claim");
   }
 
-  void _executeFunctionForClaimed(CustomerOrder order) {
+  void _executeFunctionForClaimed(CustomerOrder2 order) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -352,7 +561,7 @@ class _OrdersPageState extends State<OrdersPage> {
     );
   }
 
-  void _executeFunctionForClaimedAndReady(CustomerOrder order) {
+  void _executeFunctionForClaimedAndReady(CustomerOrder2 order) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -440,7 +649,7 @@ class _OrdersPageState extends State<OrdersPage> {
     );
   }
 
-  void _onOrderTap(CustomerOrder order) {
+  void _onOrderTap(CustomerOrder2 order) {
     if (order.claimer.isEmpty) {
       _executeFunctionForUnclaimed(order);
     } else if (order.claimer == widget.bartenderID) {
@@ -452,7 +661,7 @@ class _OrdersPageState extends State<OrdersPage> {
     }
   }
 
-  Color _getOrderTintColor(CustomerOrder order) {
+  Color _getOrderTintColor(CustomerOrder2 order) {
     final ageInSeconds = order.getAge();
 
     // Debug print to show age and orderId
@@ -461,10 +670,6 @@ class _OrdersPageState extends State<OrdersPage> {
       return Colors.grey[700]!;
     }
 
-    // If the order is ready and has points, display as gold
-    if (order.status == 'ready' && order.points) {
-    return Colors.purple; // Gold-like color
-    }
 
     if (order.status == 'ready') return Colors.green;
     if (ageInSeconds <= 180) return Colors.yellow[200]!; // 0-3 minutes old
@@ -487,56 +692,59 @@ class _OrdersPageState extends State<OrdersPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: Row(
-          mainAxisAlignment:
-              MainAxisAlignment.spaceBetween, // Distribute items evenly
-          children: [
-            // Leading icon (Power Off)
-            IconButton(
-              icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
-              color: Colors.white,
-              onPressed: () {
-                if (!disabledTerminal) {
-                  debugPrint("disable");
-                  socket!.sink.add(
-                    json.encode({
-                      'action': 'disable',
-                      'bartenderID': widget.bartenderID.toString(),
-                      'barID': widget.barID,
-                    }),
-                  );
-                }
-              },
-            ),
-
-            // Filter status icons (Non-ready and Ready)
-            Row(
-              children: [
-                Icon(
-                  filterReady ? Icons.circle_outlined : Icons.circle,
-                  color: Colors.white,
-                  size: 12.0, // Adjust the size as needed
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  filterReady ? Icons.circle : Icons.circle_outlined,
-                  color: Colors.white,
-                  size: 12.0, // Adjust the size as needed
-                ),
-              ],
-            ),
-
-            // Filter menu icon
-            IconButton(
-              icon: const Icon(Icons.filter_list),
-              color: Colors.white,
-              iconSize: 28,
-              onPressed: _showFilterMenu, // Open the popup menu with toggles
-            ),
-          ],
-        ),
+  backgroundColor: Colors.black,
+  title: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      IconButton(
+        icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
+        color: Colors.white,
+        onPressed: () {
+          if (!disabledTerminal) {
+            debugPrint("disable");
+            socket!.sink.add(
+              json.encode({
+                'action': 'disable',
+                'bartenderID': widget.bartenderID.toString(),
+                'barID': widget.barID,
+              }),
+            );
+          }
+        },
       ),
+      // Add Claim Tips button
+      ElevatedButton(
+        onPressed: claimTips,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue,
+        ),
+        child: const Text("Claim Tips"),
+      ),
+      Row(
+        children: [
+          Icon(
+            filterReady ? Icons.circle_outlined : Icons.circle,
+            color: Colors.white,
+            size: 12.0,
+          ),
+          const SizedBox(width: 8),
+          Icon(
+            filterReady ? Icons.circle : Icons.circle_outlined,
+            color: Colors.white,
+            size: 12.0,
+          ),
+        ],
+      ),
+      IconButton(
+        icon: const Icon(Icons.filter_list),
+        color: Colors.white,
+        iconSize: 28,
+        onPressed: _showFilterMenu,
+      ),
+    ],
+  ),
+),
+
       body: Stack(
         children: [
           RefreshIndicator(
@@ -552,7 +760,21 @@ class _OrdersPageState extends State<OrdersPage> {
                     final order = displayList[index];
                     final tintColor = _getOrderTintColor(order);
 
-                    return GestureDetector(
+                      final unpaidDrinks = order.drinks.where((drink) {
+                        return drink.paymentType.toLowerCase() == "regular" && !order.inAppPayments;
+                      }).toList();
+
+                      final paidDrinks = order.drinks.where((drink) {
+                        return !(drink.paymentType.toLowerCase() == "regular" && !order.inAppPayments);
+                      }).toList();
+
+                        String formatDrink(DrinkOrder drink) {
+                          return drink.sizeType.isNotEmpty
+                              ? '${drink.drinkName} [${drink.sizeType}] x ${drink.quantity}'
+                              : '${drink.drinkName} x ${drink.quantity}';
+                        }
+
+                      return GestureDetector(
                       onTap: () => {
                         _onOrderTap(order),
                       },
@@ -566,19 +788,17 @@ class _OrdersPageState extends State<OrdersPage> {
                           child: Padding(
                             padding: const EdgeInsets.all(12.0),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment
-                                  .spaceBetween, // Distribute items evenly
-                              crossAxisAlignment: CrossAxisAlignment
-                                  .center, // Center items vertically
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: <Widget>[
-                                // Claimer or SpinKit
+                                // Left side: Claimer or Loading Indicator
                                 order.claimer.isEmpty
                                     ? const SpinKitThreeBounce(
                                         color: Colors.white,
                                         size: 30.0,
                                       )
                                     : Text(
-                                        '@${order.claimer}', // Add @ symbol
+                                        '@${order.claimer}',
                                         style: const TextStyle(
                                           fontSize: 32,
                                           fontWeight: FontWeight.bold,
@@ -592,32 +812,80 @@ class _OrdersPageState extends State<OrdersPage> {
                                           ],
                                         ),
                                       ),
-
-                                // Drinks list centered
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment
-                                      .center, // Center items vertically
-                                  crossAxisAlignment: CrossAxisAlignment
-                                      .center, // Center items horizontally
-                                  children: <Widget>[
-                                    ...order.drinks.map((drink) => Text(
-                                          '${drink.drinkName} x ${drink.quantity}',
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.white,
-                                            shadows: [
-                                              Shadow(
-                                                color: Colors.black,
-                                                offset: Offset(1.0, 1.0),
-                                                blurRadius: 1.0,
+                                // Middle: Unpaid and Paid sections
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            const Text(
+                                              'UNPAID ❗',
+                                              style: TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.redAccent,
                                               ),
-                                            ],
-                                          ),
-                                        )),
-                                  ],
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            ...unpaidDrinks.map((drink) => Text(
+                                                  formatDrink(drink),
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    color: Colors.white,
+                                                    shadows: [
+                                                      Shadow(
+                                                        color: Colors.black,
+                                                        offset: Offset(1.0, 1.0),
+                                                        blurRadius: 1.0,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                )),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        width: 1,
+                                        color: Colors.grey[700], // Divider line color
+                                      ),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            const Text(
+                                              'PAID ✔️',
+                                              style: TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.green,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            ...paidDrinks.map((drink) => Text(
+                                                  formatDrink(drink),
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    color: Colors.white,
+                                                    shadows: [
+                                                      Shadow(
+                                                        color: Colors.black,
+                                                        offset: Offset(1.0, 1.0),
+                                                        blurRadius: 1.0,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                )),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-
-                                // Order ID on the right
+                                // Right side: Order ID
                                 Text(
                                   '#${order.userId}',
                                   style: const TextStyle(
@@ -819,6 +1087,19 @@ class _OrdersPageState extends State<OrdersPage> {
 
           // Check which key is present in the response and handle accordingly
           switch (response.keys.first) {
+
+            case 'Tip Claim Successful':
+              Navigator.pop(context); // Dismiss the name and email input dialog
+              showReceiptDialog(response); // Display the receipt dialog
+            break;
+
+            case 'Tip Claim Failed':
+              Navigator.pop(context); // Dismiss the name and email input dialog
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Failed. Please contact barzzy.llc@gmail.com for assistance.')),
+              );
+              break;
+              
             case 'error':
               // Use _showErrorSnackbar to display the error message
               _showErrorSnackbar(response['error']);
@@ -845,7 +1126,7 @@ class _OrdersPageState extends State<OrdersPage> {
               debugPrint('when are you triggering');
               final Map<String, dynamic> ordersJson = response;
 
-              final incomingOrder = CustomerOrder.fromJson(ordersJson);
+              final incomingOrder = CustomerOrder2.fromJson(ordersJson);
 
               // Check if the order exists in allOrders
               int index = allOrders
@@ -876,9 +1157,9 @@ class _OrdersPageState extends State<OrdersPage> {
 
               // Convert JSON to Order objects and update allOrders
               final incomingOrders = ordersJson
-                  .map((json) => CustomerOrder.fromJson(json))
+                  .map((json) => CustomerOrder2.fromJson(json))
                   .toList();
-              for (CustomerOrder incomingOrder in incomingOrders) {
+              for (CustomerOrder2 incomingOrder in incomingOrders) {
                 // Check if the order exists in allOrders
                 int index = allOrders.indexWhere(
                     (order) => order.userId == incomingOrder.userId);
