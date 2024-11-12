@@ -76,30 +76,40 @@ class _OrdersPageState extends State<OrdersPage> {
 
   void _updateLists() {
     setState(() {
-      // Sort `allOrders` by timestamp, older orders first
-      allOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      // Separate `allOrders` into two lists based on whether the order is claimed by the current bartender
+      List<CustomerOrder> claimedOrders = allOrders.where((order) => order.claimer == widget.bartenderID).toList();
+      List<CustomerOrder> unclaimedOrders = allOrders.where((order) => order.claimer != widget.bartenderID).toList();
 
-      List<CustomerOrder> filteredOrders = allOrders;
+      // Sort each section by timestamp, older orders first
+      claimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+      // Combine both sections: claimed orders at the top, unclaimed orders at the bottom
+      List<CustomerOrder> sortedOrders = [
+        ...claimedOrders,
+        ...unclaimedOrders,
+      ];
+
+      // Apply further filters based on `filterReady` and `filterUnique`
+
+      List<CustomerOrder> filteredOrders = sortedOrders;
 
       // Filter based on `filterReady`
       if (filterReady) {
         // Show only ready orders
-        filteredOrders =
-            filteredOrders.where((order) => order.status == 'ready').toList();
+        filteredOrders = filteredOrders.where((order) => order.status == 'ready').toList();
       } else {
         // Show only unready orders
-        filteredOrders =
-            filteredOrders.where((order) => order.status != 'ready').toList();
+        filteredOrders = filteredOrders.where((order) => order.status != 'ready').toList();
       }
 
       // Apply the "Your Orders Only" filter if `filterUnique` is true
       if (filterUnique) {
-        filteredOrders = filteredOrders
-            .where((order) =>
-                order.claimer == widget.bartenderID ||
-                (order.claimer.isEmpty &&
-                    (order.userId % bartenderCount) == bartenderNumber))
-            .toList();
+        filteredOrders = filteredOrders.where((order) =>
+            order.claimer == widget.bartenderID ||
+            (order.claimer.isEmpty &&
+                (order.userId % bartenderCount) == bartenderNumber)
+        ).toList();
       }
 
       // Update the display list with the filtered orders
@@ -126,29 +136,10 @@ class _OrdersPageState extends State<OrdersPage> {
           (Route<dynamic> route) => false, // Remove all previous routes
         );
       }
-
-      // if (testing) {
-      //   // Create a list of DrinkOrder objects
-      //   List<DrinkOrder> testDrinks = [
-      //     DrinkOrder('drink1', 'Cocktail', "1"),
-      //     DrinkOrder('drink2', 'Beer', "3"),
-      //   ];
-
-      //   // Create a CustomerOrder with the updated structure
-      //   CustomerOrder testOrder = CustomerOrder(
-      //       'bar123', // barId
-      //       456, // userId
-      //       29.99, // price
-      //       testDrinks, // drinks (List<DrinkOrder>)
-      //       'pending', // status
-      //       '', // claimer (empty since no one has claimed the order yet)
-      //       DateTime.now().millisecondsSinceEpoch // timestamp (current time)
-      //       );
-
-      //   allOrders.add(testOrder);
-      // }
     });
   }
+
+
 
   void _disableTerminal() {
     // Check if there are any orders that are not marked as delivered or canceled
