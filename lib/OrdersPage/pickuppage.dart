@@ -91,32 +91,7 @@ class PickupPageState extends State<PickupPage> {
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      height: 55,
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.grey.withOpacity(0.3),
-            width: 0.2078,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Orders',
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 23,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+ 
 
   Future<void> _refreshOrders(BuildContext context) async {
     final hierarchy = Provider.of<Hierarchy>(context, listen: false);

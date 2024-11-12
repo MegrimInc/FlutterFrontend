@@ -64,42 +64,76 @@ class DrinkFeedState extends State<DrinkFeed>
     _controller.forward();
   }
 
-  void _submitOrder(BuildContext context, {required bool usePoints}) async {
-    final loginCache = Provider.of<LoginCache>(context, listen: false);
-    final userId = await loginCache.getUID();
-    final cart = Provider.of<Cart>(context, listen: false);
-    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+  void _submitOrder(BuildContext context, {required bool inAppPayments}) async {
+  final loginCache = Provider.of<LoginCache>(context, listen: false);
+  final userId = await loginCache.getUID();
+  final cart = Provider.of<Cart>(context, listen: false);
+  final hierarchy = Provider.of<Hierarchy>(context, listen: false);
 
-    if (userId == 0) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
-        (route) => false,
-      );
-      _showLoginAlertDialog(context);
-      return;
+  if (userId == 0) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
+      (route) => false,
+    );
+    _showLoginAlertDialog(context);
+    return;
+  }
+
+
+  // Determine the quantity limit based on payment method
+    final quantityLimit = inAppPayments ? 10 : 3;
+    final totalQuantity = cart.getTotalDrinkCount();
+
+    // Check if the cart's total quantity exceeds the limit
+    if (totalQuantity > quantityLimit) {
+      final message = inAppPayments
+          ? 'You can only add up to 10 drinks for in-app payments.'
+          : 'You can only add up to 3 drinks for in-person payments.';
+      _showLimitExceededDialog(message);
+      return; // Exit if limit is exceeded
     }
 
-    final barId = widget.barId;
-    final drinkQuantities = cart.barCart.entries.map((entry) {
-      return {'drinkId': int.parse(entry.key), 'quantity': entry.value};
+  final barId = widget.barId;
+
+  // Build the list of drink orders with variations
+  List<Map<String, dynamic>> drinkOrders = cart.barCart.entries.expand((entry) {
+    final drinkId = entry.key;
+    return entry.value.entries.map((typeEntry) {
+      final typeKey = typeEntry.key;
+      final quantity = typeEntry.value;
+      final isDouble = typeKey.contains('double');
+      final isPoints = typeKey.contains('points');
+
+      return {
+        "drinkId": int.parse(drinkId),
+        "quantity": quantity,
+        "paymentType": isPoints ? "points" : "regular",
+        "sizeType": isDouble ? "double" : "single"
+      };
     }).toList();
+  }).toList();
 
-    final order = {
-      "action": "create",
-      "barId": barId,
-      "userId": userId,
-      "drinks": drinkQuantities,
-      "points": usePoints, // Use the passed-in points flag
-    };
+  // Calculate the total regular price for all items paid with money
+  final totalRegularPrice = cart.calculateTotalDollars();
 
-    hierarchy.createOrder(order);
+  // Prepare the order object to send
+  final order = {
+    "action": "create",
+    "barId": barId,
+    "userId": userId,
+    "totalRegularPrice": totalRegularPrice,
+    "inAppPayments": inAppPayments, // Specify payment method choice
+    "drinks": drinkOrders,
+  };
 
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      '/orders',
-      (Route<dynamic> route) => false,
-      arguments: barId,
-    );
-  }
+  hierarchy.createOrder(order);
+
+  Navigator.of(context).pushNamedAndRemoveUntil(
+    '/orders',
+    (Route<dynamic> route) => false,
+    arguments: barId,
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -715,7 +749,7 @@ class DrinkFeedState extends State<DrinkFeed>
             GestureDetector(
               onTap: isCartEmpty
                   ? null
-                  : () => _submitOrder(context, usePoints: false),
+                  : () => _submitOrder(context, inAppPayments: false),
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -741,7 +775,7 @@ class DrinkFeedState extends State<DrinkFeed>
             GestureDetector(
               onTap: isCartEmpty
                   ? null
-                  : () => _submitOrder(context, usePoints: true),
+                  : () => _submitOrder(context, inAppPayments: false),
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -936,6 +970,66 @@ class DrinkFeedState extends State<DrinkFeed>
             ),
             textAlign: TextAlign.center,
           ),
+        );
+      },
+    );
+  }
+
+  void _showLimitExceededDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: Colors.white,
+          title: const Row(
+            children: [
+              SizedBox(width: 75),
+              Icon(Icons.error_outline, color: Colors.black),
+              SizedBox(width: 5),
+              Text(
+                'Oops :/',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 22,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          actions: <Widget>[
+            TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Center(
+                child: Text(
+                  'OK',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(); // Dismiss the dialog
+              },
+            ),
+          ],
         );
       },
     );

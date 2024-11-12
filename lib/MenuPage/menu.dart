@@ -188,64 +188,6 @@ class MenuPageState extends State<MenuPage>
     );
   }
 
-//   Widget _buildMainContent() {
-//   return Column(
-//     children: [
-//       _buildTopBar(),
-//       Expanded(
-//         child: SingleChildScrollView(
-//           key: _listKey,
-//           controller: _scrollController,
-//           child: Consumer<User>(
-//             builder: (context, user, _) {
-//               // Get the sorted drink list based on categories from User
-//               final sortedDrinks = user.getFullDrinkListByBarId(widget.barId);
-
-//               // Map for tag IDs to their display names
-//               final Map<String, String> tagNames = {
-//                 'tag172': 'Vodka',
-//                 'tag173': 'Gin',
-//                 'tag174': 'Whiskey',
-//                 'tag175': 'Tequila',
-//                 'tag176': 'Brandy',
-//                 'tag177': 'Rum',
-//                 'tag178': 'Ale',
-//                 'tag179': 'Lager',
-//                 'tag181': 'Virgin',
-//                 'tag183': 'Red Wine',
-//                 'tag184': 'White Wine',
-//                 'tag186': 'Seltzer',
-//               };
-
-//               // Build the sections dynamically based on the sorted drink list
-//               return Column(
-//                 children: sortedDrinks.entries.map((entry) {
-//                   final tag = entry.key;  // Example: 'tag172'
-//                   final drinkIds = entry.value;  // List of drink IDs
-
-//                   // Only build a section if there are drinks for the category
-//                   if (drinkIds.isEmpty) return const SizedBox.shrink();
-
-//                   // Get the display name for the tag
-//                   final tagName = tagNames[tag] ?? 'Unknown';
-
-//                   return Column(
-//                     children: [
-//                        const SizedBox(height: 30),
-//                       _buildDrinkSection(context, tagName, drinkIds),
-//                       const SizedBox(height: 25),
-//                     ],
-//                   );
-//                 }).toList(), // Convert the map entries to a list of widgets
-//               );
-//             },
-//           ),
-//         ),
-//       ),
-//     ],
-//   );
-// }
-
   Widget _buildTopBar() {
     return Container(
       decoration: BoxDecoration(
@@ -406,6 +348,7 @@ if (drinkIds.length <= 3) {
                   onTap: () {
                     final cart = Provider.of<Cart>(context, listen: false);
                     Navigator.of(context).push(_createRoute(drink, cart));
+                    cart.resetIsAddingWithPoints();
                   },
         
                   child: Column(

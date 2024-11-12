@@ -174,5 +174,9 @@ void removeDrink(String drinkId, {required bool isDouble, required bool usePoint
     }
   }
 
+  void resetIsAddingWithPoints() {
+  isAddingWithPoints = false;
+  notifyListeners();
+}
 
 }

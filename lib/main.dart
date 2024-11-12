@@ -21,6 +21,7 @@ import 'package:http/http.dart' as http;
 import 'package:barzzy/Backend/barhistory.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart'; // Crashlytics
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -28,6 +29,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint("current date: ${DateTime.now()}");
 
+  Stripe.publishableKey = 'pk_test_51QIHPQALmk8hqurjW70pr2kLZg1lr0bXN9K6uMdf9oDPwn3olIIPRd2kJncr8rGMKjVgSUsZztTtIcPwDlLfchgu00dprIZKma';
+  
   try {
     debugPrint("Starting Firebase Initialization");
 
