@@ -48,159 +48,182 @@ class _OrdersPageState extends State<OrdersPage> {
   WebSocket? websocket;
 
 
-void claimTips() {
-  bool isSubmitting = false; // Track button status within the dialog
-
-  showDialog(
-    context: context,
-    barrierDismissible: false, // Prevent closing by tapping outside
-    builder: (BuildContext context) {
-      final TextEditingController nameController = TextEditingController();
-      final TextEditingController emailController = TextEditingController();
-
-      return StatefulBuilder(
-        builder: (BuildContext context, StateSetter setState) {
-          return AlertDialog(
-            title: Text(
-              'Claim Tips for Station ${widget.bartenderID} at Bar #${widget.barID}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: "Your Name"),
-                  onChanged: (value) {
-                    setState(() {
-                      // Enable Submit if name field is not empty
-                      isSubmitting = value.isEmpty;
-                    });
-                  },
-                ),
-                TextField(
-                  controller: emailController,
-                  decoration: const InputDecoration(labelText: "Your Email (optional)"),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: isSubmitting
-                    ? null // Disable if currently submitting
-                    : () {
-                        if (nameController.text.isNotEmpty) {
-                          setState(() {
-                            isSubmitting = true; // Temporarily disable button
-                          });
-
-                          final Map<String, dynamic> request = {
-                            'action': 'Claim Tips',
-                            'name': nameController.text,
-                            'email': emailController.text,
-                            'bartenderID': int.parse(widget.bartenderID),
-                            'barID': widget.barID,
-                          };
-
-                          // Send request to backend
-                          socket!.sink.add(json.encode(request));
-                        }
-                      },
-                style: TextButton.styleFrom(
-                  backgroundColor: isSubmitting ? Colors.grey : Colors.blue,
-                ),
-                child: const Text("Submit", style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  ).then((_) {
-    // Reset the button state when the dialog is closed
-    setState(() {
-      isSubmitting = false;
-    });
-  });
-}
-
-
-  void showReceiptDialog(Map<String, dynamic> response) {
-    List<CustomerOrder2> orders = (response['orders'] as List)
-        .map((orderJson) => CustomerOrder2.fromJson(orderJson))
-        .toList();
-    double totalTip = orders.fold(0, (sum, order) => sum + order.tip);
+  void claimTips() {
+    bool isSubmitting = false; // Track button status within the dialog
 
     showDialog(
       context: context,
+      barrierDismissible: false, // Prevent closing by tapping outside
       builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.black,
-          title: const Text(
-            'Tips Claimed!',
-            style: TextStyle(color: Colors.yellowAccent, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    color: Colors.yellow[700],
-                    borderRadius: BorderRadius.circular(8.0),
+        final TextEditingController nameController = TextEditingController();
+        final TextEditingController emailController = TextEditingController();
+
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: Text(
+                'Claim Tips for Station ${widget.bartenderID} at Bar #${widget.barID}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: "Your Name"),
+                    onChanged: (value) {
+                      setState(() {
+                        // Enable Submit if name field is not empty
+                        isSubmitting = value.isEmpty;
+                      });
+                    },
                   ),
-                  child: Column(
-                    children: [
-                      Text('Receipt', style: TextStyle(fontSize: 18, color: Colors.black)),
-                      Text('Bar #${response['barID']}'),
-                      Text('Bartender: ${response['bartenderID']} (${response['bartenderName']})'),
-                      Text(
-                        'Date: ${DateTime.fromMillisecondsSinceEpoch(response['dateClaimed']).toLocal()}',
-                      ),
-                      Text('Total Tip Amount: \$${totalTip.toStringAsFixed(2)}'),
-                      SizedBox(
-                        height: 200.0,
-                        child: ListView(
-                          children: orders.map((order) {
-                            return ListTile(
-                              title: Text(
-                                'Order ${order.userId}: \$${order.tip.toStringAsFixed(2)}',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                              subtitle: Text(
-                                '@ ${DateTime.fromMillisecondsSinceEpoch(order.timestamp).toLocal()}',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                      Text('Server Signature: ${response['digitalSignature']}'),
-                    ],
+                  TextField(
+                    controller: emailController,
+                    decoration: const InputDecoration(labelText: "Your Email (optional)"),
                   ),
+                ],
+              ),
+              actions: [
+                // Cancel button
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.red,
+                  ),
+                  child: const Text("Cancel", style: TextStyle(color: Colors.white)),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Close',
-                    style: TextStyle(color: Colors.red, fontSize: 20),
+                  onPressed: isSubmitting
+                      ? null // Disable if currently submitting
+                      : () {
+                          if (nameController.text.isNotEmpty) {
+                            debugPrint("Attempting to submit request for claimtips");
+
+                            final Map<String, dynamic> request = {
+                              'action': 'Claim Tips',
+                              'name': nameController.text,
+                              'email': emailController.text,
+                              'bartenderID': widget.bartenderID,
+                              'barID': widget.barID,
+                            };
+debugPrint("request generated");
+                            // Send request to backend
+                            socket!.sink.add(json.encode(request));
+debugPrint("request sent");
+
+                            setState(() {
+                              isSubmitting = true; // Temporarily disable button
+                            });
+                             debugPrint("Successfully submit request for claimtips");
+
+                          }
+                        },
+                  style: TextButton.styleFrom(
+                    backgroundColor: isSubmitting ? Colors.grey : Colors.blue,
                   ),
-                ),
-                TextButton(
-                  onPressed: showServerSignatureInfo,
-                  child: const Text(
-                    'What is a Server Signature?',
-                    style: TextStyle(color: Colors.yellow),
-                  ),
+                  child: const Text("Submit", style: TextStyle(color: Colors.white)),
                 ),
               ],
-            ),
-          ),
+            );
+          },
         );
       },
-    );
+    ).then((_) {
+      // Reset the button state when the dialog is closed
+      setState(() {
+        isSubmitting = false;
+      });
+    });
   }
+
+
+void showReceiptDialog(Map<String, dynamic> response) {
+  List<CustomerOrder2> orders = (response['orders'] as List)
+      .map((orderJson) => CustomerOrder2.fromJson(orderJson))
+      .toList();
+  double totalTip = orders.fold(0, (sum, order) => sum + order.tip);
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        backgroundColor: Colors.black,
+        title: const Text(
+          'Tips Claimed!',
+          style: TextStyle(color: Colors.yellowAccent, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: Colors.yellow[700],
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: Column(
+                  children: [
+                    Text('Receipt', style: TextStyle(fontSize: 18, color: Colors.black)),
+                    Text('Bar #${response['barID'] ?? "Unknown"}'),
+                    Text('Bartender: ${response['bartenderID'] ?? "Unknown"} (${response['bartenderName'] ?? "Unknown"})'),
+                    Text(
+                      'Date: ${DateTime.fromMillisecondsSinceEpoch(response['dateClaimed'] ?? 0).toLocal()}',
+                    ),
+                    Text('Total Tip Amount: \$${totalTip.toStringAsFixed(2)}'),
+                    SizedBox(
+                      height: 200.0,
+                      child: orders.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No orders to display.',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            )
+                          : ListView(
+                              children: orders.map((order) {
+                                return ListTile(
+                                  title: Text(
+                                    'Order ${order.userId}: \$${order.tip.toStringAsFixed(2)}',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  subtitle: Text(
+                                    '@ ${DateTime.fromMillisecondsSinceEpoch(order.timestamp).toLocal()}',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                    ),
+                    Text('Server Signature: ${response['digitalSignature'] ?? "N/A"}'),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Close',
+                  style: TextStyle(color: Colors.red, fontSize: 20),
+                ),
+              ),
+              TextButton(
+                onPressed: showServerSignatureInfo,
+                child: const Text(
+                  'What is a Server Signature?',
+                  style: TextStyle(color: Colors.yellow),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 
 void showServerSignatureInfo() {
   const publicKey = 'MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAqePMRYC7/28i9reLDqd77xHIuwHOEGL6sTO6MCSSrjNBJHH6xJnDPs8is3VyfbyZc01ql6H7k565W30OnGgkxBgPdAcaSySLm+G7MMJlviiw2jY6UmuEdOkA5e21GrOikQG3aBz1TtK4fbDL8R7wlKkHEpBzFLDRXHOlK3qyFVph3osU1bTB6nd+z5PRfRbJsUiOOXKJjUa7hXYQI6Z4PwasHDEWBy2HycdIRLdjOmlSjnsX22LsOo0/FEtF2VQU+CiDNXs1evBxDIi9JRMwwETq8L6y5EhRb8LlxpgL5sLaCyzyecyK3NIWwPsLJgOcJWDByUg2FWp/72UYp4mIutraXgEIcO0F/y4FViw8c38DN7V7SX0cUdYJdmkzByApQg0/s8D1krdrE3oyrP2BQ/s7x0SDT4QYt1hoeyZ2PKK6zjLG7nXhbWljhl3fehXuWXRDhcbkPCU0kBu7jk2nYuhRroPy5Brxc5ylwSNZZsqQxZMTxxh/n/T7zWMrdYXSbYsGjk8U6/W1Dru1f8LBMnSQNI8h7uWlv3/uSxsinUg3xeMl9AqPVugH8yGR8EJlJLEftpGmmjNBPtSIN3VWldvJ6NFWT0cX9rxyfT5oxeNScSJPwKUTKfFxC/mzW8KoDGsJjlg+ULFZxv2+5kgfR4XwJ9UxqfM+s6Z1c1CmjFMCAwEAAQ==';
@@ -273,6 +296,44 @@ void showServerSignatureInfo() {
     });
 
     // Listen for the response from the server
+
+    if(testing) {
+      allOrders = [
+      CustomerOrder2('1', 101, 20.50, 3.00, true, [
+        DrinkOrder(1, 'Mojito', 'regular', 'single', 1),
+        DrinkOrder(2, 'Whiskey Sour', 'regular', 'double', 2),
+      ], 'claimed', 'A', 1678901234000, 'session_001'),
+
+      CustomerOrder2('2', 102, 35.75, 5.25, false, [
+        DrinkOrder(3, 'Old Fashioned', 'regular', 'single', 1),
+        DrinkOrder(4, 'Martini', 'points', 'double', 1),
+      ], 'claimed', 'D', 1678901235000, 'session_002'),
+
+      CustomerOrder2('3', 103, 50.00, 8.00, true, [
+        DrinkOrder(5, 'Gin and Tonic', 'regular', 'single', 3),
+        DrinkOrder(6, 'Cosmopolitan', 'regular', 'double', 1),
+      ], 'open', '', 1678901236000, 'session_003'),
+
+      CustomerOrder2('4', 104, 40.00, 6.50, false, [
+        DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+      ], 'open', '', 1678901237000, 'session_004'),
+
+      CustomerOrder2('5', 105, 30.00, 4.50, true, [
+        DrinkOrder(8, 'Daiquiri', 'regular', 'single', 1),
+        DrinkOrder(9, 'Negroni', 'regular', 'double', 1),
+      ], 'ready', 'X', 1678901238000, 'session_005'),
+
+      CustomerOrder2('6', 106, 25.00, 3.75, false, [
+        DrinkOrder(10, 'Long Island Iced Tea', 'points', 'single', 2),
+      ], 'open', '', 1678901239000, 'session_006'),
+
+      CustomerOrder2('7', 107, 60.00, 10.00, true, [
+        DrinkOrder(11, 'Screwdriver', 'regular', 'double', 1),
+        DrinkOrder(12, 'Pina Colada', 'points', '', 1),
+        DrinkOrder(13, 'Bloody Mary', 'regular', 'double', 1),
+      ], 'open', '', 1678901240000, 'session_007'),
+    ];
+    }
 
     _updateLists();
   }
@@ -712,15 +773,10 @@ void showServerSignatureInfo() {
           }
         },
       ),
-      // Add Claim Tips button
-      ElevatedButton(
-        onPressed: claimTips,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue,
-        ),
-        child: const Text("Claim Tips"),
-      ),
+      // Centered Row for circles
+      const SizedBox(width: 20),
       Row(
+        mainAxisSize: MainAxisSize.min, // This keeps the Row compact around its children
         children: [
           Icon(
             filterReady ? Icons.circle_outlined : Icons.circle,
@@ -735,15 +791,30 @@ void showServerSignatureInfo() {
           ),
         ],
       ),
-      IconButton(
-        icon: const Icon(Icons.filter_list),
-        color: Colors.white,
-        iconSize: 28,
-        onPressed: _showFilterMenu,
+      // Row with Claim Tips and Filter button
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ElevatedButton(
+            onPressed: claimTips,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+            ),
+            child: const Text("Claim Tips"),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            color: Colors.white,
+            iconSize: 28,
+            onPressed: _showFilterMenu,
+          ),
+        ],
       ),
     ],
   ),
 ),
+
 
       body: Stack(
         children: [
@@ -825,7 +896,7 @@ void showServerSignatureInfo() {
                                               style: TextStyle(
                                                 fontSize: 20,
                                                 fontWeight: FontWeight.bold,
-                                                color: Colors.redAccent,
+                                                color: Colors.white,
                                               ),
                                               textAlign: TextAlign.center,
                                             ),
@@ -849,7 +920,7 @@ void showServerSignatureInfo() {
                                       ),
                                       Container(
                                         width: 1,
-                                        color: Colors.grey[700], // Divider line color
+                                        color: Colors.white, // Divider line color
                                       ),
                                       Expanded(
                                         child: Column(
@@ -860,7 +931,7 @@ void showServerSignatureInfo() {
                                               style: TextStyle(
                                                 fontSize: 20,
                                                 fontWeight: FontWeight.bold,
-                                                color: Colors.green,
+                                                color: Colors.white,
                                               ),
                                               textAlign: TextAlign.center,
                                             ),
