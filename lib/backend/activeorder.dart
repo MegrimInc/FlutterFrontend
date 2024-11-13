@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-
-
 class CustomerOrder {
   String barId;
   int userId;
@@ -11,6 +9,7 @@ class CustomerOrder {
   String claimer;
   int timestamp;
   bool points;
+  bool isHappyHour;
 
   CustomerOrder(
     this.barId,
@@ -20,7 +19,8 @@ class CustomerOrder {
     this.status,
     this.claimer,
     this.timestamp,
-     this.points,
+    this.points,
+    this.isHappyHour,
   );
 
   // Factory constructor for creating a CustomerOrder from JSON data
@@ -45,6 +45,7 @@ class CustomerOrder {
       json['claimer'] as String,
       int.parse(json['timestamp']),
       json['points'] as bool,
+      json['isHappyHour'] as bool
     );
   }
 
@@ -58,7 +59,6 @@ class CustomerOrder {
     return userId;
   }
 
-
 // Getter methods
   String getBarId() {
     return barId;
@@ -67,8 +67,6 @@ class CustomerOrder {
   int getUserId() {
     return userId;
   }
-
-  
 
   List<DrinkOrder> getDrinks() {
     return drinks;
@@ -152,11 +150,9 @@ class DrinkOrder {
   // Factory constructor to create a DrinkOrder from JSON
   factory DrinkOrder.fromJson(Map<String, dynamic> json) {
     return DrinkOrder(
-      json['id'].toString(),         // Convert id to String
-      json['drinkName'],             // Assuming drinkName is a String
-      json['quantity'].toString(),   // Convert quantity to String
+      json['id'].toString(), // Convert id to String
+      json['drinkName'], // Assuming drinkName is a String
+      json['quantity'].toString(), // Convert quantity to String
     );
   }
-
-  
 }

@@ -37,6 +37,7 @@ dependencies:
   liquid_pull_to_refresh: ^3.0.1
   another_flushbar: ^1.12.30
   flutter_stripe: ^11.2.0
+  ntp: ^2.0.0
 
 
 
