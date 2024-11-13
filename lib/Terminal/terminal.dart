@@ -145,14 +145,14 @@ void claimTips() {
             child: Column(
               children: [
                 Container(
-                  padding: EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(8.0),
                   decoration: BoxDecoration(
                     color: Colors.yellow[700],
                     borderRadius: BorderRadius.circular(8.0),
                   ),
                   child: Column(
                     children: [
-                      Text('Receipt', style: TextStyle(fontSize: 18, color: Colors.black)),
+                      const Text('Receipt', style: TextStyle(fontSize: 18, color: Colors.black)),
                       Text('Bar #${response['barID']}'),
                       Text('Bartender: ${response['bartenderID']} (${response['bartenderName']})'),
                       Text(
@@ -166,11 +166,11 @@ void claimTips() {
                             return ListTile(
                               title: Text(
                                 'Order ${order.userId}: \$${order.tip.toStringAsFixed(2)}',
-                                style: TextStyle(color: Colors.white),
+                                style: const TextStyle(color: Colors.white),
                               ),
                               subtitle: Text(
                                 '@ ${DateTime.fromMillisecondsSinceEpoch(order.timestamp).toLocal()}',
-                                style: TextStyle(color: Colors.grey),
+                                style: const TextStyle(color: Colors.grey),
                               ),
                             );
                           }).toList(),
