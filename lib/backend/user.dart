@@ -14,16 +14,6 @@ class User extends ChangeNotifier {
     return _singleton;
   }
 
-   // ignore: unused_field
-   final List<int> _defaultTagOrder = [
-    179, 172, 175, 174, 173, 176, 
-    177, 186, 178, 183, 184, 181
-  ];
-
-   final Map<int, int> categoryRanks = {
-    172: 0, 173: 0, 174: 0, 175: 0, 176: 0, 177: 0, 
-    178: 0, 179: 0, 181: 0, 183: 0, 184: 0, 186: 0
-  };
 
   User._internal();
 
@@ -192,14 +182,5 @@ class User extends ChangeNotifier {
     }
 
     debugPrint('Finished processing drinks for barId: $barId');
-  }
-
-
-  // New: Update category rank by a delta (increase or decrease)
-  void updateCategoryRank(int tagId, int delta) {
-    if (categoryRanks.containsKey(tagId)) {
-      categoryRanks[tagId] = (categoryRanks[tagId] ?? 0) + delta;
-      notifyListeners();
-    }
   }
 }

@@ -8,6 +8,9 @@ class Cart extends ChangeNotifier {
   Map<String, double> typeTotals = {}; // Track totals for each type combination
   bool isAddingWithPoints = false;
   Map<String, List<String>> lastAddedTypes = {};
+  double totalCartMoney = 0.0;
+  int totalCartPoints = 0;
+  bool isHappyHour = false;
 
   // Set the current bar ID and clear the cart when switching bars
   void setBar(String newBarId) {
@@ -38,11 +41,19 @@ class Cart extends ChangeNotifier {
 
   // Update the specific price total based on single/double and points/dollars
   final drink = LocalDatabase().getDrinkById(drinkId);
-  final price = (isDouble ? (usePoints ? drink.points * 2 : drink.price * 2) : (usePoints ? drink.points : drink.price)).toDouble();
+
+  // Determine the appropriate price based on `usePoints`
+  double price;
+  if (usePoints) {
+    price = drink.points.toDouble();
+  } else {
+    price = isDouble ? drink.doublePrice : drink.singlePrice;
+  }
 
   typeTotals.update(typeKey, (total) => total + price, ifAbsent: () => price);
 
   debugPrint('Added $typeKey of drink ID $drinkId. Updated typeTotals: $typeTotals');
+  _recalculateCartTotals();
   notifyListeners();
 }
 
@@ -73,6 +84,7 @@ void removeDrink(String drinkId, {required bool isDouble, required bool usePoint
     typeTotals.remove(typeKey);
     
     debugPrint('Removed all quantities of $typeKey for drink ID $drinkId.');
+    _recalculateCartTotals();
     notifyListeners();
   } else {
     debugPrint('Drink with ID $drinkId and type $typeKey not in cart.');
@@ -90,21 +102,7 @@ void removeDrink(String drinkId, {required bool isDouble, required bool usePoint
     return barCart[drinkId]!.values.fold(0, (total, quantity) => total + quantity);
   }
 
-  // Calculates total dollar amount across all types that use dollars
-  double calculateTotalDollars() {
-    final total = typeTotals.entries
-        .where((entry) => entry.key.contains('dollars'))
-        .fold(0.0, (sum, entry) => sum + entry.value);
-    return double.parse(total.toStringAsFixed(2));
-  }
-
-  // Calculates total points amount across all types that use points
-  double calculateTotalPoints() {
-    final total = typeTotals.entries
-        .where((entry) => entry.key.contains('points'))
-        .fold(0.0, (sum, entry) => sum + entry.value);
-    return double.parse(total.toStringAsFixed(2));
-  }
+  
 
   // Returns a breakdown of quantities by type and payment method for each drink
   Map<String, Map<String, int>> getCartDetails() {
@@ -124,10 +122,12 @@ void removeDrink(String drinkId, {required bool isDouble, required bool usePoint
     notifyListeners(); // Notify listeners to update UI or perform other actions
   }
 
-  // Counts the total number of unique drinks (across types) in the cart
   int getTotalDrinkCount() {
-    return barCart.values.fold(0, (total, priceMap) => total + priceMap.length);
-  }
+  return barCart.values.fold(0, (total, priceMap) {
+    return total + priceMap.values.fold(0, (typeTotal, quantity) => typeTotal + quantity);
+  });
+}
+
 
   void toggleAddWithPoints() {
     isAddingWithPoints = !isAddingWithPoints;
@@ -168,12 +168,40 @@ void removeDrink(String drinkId, {required bool isDouble, required bool usePoint
       }
 
       debugPrint('Undo last addition of $typeKey for drink ID $drinkId. Updated typeTotals: $typeTotals');
+      _recalculateCartTotals();
       notifyListeners();
     } else {
       debugPrint('Error: Type $typeKey for drink ID $drinkId is not in the cart.');
     }
   }
 
+  // Recalculate totals and set isHappyHour based on LocalDatabase status
+  void _recalculateCartTotals() {
+    totalCartMoney = 0.0;
+    totalCartPoints = 0;
+
+    // Get happy hour status from LocalDatabase and set isHappyHour
+    isHappyHour = LocalDatabase().isBarInHappyHour(barId!);
+
+    barCart.forEach((drinkId, drinkTypes) {
+      final drink = LocalDatabase().getDrinkById(drinkId);
+
+      drinkTypes.forEach((typeKey, quantity) {
+        final isDouble = typeKey.contains('double');
+        final isPoints = typeKey.contains('points');
+
+        if (isPoints) {
+          totalCartPoints += (quantity * drink.points).toInt();
+        } else {
+          final price = isDouble
+              ? (isHappyHour ? drink.doubleHappyPrice : drink.doublePrice)
+              : (isHappyHour ? drink.singleHappyPrice : drink.singlePrice);
+          totalCartMoney += price * quantity;
+        }
+      });
+    });
+    notifyListeners();
+  }
   void resetIsAddingWithPoints() {
   isAddingWithPoints = false;
   notifyListeners();

@@ -29,8 +29,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint("current date: ${DateTime.now()}");
 
-  Stripe.publishableKey = 'pk_test_51QIHPQALmk8hqurjW70pr2kLZg1lr0bXN9K6uMdf9oDPwn3olIIPRd2kJncr8rGMKjVgSUsZztTtIcPwDlLfchgu00dprIZKma';
-  
+  Stripe.publishableKey =
+      'pk_test_51QIHPQALmk8hqurjW70pr2kLZg1lr0bXN9K6uMdf9oDPwn3olIIPRd2kJncr8rGMKjVgSUsZztTtIcPwDlLfchgu00dprIZKma';
+
   try {
     debugPrint("Starting Firebase Initialization");
 
@@ -152,6 +153,7 @@ Future<void> sendGetRequest() async {
       LocalDatabase localDatabase = LocalDatabase();
       for (var barJson in jsonResponse) {
         Bar bar = Bar.fromJson(barJson);
+        debugPrint('Bar JSON data: ${jsonEncode(barJson)}');
         localDatabase.addBar(bar);
 
         if (bar.barimg != null && bar.barimg!.isNotEmpty) {
@@ -177,10 +179,9 @@ Future<void> sendGetRequest() async {
 }
 
 Future<void> sendGetRequest2() async {
-
   try {
-     // Add or update points in the LocalDatabase for each bar
-      LocalDatabase localDatabase = LocalDatabase();
+    // Add or update points in the LocalDatabase for each bar
+    LocalDatabase localDatabase = LocalDatabase();
 
     final loginCache = LoginCache();
     final userId = await loginCache.getUID();
@@ -200,8 +201,8 @@ Future<void> sendGetRequest2() async {
       final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
       debugPrint('Decoded JSON response: $jsonResponse');
 
-
-      if (jsonResponse.isEmpty || !jsonResponse.containsKey(userId.toString())) {
+      if (jsonResponse.isEmpty ||
+          !jsonResponse.containsKey(userId.toString())) {
         debugPrint('No points found, clearing the points map.');
         localDatabase.clearPoints();
         return;
@@ -217,13 +218,12 @@ Future<void> sendGetRequest2() async {
       // Get the points map for the user (barId -> points)
       final Map<String, dynamic> userPointsMap = jsonResponse[userIdString];
 
-
-
       // Iterate over the user points map (barId -> points)
       userPointsMap.forEach((barId, points) {
         try {
           final Point point = Point(barId: barId.toString(), points: points);
-          debugPrint('Successfully serialized Point: Bar ID: ${point.barId}, Points: ${point.points}');
+          debugPrint(
+              'Successfully serialized Point: Bar ID: ${point.barId}, Points: ${point.points}');
 
           // Add or update the points in the LocalDatabase
           localDatabase.addOrUpdatePoints(point.barId, point.points);
@@ -231,9 +231,9 @@ Future<void> sendGetRequest2() async {
           debugPrint('Error serializing Point object from JSON: $e');
         }
       });
-
     } else {
-      debugPrint('Failed to send GET request for points: ${response.statusCode}');
+      debugPrint(
+          'Failed to send GET request for points: ${response.statusCode}');
     }
   } catch (e) {
     debugPrint('Error sending GET request for points: $e');

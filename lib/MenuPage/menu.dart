@@ -66,6 +66,7 @@ class MenuPageState extends State<MenuPage>
     debugPrint('Fetching bar data for barId: ${widget.barId}');
 
     currentBar = LocalDatabase.getBarById(widget.barId);
+    debugPrint('LocalDatabase instance in MenuPage: ${LocalDatabase().hashCode}');
     if (currentBar != null) {
       appBarTitle = (currentBar!.tag ?? 'Menu Page').replaceAll(' ', '');
     }
@@ -73,6 +74,8 @@ class MenuPageState extends State<MenuPage>
     await Provider.of<User>(context, listen: false)
         .fetchTagsAndDrinks(widget.barId);
     debugPrint('Finished fetching drinks for barId: ${widget.barId}');
+    debugPrint('LocalDatabase instance in MenuPage: ${LocalDatabase().hashCode}');
+    
 
     setState(() {
       isLoading = false;
@@ -343,6 +346,7 @@ if (drinkIds.length <= 3) {
                 final drinkId = drinkIds[startIndex + index];
                 final drink = Provider.of<LocalDatabase>(context, listen: false)
                     .getDrinkById(drinkId.toString());
+
 
                 return GestureDetector(
                   onTap: () {

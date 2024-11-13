@@ -413,8 +413,8 @@ class PickupPageState extends State<PickupPage> {
       "points": usePoints,
       "drinks": order.drinks.map((drinkOrder) {
         return {
-          'drinkId': int.parse(drinkOrder.id),
-          'quantity': int.parse(drinkOrder.quantity),
+          //'drinkId': int.parse(drinkOrder.id),
+          //'quantity': int.parse(drinkOrder.quantity),
         };
       }).toList(),
     };

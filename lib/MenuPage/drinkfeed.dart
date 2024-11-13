@@ -65,22 +65,21 @@ class DrinkFeedState extends State<DrinkFeed>
   }
 
   void _submitOrder(BuildContext context, {required bool inAppPayments}) async {
-  final loginCache = Provider.of<LoginCache>(context, listen: false);
-  final userId = await loginCache.getUID();
-  final cart = Provider.of<Cart>(context, listen: false);
-  final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+    final loginCache = Provider.of<LoginCache>(context, listen: false);
+    final userId = await loginCache.getUID();
+    final cart = Provider.of<Cart>(context, listen: false);
+    final hierarchy = Provider.of<Hierarchy>(context, listen: false);
 
-  if (userId == 0) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
-      (route) => false,
-    );
-    _showLoginAlertDialog(context);
-    return;
-  }
+    if (userId == 0) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
+        (route) => false,
+      );
+      _showLoginAlertDialog(context);
+      return;
+    }
 
-
-  // Determine the quantity limit based on payment method
+    // Determine the quantity limit based on payment method
     final quantityLimit = inAppPayments ? 10 : 3;
     final totalQuantity = cart.getTotalDrinkCount();
 
@@ -93,47 +92,47 @@ class DrinkFeedState extends State<DrinkFeed>
       return; // Exit if limit is exceeded
     }
 
-  final barId = widget.barId;
+    final barId = widget.barId;
 
-  // Build the list of drink orders with variations
-  List<Map<String, dynamic>> drinkOrders = cart.barCart.entries.expand((entry) {
-    final drinkId = entry.key;
-    return entry.value.entries.map((typeEntry) {
-      final typeKey = typeEntry.key;
-      final quantity = typeEntry.value;
-      final isDouble = typeKey.contains('double');
-      final isPoints = typeKey.contains('points');
+    // Build the list of drink orders with variations
+    List<Map<String, dynamic>> drinkOrders =
+        cart.barCart.entries.expand((entry) {
+      final drinkId = entry.key;
+      return entry.value.entries.map((typeEntry) {
+        final typeKey = typeEntry.key;
+        final quantity = typeEntry.value;
+        final isDouble = typeKey.contains('double');
+        final isPoints = typeKey.contains('points');
 
-      return {
-        "drinkId": int.parse(drinkId),
-        "quantity": quantity,
-        "paymentType": isPoints ? "points" : "regular",
-        "sizeType": isDouble ? "double" : "single"
-      };
+        return {
+          "drinkId": int.parse(drinkId),
+          "quantity": quantity,
+          "paymentType": isPoints ? "points" : "regular",
+          "sizeType": isDouble ? "double" : "single"
+        };
+      }).toList();
     }).toList();
-  }).toList();
 
-  // Calculate the total regular price for all items paid with money
-  final totalRegularPrice = cart.calculateTotalDollars();
+    // Calculate the total regular price for all items paid with money
 
-  // Prepare the order object to send
-  final order = {
-    "action": "create",
-    "barId": barId,
-    "userId": userId,
-    "totalRegularPrice": totalRegularPrice,
-    "inAppPayments": inAppPayments, // Specify payment method choice
-    "drinks": drinkOrders,
-  };
+    // Prepare the order object to send
+    final order = {
+      "action": "create",
+      "barId": barId,
+      "userId": userId,
+      "inAppPayments": inAppPayments, // Specify payment method choice
+      "drinks": drinkOrders,
+      "isHappyHour": cart.isHappyHour,
+    };
 
-  hierarchy.createOrder(order);
+    hierarchy.createOrder(order);
 
-  Navigator.of(context).pushNamedAndRemoveUntil(
-    '/orders',
-    (Route<dynamic> route) => false,
-    arguments: barId,
-  );
-}
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      '/orders',
+      (Route<dynamic> route) => false,
+      arguments: barId,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -184,9 +183,8 @@ class DrinkFeedState extends State<DrinkFeed>
                       child: Consumer<Cart>(
                         builder: (context, cart, _) {
                           final hasItems = cart.getTotalDrinkCount() > 0;
-                          final totalPrice = cart.calculateTotalDollars();
-                          final totalPoints = cart.calculateTotalPoints();
-
+                          final totalPrice = cart.totalCartMoney;
+                          final totalPoints = cart.totalCartPoints;
                           String totalText;
                           if (totalPrice > 0 && totalPoints > 0) {
                             totalText =
@@ -314,10 +312,27 @@ class DrinkFeedState extends State<DrinkFeed>
                                                             ? " (single)"
                                                             : " (double)");
 
+                                                // Access the cart to check if it’s happy hour
+                                                final isHappyHour =
+                                                    Provider.of<Cart>(context,
+                                                            listen: false)
+                                                        .isHappyHour;
+
+// Determine price based on whether the entry is single or double, and if it's happy hour
+                                                final price = entry.key
+                                                        .contains("single")
+                                                    ? (isHappyHour
+                                                        ? drink.singleHappyPrice
+                                                        : drink.singlePrice)
+                                                    : (isHappyHour
+                                                        ? drink.doubleHappyPrice
+                                                        : drink.doublePrice);
+
+                                                // Format price or points based on the type key
                                                 final priceOrPoints = entry.key
                                                         .contains("points")
                                                     ? "${(entry.value * drink.points).toInt()} pts"
-                                                    : "\$${(entry.value * drink.price).toStringAsFixed(2)}";
+                                                    : "\$${(entry.value * price).toStringAsFixed(2)}";
 
                                                 return GestureDetector(
                                                   onTap: () {
@@ -414,8 +429,7 @@ class DrinkFeedState extends State<DrinkFeed>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const SizedBox(
-            height: 50),
+          const SizedBox(height: 50),
           ValueListenableBuilder<int>(
             valueListenable: _currentPageNotifier,
             builder: (context, currentPage, child) {
@@ -480,41 +494,37 @@ class DrinkFeedState extends State<DrinkFeed>
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-
-
                 Consumer<Cart>(
-    builder: (context, cart, _) {
-      final totalQuantity = cart.getTotalQuantityForDrink(widget.drink.id);
+                  builder: (context, cart, _) {
+                    final totalQuantity =
+                        cart.getTotalQuantityForDrink(widget.drink.id);
 
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (totalQuantity > 0)
-            GestureDetector(
-              onTap: () {
-                cart.undoLastAddition(widget.drink.id);
-              },
-              child: const Icon(
-                Icons.remove_circle,
-                color: Colors.white,
-                size: 30
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (totalQuantity > 0)
+                          GestureDetector(
+                            onTap: () {
+                              cart.undoLastAddition(widget.drink.id);
+                            },
+                            child: const Icon(Icons.remove_circle,
+                                color: Colors.white, size: 30),
+                          ),
+                        const SizedBox(
+                            width: 8), // Add some space between icons
+                        Text(
+                          '$totalQuantity', // Display the quantity count
+                          style: GoogleFonts.poppins(
+                            color: Colors.white70,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    );
+                  },
                 ),
-            ),
-          const SizedBox(width: 8), // Add some space between icons
-          Text(
-            '$totalQuantity', // Display the quantity count
-            style: GoogleFonts.poppins(
-              color: Colors.white70,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(width: 8),
-          
-        ],
-      );
-    },
-  ),
                 const SizedBox(height: 24),
                 _buildPriceInfo(),
                 const SizedBox(height: 24),
@@ -571,7 +581,7 @@ class DrinkFeedState extends State<DrinkFeed>
                       ),
                     ),
                     Text(
-                      '\$${widget.drink.price.toStringAsFixed(2)}',
+                      '\$${widget.drink.singlePrice.toStringAsFixed(2)}',
                       style: GoogleFonts.poppins(
                         color: cart.isAddingWithPoints
                             ? Colors.white70
@@ -631,10 +641,10 @@ class DrinkFeedState extends State<DrinkFeed>
 
   Widget _buildQuantityControlButtons(BuildContext context) {
     // Check if the current drink's tag ID matches any in simpleCategoryTags
-    final bool isSimpleCategory = widget.drink.tagId
-        .any((tag) => simpleCategoryTags.contains(int.parse(tag)));
+    final bool isSingleAndDoubleDifferent =
+        widget.drink.singlePrice == widget.drink.doublePrice;
 
-    return isSimpleCategory
+    return isSingleAndDoubleDifferent
         ? _buildSimpleQuantityButtons(context)
         : _buildRegularQuantityButtons(context);
   }
@@ -775,7 +785,7 @@ class DrinkFeedState extends State<DrinkFeed>
             GestureDetector(
               onTap: isCartEmpty
                   ? null
-                  : () => _submitOrder(context, inAppPayments: false),
+                  : () => _submitOrder(context, inAppPayments: true),
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -852,8 +862,8 @@ class DrinkFeedState extends State<DrinkFeed>
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-           backgroundColor: Colors.white,
-            title: Center(
+          backgroundColor: Colors.white,
+          title: Center(
             child: Text(
               '($description)',
               style: const TextStyle(
@@ -879,20 +889,19 @@ class DrinkFeedState extends State<DrinkFeed>
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-            TextButton(
-               onPressed: () { 
+                TextButton(
+                  onPressed: () {
                     Navigator.of(context).pop(); // Close dialog
                   },
-              child: Text(
-                      'No',
-                      style: GoogleFonts.poppins(
-                        fontSize: 21,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
-                      ),
+                  child: Text(
+                    'No',
+                    style: GoogleFonts.poppins(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
                     ),
-            ),
-
+                  ),
+                ),
                 TextButton(
                   onPressed: () {
                     widget.cart.removeDrink(drink.id,
@@ -1010,7 +1019,8 @@ class DrinkFeedState extends State<DrinkFeed>
             TextButton(
               style: TextButton.styleFrom(
                 backgroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),

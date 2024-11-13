@@ -226,84 +226,7 @@ class Hierarchy extends ChangeNotifier {
     _createOrderResponse(data);
   }
 
-  void cancelOrder(CustomerOrder order) {
-    try {
-      if (_channel != null) {
-        // Construct the order object with the 'delete' action
-        final orderObject = {
-          "action": "delete",
-          "barId": int.parse(order.barId), // Ensure it's an int
-          "userId": order.userId,
-          "points": order.points,
-          "isHappyHour": false,
-          "drinks": order.drinks.map((drinkOrder) {
-            return {
-              'drinkId': int.parse(drinkOrder.id), // Ensure it's an int
-              'quantity': int.parse(drinkOrder.quantity), // Ensure it's an int
-            };
-          }).toList(),
-        };
 
-        // Encode the order object to JSON
-        final jsonOrder = jsonEncode(orderObject);
-        debugPrint('Sending cancel order: $jsonOrder');
-        _channel!.sink.add(jsonOrder); // Send over WebSocket
-        debugPrint('Cancel order message sent.');
-      } else {
-        debugPrint('Failed to send cancel order: WebSocket is not connected');
-      }
-    } catch (e) {
-      debugPrint('Error while sending cancel order: $e');
-    }
-  }
-
-  void _handleError(BuildContext context, String errorMessage) {
-    // Use the global navigator key to get a safe context
-    final safeContext = navigatorKey.currentContext;
-
-    if (safeContext == null) {
-      //debugPrint('Safe context is null. Cannot show dialog.');
-      return;
-    }
-
-    //debugPrint('Showing error dialog with safe context: $safeContext');
-
-    showDialog(
-      context: safeContext,
-      builder: (BuildContext context) {
-        HapticFeedback.heavyImpact();
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          backgroundColor: Colors.white,
-          title: const Row(
-            children: [
-              SizedBox(width: 75),
-              Icon(Icons.error_outline, color: Colors.black),
-              SizedBox(width: 5),
-              Text(
-                'Oops :/',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22,
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            errorMessage,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 16,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        );
-      },
-    );
-  }
 
   void _handleBrokeResponse(
       BuildContext context, String message, Map<String, dynamic> orderData) {
@@ -441,24 +364,53 @@ class Hierarchy extends ChangeNotifier {
           (a, b) => _createdOrderBarIds[b]!.compareTo(_createdOrderBarIds[a]!));
   }
 
-  // void _updateCategoryRanks(BuildContext context, Map<String, dynamic> data,
-  //     {required bool increase}) {
-  //   final drinks = data['drinks'] as List<dynamic>; // Extract drink list
-  //   final delta = increase ? 2 : -1; // Set delta based on action
+  void _handleError(BuildContext context, String errorMessage) {
+    // Use the global navigator key to get a safe context
+    final safeContext = navigatorKey.currentContext;
 
-  //   final user =
-  //       Provider.of<User>(context, listen: false); // Access User provider
+    if (safeContext == null) {
+      //debugPrint('Safe context is null. Cannot show dialog.');
+      return;
+    }
 
-  //   for (var drink in drinks) {
-  //     final drinkId = int.parse(drink['id'].toString());
-  //     final drinkData = localDatabase.getDrinkById(drinkId.toString());
+    //debugPrint('Showing error dialog with safe context: $safeContext');
 
-  //     for (String tag in drinkData.tagId) {
-  //       user.updateCategoryRank(
-  //           int.parse(tag), delta); // Update rank via User provider
-  //     }
-  //   }
-  // }
+    showDialog(
+      context: safeContext,
+      builder: (BuildContext context) {
+        HapticFeedback.heavyImpact();
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: Colors.white,
+          title: const Row(
+            children: [
+              SizedBox(width: 75),
+              Icon(Icons.error_outline, color: Colors.black),
+              SizedBox(width: 5),
+              Text(
+                'Oops :/',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            errorMessage,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        );
+      },
+    );
+  }
 
   bool get isConnected => _isConnected;
 }
