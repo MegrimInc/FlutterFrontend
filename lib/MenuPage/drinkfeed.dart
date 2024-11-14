@@ -1,16 +1,19 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:convert';
 import 'dart:ui';
 
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
-import 'package:barzzy/OrdersPage/hierarchy.dart';
+import 'package:barzzy/OrdersPage/websocket.dart';
+import 'package:http/http.dart' as http;
 import 'package:barzzy/main.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:barzzy/Backend/drink.dart';
@@ -92,6 +95,22 @@ class DrinkFeedState extends State<DrinkFeed>
       return; // Exit if limit is exceeded
     }
 
+     // Step 3: Check if the user has a payment method
+  try {
+    final hasPaymentMethod = await _checkPaymentMethod(userId);
+    if (!hasPaymentMethod) {
+      // If no payment method, show Stripe payment sheet and exit
+      await _showStripeSetupSheet(context);
+      return;
+    }
+  } catch (e) {
+    debugPrint('Error checking payment method: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Error: Unable to verify payment method.')),
+    );
+    return;
+  }
+
     final barId = widget.barId;
 
     // Build the list of drink orders with variations
@@ -133,6 +152,50 @@ class DrinkFeedState extends State<DrinkFeed>
       arguments: barId,
     );
   }
+
+  // Private method to check if a payment method exists
+  Future<bool> _checkPaymentMethod(int userId) async {
+    final response = await http.get(Uri.parse('https://www.barzzy.site/points/checkPaymentMethod/$userId'));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body); // true if payment exists, false otherwise
+    } else {
+      throw Exception('Failed to check payment method');
+    }
+  }
+
+  Future<void> _showStripeSetupSheet(BuildContext context) async {
+  try {
+    // Call your backend to create a SetupIntent and retrieve the client secret
+    final response = await http.post(
+      Uri.parse('https://www.barzzy.site/create-setup-intent'),
+      body: jsonEncode({"customerId": "<optional-existing-customer-id>"}),
+    );
+
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+      final setupIntentClientSecret = responseData["setupIntentClientSecret"];
+      final customerId = responseData["customerId"];
+
+      // Initialize the payment sheet with the SetupIntent
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          setupIntentClientSecret: setupIntentClientSecret,
+          customerId: customerId,
+        ),
+      );
+
+      // Present the Stripe payment sheet to collect and save payment info
+      await Stripe.instance.presentPaymentSheet();
+    } else {
+      throw Exception("Failed to load setup intent data");
+    }
+  } catch (e) {
+    debugPrint('Error presenting Stripe setup sheet: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Setup failed. Please try again.')),
+    );
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -318,7 +381,7 @@ class DrinkFeedState extends State<DrinkFeed>
                                                             listen: false)
                                                         .isHappyHour;
 
-// Determine price based on whether the entry is single or double, and if it's happy hour
+                                              // Determine price based on whether the entry is single or double, and if it's happy hour
                                                 final price = entry.key
                                                         .contains("single")
                                                     ? (isHappyHour

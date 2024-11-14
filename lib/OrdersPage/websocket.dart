@@ -3,7 +3,6 @@
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/Backend/activeorder.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
-//import 'package:barzzy/Backend/user.dart';
 import 'package:barzzy/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -185,6 +184,7 @@ class Hierarchy extends ChangeNotifier {
 // Method to send an order
   void createOrder(Map<String, dynamic> order) {
     try {
+
       if (_channel != null) {
         final jsonOrder = jsonEncode(order); // Convert the order to JSON
         debugPrint('Sending create order: $jsonOrder');
