@@ -45,7 +45,6 @@ class DrinkFeedState extends State<DrinkFeed>
   late Animation<double> _blurAnimation;
   late PageController _pageController; // Controller for the PageView
   final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
-  final List<int> simpleCategoryTags = [179, 186, 183, 184, 178, 181];
 
   @override
   void initState() {
@@ -95,21 +94,22 @@ class DrinkFeedState extends State<DrinkFeed>
       return; // Exit if limit is exceeded
     }
 
-     // Step 3: Check if the user has a payment method
-  try {
-    final hasPaymentMethod = await _checkPaymentMethod(userId);
-    if (!hasPaymentMethod) {
-      // If no payment method, show Stripe payment sheet and exit
-      await _showStripeSetupSheet(context);
+    // Step 3: Check if the user has a payment method
+    try {
+      final hasPaymentMethod = await _checkPaymentMethod(userId);
+      if (!hasPaymentMethod) {
+        // If no payment method, show Stripe payment sheet and exit
+        await _showStripeSetupSheet(context, userId);
+        return;
+      }
+    } catch (e) {
+      debugPrint('Error checking payment method: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Error: Unable to verify payment method.')),
+      );
       return;
     }
-  } catch (e) {
-    debugPrint('Error checking payment method: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Error: Unable to verify payment method.')),
-    );
-    return;
-  }
 
     final barId = widget.barId;
 
@@ -155,47 +155,77 @@ class DrinkFeedState extends State<DrinkFeed>
 
   // Private method to check if a payment method exists
   Future<bool> _checkPaymentMethod(int userId) async {
-    final response = await http.get(Uri.parse('https://www.barzzy.site/points/checkPaymentMethod/$userId'));
+    final response = await http.get(Uri.parse(
+        'https://www.barzzy.site/customer/checkPaymentMethod/$userId'));
     if (response.statusCode == 200) {
-      return jsonDecode(response.body); // true if payment exists, false otherwise
+      return jsonDecode(
+          response.body); // true if payment exists, false otherwise
     } else {
       throw Exception('Failed to check payment method');
     }
   }
 
-  Future<void> _showStripeSetupSheet(BuildContext context) async {
-  try {
-    // Call your backend to create a SetupIntent and retrieve the client secret
-    final response = await http.post(
-      Uri.parse('https://www.barzzy.site/create-setup-intent'),
-      body: jsonEncode({"customerId": "<optional-existing-customer-id>"}),
-    );
-
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      final setupIntentClientSecret = responseData["setupIntentClientSecret"];
-      final customerId = responseData["customerId"];
-
-      // Initialize the payment sheet with the SetupIntent
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          setupIntentClientSecret: setupIntentClientSecret,
-          customerId: customerId,
-        ),
+  Future<void> _showStripeSetupSheet(BuildContext context, int userId) async {
+    try {
+      // Call your backend to create a SetupIntent and retrieve the client secret
+      final response = await http.get(
+        Uri.parse('https://www.barzzy.site/customer/createSetupIntent/$userId'),
       );
 
-      // Present the Stripe payment sheet to collect and save payment info
-      await Stripe.instance.presentPaymentSheet();
-    } else {
-      throw Exception("Failed to load setup intent data");
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        final setupIntentClientSecret = responseData["setupIntentClientSecret"];
+        final customerId = responseData["customerId"];
+        debugPrint('SetupIntent Response Body: ${response.body}');
+
+        // Initialize the payment sheet with the SetupIntent
+        await Stripe.instance.initPaymentSheet(
+          paymentSheetParameters: SetupPaymentSheetParameters(
+            setupIntentClientSecret: setupIntentClientSecret,
+            customerId: customerId,
+          ),
+        );
+
+        // Present the Stripe payment sheet to collect and save payment info
+        await Stripe.instance.presentPaymentSheet();
+        await _savePaymentMethodToDatabase(userId, customerId);
+      } else {
+        debugPrint(
+            "Failed to load setup intent data. Status code: ${response.statusCode}");
+        debugPrint("Error Response Body: ${response.body}");
+        throw Exception(
+            "Failed to load setup intent data with status code: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint('Error presenting Stripe setup sheet: $e');
     }
-  } catch (e) {
-    debugPrint('Error presenting Stripe setup sheet: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Setup failed. Please try again.')),
-    );
   }
-}
+
+// Private method to save the payment method to the database
+  Future<void> _savePaymentMethodToDatabase(
+      int userId, String customerId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('https://www.barzzy.site/customer/addPaymentIdToDatabase'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "customerId": userId, // userId is the customer ID for your app
+          "stripeId": customerId // Stripe customer ID returned by Stripe
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint("Payment method successfully saved to database.");
+      } else {
+        debugPrint(
+            "Failed to save payment method. Status code: ${response.statusCode}");
+        debugPrint("Error Response Body: ${response.body}");
+        throw Exception("Failed to save payment method to database.");
+      }
+    } catch (e) {
+      debugPrint('Error saving payment method to database: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -354,16 +384,10 @@ class DrinkFeedState extends State<DrinkFeed>
                                                         ? '${drink.name}s'
                                                         : drink.name;
 
-                                                // Determine if the size label should be omitted
                                                 bool shouldOmitSizeLabel(
                                                     Drink drink) {
-                                                  return drink.tagId
-                                                      .map((tag) =>
-                                                          int.tryParse(tag) ??
-                                                          -1)
-                                                      .any((tag) =>
-                                                          simpleCategoryTags
-                                                              .contains(tag));
+                                                  return drink.singlePrice ==
+                                                      drink.doublePrice;
                                                 }
 
                                                 // Conditionally display size label based on shouldOmitSizeLabel
@@ -381,7 +405,7 @@ class DrinkFeedState extends State<DrinkFeed>
                                                             listen: false)
                                                         .isHappyHour;
 
-                                              // Determine price based on whether the entry is single or double, and if it's happy hour
+                                                // Determine price based on whether the entry is single or double, and if it's happy hour
                                                 final price = entry.key
                                                         .contains("single")
                                                     ? (isHappyHour
@@ -416,7 +440,7 @@ class DrinkFeedState extends State<DrinkFeed>
                                                       '${entry.value} $drinkName$sizeText - $priceOrPoints',
                                                       style:
                                                           GoogleFonts.poppins(
-                                                        color: Colors.white70,
+                                                        color: Colors.white,
                                                         fontSize: 18,
                                                         fontWeight:
                                                             FontWeight.w500,
@@ -616,12 +640,26 @@ class DrinkFeedState extends State<DrinkFeed>
   Widget _buildPriceInfo() {
     return Consumer<Cart>(
       builder: (context, cart, _) {
+      // Determine if happy hour is active and set prices accordingly
+      final isHappyHour = cart.isHappyHour;
+      final singlePrice = isHappyHour ? widget.drink.singleHappyPrice : widget.drink.singlePrice;
+
+      // Check if happy hour prices are different from regular prices
+      final hasDifferentHappyHourPrices =
+          widget.drink.singlePrice != widget.drink.singleHappyPrice ||
+          widget.drink.doublePrice != widget.drink.doubleHappyPrice;
+
+      // Determine title and color based on the price difference condition
+      final isHappyColor = (isHappyHour && hasDifferentHappyHourPrices) ? Colors.amber : Colors.black;
+      final isHappyTitle = (isHappyHour && hasDifferentHappyHourPrices) ? 'Happy' : 'Regular';
+
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             GestureDetector(
               onTap: () {
-                cart.toggleAddWithPoints();
+                cart.setAddingWithPoints(
+                    false); // Set to false when Regular is tapped
               },
               child: Container(
                 padding:
@@ -634,21 +672,21 @@ class DrinkFeedState extends State<DrinkFeed>
                 child: Column(
                   children: [
                     Text(
-                      'Regular',
+                      isHappyTitle,
                       style: GoogleFonts.poppins(
                         color: cart.isAddingWithPoints
                             ? Colors.white
-                            : Colors.black,
+                            : isHappyColor,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     Text(
-                      '\$${widget.drink.singlePrice.toStringAsFixed(2)}',
+                      '\$${singlePrice.toStringAsFixed(2)}',
                       style: GoogleFonts.poppins(
                         color: cart.isAddingWithPoints
                             ? Colors.white70
-                            : Colors.black,
+                            : isHappyColor,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
@@ -660,7 +698,8 @@ class DrinkFeedState extends State<DrinkFeed>
             const SizedBox(width: 16),
             GestureDetector(
               onTap: () {
-                cart.toggleAddWithPoints();
+                cart.setAddingWithPoints(
+                    true); // Set to true when Points is tapped
               },
               child: Container(
                 padding:
@@ -718,6 +757,33 @@ class DrinkFeedState extends State<DrinkFeed>
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
+            // Add 1 Single Button
+            GestureDetector(
+              onTap: () {
+                widget.cart.addDrink(
+                  widget.drink.id,
+                  isDouble: false,
+                  usePoints: cart.isAddingWithPoints,
+                );
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  ' Add 1 Single',
+                  style: GoogleFonts.poppins(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+
             // Add 1 Double Button
             GestureDetector(
               onTap: () {
@@ -736,33 +802,6 @@ class DrinkFeedState extends State<DrinkFeed>
                 ),
                 child: Text(
                   'Add 1 Double',
-                  style: GoogleFonts.poppins(
-                    color: Colors.black,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-
-            // Add 1 Single Button
-            GestureDetector(
-              onTap: () {
-                widget.cart.addDrink(
-                  widget.drink.id,
-                  isDouble: false,
-                  usePoints: cart.isAddingWithPoints,
-                );
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  ' Add 1 Single ',
                   style: GoogleFonts.poppins(
                     color: Colors.black,
                     fontSize: 14,
@@ -811,70 +850,102 @@ class DrinkFeedState extends State<DrinkFeed>
   }
 
   Widget _buildPriceOptionButtons(BuildContext context) {
-    return Consumer<Cart>(
-      builder: (context, cart, _) {
-        final isCartEmpty = cart.getTotalDrinkCount() == 0;
+  return Consumer<Cart>(
+    builder: (context, cart, _) {
+      final isCartEmpty = cart.getTotalDrinkCount() == 0;
+      final totalMoneyPrice = cart.totalCartMoney;
+      final totalPointsPrice = cart.totalCartPoints;
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // Pay @ bar button
-            GestureDetector(
-              onTap: isCartEmpty
-                  ? null
-                  : () => _submitOrder(context, inAppPayments: false),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                decoration: BoxDecoration(
-                  color: isCartEmpty ? Colors.white24 : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Pay @ bar',
-                      style: GoogleFonts.poppins(
-                        color: isCartEmpty ? Colors.white70 : Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
+      // Only render the "Pay with pts" button if there's no regular price
+      if (totalMoneyPrice == 0 && totalPointsPrice > 0) {
+        return Center(
+          child: GestureDetector(
+            onTap: isCartEmpty
+                ? null
+                : () => _submitOrder(context, inAppPayments: false),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 80, vertical: 19),
+              decoration: BoxDecoration(
+                color: isCartEmpty ? Colors.white24 : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Pay in app',
+                    style: GoogleFonts.poppins(
+                      color: isCartEmpty ? Colors.white70 : Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            // Pay in app button
-            GestureDetector(
-              onTap: isCartEmpty
-                  ? null
-                  : () => _submitOrder(context, inAppPayments: true),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                decoration: BoxDecoration(
-                  color: isCartEmpty ? Colors.white24 : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Pay in app',
-                      style: GoogleFonts.poppins(
-                        color: isCartEmpty ? Colors.white70 : Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+          ),
         );
-      },
-    );
-  }
+      }
+
+      // Otherwise, render the "Pay @ bar" and "Pay in app" buttons
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          // Pay @ bar button
+          GestureDetector(
+            onTap: isCartEmpty
+                ? null
+                : () => _submitOrder(context, inAppPayments: false),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              decoration: BoxDecoration(
+                color: isCartEmpty ? Colors.white24 : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Pay @ bar',
+                    style: GoogleFonts.poppins(
+                      color: isCartEmpty ? Colors.white70 : Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Pay in app button
+          GestureDetector(
+            onTap: isCartEmpty
+                ? null
+                : () => _submitOrder(context, inAppPayments: true),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              decoration: BoxDecoration(
+                color: isCartEmpty ? Colors.white24 : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Pay in app',
+                    style: GoogleFonts.poppins(
+                      color: isCartEmpty ? Colors.white70 : Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   Widget _buildBottomBar(BuildContext context) {
     return Container(
@@ -901,9 +972,7 @@ class DrinkFeedState extends State<DrinkFeed>
       BuildContext context, Drink drink, String typeKey, int quantity) {
     // Determine if the size label should be omitted based on the category
     bool shouldOmitSizeLabel(Drink drink) {
-      return drink.tagId
-          .map((tag) => int.tryParse(tag) ?? -1)
-          .any((tag) => simpleCategoryTags.contains(tag));
+      return drink.singlePrice == drink.doublePrice;
     }
 
     // Determine size text (single/double) based on typeKey and omit if category matches simpleCategoryTags

@@ -20,6 +20,7 @@ class Cart extends ChangeNotifier {
       typeTotals.clear(); // Reset type totals
        lastAddedTypes.clear();
       _fetchPointsForBar(newBarId);
+      _recalculateCartTotals();
       notifyListeners();
     }
   }
@@ -128,12 +129,12 @@ void removeDrink(String drinkId, {required bool isDouble, required bool usePoint
   });
 }
 
-
-  void toggleAddWithPoints() {
-    isAddingWithPoints = !isAddingWithPoints;
-    notifyListeners();
+void setAddingWithPoints(bool value) {
+    if (isAddingWithPoints != value) {
+      isAddingWithPoints = value;
+      notifyListeners(); // Notify listeners only if there's a change
+    }
   }
-
    
   void undoLastAddition(String drinkId) {
     if (!lastAddedTypes.containsKey(drinkId) || lastAddedTypes[drinkId]!.isEmpty) {

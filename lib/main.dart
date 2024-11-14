@@ -191,7 +191,7 @@ Future<void> sendGetRequest2() async {
       return;
     }
 
-    final url = Uri.parse('https://www.barzzy.site/points/$userId');
+    final url = Uri.parse('https://www.barzzy.site/customer/points/$userId');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
