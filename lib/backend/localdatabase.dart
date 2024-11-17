@@ -14,7 +14,6 @@ class LocalDatabase with ChangeNotifier {
   static final LocalDatabase _singleton = LocalDatabase._internal();
 
   factory LocalDatabase() {
- 
     return _singleton;
   }
 
@@ -23,7 +22,6 @@ class LocalDatabase with ChangeNotifier {
       _updateAndCheckHappyHourStatus();
     });
   }
-
 
   final Map<String, Bar> _bars = {};
   final Map<String, Tag> tags = {};
@@ -47,7 +45,8 @@ class LocalDatabase with ChangeNotifier {
       _bars[bar.id!] = bar;
       _checkHappyHourForBar(bar.id!);
       notifyListeners();
-      debugPrint('Bar with ID: ${bar.id} added by LocalDatabase instance: $hashCode.');
+      debugPrint(
+          'Bar with ID: ${bar.id} added by LocalDatabase instance: $hashCode.');
     } else {
       debugPrint('Bar ID is null, cannot add to database.');
     }
@@ -259,12 +258,12 @@ class LocalDatabase with ChangeNotifier {
     if (_happyHourStatusMap[barId] != isHappyHourNow) {
       _happyHourStatusMap[barId] = isHappyHourNow;
       notifyListeners();
-      debugPrint("Happy hour status updated for bar $barId to: $isHappyHourNow");
+      debugPrint(
+          "Happy hour status updated for bar $barId to: $isHappyHourNow");
     }
   }
 
   bool isBarInHappyHour(String barId) {
-  return _happyHourStatusMap[barId] ?? false;
+    return _happyHourStatusMap[barId] ?? false;
+  }
 }
-}
-
