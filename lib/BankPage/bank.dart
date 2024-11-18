@@ -1,3 +1,4 @@
+import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/MenuPage/menu.dart';
 import 'package:barzzy/main.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +13,7 @@ class BankPage extends StatefulWidget {
   State<BankPage> createState() => _BankPageState();
 }
 
-class _BankPageState extends State<BankPage>  {
+class _BankPageState extends State<BankPage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   String _searchText = '';
@@ -32,10 +33,8 @@ class _BankPageState extends State<BankPage>  {
     setState(() {}); // Rebuild the UI with the new data
   }
 
-
   @override
   Widget build(BuildContext context) {
-
     final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
 
     final filteredBars = localDatabase.getSearchableBarInfo().entries.where(
@@ -56,8 +55,8 @@ class _BankPageState extends State<BankPage>  {
             const SizedBox(height: 35),
             Expanded(
               child: RefreshIndicator(
-                 onRefresh: _refreshData,
-                  color: Colors.black,
+                onRefresh: _refreshData,
+                color: Colors.black,
                 child: ListView.separated(
                   itemCount: filteredBars.length,
                   separatorBuilder: (context, index) =>
@@ -70,15 +69,22 @@ class _BankPageState extends State<BankPage>  {
                         localDatabase.getPointsForBar(barId)?.points ?? 0;
                     final tagImage = LocalDatabase.getBarById(barId)?.tagimg ??
                         'https://www.barzzy.site/images/default.png';
-                
+
                     return GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MenuPage(barId: barId),
-                          ),
-                        );
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (context) {
+                            // Create a new Cart instance and initialize it
+                            Cart cart = Cart();
+                            cart.setBar(barId); // Set the bar ID for the cart
+
+                            // Pass the newly created Cart instance to the MenuPage
+                            return MenuPage(
+                              barId: barId,
+                              cart: cart,
+                            );
+                          },
+                        ));
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12.0),
@@ -86,7 +92,8 @@ class _BankPageState extends State<BankPage>  {
                           leading: CircleAvatar(
                             radius: 30,
                             backgroundColor: Colors.transparent,
-                            backgroundImage: CachedNetworkImageProvider(tagImage),
+                            backgroundImage:
+                                CachedNetworkImageProvider(tagImage),
                           ),
                           title: Text(
                             '$barName - $points pts',

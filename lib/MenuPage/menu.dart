@@ -16,10 +16,14 @@ import '../Backend/localdatabase.dart';
 
 class MenuPage extends StatefulWidget {
   final String barId;
+  final Cart cart;
+  final String? drinkId;
 
   const MenuPage({
     super.key,
     required this.barId,
+    required this.cart,
+    this.drinkId,
   });
 
   @override
@@ -45,6 +49,16 @@ class MenuPageState extends State<MenuPage>
 
     debugPrint('are you working or nah');
     _fetchBarData();
+
+    if (widget.drinkId != null) {
+    final localDatabase = LocalDatabase(); // This retrieves the singleton instance.
+    final drink = localDatabase.getDrinkById(widget.drinkId!);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.of(context).push(
+        _createRoute(drink, widget.cart, targetPage: 1),
+      );
+    });
+    }
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
@@ -87,12 +101,8 @@ class MenuPageState extends State<MenuPage>
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) {
-        Cart cart = Cart();
-        cart.setBar(widget.barId); // Set the bar ID for the cart
-        return cart;
-      },
+    return ChangeNotifierProvider.value(
+      value: widget.cart,
       child: SafeArea(
         child: Scaffold(
           backgroundColor: Colors.black,

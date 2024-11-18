@@ -6,6 +6,9 @@ import 'package:barzzy/Backend/searchengine.dart';
 import 'package:barzzy/Backend/recommended.dart';
 import 'package:barzzy/Backend/user.dart';
 import 'package:barzzy/Gnav%20Bar/bottombar.dart';
+import 'package:barzzy/MenuPage/cart.dart';
+import 'package:barzzy/MenuPage/drinkfeed.dart';
+import 'package:barzzy/MenuPage/menu.dart';
 import 'package:barzzy/OrdersPage/websocket.dart';
 import 'package:barzzy/Terminal/stationid.dart';
 import 'package:barzzy/Backend/point.dart';
@@ -276,6 +279,27 @@ class Barzzy extends StatelessWidget {
         '/bar': (context) => const BartenderIDScreen(),
         '/login': (context) => const LoginOrRegisterPage(),
         '/orders': (context) => const AuthPage(selectedTab: 1),
+        '/menu': (context) {
+    final args = ModalRoute.of(context)!.settings.arguments as Map;
+    final String barId = args['barId'];
+    final Cart cart = args['cart'];
+    final String? drinkId = args['drinkId']; // Optional parameter
+
+    return MenuPage(
+      barId: barId,
+      cart: cart,
+      drinkId: drinkId, // Pass the optional drinkId
+    );
+  },
+  '/drinkFeed': (context) {
+    final args = ModalRoute.of(context)!.settings.arguments as Map;
+    return DrinkFeed(
+      drink: args['drink'],
+      cart: args['cart'],
+      barId: args['barId'],
+      initialPage: args['initialPage'],
+    );
+  },
       },
     );
   }

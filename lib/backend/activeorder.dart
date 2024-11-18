@@ -138,4 +138,12 @@ class DrinkOrder {
       'quantity': quantity,
     };
   }
+
+  int getDrinkId() => drinkId;
+  String getDrinkName() => drinkName;
+  String getPaymentType() => paymentType;
+  String getSizeType() => sizeType;
+  int getQuantity() => quantity;
+
+  List<String> get types => [sizeType, paymentType];
 }

@@ -1,4 +1,5 @@
 import 'package:barzzy/Backend/searchengine.dart';
+import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/SearchPage/searchbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -55,14 +56,24 @@ class SearchPageState extends State<SearchPage> {
                       displayText,
                       style: GoogleFonts.sourceSans3(color: Colors.grey),
                     ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            // ignore: prefer_const_constructors
-                            builder: (context) => MenuPage(barId: barId)),
-                      );
-                    },
+                   onTap: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) {
+        // Create a new Cart instance
+        Cart cart = Cart();
+        cart.setBar(barId); // Set the bar ID for the cart
+
+        // Pass the newly created Cart instance to the MenuPage
+        return MenuPage(
+          barId: barId,
+          cart: cart,
+        );
+      },
+    ),
+  );
+},
                   );
                 },
               ),

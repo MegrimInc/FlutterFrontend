@@ -45,10 +45,13 @@ class DrinkFeedState extends State<DrinkFeed>
   late Animation<double> _blurAnimation;
   late PageController _pageController; // Controller for the PageView
   final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
+  late ValueNotifier<Drink> currentDrink;
 
   @override
   void initState() {
     super.initState();
+
+    currentDrink = ValueNotifier(widget.drink);
 
     _pageController = PageController(
       initialPage: widget.initialPage, // NEW: Use the initialPage from widget
@@ -144,7 +147,7 @@ class DrinkFeedState extends State<DrinkFeed>
       "userId": userId,
       "inAppPayments": inAppPayments, // Specify payment method choice
       "drinks": drinkOrders,
-      "isHappyHour": cart.isHappyHour,
+      "happyHour": cart.isHappyHour,
       "tip": orderTip,
     };
 
@@ -249,18 +252,21 @@ class DrinkFeedState extends State<DrinkFeed>
             if (dy.abs() > swipeThreshold) {
               if (dy < 0) {
                 Navigator.of(context).pop();
-              } else if (dy > 0) {
-                // Possible action on swipe down
               }
             }
           },
           child: Stack(
             children: [
-              CachedNetworkImage(
-                imageUrl: widget.drink.image,
-                fit: BoxFit.cover,
-                height: double.infinity,
-                width: double.infinity,
+              ValueListenableBuilder<Drink>(
+                valueListenable: currentDrink,
+                builder: (context, drink, child) {
+                  return CachedNetworkImage(
+                    imageUrl: drink.image,
+                    fit: BoxFit.cover,
+                    height: double.infinity,
+                    width: double.infinity,
+                  );
+                },
               ),
               BackdropFilter(
                 filter: ImageFilter.blur(
@@ -274,262 +280,29 @@ class DrinkFeedState extends State<DrinkFeed>
               SafeArea(
                 child: Column(
                   children: [
-                    //const SizedBox(height: 20),
                     _buildHeader(context),
                     Expanded(
-                      child: Consumer<Cart>(
-                        builder: (context, cart, _) {
-                          final hasItems = cart.getTotalDrinkCount() > 0;
-                          final totalPrice = cart.totalCartMoney;
-                          final totalPoints = cart.totalCartPoints;
-                          final double totalPriceWithTip =
-                              totalPrice * (1 + cart.tipPercentage);
-                          String totalText;
-                          if (totalPrice > 0 && totalPoints > 0) {
-                            totalText =
-                                'Total: \$${totalPriceWithTip.toStringAsFixed(2)} and ${totalPoints.toInt()} pts';
-                          } else if (totalPrice > 0) {
-                            totalText =
-                                'Total: \$${totalPriceWithTip.toStringAsFixed(2)}';
-                          } else if (totalPoints > 0) {
-                            totalText = 'Total: ${totalPoints.toInt()} pts';
-                          } else {
-                            totalText = '';
-                          }
-
-                          return PageView(
-                            controller: _pageController,
-                            onPageChanged: (int page) {
-                              _currentPageNotifier.value =
-                                  page; // Notify the change
-                            },
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  Column(
-                                    children: [
-                                      const SizedBox(height: 22),
-                                      SizedBox(
-                                        height: 30,
-                                        child: AnimatedTextKit(
-                                          animatedTexts: [
-                                            FadeAnimatedText(
-                                              'Swipe Left To View Cart',
-                                              textStyle: GoogleFonts.poppins(
-                                                color: Colors.white54,
-                                                fontSize: 21,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                              duration: const Duration(
-                                                  milliseconds: 3000),
-                                            ),
-                                          ],
-                                          isRepeatingAnimation:
-                                              true, // Repeat animation
-                                          repeatForever:
-                                              true, // Loop infinitely
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const Spacer(flex: 4),
-                                  _buildDrinkInfo(context),
-                                  const Spacer(flex: 1),
-                                  Flexible(
-                                      flex: 8,
-                                      child: _buildQuantityControlButtons(
-                                          context)),
-                                  const Spacer(flex: 2),
-                                  Flexible(
-                                      flex: 5, child: _buildBottomBar(context)),
-                                ],
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  const SizedBox(height: 25),
-                                  Consumer<LocalDatabase>(
-                                    builder: (context, localDatabase, _) {
-                                      final pointBalance = localDatabase
-                                              .getPointsForBar(widget.barId)
-                                              ?.points ??
-                                          0;
-                                      return Center(
-                                        child: SizedBox(
-                                          height: 30,
-                                          child: AnimatedTextKit(
-                                            animatedTexts: [
-                                              FadeAnimatedText(
-                                                'Available Balance: $pointBalance pts',
-                                                textStyle: GoogleFonts.poppins(
-                                                  color: Colors.white54,
-                                                  fontSize: 21,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                                duration: const Duration(
-                                                    milliseconds: 3000),
-                                              ),
-                                            ],
-                                            isRepeatingAnimation: true,
-                                            repeatForever: true,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(height: 50),
-                                  Center(
-                                    child: Text(
-                                      'Summary:',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.white,
-                                        fontSize: 25,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  hasItems
-                                      ? const SizedBox(height: 25)
-                                      : const Spacer(),
-                                  if (hasItems)
-                                    // Inside your PageView's summary section
-                                    Expanded(
-                                      flex:
-                                          20, // Allows the list area to occupy more space
-                                      child: SingleChildScrollView(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children:
-                                              cart.barCart.keys.map((drinkId) {
-                                            return Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: cart
-                                                  .barCart[drinkId]!.entries
-                                                  .map((entry) {
-                                                final drink = LocalDatabase()
-                                                    .getDrinkById(drinkId);
-                                                final drinkName =
-                                                    entry.value > 1
-                                                        ? '${drink.name}s'
-                                                        : drink.name;
-
-                                                bool shouldOmitSizeLabel(
-                                                    Drink drink) {
-                                                  return drink.singlePrice ==
-                                                      drink.doublePrice;
-                                                }
-
-                                                // Conditionally display size label based on shouldOmitSizeLabel
-                                                final sizeText =
-                                                    shouldOmitSizeLabel(drink)
-                                                        ? '' // Omit (single)/(double) for specified categories
-                                                        : (entry.key.contains(
-                                                                "single")
-                                                            ? " (single)"
-                                                            : " (double)");
-
-                                                // Access the cart to check if it’s happy hour
-                                                final isHappyHour =
-                                                    Provider.of<Cart>(context,
-                                                            listen: false)
-                                                        .isHappyHour;
-
-                                                // Determine price based on whether the entry is single or double, and if it's happy hour
-                                                final price = entry.key
-                                                        .contains("single")
-                                                    ? (isHappyHour
-                                                        ? drink.singleHappyPrice
-                                                        : drink.singlePrice)
-                                                    : (isHappyHour
-                                                        ? drink.doubleHappyPrice
-                                                        : drink.doublePrice);
-
-                                                // Format price or points based on the type key
-                                                final priceOrPoints = entry.key
-                                                        .contains("points")
-                                                    ? "${(entry.value * drink.points).toInt()} pts"
-                                                    : "\$${(entry.value * price).toStringAsFixed(2)}";
-
-                                                return GestureDetector(
-                                                  onTap: () {
-                                                    _showQuantityRemovalDialog(
-                                                        context,
-                                                        drink, // Pass the Drink object
-                                                        entry
-                                                            .key, // Pass the type key (e.g., single_points or double_dollars)
-                                                        entry
-                                                            .value // Pass the quantity of this specific drink type
-                                                        );
-                                                  },
-                                                  child: Padding(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        vertical: 4.0),
-                                                    child: Text(
-                                                      '${entry.value} $drinkName$sizeText - $priceOrPoints',
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        color: Colors.white,
-                                                        fontSize: 18,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                      ),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                    ),
-                                                  ),
-                                                );
-                                              }).toList(),
-                                            );
-                                          }).toList(),
-                                        ),
-                                      ),
-                                    )
-                                  else
-                                    Center(
-                                      child: Text(
-                                        'Your cart is currently empty.',
-                                        style: GoogleFonts.poppins(
-                                          color: Colors.white70,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  const Spacer(),
-                                  const Padding(
-                                    padding:
-                                        EdgeInsets.fromLTRB(30, 7.5, 30, 15),
-                                    child: Divider(
-                                      color: Colors.white54,
-                                      thickness: 0.5,
-                                    ),
-                                  ),
-                                  Center(
-                                    child: Text(
-                                      totalText, // Displays "Total: $6.99 and 500 pts" or equivalent
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.white,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  const SizedBox(height: 50),
-                                  _buildPriceOptionButtons(context),
-                                  const Spacer(),
-                                ],
-                              ),
-                            ],
-                          );
+                      child: PageView(
+                        controller: _pageController,
+                        onPageChanged: (int page) {
+                          _currentPageNotifier.value = page;
                         },
+                        children: [
+                          ValueListenableBuilder<Drink>(
+                            valueListenable: currentDrink,
+                            builder: (context, drink, _) {
+                              return _buildDrinkPage(
+                                  context); // Drink page rebuilds when currentDrink changes
+                            },
+                          ),
+                          ValueListenableBuilder<Drink>(
+                            valueListenable: currentDrink,
+                            builder: (context, drink, _) {
+                              return _buildSummaryPage(
+                                  context); // Summary page rebuilds when currentDrink changes
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -594,13 +367,249 @@ class DrinkFeedState extends State<DrinkFeed>
     );
   }
 
+  Widget _buildDrinkPage(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Column(
+          children: [
+            const SizedBox(height: 22),
+            SizedBox(
+              height: 30,
+              child: AnimatedTextKit(
+                animatedTexts: [
+                  FadeAnimatedText(
+                    'Swipe Left To View Cart',
+                    textStyle: GoogleFonts.poppins(
+                      color: Colors.white54,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    duration: const Duration(milliseconds: 3000),
+                  ),
+                ],
+                isRepeatingAnimation: true,
+                repeatForever: true,
+              ),
+            ),
+          ],
+        ),
+        const Spacer(flex: 4),
+        _buildDrinkInfo(context),
+        const Spacer(flex: 1),
+        Flexible(
+          flex: 8,
+          child: _buildQuantityControlButtons(context),
+        ),
+        const Spacer(flex: 2),
+        Flexible(
+          flex: 5,
+          child: _buildBottomBar(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryPage(BuildContext context) {
+    final cart = Provider.of<Cart>(context);
+    final hasItems = cart.getTotalDrinkCount() > 0;
+    final totalPrice = cart.totalCartMoney;
+    final totalPoints = cart.totalCartPoints;
+    final double totalPriceWithTip = totalPrice * (1 + cart.tipPercentage);
+
+    String totalText;
+    if (totalPrice > 0 && totalPoints > 0) {
+      totalText =
+          'Total: \$${totalPriceWithTip.toStringAsFixed(2)} and ${totalPoints.toInt()} pts';
+    } else if (totalPrice > 0) {
+      totalText = 'Total: \$${totalPriceWithTip.toStringAsFixed(2)}';
+    } else if (totalPoints > 0) {
+      totalText = 'Total: ${totalPoints.toInt()} pts';
+    } else {
+      totalText = '';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 25),
+        Consumer<LocalDatabase>(
+          builder: (context, localDatabase, _) {
+            final pointBalance =
+                localDatabase.getPointsForBar(widget.barId)?.points ?? 0;
+            return Center(
+              child: SizedBox(
+                height: 30,
+                child: AnimatedTextKit(
+                  animatedTexts: [
+                    FadeAnimatedText(
+                      'Available Balance: $pointBalance pts',
+                      textStyle: GoogleFonts.poppins(
+                        color: Colors.white54,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      duration: const Duration(milliseconds: 3000),
+                    ),
+                  ],
+                  isRepeatingAnimation: true,
+                  repeatForever: true,
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 50),
+        Center(
+          child: Text(
+            'Summary:',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 25,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        hasItems ? const SizedBox(height: 25) : const Spacer(),
+        if (hasItems)
+          Expanded(
+            flex: 20,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: cart.barCart.keys.map((drinkId) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: cart.barCart[drinkId]!.entries.map((entry) {
+                      final drink = LocalDatabase().getDrinkById(drinkId);
+
+                      final sizeText = entry.key.contains("double")
+                          ? " (d)"
+                          : entry.key.contains("single")
+                              ? " (s)"
+                              : "";
+
+                      final maxLength = 21 -
+                          sizeText
+                              .length; // Remaining characters allowed for the name
+                      final adjustedDrinkName =
+                          _truncateWithEllipsis(drink.name, maxLength);
+
+                      final drinkName =
+                          adjustedDrinkName + (entry.value > 1 ? 's' : '');
+
+                      final isHappyHour = cart.isHappyHour;
+
+                      final price = entry.key.contains("single")
+                          ? (isHappyHour
+                              ? drink.singleHappyPrice
+                              : drink.singlePrice)
+                          : (isHappyHour
+                              ? drink.doubleHappyPrice
+                              : drink.doublePrice);
+
+                      final priceOrPoints = entry.key.contains("points")
+                          ? "${(entry.value * drink.points).toInt()} pts"
+                          : "\$${(entry.value * price).toStringAsFixed(2)}";
+
+                      return GestureDetector(
+                        onTap: () {
+                          String newDrinkId = drink.id;
+                          currentDrink.value =
+                              LocalDatabase().getDrinkById(newDrinkId);
+                          _pageController.animateToPage(
+                            0,
+                            duration: const Duration(
+                                milliseconds: 500), // Duration of the animation
+                            curve: Curves.easeInOut, // Curve for the animation
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Text.rich(
+                            TextSpan(
+                              text:
+                                  '${entry.value} $drinkName$sizeText - $priceOrPoints',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: '  edit',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white54, // Set to white70
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                }).toList(),
+              ),
+            ),
+          )
+        else
+          Center(
+            child: Text(
+              'Your cart is currently empty.',
+              style: GoogleFonts.poppins(
+                color: Colors.white70,
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        const Spacer(),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(30, 7.5, 30, 15),
+          child: Divider(
+            color: Colors.white54,
+            thickness: 0.5,
+          ),
+        ),
+        Center(
+          child: Text(
+            totalText,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const Spacer(),
+        const SizedBox(height: 50),
+        _buildPriceOptionButtons(context),
+        const Spacer(),
+      ],
+    );
+  }
+
+  String _truncateWithEllipsis(String text, int maxLength) {
+    return (text.length <= maxLength)
+        ? text
+        : '${text.substring(0, maxLength - 3)}...';
+  }
+
   Widget _buildDrinkInfo(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            widget.drink.name,
+            currentDrink.value.name,
             style: GoogleFonts.playfairDisplay(
               color: Colors.white,
               fontSize: 36,
@@ -610,7 +619,7 @@ class DrinkFeedState extends State<DrinkFeed>
           ),
           const SizedBox(height: 16),
           Text(
-            'ABV: ${widget.drink.alcohol}%',
+            'ABV: ${currentDrink.value.alcohol}%',
             style: GoogleFonts.poppins(
               color: Colors.white70,
               fontSize: 20,
@@ -620,7 +629,7 @@ class DrinkFeedState extends State<DrinkFeed>
           Consumer<Cart>(
             builder: (context, cart, _) {
               final totalQuantity =
-                  cart.getTotalQuantityForDrink(widget.drink.id);
+                  cart.getTotalQuantityForDrink(currentDrink.value.id);
 
               return Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -643,7 +652,7 @@ class DrinkFeedState extends State<DrinkFeed>
             child: Padding(
               padding: const EdgeInsets.only(left: 25, right: 25),
               child: Text(
-                widget.drink.description,
+                currentDrink.value.description,
                 style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontSize: 20,
@@ -660,7 +669,7 @@ class DrinkFeedState extends State<DrinkFeed>
 
   Widget _buildQuantityControlButtons(BuildContext context) {
     final isDifferentPrices =
-        widget.drink.singlePrice != widget.drink.doublePrice;
+        currentDrink.value.singlePrice != currentDrink.value.doublePrice;
 
     // Use the passed cart instance
     final cart = widget.cart;
@@ -681,7 +690,7 @@ class DrinkFeedState extends State<DrinkFeed>
               child: _buildButtonGroup(
                 context,
                 label: "Double",
-                drinkId: widget.drink.id,
+                drinkId: currentDrink.value.id,
                 isDouble: true,
                 usePoints: true,
                 cart: cart,
@@ -691,7 +700,7 @@ class DrinkFeedState extends State<DrinkFeed>
               child: _buildButtonGroup(
                 context,
                 label: "Double",
-                drinkId: widget.drink.id,
+                drinkId: currentDrink.value.id,
                 isDouble: true,
                 usePoints: false,
                 cart: cart,
@@ -709,7 +718,7 @@ class DrinkFeedState extends State<DrinkFeed>
               child: _buildButtonGroup(
                 context,
                 label: "Single",
-                drinkId: widget.drink.id,
+                drinkId: currentDrink.value.id,
                 isDouble: false,
                 usePoints: true,
                 cart: cart,
@@ -719,7 +728,7 @@ class DrinkFeedState extends State<DrinkFeed>
               child: _buildButtonGroup(
                 context,
                 label: "Single",
-                drinkId: widget.drink.id,
+                drinkId: currentDrink.value.id,
                 isDouble: false,
                 usePoints: false,
                 cart: cart,
@@ -739,7 +748,7 @@ class DrinkFeedState extends State<DrinkFeed>
           child: _buildButtonGroup(
             context,
             label: "Regular",
-            drinkId: widget.drink.id,
+            drinkId: currentDrink.value.id,
             isDouble: false,
             usePoints: true,
             cart: cart,
@@ -749,7 +758,7 @@ class DrinkFeedState extends State<DrinkFeed>
           child: _buildButtonGroup(
             context,
             label: "Regular",
-            drinkId: widget.drink.id,
+            drinkId: currentDrink.value.id,
             isDouble: false,
             usePoints: false,
             cart: cart,
@@ -1026,100 +1035,6 @@ class DrinkFeedState extends State<DrinkFeed>
           ),
         ),
       ),
-    );
-  }
-
-  void _showQuantityRemovalDialog(
-      BuildContext context, Drink drink, String typeKey, int quantity) {
-    // Determine if the size label should be omitted based on the category
-    bool shouldOmitSizeLabel(Drink drink) {
-      return drink.singlePrice == drink.doublePrice;
-    }
-
-    // Determine size text (single/double) based on typeKey and omit if category matches simpleCategoryTags
-    final sizeText = shouldOmitSizeLabel(drink)
-        ? '' // No size if the category doesn't require it
-        : (typeKey.contains("single") ? "single" : "double");
-
-    // Determine payment type as "pts" or "$" based on typeKey
-    final paymentType = typeKey.contains("points") ? "pts" : "\$";
-
-    // Add plural "s" to drink name if quantity is greater than 1
-    final drinkName = quantity > 1 ? '${drink.name}s' : drink.name;
-
-    // Generate full description in parentheses with "size & payment" if both are present
-    final description =
-        (sizeText.isNotEmpty ? "$sizeText & " : "") + paymentType;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: Center(
-            child: Text(
-              '($description)',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-          content: Text(
-            'Remove $quantity $drinkName?',
-            style: GoogleFonts.poppins(
-              fontSize: 21,
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close dialog
-                  },
-                  child: Text(
-                    'No',
-                    style: GoogleFonts.poppins(
-                      fontSize: 21,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    widget.cart.deleteDrink(drink.id,
-                        isDouble: typeKey.contains("double"),
-                        usePoints: typeKey.contains("points"));
-                    Navigator.of(context).pop(); // Close dialog
-                  },
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 0), // Adjusted padding for compactness
-                  ),
-                  child: Text(
-                    'Yes',
-                    style: GoogleFonts.poppins(
-                      fontSize: 21,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
     );
   }
 

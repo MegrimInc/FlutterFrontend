@@ -1,6 +1,7 @@
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/HomePage/bottomsheet.dart';
 import 'package:barzzy/HomePage/hometopicons.dart';
+import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/OrdersPage/websocket.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -110,12 +111,19 @@ class HomePageState extends State<HomePage> {
                       return GestureDetector(
                           behavior: HitTestBehavior.translucent,
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => MenuPage(barId: barId),
-                              ),
+                             Navigator.push(context, MaterialPageRoute(
+                          builder: (context) {
+                            // Create a new Cart instance and initialize it
+                            Cart cart = Cart();
+                            cart.setBar(barId); // Set the bar ID for the cart
+
+                            // Pass the newly created Cart instance to the MenuPage
+                            return MenuPage(
+                              barId: barId,
+                              cart: cart,
                             );
+                          },
+                        ));
                           },
                           child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -211,14 +219,24 @@ class HomePageState extends State<HomePage> {
           if (barHistory.currentTappedBarId != null)
             Expanded(
               child: GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MenuPage(
-                      barId: barHistory.currentTappedBarId!,
-                    ),
-                  ),
-                ),
+               onTap: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) {
+        // Create a new Cart instance and initialize it
+        Cart cart = Cart();
+        cart.setBar(barHistory.currentTappedBarId!); // Set the bar ID for the cart
+
+        // Pass the newly created Cart instance to the MenuPage
+        return MenuPage(
+          barId: barHistory.currentTappedBarId!,
+          cart: cart,
+        );
+      },
+    ),
+  );
+},
                 child: Container(
                   decoration: const BoxDecoration(
                     color: Colors.black,
