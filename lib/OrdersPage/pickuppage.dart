@@ -37,7 +37,8 @@ class PickupPageState extends State<PickupPage> {
         title: Container(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Colors.grey))),
+            border: Border(bottom: BorderSide(color: Colors.grey)),
+          ),
           child: Text(
             'Orders',
             style: GoogleFonts.poppins(
@@ -57,6 +58,7 @@ class PickupPageState extends State<PickupPage> {
               ),
             );
           }
+
           final orders = hierarchy.getOrders();
 
           return Consumer<LocalDatabase>(
@@ -64,53 +66,40 @@ class PickupPageState extends State<PickupPage> {
               return RefreshIndicator(
                 onRefresh: () => _refreshOrders(context),
                 color: Colors.black,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final hasOrders = orders.isNotEmpty;
-
-                    return SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: SizedBox(
-                        height: constraints.maxHeight,
-                        child: PageView.builder(
-                          controller: _pageController,
-                          scrollDirection: Axis.vertical,
-                          itemCount: hasOrders ? orders.length : 1,
-                          itemBuilder: (context, verticalIndex) {
-                            if (!hasOrders) {
-                              return const Center(
-                                child: Text(
-                                  'No orders have been placed yet.',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 17,
-                                  ),
-                                ),
-                              );
-                            }
-
-                            final barId = orders[verticalIndex];
-                            final order = localDatabase.getOrderForBar(barId);
-
-                            if (order == null) {
-                              return const Center(
-                                child: Text(
-                                  'No orders found for this bar.',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 17,
-                                  ),
-                                ),
-                              );
-                            }
-
-                            return _buildOrderCard(order);
-                          },
+                child: orders.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No orders have been placed yet.',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                          ),
                         ),
+                      )
+                    : PageView.builder(
+                        controller: _pageController,
+                        scrollDirection: Axis.vertical,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: orders.length,
+                        itemBuilder: (context, verticalIndex) {
+                          final barId = orders[verticalIndex];
+                          final order = localDatabase.getOrderForBar(barId);
+
+                          if (order == null) {
+                            return const Center(
+                              child: Text(
+                                'No orders found for this bar.',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 17,
+                                ),
+                              ),
+                            );
+                          }
+
+                          return _buildOrderCard(order);
+                        },
                       ),
-                    );
-                  },
-                ),
               );
             },
           );
@@ -185,10 +174,10 @@ class PickupPageState extends State<PickupPage> {
                   ),
                 ],
               ),
-               const Spacer(),
+              const Spacer(),
             ],
           ),
-           const Spacer(flex: 1),
+          const Spacer(flex: 1),
           _buildDrinksGrid(order.drinks),
           const Spacer(flex: 2),
           _buildBottomButton(order),
@@ -350,21 +339,22 @@ class PickupPageState extends State<PickupPage> {
         return Column(
           children: [
             const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Spacer(),
-                Text(
-                  '${currentPage + 1} / $totalPages', // Current page / Total pages
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+            if (totalPages > 1)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Spacer(),
+                  Text(
+                    '${currentPage + 1} / $totalPages', // Current page / Total pages
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 25),
-              ],
-            ),
+                  const SizedBox(width: 25),
+                ],
+              ),
             const SizedBox(height: 25),
             SizedBox(
               height: drinks.length <= 3 ? 62 : 125,
@@ -378,10 +368,59 @@ class PickupPageState extends State<PickupPage> {
                 itemBuilder: (context, pageIndex) {
                   // Get the drinks for the current page
                   final startIndex = pageIndex * drinksPerPage;
-                  final endIndex = (startIndex + drinksPerPage).clamp(0, drinks.length);
+                  final endIndex =
+                      (startIndex + drinksPerPage).clamp(0, drinks.length);
                   final pageDrinks = drinks.sublist(startIndex, endIndex);
-                
-              
+
+                  // If there's 1 or 2 drinks, center them manually
+                  if (pageDrinks.length <= 2) {
+                    return Center(
+                      child: Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        alignment: WrapAlignment.center,
+                        children: pageDrinks.map((drink) {
+                          return Container(
+                            width: 110,
+                            height: 60,
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white10,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.white24),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  drink.drinkName,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  'x${drink.quantity}${drink.sizeType.isNotEmpty ? ' (${drink.sizeType})' : ''}',
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    );
+                  }
+
+                  // Default grid view for more than 2 drinks
                   return GridView.builder(
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate:
@@ -412,12 +451,12 @@ class PickupPageState extends State<PickupPage> {
                                 fontWeight: FontWeight.bold,
                               ),
                               textAlign: TextAlign.center,
-                              maxLines: 1, // Limit to one line
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 1),
                             Text(
-                              'x${drink.quantity} (${drink.sizeType})',
+                              'x${drink.quantity}${drink.sizeType.isNotEmpty ? ' (${drink.sizeType})' : ''}',
                               style: const TextStyle(
                                 color: Colors.white54,
                                 fontSize: 12,
@@ -432,7 +471,6 @@ class PickupPageState extends State<PickupPage> {
                 },
               ),
             ),
-
           ],
         );
       },
@@ -523,44 +561,45 @@ class PickupPageState extends State<PickupPage> {
   }
 
   Widget _buildReorderButton(CustomerOrder order) {
-  return GestureDetector(
-    onTap: () async {
-  final barId = order.barId;
-  final cart = Cart();
-  cart.setBar(barId);
+    return GestureDetector(
+      onTap: () async {
+        final barId = order.barId;
+        final cart = Cart();
+        cart.setBar(barId);
 
-  // Use the reorder method to reset the cart based on the order
-  cart.reorder(order);
+        // Use the reorder method to reset the cart based on the order
+        cart.reorder(order);
 
-  // Navigate to MenuPage
-  await Navigator.of(context).pushNamed(
-    '/menu',
-    arguments: {
-      'barId': barId,
-      'cart': cart,
-      'drinkId': order.drinks.first.drinkId.toString(), // Optional drinkId.
-    },
-  );
-},
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Text(
-            "       Reorder        ",
-            style: GoogleFonts.poppins(
-              color: Colors.black,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+        // Navigate to MenuPage
+        await Navigator.of(context).pushNamed(
+          '/menu',
+          arguments: {
+            'barId': barId,
+            'cart': cart,
+            'drinkId':
+                order.drinks.first.drinkId.toString(), // Optional drinkId.
+          },
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Text(
+              "       Reorder        ",
+              style: GoogleFonts.poppins(
+                color: Colors.black,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

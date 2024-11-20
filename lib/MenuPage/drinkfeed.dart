@@ -117,24 +117,37 @@ class DrinkFeedState extends State<DrinkFeed>
 
     final barId = widget.barId;
 
-    // Build the list of drink orders with variations
-    List<Map<String, dynamic>> drinkOrders =
-        cart.barCart.entries.expand((entry) {
-      final drinkId = entry.key;
-      return entry.value.entries.map((typeEntry) {
-        final typeKey = typeEntry.key;
-        final quantity = typeEntry.value;
-        final isDouble = typeKey.contains('double');
-        final isPoints = typeKey.contains('points');
+   // Build the list of drink orders with variations
+List<Map<String, dynamic>> drinkOrders = cart.barCart.entries.expand((entry) {
+  final drinkId = entry.key;
 
-        return {
-          "drinkId": int.parse(drinkId),
-          "quantity": quantity,
-          "paymentType": isPoints ? "points" : "regular",
-          "sizeType": isDouble ? "double" : "single"
-        };
-      }).toList();
-    }).toList();
+  // Process each type entry for the drink
+  return entry.value.entries.map((typeEntry) {
+    final typeKey = typeEntry.key; // Example: "single_points", "double_dollars"
+    final quantity = typeEntry.value;
+
+    // Determine the sizeType based on the typeKey
+    String sizeType = "";
+    if (typeKey.contains("double")) {
+      sizeType = "double";
+    } else if (typeKey.contains("single")) {
+      sizeType = "single";
+    } else {
+      sizeType = ""; // No specific size type
+    }
+
+    // Determine payment type
+    final isPoints = typeKey.contains("points");
+
+    // Construct the drink order map
+    return {
+      "drinkId": int.parse(drinkId),
+      "quantity": quantity,
+      "paymentType": isPoints ? "points" : "regular",
+      "sizeType": sizeType,
+    };
+  }).toList();
+}).toList();
 
     // Calculate the total regular price for all items paid with money
 
@@ -372,41 +385,40 @@ class DrinkFeedState extends State<DrinkFeed>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        Column(
-          children: [
-            const SizedBox(height: 22),
-            SizedBox(
-              height: 30,
-              child: AnimatedTextKit(
-                animatedTexts: [
-                  FadeAnimatedText(
-                    'Swipe Left To View Cart',
-                    textStyle: GoogleFonts.poppins(
-                      color: Colors.white54,
-                      fontSize: 21,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    duration: const Duration(milliseconds: 3000),
-                  ),
-                ],
-                isRepeatingAnimation: true,
-                repeatForever: true,
-              ),
-            ),
-          ],
-        ),
-        const Spacer(flex: 4),
-        _buildDrinkInfo(context),
         const Spacer(flex: 1),
-        Flexible(
-          flex: 8,
-          child: _buildQuantityControlButtons(context),
+        Center(
+          child: SizedBox(
+            height: 30,
+            child: AnimatedTextKit(
+              animatedTexts: [
+                FadeAnimatedText(
+                  'Swipe Left To View Cart',
+                  textStyle: GoogleFonts.poppins(
+                    color: Colors.white54,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  duration: const Duration(milliseconds: 3000),
+                ),
+              ],
+              isRepeatingAnimation: true,
+              repeatForever: true,
+            ),
+          ),
         ),
+
         const Spacer(flex: 2),
-        Flexible(
-          flex: 5,
-          child: _buildBottomBar(context),
-        ),
+
+        _buildDrinkInfo(context),
+
+        const Spacer(flex: 2),
+        _buildQuantityControlButtons(context),
+
+        const Spacer(flex: 2),
+
+        _buildBottomBar(context),
+
+        const Spacer(flex: 1)
       ],
     );
   }
@@ -485,9 +497,9 @@ class DrinkFeedState extends State<DrinkFeed>
                       final drink = LocalDatabase().getDrinkById(drinkId);
 
                       final sizeText = entry.key.contains("double")
-                          ? " (d)"
+                          ? " (dbl)"
                           : entry.key.contains("single")
-                              ? " (s)"
+                              ? " (sgl)>"
                               : "";
 
                       final maxLength = 21 -
@@ -521,7 +533,7 @@ class DrinkFeedState extends State<DrinkFeed>
                           _pageController.animateToPage(
                             0,
                             duration: const Duration(
-                                milliseconds: 500), // Duration of the animation
+                                milliseconds: 250), // Duration of the animation
                             curve: Curves.easeInOut, // Curve for the animation
                           );
                         },
@@ -1019,7 +1031,7 @@ class DrinkFeedState extends State<DrinkFeed>
 
   Widget _buildBottomBar(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: GestureDetector(
         onTap: () {
           Navigator.of(context).pop();

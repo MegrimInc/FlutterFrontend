@@ -134,62 +134,62 @@ class MenuPageState extends State<MenuPage>
                     if (randomDrinks['tag179']?.isNotEmpty ?? false) ...[
                       _buildDrinkSection(
                           context, 'Lager', randomDrinks['tag179']!),
-                      //const SizedBox(height: 50),
+                      const SizedBox(height: 50),
                     ],
                     if (randomDrinks['tag172']?.isNotEmpty ?? false) ...[
                       _buildDrinkSection(
                           context, 'Vodka', randomDrinks['tag172']!),
-                      //const SizedBox(height: 50),
+                      const SizedBox(height: 50),
                     ],
                     if (randomDrinks['tag175']?.isNotEmpty ?? false) ...[
                       _buildDrinkSection(
                           context, 'Tequila', randomDrinks['tag175']!),
-                      //const SizedBox(height: 50),
+                      const SizedBox(height: 50),
                     ],
                     if (randomDrinks['tag174']?.isNotEmpty ?? false) ...[
                       _buildDrinkSection(
                           context, 'Whiskey', randomDrinks['tag174']!),
-                      //const SizedBox(height: 50),
+                      const SizedBox(height: 50),
                     ],
                     if (randomDrinks['tag173']?.isNotEmpty ?? false) ...[
                       _buildDrinkSection(
                           context, 'Gin', randomDrinks['tag173']!),
-                      // const SizedBox(height: 50),
+                      const SizedBox(height: 50),
                     ],
                     if (randomDrinks['tag176']?.isNotEmpty ?? false) ...[
                       _buildDrinkSection(
                           context, 'Brandy', randomDrinks['tag176']!),
-                      //const SizedBox(height: 50),
+                      const SizedBox(height: 50),
                     ],
                     if (randomDrinks['tag177']?.isNotEmpty ?? false) ...[
                       _buildDrinkSection(
                           context, 'Rum', randomDrinks['tag177']!),
-                      //const SizedBox(height: 50),
+                      const SizedBox(height: 50),
                     ],
                     if (randomDrinks['tag186']?.isNotEmpty ?? false) ...[
                       _buildDrinkSection(
                           context, 'Seltzer', randomDrinks['tag186']!),
-                      //const SizedBox(height: 50),
+                      const SizedBox(height: 50),
                     ],
                     if (randomDrinks['tag178']?.isNotEmpty ?? false) ...[
                       _buildDrinkSection(
                           context, 'Ale', randomDrinks['tag178']!),
-                      //const SizedBox(height: 50),
+                      const SizedBox(height: 50),
                     ],
                     if (randomDrinks['tag183']?.isNotEmpty ?? false) ...[
                       _buildDrinkSection(
                           context, 'Red Wine', randomDrinks['tag183']!),
-                      // const SizedBox(height: 50),
+                      const SizedBox(height: 50),
                     ],
                     if (randomDrinks['tag184']?.isNotEmpty ?? false) ...[
                       _buildDrinkSection(
                           context, 'White Wine', randomDrinks['tag184']!),
-                      //const SizedBox(height: 50),
+                      const SizedBox(height: 50),
                     ],
                     if (randomDrinks['tag181']?.isNotEmpty ?? false) ...[
                       _buildDrinkSection(
                           context, 'Virgin', randomDrinks['tag181']!),
-                      //const SizedBox(height: 50),
+                      const SizedBox(height: 50),
                     ],
                   ],
                 );
@@ -285,11 +285,11 @@ class MenuPageState extends State<MenuPage>
     double boxHeight;
 
     if (drinkIds.length <= 3) {
-      boxHeight = 210.0; // Height for 1 row
+      boxHeight = 150; // Height for 1 row
     } else if (drinkIds.length <= 6) {
-      boxHeight = 350.0; // Height for 2 rows
+      boxHeight = 300.0; // Height for 2 rows
     } else {
-      boxHeight = 495.0; // Height for 3 rows
+      boxHeight = 450; // Height for 3 rows
     }
 
     PageController pageController = _getPageController(tagName);
@@ -368,6 +368,7 @@ class MenuPageState extends State<MenuPage>
                     child: Column(
                       children: [
                         Expanded(
+                          flex: 12, 
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(5),
                             child: Stack(
@@ -414,16 +415,19 @@ class MenuPageState extends State<MenuPage>
                           ),
                         ),
                         const SizedBox(height: 5),
-                        Text(
-                          drink.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                        Flexible(
+                          flex: 2,
+                          child: Text(
+                            drink.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 5),
                       ],

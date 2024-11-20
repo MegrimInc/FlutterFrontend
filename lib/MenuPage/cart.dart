@@ -234,8 +234,12 @@ void reorder(CustomerOrder order) {
     final drinkId = drinkOrder.drinkId.toString();
     final quantity = drinkOrder.quantity;
 
-    // Determine type keys based on size and payment type
-    final typeKey = '${drinkOrder.sizeType}_${drinkOrder.paymentType}';
+    // Extract sizeType and paymentType from the order
+    final sizeType = drinkOrder.sizeType.isNotEmpty ? drinkOrder.sizeType : "";
+    final paymentType = drinkOrder.paymentType == "points" ? "points" : "dollars";
+
+    // Determine the typeKey based on sizeType and paymentType
+    final typeKey = '${sizeType}_$paymentType';
 
     // Add the drink to the cart with the specified quantity
     barCart.putIfAbsent(drinkId, () => {});
@@ -244,12 +248,15 @@ void reorder(CustomerOrder order) {
     // Track the type key for the drink
     lastAddedTypes.putIfAbsent(drinkId, () => []).add(typeKey);
 
-    // Update the type totals
+    // Retrieve the drink details
     final drink = LocalDatabase().getDrinkById(drinkId);
-    double price = drinkOrder.paymentType == 'points'
-        ? drink.points.toDouble()
-        : (drinkOrder.sizeType == 'double' ? drink.doublePrice : drink.singlePrice);
 
+    // Determine the price for the typeKey
+    double price = paymentType == "points"
+        ? drink.points.toDouble()
+        : (sizeType == "double" ? drink.doublePrice : drink.singlePrice);
+
+    // Update the type totals
     typeTotals.update(typeKey, (total) => total + (price * quantity), ifAbsent: () => price * quantity);
   }
 

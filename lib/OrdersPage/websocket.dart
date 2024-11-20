@@ -3,6 +3,7 @@
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/Backend/activeorder.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
+import 'package:barzzy/Backend/user.dart';
 import 'package:barzzy/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -31,7 +32,7 @@ class Hierarchy extends ChangeNotifier {
         _channel =
             WebSocketChannel.connect(Uri.parse(url)); // Attempt to connect
         _channel!.stream.listen(
-          (message) {
+          (message) async {
             if (_reconnectAttempts > 0) {
               debugPrint(
                   'Connection successful. Resetting reconnect attempts.');
@@ -65,6 +66,7 @@ class Hierarchy extends ChangeNotifier {
                   // You can also extract the 'data' from the message and use it as needed
                   final data = decodedMessage['data'];
                   _createOrderResponse(data);
+                  await handleCache(data);    
                   break;
 
                 case 'create':
@@ -411,6 +413,23 @@ class Hierarchy extends ChangeNotifier {
       },
     );
   }
+
+  Future<void> handleCache(dynamic ordersData) async {
+  final user = Provider.of<User>(navigatorKey.currentContext!, listen: false);
+
+  // Check if `ordersData` is a list or a single object
+  final List<dynamic> orders = ordersData is List<dynamic>
+      ? ordersData // Already a list
+      : [ordersData]; // Wrap single object in a list
+
+  for (var order in orders) {
+    final barId = order['barId']?.toString(); // Extract barId as a string
+    if (barId != null && barId.isNotEmpty) {
+      debugPrint('Fetching tags and drinks for barId: $barId');
+      await user.fetchTagsAndDrinks(barId); // Trigger the fetch
+    }
+  }
+}
 
   bool get isConnected => _isConnected;
 }
