@@ -1,4 +1,3 @@
-import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/OrdersPage/websocket.dart';
 import 'package:barzzy/Backend/activeorder.dart';
@@ -167,7 +166,7 @@ class PickupPageState extends State<PickupPage> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Text(
-                    'Order Name: ${order.name}',
+                    '*${order.name}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 21,
@@ -175,8 +174,7 @@ class PickupPageState extends State<PickupPage> {
                     ),
                   ),
                   const SizedBox(height: 5),
-                  Text(
-                    'Station: ${order.claimer.isNotEmpty ? order.claimer : 'N/A'}',
+                  Text(' Station: ${order.claimer.isNotEmpty ? order.claimer : 'N/A'}',
                     style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 21,

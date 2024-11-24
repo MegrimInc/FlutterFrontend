@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-// Same as https://github.com/BarzzyLLC/RedisMicroService/blob/0.0.0/src/main/java/edu/help/dto/Order.java. 
-//This version is the future version, supposed to replace activeorder.dart. 
+// Same as https://github.com/BarzzyLLC/RedisMicroService/blob/0.0.0/src/main/java/edu/help/dto/Order.java.
+//This version is the future version, supposed to replace activeorder.dart.
 
 class CustomerOrder {
+  String name; 
   String barId; // Stored as a String on the frontend, converted to int for JSON
   int userId;
   double totalRegularPrice;
@@ -17,6 +18,7 @@ class CustomerOrder {
   String name;
 
   CustomerOrder(
+    this.name,
     this.barId,
     this.userId,
     this.totalRegularPrice,
@@ -43,6 +45,7 @@ class CustomerOrder {
     }
 
     return CustomerOrder(
+      json['name'] as String,
       json['barId'].toString(), // Convert barId to String for frontend storage
       json['userId'] as int,
       (json['totalRegularPrice'] as num).toDouble(),
@@ -51,7 +54,8 @@ class CustomerOrder {
       drinks,
       json['status'] as String,
       json['claimer'] as String,
-      int.parse(json['timestamp']), // Convert timestamp to int for frontend storage
+      int.parse(
+          json['timestamp']), // Convert timestamp to int for frontend storage
       json['sessionId'] as String,
       json['name'] as String
     );
@@ -60,6 +64,7 @@ class CustomerOrder {
   // Method to convert a CustomerOrder instance to JSON
   Map<String, dynamic> toJson() {
     return {
+      'name': name,
       'barId': int.parse(barId), // Convert barId back to int for JSON
       'userId': userId,
       'totalRegularPrice': totalRegularPrice,
