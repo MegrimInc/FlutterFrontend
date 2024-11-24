@@ -14,6 +14,7 @@ class CustomerOrder2 {
   String claimer;
   int timestamp; // Stored as an int on the frontend, converted to String for JSON
   String sessionId;
+  String name; // The name that is displayed whenever an order is created. Does not need to be unique. OrderID will be the same.
 
   CustomerOrder2(
     this.barId,
@@ -26,6 +27,7 @@ class CustomerOrder2 {
     this.claimer,
     this.timestamp,
     this.sessionId,
+    this.name
   );
 
   // Factory constructor for creating a CustomerOrder from JSON data
@@ -51,6 +53,7 @@ class CustomerOrder2 {
       json['claimer'] as String,
       int.parse(json['timestamp']), // Convert timestamp to int for frontend storage
       json['sessionId'] as String,
+      json['name'] as String
     );
   }
 
@@ -67,6 +70,7 @@ class CustomerOrder2 {
       'claimer': claimer,
       'timestamp': timestamp.toString(), // Convert timestamp to String for JSON
       'sessionId': sessionId,
+      'name': name
     };
   }
 
@@ -80,6 +84,7 @@ class CustomerOrder2 {
   bool getInAppPayments() => inAppPayments;
   double getTip() => tip;
   String getSessionId() => sessionId;
+  String getDisplayName() => name;
 
   // Setter methods
   void setBarId(String value) => barId = value;
@@ -92,6 +97,7 @@ class CustomerOrder2 {
   void setClaimer(String value) => claimer = value;
   void setTimestamp(int value) => timestamp = value;
   void setSessionId(String value) => sessionId = value;
+  void setDisplayName(String value) => name = value;
 
   // Helper methods
   int getAge() {

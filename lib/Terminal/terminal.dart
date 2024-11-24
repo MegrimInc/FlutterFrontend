@@ -31,7 +31,7 @@ class _OrdersPageState extends State<OrdersPage> {
   List<CustomerOrder2> displayList = [];
 
 //TESTING VARIABLE
-  bool testing = false;
+  bool testing = true; //TODO CHANGE BACK TO TESTING = FALSE
   bool connected = false;
   int _reconnectAttempts = 0;
   bool filterUnique = true;
@@ -302,36 +302,70 @@ void showServerSignatureInfo() {
       CustomerOrder2('1', 101, 20.50, 3.00, true, [
         DrinkOrder(1, 'Mojito', 'regular', 'single', 1),
         DrinkOrder(2, 'Whiskey Sour', 'regular', 'double', 2),
-      ], 'claimed', 'A', 1678901234000, 'session_001'),
+      ], 'claimed', 'A', 1678901234000, 'session_001', 'Unnamed'),
 
       CustomerOrder2('2', 102, 35.75, 5.25, false, [
         DrinkOrder(3, 'Old Fashioned', 'regular', 'single', 1),
         DrinkOrder(4, 'Martini', 'points', 'double', 1),
-      ], 'claimed', 'D', 1678901235000, 'session_002'),
+      ], 'claimed', 'D', 1678901235000, 'session_002', 'Michael Bay'),
 
       CustomerOrder2('3', 103, 50.00, 8.00, true, [
         DrinkOrder(5, 'Gin and Tonic', 'regular', 'single', 3),
         DrinkOrder(6, 'Cosmopolitan', 'regular', 'double', 1),
-      ], 'open', '', 1678901236000, 'session_003'),
+      ], 'open', '', 1678901236000, 'session_003', 'John Doe'),
 
       CustomerOrder2('4', 104, 40.00, 6.50, false, [
         DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-      ], 'open', '', 1678901237000, 'session_004'),
+      ], 'open', '', 1678901237000, 'session_004', 'Kermit'),
 
       CustomerOrder2('5', 105, 30.00, 4.50, true, [
         DrinkOrder(8, 'Daiquiri', 'regular', 'single', 1),
         DrinkOrder(9, 'Negroni', 'regular', 'double', 1),
-      ], 'ready', 'X', 1678901238000, 'session_005'),
+      ], 'ready', 'X', 1678901238000, 'session_005', 'James bond'),
 
       CustomerOrder2('6', 106, 25.00, 3.75, false, [
         DrinkOrder(10, 'Long Island Iced Tea', 'points', 'single', 2),
-      ], 'open', '', 1678901239000, 'session_006'),
+      ], 'arrived', 'A', 1678901239000, 'session_006', 'Alexandria Oscasio-Cortez'),
 
       CustomerOrder2('7', 107, 60.00, 10.00, true, [
         DrinkOrder(11, 'Screwdriver', 'regular', 'double', 1),
         DrinkOrder(12, 'Pina Colada', 'points', '', 1),
         DrinkOrder(13, 'Bloody Mary', 'regular', 'double', 1),
-      ], 'open', '', 1678901240000, 'session_007'),
+      ], 'open', '', 1678901240000, 'session_007', 'Donald Trump'),
+      
+      CustomerOrder2('1', 101, 20.50, 3.00, true, [
+        DrinkOrder(1, 'Mojito', 'regular', 'single', 1),
+        DrinkOrder(2, 'Whiskey Sour', 'regular', 'double', 2),
+      ], 'claimed', 'A', 1678901234000, 'session_001', 'here'),
+
+      CustomerOrder2('2', 102, 35.75, 5.25, false, [
+        DrinkOrder(3, 'Old Fashioned', 'regular', 'single', 1),
+        DrinkOrder(4, 'Martini', 'points', 'double', 1),
+      ], 'claimed', 'D', 1678901235000, 'session_002', 'arrived at Bay'),
+
+      CustomerOrder2('3', 103, 50.00, 8.00, true, [
+        DrinkOrder(5, 'Gin and Tonic', 'regular', 'single', 3),
+        DrinkOrder(6, 'Cosmopolitan', 'regular', 'double', 1),
+      ], 'open', '', 1678901236000, 'session_003', 'look up'),
+
+      CustomerOrder2('4', 104, 40.00, 6.50, false, [
+        DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+      ], 'open', '', 1678901237000, 'session_004', 'give me '),
+
+      CustomerOrder2('5', 105, 30.00, 4.50, true, [
+        DrinkOrder(8, 'Daiquiri', 'regular', 'single', 1),
+        DrinkOrder(9, 'Negroni', 'regular', 'double', 1),
+      ], 'ready', 'X', 1678901238000, 'session_005', 'imatthelocationsothatswhyyoushouldgiveittome'),
+
+      CustomerOrder2('6', 106, 25.00, 3.75, false, [
+        DrinkOrder(10, 'Long Island Iced Tea', 'points', 'single', 2),
+      ], 'open', '', 1678901239000, 'session_006', 'here'),
+
+      CustomerOrder2('7', 107, 60.00, 10.00, true, [
+        DrinkOrder(11, 'Screwdriver', 'regular', 'double', 1),
+        DrinkOrder(12, 'Pina Colada', 'points', '', 1),
+        DrinkOrder(13, 'Bloody Mary', 'regular', 'double', 1),
+      ], 'open', '', 1678901240000, 'session_007', 'here'),
     ];
     }
 
@@ -344,70 +378,80 @@ void showServerSignatureInfo() {
     super.dispose();
   }
 
-  void _updateLists() {
-    setState(() {
-      // Separate `allOrders` into two lists based on whether the order is claimed by the current bartender
-      List<CustomerOrder2> claimedOrders = allOrders.where((order) => order.claimer == widget.bartenderID).toList();
-      List<CustomerOrder2> unclaimedOrders = allOrders.where((order) => order.claimer != widget.bartenderID).toList();
+void _updateLists() {
+  setState(() {
+    // Separate "arrived" orders
+    List<CustomerOrder2> arrivedOrders = allOrders.where((order) => order.status == 'arrived').toList();
 
-      // Sort each section by timestamp, older orders first
-      claimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    // Separate claimed and unclaimed orders, excluding "arrived" orders
+    List<CustomerOrder2> claimedOrders = allOrders
+        .where((order) => order.claimer == widget.bartenderID && order.status != 'arrived')
+        .toList();
+    List<CustomerOrder2> unclaimedOrders = allOrders
+        .where((order) => order.claimer != widget.bartenderID && order.status != 'arrived')
+        .toList();
 
-      // Combine both sections: claimed orders at the top, unclaimed orders at the bottom
-      List<CustomerOrder2> sortedOrders = [
-        ...claimedOrders,
-        ...unclaimedOrders,
-      ];
+    // Sort each category by timestamp (older first)
+    arrivedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    claimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-      // Apply further filters based on `filterReady` and `filterUnique`
+    // Combine sorted lists with "arrived" orders at the top
+    List<CustomerOrder2> sortedOrders = [
+      ...arrivedOrders,
+      ...claimedOrders,
+      ...unclaimedOrders,
+    ];
 
-      List<CustomerOrder2> filteredOrders = sortedOrders;
+    // Apply filters
+    List<CustomerOrder2> filteredOrders = sortedOrders;
 
-      // Filter based on `filterReady`
-      if (filterReady) {
-        // Show only ready orders
-        filteredOrders = filteredOrders.where((order) => order.status == 'ready').toList();
-      } else {
-        // Show only unready orders
-        filteredOrders = filteredOrders.where((order) => order.status != 'ready').toList();
+    // Include "arrived" orders in both filterReady = true and filterReady = false
+    if (filterReady) {
+      filteredOrders = filteredOrders
+          .where((order) => order.status == 'ready' || order.status == 'arrived')
+          .toList();
+    } else {
+      filteredOrders = filteredOrders
+          .where((order) => order.status != 'ready' || order.status == 'arrived')
+          .toList();
+    }
+
+    // Apply the "Your Orders Only" filter if filterUnique is true
+    if (filterUnique) {
+      filteredOrders = filteredOrders.where((order) =>
+          order.claimer == widget.bartenderID ||
+          (order.claimer.isEmpty && (order.userId % bartenderCount) == bartenderNumber) ||
+          order.status == 'arrived' // Always include "arrived" orders
+      ).toList();
+    }
+
+    // Update the display list with the filtered orders
+    displayList = filteredOrders;
+
+    // Handle terminal disablement
+    if (disabledTerminal && !allOrders.any((order) => order.claimer == widget.bartenderID)) {
+      socket!.sink.add(
+        json.encode({
+          'action': 'dispose',
+          'barID': widget.barID,
+        }),
+      );
+
+      if (socket != null) {
+        socket!.sink.close();
+        socket = null;
       }
 
-      // Apply the "Your Orders Only" filter if `filterUnique` is true
-      if (filterUnique) {
-        filteredOrders = filteredOrders.where((order) =>
-            order.claimer == widget.bartenderID ||
-            (order.claimer.isEmpty &&
-                (order.userId % bartenderCount) == bartenderNumber)
-        ).toList();
-      }
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
+        (Route<dynamic> route) => false,
+      );
+    }
+  });
+}
 
-      // Update the display list with the filtered orders
-      displayList = filteredOrders;
-
-      // Check if terminal is disabled and no orders are claimed by the bartender
-      if (disabledTerminal &&
-          !allOrders.any((order) => order.claimer == widget.bartenderID)) {
-        socket!.sink.add(
-          json.encode({
-            'action': 'dispose',
-            'barID': widget.barID,
-          }),
-        );
-
-        if (socket != null) {
-          socket!.sink.close(); // Close the WebSocket connection
-          socket = null; // Set the WebSocket reference to null
-        }
-
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
-          (Route<dynamic> route) => false, // Remove all previous routes
-        );
-      }
-    });
-  }
 
 
 
@@ -525,7 +569,7 @@ void showServerSignatureInfo() {
     final claimRequest = {
       'action': 'claim',
       'bartenderID': widget.bartenderID.toString(),
-      'orderID': order.userId,
+      'userID': order.userId,
       'barID': widget.barID,
     };
 
@@ -566,7 +610,7 @@ void showServerSignatureInfo() {
                           json.encode({
                             'action': 'unclaim',
                             'bartenderID': widget.bartenderID.toString(),
-                            'orderID': order.userId,
+                            'userID': order.userId,
                             'barID': widget.barID,
                           }),
                         );
@@ -593,7 +637,7 @@ void showServerSignatureInfo() {
                           json.encode({
                             'action': 'ready',
                             'bartenderID': widget.bartenderID.toString(),
-                            'orderID': order.userId,
+                            'userID': order.userId,
                             'barID': widget.barID,
                           }),
                         );
@@ -653,7 +697,7 @@ void showServerSignatureInfo() {
                           json.encode({
                             'action': 'cancel',
                             'bartenderID': widget.bartenderID.toString(),
-                            'orderID': order.userId,
+                            'userID': order.userId,
                             'barID': widget.barID,
                           }),
                         );
@@ -681,7 +725,7 @@ void showServerSignatureInfo() {
                           json.encode({
                             'action': 'deliver',
                             'bartenderID': widget.bartenderID.toString(),
-                            'orderID': order.userId,
+                            'userID': order.userId,
                             'barID': widget.barID,
                           }),
                         );
@@ -714,7 +758,7 @@ void showServerSignatureInfo() {
     if (order.claimer.isEmpty) {
       _executeFunctionForUnclaimed(order);
     } else if (order.claimer == widget.bartenderID) {
-      if (order.status == 'ready') {
+      if (order.status == 'ready' || order.status == 'arrived') {
         _executeFunctionForClaimedAndReady(order);
       } else {
         _executeFunctionForClaimed(order);
@@ -725,14 +769,15 @@ void showServerSignatureInfo() {
   Color _getOrderTintColor(CustomerOrder2 order) {
     final ageInSeconds = order.getAge();
 
-    // Debug print to show age and orderId
-    debugPrint('Order ID: ${order.userId}, Age: $ageInSeconds seconds');
+    // Debug print to show age and userID
+    debugPrint('USER ID: ${order.userId}, Age: $ageInSeconds seconds');
     if (order.claimer != '' && order.claimer != widget.bartenderID) {
       return Colors.grey[700]!;
     }
 
 
     if (order.status == 'ready') return Colors.green;
+    if (order.status == 'arrived') return const Color.fromARGB(255, 0, 187, 255);
     if (ageInSeconds <= 180) return Colors.yellow[200]!; // 0-3 minutes old
     if (ageInSeconds <= 300) return Colors.orange[200]!; // 3-5 minutes old
     if (ageInSeconds <= 600) return Colors.orange[500]!; // 5-10 minutes old
@@ -897,6 +942,13 @@ void showServerSignatureInfo() {
                                                 fontSize: 20,
                                                 fontWeight: FontWeight.bold,
                                                 color: Colors.white,
+                                                shadows: [
+                                                  Shadow(
+                                                    color: Colors.black,
+                                                    offset: Offset(1.0, 1.0),
+                                                    blurRadius: 1.0,
+                                                  ),
+                                                ],
                                               ),
                                               textAlign: TextAlign.center,
                                             ),
@@ -932,6 +984,13 @@ void showServerSignatureInfo() {
                                                 fontSize: 20,
                                                 fontWeight: FontWeight.bold,
                                                 color: Colors.white,
+                                                shadows: [
+                                                  Shadow(
+                                                    color: Colors.black,
+                                                    offset: Offset(1.0, 1.0),
+                                                    blurRadius: 1.0,
+                                                  ),
+                                                ],
                                               ),
                                               textAlign: TextAlign.center,
                                             ),
@@ -956,23 +1015,37 @@ void showServerSignatureInfo() {
                                     ],
                                   ),
                                 ),
-                                // Right side: Order ID
-                                Text(
-                                  '#${order.userId}',
-                                  style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black,
-                                        offset: Offset(1.0, 1.0),
-                                        blurRadius: 1.0,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                         // Right side: DisplayName with max width
+  ConstrainedBox(
+    constraints: const BoxConstraints(
+      maxWidth: 100, // Maximum width
+      minHeight: 50, // Minimum height to ensure alignment
+    ),
+    child: SizedBox(
+ height: (order.name.length / 10).ceil() * 25.0, // Dynamically adjust height based on displayName length
+        child: Center(
+        child: Text(
+          order.name,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            shadows: [
+              Shadow(
+                color: Colors.black,
+                offset: Offset(1.0, 1.0),
+                blurRadius: 1.0,
+              ),
+            ],
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 5, // Wrap text to fit within the height
+          overflow: TextOverflow.ellipsis, // Graceful text overflow
+        ),
+      ),
+    ),
+  ),
+],
                             ),
                           ),
                         ),
@@ -1249,6 +1322,31 @@ void showServerSignatureInfo() {
                   }
                 }
               }
+              setState(() {
+                // Update the displayList based on the new allOrders
+                _updateLists();
+              });
+              break;
+
+            case 'sessionId': // Somebody changed up how orders are sent back. They changed it so that orders are sent back as {Order} instead of {orders:[Order1, Order2...]}
+              // Parse the response directly into a CustomerOrder2 object
+              final incomingOrder = CustomerOrder2.fromJson(response);
+
+              // Check if the order exists in allOrders
+              int index = allOrders.indexWhere((order) => order.userId == incomingOrder.userId);
+              if (index != -1) {
+                // If it exists, replace the old order
+                allOrders[index] = incomingOrder;
+                if (allOrders[index].status == 'delivered' || allOrders[index].status == 'canceled') {
+                  allOrders.removeAt(index);
+                }
+              } else {
+                // If it doesn't exist, add the new order to allOrders
+                if (incomingOrder.status != 'delivered' && incomingOrder.status != 'canceled') {
+                  allOrders.add(incomingOrder);
+                }
+              }
+
               setState(() {
                 // Update the displayList based on the new allOrders
                 _updateLists();

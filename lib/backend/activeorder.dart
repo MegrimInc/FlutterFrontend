@@ -14,6 +14,7 @@ class CustomerOrder {
   String claimer;
   int timestamp; // Stored as an int on the frontend, converted to String for JSON
   String sessionId;
+  String name;
 
   CustomerOrder(
     this.barId,
@@ -26,6 +27,7 @@ class CustomerOrder {
     this.claimer,
     this.timestamp,
     this.sessionId,
+    this.name,
   );
 
   // Factory constructor for creating a CustomerOrder from JSON data
@@ -51,6 +53,7 @@ class CustomerOrder {
       json['claimer'] as String,
       int.parse(json['timestamp']), // Convert timestamp to int for frontend storage
       json['sessionId'] as String,
+      json['name'] as String
     );
   }
 
@@ -67,6 +70,7 @@ class CustomerOrder {
       'claimer': claimer,
       'timestamp': timestamp.toString(), // Convert timestamp to String for JSON
       'sessionId': sessionId,
+      'name': name
     };
   }
 
