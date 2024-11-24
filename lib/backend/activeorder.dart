@@ -74,7 +74,6 @@ class CustomerOrder {
       'claimer': claimer,
       'timestamp': timestamp.toString(), // Convert timestamp to String for JSON
       'sessionId': sessionId,
-      'name': name
     };
   }
 
