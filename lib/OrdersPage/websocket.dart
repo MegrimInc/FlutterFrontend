@@ -20,6 +20,7 @@ class Hierarchy extends ChangeNotifier {
   final Map<String, int> _createdOrderBarIds = {};
   bool _isConnected = false;
   final GlobalKey<NavigatorState> navigatorKey;
+  bool isLoading = false;
 
   Hierarchy(BuildContext context, this.navigatorKey)
       : localDatabase = Provider.of<LocalDatabase>(context, listen: false);
@@ -66,7 +67,7 @@ class Hierarchy extends ChangeNotifier {
                   // You can also extract the 'data' from the message and use it as needed
                   final data = decodedMessage['data'];
                   _createOrderResponse(data);
-                  await handleCache(data);    
+                  await handleCache(data);
                   break;
 
                 case 'create':
@@ -74,7 +75,7 @@ class Hierarchy extends ChangeNotifier {
                   final data = decodedMessage['data'];
                   _createOrderResponse(
                       data); // Trigger the createOrderResponse method
-                 // _updateCategoryRanks(context, data, increase: true);
+                  // _updateCategoryRanks(context, data, increase: true);
 
                   break;
 
@@ -82,7 +83,7 @@ class Hierarchy extends ChangeNotifier {
                   debugPrint('Delete response received.');
                   final data = decodedMessage['data'];
                   _createOrderResponse(data);
-                 // _updateCategoryRanks(context, data, increase: false);
+                  // _updateCategoryRanks(context, data, increase: false);
                   break;
 
                 case 'error':
@@ -136,6 +137,7 @@ class Hierarchy extends ChangeNotifier {
         _channel = null; // Ensure _channel is null before reconnecting
         _attemptReconnect(
             context); // Attempt reconnection on connection failure
+        notifyListeners();
       }
     }
   }
@@ -186,12 +188,13 @@ class Hierarchy extends ChangeNotifier {
 // Method to send an order
   void createOrder(Map<String, dynamic> order) {
     try {
-
       if (_channel != null) {
         final jsonOrder = jsonEncode(order); // Convert the order to JSON
         debugPrint('Sending create order: $jsonOrder');
         _channel!.sink.add(jsonOrder); // Send the order over WebSocket
         debugPrint('Order sent.');
+        setLoading(true);
+        debugPrint('isLoading is set to true');
       } else {
         debugPrint('Failed to send order: WebSocket is not connected');
       }
@@ -207,16 +210,16 @@ class Hierarchy extends ChangeNotifier {
       final customerOrder = CustomerOrder.fromJson(data);
       debugPrint('CustomerOrder created: $customerOrder');
 
-     localDatabase.addOrUpdateOrderForBar(customerOrder);
+      localDatabase.addOrUpdateOrderForBar(customerOrder);
       // Directly update the map with the new timestamp for the barId
       _createdOrderBarIds[customerOrder.barId] = customerOrder.timestamp;
 
       // Print statement to confirm addition
-      debugPrint(
-          'CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
-          debugPrint(' hierarchy localDatabase instance ID: ${localDatabase.hashCode}');
+      debugPrint('CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
+      debugPrint('hierarchy localDatabase instance ID: ${localDatabase.hashCode}');
+      setLoading(false);
       await sendGetRequest2();
-       notifyListeners();
+      notifyListeners();
     } catch (e) {
       debugPrint('Error while creating CustomerOrder: $e');
     }
@@ -227,8 +230,6 @@ class Hierarchy extends ChangeNotifier {
     // Call createOrderResponse to handle the data processing
     _createOrderResponse(data);
   }
-
-
 
   void _handleBrokeResponse(
       BuildContext context, String message, Map<String, dynamic> orderData) {
@@ -415,21 +416,28 @@ class Hierarchy extends ChangeNotifier {
   }
 
   Future<void> handleCache(dynamic ordersData) async {
-  final user = Provider.of<User>(navigatorKey.currentContext!, listen: false);
+    final user = Provider.of<User>(navigatorKey.currentContext!, listen: false);
 
-  // Check if `ordersData` is a list or a single object
-  final List<dynamic> orders = ordersData is List<dynamic>
-      ? ordersData // Already a list
-      : [ordersData]; // Wrap single object in a list
+    // Check if `ordersData` is a list or a single object
+    final List<dynamic> orders = ordersData is List<dynamic>
+        ? ordersData // Already a list
+        : [ordersData]; // Wrap single object in a list
 
-  for (var order in orders) {
-    final barId = order['barId']?.toString(); // Extract barId as a string
-    if (barId != null && barId.isNotEmpty) {
-      debugPrint('Fetching tags and drinks for barId: $barId');
-      await user.fetchTagsAndDrinks(barId); // Trigger the fetch
+    for (var order in orders) {
+      final barId = order['barId']?.toString(); // Extract barId as a string
+      if (barId != null && barId.isNotEmpty) {
+        debugPrint('Fetching tags and drinks for barId: $barId');
+        await user.fetchTagsAndDrinks(barId); // Trigger the fetch
+      }
     }
   }
-}
 
   bool get isConnected => _isConnected;
+
+  void setLoading(bool value) {
+    if (isLoading != value) {
+      isLoading = value;
+      notifyListeners();
+    }
+  }
 }

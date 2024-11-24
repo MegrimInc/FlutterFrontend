@@ -4,6 +4,7 @@ import 'package:barzzy/OrdersPage/websocket.dart';
 import 'package:barzzy/Backend/activeorder.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
@@ -55,6 +56,15 @@ class PickupPageState extends State<PickupPage> {
             return const Center(
               child: CircularProgressIndicator(
                 color: Colors.white,
+              ),
+            );
+          }
+
+          if (hierarchy.isLoading) {
+            return const Center(
+              child: SpinKitThreeBounce(
+                color: Colors.white,
+                size: 50.0,
               ),
             );
           }
@@ -157,7 +167,7 @@ class PickupPageState extends State<PickupPage> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Text(
-                    'Order #${order.userId}',
+                    'Order Name: ${order.name}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 21,
@@ -496,20 +506,14 @@ class PickupPageState extends State<PickupPage> {
       return Center(
         child: SizedBox(
           height: 40,
-          child: AnimatedTextKit(
-            animatedTexts: [
-              FadeAnimatedText(
-                "Order #${order.userId} is now in queue",
-                textStyle: GoogleFonts.poppins(
-                  color: activeColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                duration: const Duration(milliseconds: 3000),
-              ),
-            ],
-            isRepeatingAnimation: true,
-            repeatForever: true,
+          child: Text(
+            "Your order is now in queue",
+            style: GoogleFonts.poppins(
+              color: activeColor,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
           ),
         ),
       );
@@ -517,20 +521,14 @@ class PickupPageState extends State<PickupPage> {
       return Center(
         child: SizedBox(
           height: 40,
-          child: AnimatedTextKit(
-            animatedTexts: [
-              FadeAnimatedText(
-                'Order #${order.userId} is being prepared',
-                textStyle: GoogleFonts.poppins(
-                  color: activeColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                duration: const Duration(milliseconds: 3000),
-              ),
-            ],
-            isRepeatingAnimation: true,
-            repeatForever: true,
+          child: Text(
+            'Your order is being prepared',
+            style: GoogleFonts.poppins(
+              color: activeColor,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
           ),
         ),
       );
@@ -538,20 +536,14 @@ class PickupPageState extends State<PickupPage> {
       return Center(
         child: SizedBox(
           height: 40,
-          child: AnimatedTextKit(
-            animatedTexts: [
-              FadeAnimatedText(
-                'Order #${order.userId} is ready at station ${order.claimer} ',
-                textStyle: GoogleFonts.poppins(
-                  color: activeColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                duration: const Duration(milliseconds: 3000),
-              ),
-            ],
-            isRepeatingAnimation: true,
-            repeatForever: true,
+          child: Text(
+            'Your order is ready at station ${order.claimer}',
+            style: GoogleFonts.poppins(
+              color: activeColor,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
           ),
         ),
       );
