@@ -38,7 +38,7 @@ class DrinkFeed extends StatefulWidget {
 }
 
 class DrinkFeedState extends State<DrinkFeed>
-  with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   Offset? _startPosition;
   static const double swipeThreshold = 50.0;
   late AnimationController _controller;
@@ -205,12 +205,12 @@ class DrinkFeedState extends State<DrinkFeed>
           paymentSheetParameters: SetupPaymentSheetParameters(
             setupIntentClientSecret: setupIntentClientSecret,
             customerId: customerId,
-            merchantDisplayName: "Barzzy", 
+            merchantDisplayName: "Barzzy",
             style: ThemeMode.system,
             allowsDelayedPaymentMethods: true, // Required for Apple Pay
             applePay: const PaymentSheetApplePay(
-            merchantCountryCode: 'US',
-      ),
+              merchantCountryCode: 'US',
+            ),
           ),
         );
 
@@ -389,48 +389,50 @@ class DrinkFeedState extends State<DrinkFeed>
   }
 
   Widget _buildDrinkPage(BuildContext context) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-    children: [
-      const Spacer(flex: 1),
-      Center(
-        child: SizedBox(
-          height: 29,
-          child: Consumer<Cart>(
-            builder: (context, cart, _) {
-              // Show the animated text only if the cart is not empty
-              return cart.getTotalDrinkCount() > 0
-                  ? AnimatedTextKit(
-                      animatedTexts: [
-                        FadeAnimatedText(
-                          'Swipe Left To View Cart',
-                          textStyle: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 21,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          duration: const Duration(milliseconds: 3000),
-                        ),
-                      ],
-                      isRepeatingAnimation: true,
-                      repeatForever: true,
-                    )
-                  : const SizedBox(); // Keep the space if the cart is empty
-            },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        const Spacer(flex: 1),
+        Center(
+          child: SizedBox(
+            height: 29,
+            child: Consumer<Cart>(
+              builder: (context, cart, _) {
+                // Show the animated text only if the cart is not empty
+                return
+                    //cart.getTotalDrinkCount() > 0 ?
+                    AnimatedTextKit(
+                  animatedTexts: [
+                    FadeAnimatedText(
+                      'Swipe Left To View Cart',
+                      textStyle: GoogleFonts.poppins(
+                        color: Colors.lightGreenAccent,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      duration: const Duration(milliseconds: 3000),
+                    ),
+                  ],
+                  isRepeatingAnimation: true,
+                  repeatForever: true,
+                );
+                //: const SizedBox(); // Keep the space if the cart is empty
+              },
+            ),
           ),
         ),
-      ),
-      const Spacer(flex: 2),
-      _buildDrinkInfo(context),
-      const Spacer(flex: 2),
-      _buildQuantityControlButtons(context),
-      const Spacer(flex: 2),
-      _buildBottomBar(context),
-      const Spacer(flex: 1),
-    ],
-  );
-}
+        const Spacer(flex: 2),
+        _buildDrinkInfo(context),
+        const Spacer(flex: 2),
+        _buildQuantityControlButtons(context),
+        const Spacer(flex: 2),
+        _buildBottomBar(context),
+        const Spacer(flex: 1),
+      ],
+    );
+  }
+
   Widget _buildSummaryPage(BuildContext context) {
     final cart = Provider.of<Cart>(context);
     final hasItems = cart.getTotalDrinkCount() > 0;
@@ -466,7 +468,7 @@ class DrinkFeedState extends State<DrinkFeed>
                     FadeAnimatedText(
                       'Available Balance: $pointBalance pts',
                       textStyle: GoogleFonts.poppins(
-                        color: Colors.white,
+                        color: Colors.lightGreenAccent,
                         fontSize: 21,
                         fontWeight: FontWeight.w600,
                       ),

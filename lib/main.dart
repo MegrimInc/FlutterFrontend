@@ -14,6 +14,7 @@ import 'package:barzzy/Terminal/stationid.dart';
 import 'package:barzzy/Backend/point.dart';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'firebase_options.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -34,6 +35,7 @@ Future<void> main() async {
 
   Stripe.publishableKey =
       'pk_test_51QIHPQALmk8hqurjW70pr2kLZg1lr0bXN9K6uMdf9oDPwn3olIIPRd2kJncr8rGMKjVgSUsZztTtIcPwDlLfchgu00dprIZKma';
+  Stripe.merchantIdentifier = 'merchant.com.barzzy';
 
   try {
     debugPrint("Starting Firebase Initialization");
@@ -273,6 +275,15 @@ class Barzzy extends StatelessWidget {
     return MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+    cupertinoOverrideTheme: const CupertinoThemeData(
+      primaryColor: Colors.grey, // For iOS selector pins
+    ),
+    textSelectionTheme: const TextSelectionThemeData(
+      selectionColor: Colors.grey, // Text selection highlight color
+      selectionHandleColor: Colors.grey, // Selection handle color (Android)
+    ),
+  ),
       initialRoute: initialRoute,
       routes: {
         '/auth': (context) => const AuthPage(),

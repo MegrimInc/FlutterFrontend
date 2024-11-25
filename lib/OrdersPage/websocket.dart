@@ -4,7 +4,6 @@ import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/Backend/activeorder.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:barzzy/Backend/user.dart';
-import 'package:barzzy/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -75,21 +74,13 @@ class Hierarchy extends ChangeNotifier {
                   final data = decodedMessage['data'];
                   _createOrderResponse(
                       data); // Trigger the createOrderResponse method
-                  // _updateCategoryRanks(context, data, increase: true);
-
-                  break;
-
-                case 'delete':
-                  debugPrint('Delete response received.');
-                  final data = decodedMessage['data'];
-                  _createOrderResponse(data);
-                  // _updateCategoryRanks(context, data, increase: false);
                   break;
 
                 case 'error':
                   debugPrint('error response received.');
                   final String errorMessage = decodedMessage['message'];
                   _handleError(context, errorMessage);
+                   setLoading(false);
                   break;
 
                 case 'update':
@@ -98,16 +89,9 @@ class Hierarchy extends ChangeNotifier {
                   _handleUpdateResponse(data); // Use the new method for updates
                   break;
 
-                case 'broke':
-                  debugPrint('Broke response received.');
-                  final String errorMessage = decodedMessage['message'];
-                  final data = decodedMessage['data'];
-                  _handleBrokeResponse(context, errorMessage,
-                      data); // Use the new method for updates
-                  break;
-
                 default:
                   debugPrint('Unknown message type: $messageType');
+                   setLoading(false);
                   // Handle any other message types or log an error
                   break;
               }
@@ -218,7 +202,7 @@ class Hierarchy extends ChangeNotifier {
       debugPrint('CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
       debugPrint('hierarchy localDatabase instance ID: ${localDatabase.hashCode}');
       setLoading(false);
-      await sendGetRequest2();
+      //await sendGetRequest2();
       notifyListeners();
     } catch (e) {
       debugPrint('Error while creating CustomerOrder: $e');
@@ -231,123 +215,6 @@ class Hierarchy extends ChangeNotifier {
     _createOrderResponse(data);
   }
 
-  void _handleBrokeResponse(
-      BuildContext context, String message, Map<String, dynamic> orderData) {
-    final safeContext = navigatorKey.currentContext;
-
-    if (safeContext == null) {
-      debugPrint('Safe context is null. Cannot show dialog.');
-      return;
-    }
-
-    showDialog(
-      context: safeContext,
-      builder: (BuildContext context) {
-        HapticFeedback.heavyImpact();
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          backgroundColor: Colors.white,
-          title: const Row(
-            children: [
-              SizedBox(width: 75),
-              Icon(Icons.error_outline, color: Colors.black),
-              SizedBox(width: 5),
-              Text(
-                'Oops :/',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22,
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            message,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 16,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          actions: <Widget>[
-            Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-              TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  minimumSize: const Size(100, 50),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'No',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop(); // Dismiss the dialog
-                },
-              ),
-              TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  minimumSize: const Size(100, 50),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'Yes',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                onPressed: () async {
-                  final loginCache =
-                      Provider.of<LoginCache>(context, listen: false);
-                  final userId = await loginCache.getUID();
-
-                  // Reconstruct the order object as expected
-                  final reorder = {
-                    "action": "create",
-                    "barId": int.parse(orderData['barId']
-                        .toString()), // Ensure barId is an int
-                    "userId": userId,
-                    "points":
-                        false, // Override points to false for this attempt
-                    "drinks":
-                        (orderData['drinks'] as List<dynamic>).map((drink) {
-                      return {
-                        "drinkId": int.parse(
-                            drink['id'].toString()), // Ensure drinkId is int
-                        "quantity": int.parse(drink['quantity']
-                            .toString()), // Ensure quantity is int
-                      };
-                    }).toList(),
-                  };
-
-                  Navigator.of(context).pop(); // Dismiss the dialog
-                  createOrder(reorder); // Create the order
-                },
-              ),
-            ])
-          ],
-        );
-      },
-    );
-  }
 
   void disconnect() {
     if (_channel != null) {

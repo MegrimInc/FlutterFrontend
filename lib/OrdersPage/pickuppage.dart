@@ -18,12 +18,21 @@ class PickupPage extends StatefulWidget {
 class PickupPageState extends State<PickupPage> {
   late PageController _pageController; // Define a PageController
   int currentPage = 0;
+  late double screenHeight; 
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(); // Initialize the controller
   }
+
+  @override
+void didChangeDependencies() {
+  super.didChangeDependencies();
+  // Dynamically calculate the available screen height
+  screenHeight = MediaQuery.of(context).size.height 
+                 - (3 * kToolbarHeight); // Subtract twice the AppBar height
+}
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +72,7 @@ class PickupPageState extends State<PickupPage> {
             return const Center(
               child: SpinKitThreeBounce(
                 color: Colors.white,
-                size: 50.0,
+                size: 30.0,
               ),
             );
           }
@@ -71,47 +80,45 @@ class PickupPageState extends State<PickupPage> {
           final orders = hierarchy.getOrders();
 
           return Consumer<LocalDatabase>(
-            builder: (context, localDatabase, child) {
-              return RefreshIndicator(
-                onRefresh: () => _refreshOrders(context),
-                color: Colors.black,
-                child: orders.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No orders have been placed yet.',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                          ),
-                        ),
-                      )
-                    : PageView.builder(
-                        controller: _pageController,
-                        scrollDirection: Axis.vertical,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: orders.length,
-                        itemBuilder: (context, verticalIndex) {
-                          final barId = orders[verticalIndex];
-                          final order = localDatabase.getOrderForBar(barId);
+  builder: (context, localDatabase, child) {
+    return RefreshIndicator(
+      onRefresh: () => _refreshOrders(context),
+      color: Colors.black,
+      child: orders.length > 1 // Check if there are multiple orders
+          ? PageView.builder(
+              controller: _pageController,
+              scrollDirection: Axis.vertical,
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: orders.length,
+              itemBuilder: (context, verticalIndex) {
+                final barId = orders[verticalIndex];
+                final order = localDatabase.getOrderForBar(barId);
 
-                          if (order == null) {
-                            return const Center(
-                              child: Text(
-                                'No orders found for this bar.',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 17,
-                                ),
-                              ),
-                            );
-                          }
-
-                          return _buildOrderCard(order);
-                        },
+                if (order == null) {
+                  return const Center(
+                    child: Text(
+                      'No orders found for this bar.',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
                       ),
-              );
-            },
+                    ),
+                  );
+                }
+
+                return _buildOrderCard(order);
+              },
+            )
+          : SingleChildScrollView(
+  physics: const AlwaysScrollableScrollPhysics(),
+  child: SizedBox(
+    height: screenHeight, // Use the class variable here
+    child: _buildOrderCard(localDatabase.getOrderForBar(orders.first)!),
+  ),
+)
           );
+  },
+);
         },
       ),
     );
@@ -174,7 +181,8 @@ class PickupPageState extends State<PickupPage> {
                     ),
                   ),
                   const SizedBox(height: 5),
-                  Text(' Station: ${order.claimer.isNotEmpty ? order.claimer : 'N/A'}',
+                  Text(
+                    ' Bartender: ${order.claimer.isNotEmpty ? order.claimer : 'N/A'}',
                     style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 21,
@@ -535,7 +543,7 @@ class PickupPageState extends State<PickupPage> {
         child: SizedBox(
           height: 40,
           child: Text(
-            'Your order is ready at station ${order.claimer}',
+            'Bartender ${order.claimer} has your order ready',
             style: GoogleFonts.poppins(
               color: activeColor,
               fontSize: 18,

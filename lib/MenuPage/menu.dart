@@ -6,6 +6,7 @@ import 'package:barzzy/Backend/drink.dart';
 import 'package:barzzy/Backend/user.dart';
 import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/MenuPage/drinkfeed.dart';
+import 'package:barzzy/main.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -51,13 +52,14 @@ class MenuPageState extends State<MenuPage>
     _fetchBarData();
 
     if (widget.drinkId != null) {
-    final localDatabase = LocalDatabase(); // This retrieves the singleton instance.
-    final drink = localDatabase.getDrinkById(widget.drinkId!);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Navigator.of(context).push(
-        _createRoute(drink, widget.cart, targetPage: 1),
-      );
-    });
+      final localDatabase =
+          LocalDatabase(); // This retrieves the singleton instance.
+      final drink = localDatabase.getDrinkById(widget.drinkId!);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).push(
+          _createRoute(drink, widget.cart, targetPage: 1),
+        );
+      });
     }
 
     _animationController = AnimationController(
@@ -91,6 +93,8 @@ class MenuPageState extends State<MenuPage>
     debugPrint('Finished fetching drinks for barId: ${widget.barId}');
     debugPrint(
         'LocalDatabase instance in MenuPage: ${LocalDatabase().hashCode}');
+
+    await sendGetRequest2();
 
     setState(() {
       isLoading = false;
@@ -368,7 +372,7 @@ class MenuPageState extends State<MenuPage>
                     child: Column(
                       children: [
                         Expanded(
-                          flex: 12, 
+                          flex: 12,
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(5),
                             child: Stack(
