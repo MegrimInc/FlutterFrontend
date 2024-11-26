@@ -1,6 +1,6 @@
 import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/OrdersPage/websocket.dart';
-import 'package:barzzy/Backend/activeorder.dart';
+import 'package:barzzy/Backend/customer_order.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -18,7 +18,7 @@ class PickupPage extends StatefulWidget {
 class PickupPageState extends State<PickupPage> {
   late PageController _pageController; // Define a PageController
   int currentPage = 0;
-  late double screenHeight; 
+  late double screenHeight;
 
   @override
   void initState() {
@@ -27,12 +27,12 @@ class PickupPageState extends State<PickupPage> {
   }
 
   @override
-void didChangeDependencies() {
-  super.didChangeDependencies();
-  // Dynamically calculate the available screen height
-  screenHeight = MediaQuery.of(context).size.height 
-                 - (3 * kToolbarHeight); // Subtract twice the AppBar height
-}
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Dynamically calculate the available screen height
+    screenHeight = MediaQuery.of(context).size.height -
+        (3 * kToolbarHeight); // Subtract twice the AppBar height
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,45 +80,45 @@ void didChangeDependencies() {
           final orders = hierarchy.getOrders();
 
           return Consumer<LocalDatabase>(
-  builder: (context, localDatabase, child) {
-    return RefreshIndicator(
-      onRefresh: () => _refreshOrders(context),
-      color: Colors.black,
-      child: orders.length > 1 // Check if there are multiple orders
-          ? PageView.builder(
-              controller: _pageController,
-              scrollDirection: Axis.vertical,
-              physics: const AlwaysScrollableScrollPhysics(),
-              itemCount: orders.length,
-              itemBuilder: (context, verticalIndex) {
-                final barId = orders[verticalIndex];
-                final order = localDatabase.getOrderForBar(barId);
+            builder: (context, localDatabase, child) {
+              return RefreshIndicator(
+                  onRefresh: () => _refreshOrders(context),
+                  color: Colors.black,
+                  child: orders.length > 1 // Check if there are multiple orders
+                      ? PageView.builder(
+                          controller: _pageController,
+                          scrollDirection: Axis.vertical,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: orders.length,
+                          itemBuilder: (context, verticalIndex) {
+                            final barId = orders[verticalIndex];
+                            final order = localDatabase.getOrderForBar(barId);
 
-                if (order == null) {
-                  return const Center(
-                    child: Text(
-                      'No orders found for this bar.',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                      ),
-                    ),
-                  );
-                }
+                            if (order == null) {
+                              return const Center(
+                                child: Text(
+                                  'No orders found for this bar.',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                  ),
+                                ),
+                              );
+                            }
 
-                return _buildOrderCard(order);
-              },
-            )
-          : SingleChildScrollView(
-  physics: const AlwaysScrollableScrollPhysics(),
-  child: SizedBox(
-    height: screenHeight, // Use the class variable here
-    child: _buildOrderCard(localDatabase.getOrderForBar(orders.first)!),
-  ),
-)
+                            return _buildOrderCard(order);
+                          },
+                        )
+                      : SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: SizedBox(
+                            height: screenHeight, // Use the class variable here
+                            child: _buildOrderCard(
+                                localDatabase.getOrderForBar(orders.first)!),
+                          ),
+                        ));
+            },
           );
-  },
-);
         },
       ),
     );
@@ -209,6 +209,7 @@ void didChangeDependencies() {
     Color inQueueColor = Colors.orange;
     Color claimedColor = Colors.yellow.shade400;
     Color readyColor = Colors.lightGreenAccent;
+    Color arrivedColor = Colors.blueAccent;
 
     IconData inQueueIcon = Icons.access_time;
     IconData claimedIcon = Icons.wine_bar;
@@ -217,6 +218,7 @@ void didChangeDependencies() {
     bool isInQueue = status == "unready" && claimer.isEmpty;
     bool isClaimed = status == "unready" && claimer.isNotEmpty;
     bool isReady = status == "ready" && claimer.isNotEmpty;
+    bool isArrived = status == "arrived" && claimer.isNotEmpty;
     bool isDeliveredOrCanceled =
         (status == "delivered" || status == "canceled") && claimer.isNotEmpty;
 
@@ -225,7 +227,7 @@ void didChangeDependencies() {
         onPressed: () {},
         style: ElevatedButton.styleFrom(
           backgroundColor:
-              status == "delivered" ? Colors.blueGrey : Colors.red.shade300,
+              status == "delivered" ? Colors.grey : Colors.red.shade300,
         ),
         child: Text(
           status == "delivered" ? "Delivered" : "Canceled",
@@ -261,6 +263,12 @@ void didChangeDependencies() {
       readyStageColor = inactiveColor;
       firstConnectorColor = inactiveColor;
       secondConnectorColor = inactiveColor;
+    } else if (isArrived) {
+      queueColor = arrivedColor;
+      claimedStageColor = arrivedColor;
+      readyStageColor = arrivedColor;
+      firstConnectorColor = arrivedColor;
+      secondConnectorColor = arrivedColor;
     } else {
       queueColor = inactiveColor;
       claimedStageColor = inactiveColor;
@@ -497,6 +505,8 @@ void didChangeDependencies() {
     Color activeColor;
     if (order.status == "ready" && order.claimer.isNotEmpty) {
       activeColor = Colors.lightGreenAccent;
+    } else if (order.status == "arrived" && order.claimer.isNotEmpty) {
+      activeColor = Colors.blueAccent;
     } else if (order.status == "unready" && order.claimer.isNotEmpty) {
       activeColor = Colors.yellow.shade400;
     } else if (order.status == "unready" && order.claimer.isEmpty) {
@@ -539,11 +549,13 @@ void didChangeDependencies() {
         ),
       );
     } else if (order.status == "ready" && order.claimer.isNotEmpty) {
+      return Center(child: _buildArriveButton(order));
+    } else if (order.status == "arrived" && order.claimer.isNotEmpty) {
       return Center(
         child: SizedBox(
           height: 40,
           child: Text(
-            'Bartender ${order.claimer} has your order ready',
+            'Bartender ${order.claimer} has been notified',
             style: GoogleFonts.poppins(
               color: activeColor,
               fontSize: 18,
@@ -589,6 +601,47 @@ void didChangeDependencies() {
           children: [
             Text(
               "       Reorder        ",
+              style: GoogleFonts.poppins(
+                color: Colors.black,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildArriveButton(CustomerOrder order) {
+    return GestureDetector(
+      onTap: () {
+        final barIdString = order.barId;
+
+        // Convert barId to int
+        final int barId =
+            int.tryParse(barIdString) ?? -1; // Fallback to -1 if parsing fails
+
+        if (barId != -1) {
+          // Send the arrive message
+          final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+          hierarchy.sendArriveMessage(barId);
+
+          debugPrint('Arrive message sent for barId: $barId');
+        } else {
+          debugPrint('Failed to parse barId: $barIdString');
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Text(
+              "        I'm Here        ",
               style: GoogleFonts.poppins(
                 color: Colors.black,
                 fontSize: 14,

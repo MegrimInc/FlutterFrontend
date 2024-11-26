@@ -26,7 +26,7 @@ class _MyTopIconsState extends State<MyTopIcons> {
             width: (MediaQuery.of(context).size.width / 3) * 2 + 0,
             height: 45,
             child: Text(
-              'B A R R Z Y',
+              'B A R Z Z Y',
               style: GoogleFonts.megrim(
                 fontWeight: FontWeight.w900,
                 color: Colors.white,

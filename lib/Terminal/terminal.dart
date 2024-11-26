@@ -4,7 +4,7 @@ import 'dart:async'; // Import the async package for Timer
 import 'dart:convert'; //TODO check bar is active
 import 'dart:io';
 
-import 'package:barzzy/Backend/customerorder2.dart';
+import 'package:barzzy/Backend/bartender_order.dart';
 import 'package:barzzy/Terminal/stationid.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,9 +26,9 @@ class OrdersPage extends StatefulWidget {
 }
 
 class _OrdersPageState extends State<OrdersPage> {
-  List<CustomerOrder2> allOrders = [];
+  List<BartenderOrder> allOrders = [];
 
-  List<CustomerOrder2> displayList = [];
+  List<BartenderOrder> displayList = [];
 
 //TESTING VARIABLE
   bool testing = true; //TODO CHANGE BACK TO TESTING = FALSE
@@ -46,7 +46,6 @@ class _OrdersPageState extends State<OrdersPage> {
 
   Timer? _timer;
   WebSocket? websocket;
-
 
   void claimTips() {
     bool isSubmitting = false; // Track button status within the dialog
@@ -80,7 +79,8 @@ class _OrdersPageState extends State<OrdersPage> {
                   ),
                   TextField(
                     controller: emailController,
-                    decoration: const InputDecoration(labelText: "Your Email (optional)"),
+                    decoration: const InputDecoration(
+                        labelText: "Your Email (optional)"),
                   ),
                 ],
               ),
@@ -93,14 +93,16 @@ class _OrdersPageState extends State<OrdersPage> {
                   style: TextButton.styleFrom(
                     backgroundColor: Colors.red,
                   ),
-                  child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+                  child: const Text("Cancel",
+                      style: TextStyle(color: Colors.white)),
                 ),
                 TextButton(
                   onPressed: isSubmitting
                       ? null // Disable if currently submitting
                       : () {
                           if (nameController.text.isNotEmpty) {
-                            debugPrint("Attempting to submit request for claimtips");
+                            debugPrint(
+                                "Attempting to submit request for claimtips");
 
                             final Map<String, dynamic> request = {
                               'action': 'Claim Tips',
@@ -109,22 +111,23 @@ class _OrdersPageState extends State<OrdersPage> {
                               'bartenderID': widget.bartenderID,
                               'barID': widget.barID,
                             };
-debugPrint("request generated");
+                            debugPrint("request generated");
                             // Send request to backend
                             socket!.sink.add(json.encode(request));
-debugPrint("request sent");
+                            debugPrint("request sent");
 
                             setState(() {
                               isSubmitting = true; // Temporarily disable button
                             });
-                             debugPrint("Successfully submit request for claimtips");
-
+                            debugPrint(
+                                "Successfully submit request for claimtips");
                           }
                         },
                   style: TextButton.styleFrom(
                     backgroundColor: isSubmitting ? Colors.grey : Colors.blue,
                   ),
-                  child: const Text("Submit", style: TextStyle(color: Colors.white)),
+                  child: const Text("Submit",
+                      style: TextStyle(color: Colors.white)),
                 ),
               ],
             );
@@ -139,105 +142,111 @@ debugPrint("request sent");
     });
   }
 
+  void showReceiptDialog(Map<String, dynamic> response) {
+    List<BartenderOrder> orders = (response['orders'] as List)
+        .map((orderJson) => BartenderOrder.fromJson(orderJson))
+        .toList();
+    double totalTip = orders.fold(0, (sum, order) => sum + order.tip);
 
-void showReceiptDialog(Map<String, dynamic> response) {
-  List<CustomerOrder2> orders = (response['orders'] as List)
-      .map((orderJson) => CustomerOrder2.fromJson(orderJson))
-      .toList();
-  double totalTip = orders.fold(0, (sum, order) => sum + order.tip);
-
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        backgroundColor: Colors.black,
-        title: const Text(
-          'Tips Claimed!',
-          style: TextStyle(color: Colors.yellowAccent, fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  color: Colors.yellow[700],
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                child: Column(
-                  children: [
-                    const Text('Receipt', style: TextStyle(fontSize: 18, color: Colors.black)),
-                    Text('Bar #${response['barID'] ?? "Unknown"}'),
-                    Text('Bartender: ${response['bartenderID'] ?? "Unknown"} (${response['bartenderName'] ?? "Unknown"})'),
-                    Text(
-                      'Date: ${DateTime.fromMillisecondsSinceEpoch(response['dateClaimed'] ?? 0).toLocal()}',
-                    ),
-                    Text('Total Tip Amount: \$${totalTip.toStringAsFixed(2)}'),
-                    SizedBox(
-                      height: 200.0,
-                      child: orders.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'No orders to display.',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            )
-                          : ListView(
-                              children: orders.map((order) {
-                                return ListTile(
-                                  title: Text(
-                                    'Order ${order.userId}: \$${order.tip.toStringAsFixed(2)}',
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                  subtitle: Text(
-                                    '@ ${DateTime.fromMillisecondsSinceEpoch(order.timestamp).toLocal()}',
-                                    style: const TextStyle(color: Colors.grey),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                    ),
-                    Text('Server Signature: ${response['digitalSignature'] ?? "N/A"}'),
-                  ],
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Close',
-                  style: TextStyle(color: Colors.red, fontSize: 20),
-                ),
-              ),
-              TextButton(
-                onPressed: showServerSignatureInfo,
-                child: const Text(
-                  'What is a Server Signature?',
-                  style: TextStyle(color: Colors.yellow),
-                ),
-              ),
-            ],
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.black,
+          title: const Text(
+            'Tips Claimed!',
+            style: TextStyle(
+                color: Colors.yellowAccent, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
           ),
-        ),
-      );
-    },
-  );
-}
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8.0),
+                  decoration: BoxDecoration(
+                    color: Colors.yellow[700],
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text('Receipt',
+                          style: TextStyle(fontSize: 18, color: Colors.black)),
+                      Text('Bar #${response['barID'] ?? "Unknown"}'),
+                      Text(
+                          'Bartender: ${response['bartenderID'] ?? "Unknown"} (${response['bartenderName'] ?? "Unknown"})'),
+                      Text(
+                        'Date: ${DateTime.fromMillisecondsSinceEpoch(response['dateClaimed'] ?? 0).toLocal()}',
+                      ),
+                      Text(
+                          'Total Tip Amount: \$${totalTip.toStringAsFixed(2)}'),
+                      SizedBox(
+                        height: 200.0,
+                        child: orders.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'No orders to display.',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              )
+                            : ListView(
+                                children: orders.map((order) {
+                                  return ListTile(
+                                    title: Text(
+                                      'Order ${order.userId}: \$${order.tip.toStringAsFixed(2)}',
+                                      style:
+                                          const TextStyle(color: Colors.white),
+                                    ),
+                                    subtitle: Text(
+                                      '@ ${DateTime.fromMillisecondsSinceEpoch(order.timestamp).toLocal()}',
+                                      style:
+                                          const TextStyle(color: Colors.grey),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                      ),
+                      Text(
+                          'Server Signature: ${response['digitalSignature'] ?? "N/A"}'),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(color: Colors.red, fontSize: 20),
+                  ),
+                ),
+                TextButton(
+                  onPressed: showServerSignatureInfo,
+                  child: const Text(
+                    'What is a Server Signature?',
+                    style: TextStyle(color: Colors.yellow),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
+  void showServerSignatureInfo() {
+    const publicKey =
+        'MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAqePMRYC7/28i9reLDqd77xHIuwHOEGL6sTO6MCSSrjNBJHH6xJnDPs8is3VyfbyZc01ql6H7k565W30OnGgkxBgPdAcaSySLm+G7MMJlviiw2jY6UmuEdOkA5e21GrOikQG3aBz1TtK4fbDL8R7wlKkHEpBzFLDRXHOlK3qyFVph3osU1bTB6nd+z5PRfRbJsUiOOXKJjUa7hXYQI6Z4PwasHDEWBy2HycdIRLdjOmlSjnsX22LsOo0/FEtF2VQU+CiDNXs1evBxDIi9JRMwwETq8L6y5EhRb8LlxpgL5sLaCyzyecyK3NIWwPsLJgOcJWDByUg2FWp/72UYp4mIutraXgEIcO0F/y4FViw8c38DN7V7SX0cUdYJdmkzByApQg0/s8D1krdrE3oyrP2BQ/s7x0SDT4QYt1hoeyZ2PKK6zjLG7nXhbWljhl3fehXuWXRDhcbkPCU0kBu7jk2nYuhRroPy5Brxc5ylwSNZZsqQxZMTxxh/n/T7zWMrdYXSbYsGjk8U6/W1Dru1f8LBMnSQNI8h7uWlv3/uSxsinUg3xeMl9AqPVugH8yGR8EJlJLEftpGmmjNBPtSIN3VWldvJ6NFWT0cX9rxyfT5oxeNScSJPwKUTKfFxC/mzW8KoDGsJjlg+ULFZxv2+5kgfR4XwJ9UxqfM+s6Z1c1CmjFMCAwEAAQ==';
 
-void showServerSignatureInfo() {
-  const publicKey = 'MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAqePMRYC7/28i9reLDqd77xHIuwHOEGL6sTO6MCSSrjNBJHH6xJnDPs8is3VyfbyZc01ql6H7k565W30OnGgkxBgPdAcaSySLm+G7MMJlviiw2jY6UmuEdOkA5e21GrOikQG3aBz1TtK4fbDL8R7wlKkHEpBzFLDRXHOlK3qyFVph3osU1bTB6nd+z5PRfRbJsUiOOXKJjUa7hXYQI6Z4PwasHDEWBy2HycdIRLdjOmlSjnsX22LsOo0/FEtF2VQU+CiDNXs1evBxDIi9JRMwwETq8L6y5EhRb8LlxpgL5sLaCyzyecyK3NIWwPsLJgOcJWDByUg2FWp/72UYp4mIutraXgEIcO0F/y4FViw8c38DN7V7SX0cUdYJdmkzByApQg0/s8D1krdrE3oyrP2BQ/s7x0SDT4QYt1hoeyZ2PKK6zjLG7nXhbWljhl3fehXuWXRDhcbkPCU0kBu7jk2nYuhRroPy5Brxc5ylwSNZZsqQxZMTxxh/n/T7zWMrdYXSbYsGjk8U6/W1Dru1f8LBMnSQNI8h7uWlv3/uSxsinUg3xeMl9AqPVugH8yGR8EJlJLEftpGmmjNBPtSIN3VWldvJ6NFWT0cX9rxyfT5oxeNScSJPwKUTKfFxC/mzW8KoDGsJjlg+ULFZxv2+5kgfR4XwJ9UxqfM+s6Z1c1CmjFMCAwEAAQ==';
-
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('What is a Server Signature?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              '''A digital signature (Server Signature) is a guarantee that only an entity with a private key (like Barzzy) can generate a message that validates for a public key. To verify:
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('What is a Server Signature?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '''A digital signature (Server Signature) is a guarantee that only an entity with a private key (like Barzzy) can generate a message that validates for a public key. To verify:
 
 1. Copy our permanent public key:
 2. Go to https://8gwifi.org/RSAFunctionality?rsasignverifyfunctions=rsasignverifyfunctions&keysize=4096 or any other RSA signature verifier of your choice.
@@ -253,30 +262,30 @@ void showServerSignatureInfo() {
 - Remove extra input: You may have inserted an extra line into the Plaintext Section. You should remove that if you may have put it in accidentally.
 - Other websites: Our signature is in BASE64, key format is PEM, charset is UTF-8, and our plaintext is STRING.
 - If it still says "Signature Verification Failed" then we didn't generate the report. You should inquire with the person who gave you the report as to where they got it from, because the report was clearly modified by a bad actor. If you got the report directly from emails ending with @barzzy.site, then send an inquiry to barzzy.llc@gmail.com explaining your issue, and forward the receipt email as well.''',
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                Clipboard.setData(const ClipboardData(text: publicKey));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Public key copied to clipboard')),
-                );
-              },
-              child: const Text('Click to Copy Public Key'),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  Clipboard.setData(const ClipboardData(text: publicKey));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Public key copied to clipboard')),
+                  );
+                },
+                child: const Text('Click to Copy Public Key'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
+        );
+      },
+    );
+  }
 
   @override
   void initState() {
@@ -297,76 +306,225 @@ void showServerSignatureInfo() {
 
     // Listen for the response from the server
 
-    if(testing) {
+    if (testing) {
       allOrders = [
-      CustomerOrder2('1', 101, 20.50, 3.00, true, [
-        DrinkOrder(1, 'Mojito', 'regular', 'single', 1),
-        DrinkOrder(2, 'Whiskey Sour', 'regular', 'double', 2),
-      ], 'claimed', 'A', 1678901234000, 'session_001', 'Unnamed'),
-
-      CustomerOrder2('2', 102, 35.75, 5.25, false, [
-        DrinkOrder(3, 'Old Fashioned', 'regular', 'single', 1),
-        DrinkOrder(4, 'Martini', 'points', 'double', 1),
-      ], 'claimed', 'D', 1678901235000, 'session_002', 'Michael Bay'),
-
-      CustomerOrder2('3', 103, 50.00, 8.00, true, [
-        DrinkOrder(5, 'Gin and Tonic', 'regular', 'single', 3),
-        DrinkOrder(6, 'Cosmopolitan', 'regular', 'double', 1),
-      ], 'open', '', 1678901236000, 'session_003', 'John Doe'),
-
-      CustomerOrder2('4', 104, 40.00, 6.50, false, [
-        DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-      ], 'open', '', 1678901237000, 'session_004', 'Kermit'),
-
-      CustomerOrder2('5', 105, 30.00, 4.50, true, [
-        DrinkOrder(8, 'Daiquiri', 'regular', 'single', 1),
-        DrinkOrder(9, 'Negroni', 'regular', 'double', 1),
-      ], 'ready', 'X', 1678901238000, 'session_005', 'James bond'),
-
-      CustomerOrder2('6', 106, 25.00, 3.75, false, [
-        DrinkOrder(10, 'Long Island Iced Tea', 'points', 'single', 2),
-      ], 'arrived', 'A', 1678901239000, 'session_006', 'Alexandria Oscasio-Cortez'),
-
-      CustomerOrder2('7', 107, 60.00, 10.00, true, [
-        DrinkOrder(11, 'Screwdriver', 'regular', 'double', 1),
-        DrinkOrder(12, 'Pina Colada', 'points', '', 1),
-        DrinkOrder(13, 'Bloody Mary', 'regular', 'double', 1),
-      ], 'open', '', 1678901240000, 'session_007', 'Donald Trump'),
-      
-      CustomerOrder2('1', 101, 20.50, 3.00, true, [
-        DrinkOrder(1, 'Mojito', 'regular', 'single', 1),
-        DrinkOrder(2, 'Whiskey Sour', 'regular', 'double', 2),
-      ], 'claimed', 'A', 1678901234000, 'session_001', 'here'),
-
-      CustomerOrder2('2', 102, 35.75, 5.25, false, [
-        DrinkOrder(3, 'Old Fashioned', 'regular', 'single', 1),
-        DrinkOrder(4, 'Martini', 'points', 'double', 1),
-      ], 'claimed', 'D', 1678901235000, 'session_002', 'arrived at Bay'),
-
-      CustomerOrder2('3', 103, 50.00, 8.00, true, [
-        DrinkOrder(5, 'Gin and Tonic', 'regular', 'single', 3),
-        DrinkOrder(6, 'Cosmopolitan', 'regular', 'double', 1),
-      ], 'open', '', 1678901236000, 'session_003', 'look up'),
-
-      CustomerOrder2('4', 104, 40.00, 6.50, false, [
-        DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-      ], 'open', '', 1678901237000, 'session_004', 'give me '),
-
-      CustomerOrder2('5', 105, 30.00, 4.50, true, [
-        DrinkOrder(8, 'Daiquiri', 'regular', 'single', 1),
-        DrinkOrder(9, 'Negroni', 'regular', 'double', 1),
-      ], 'ready', 'X', 1678901238000, 'session_005', 'imatthelocationsothatswhyyoushouldgiveittome'),
-
-      CustomerOrder2('6', 106, 25.00, 3.75, false, [
-        DrinkOrder(10, 'Long Island Iced Tea', 'points', 'single', 2),
-      ], 'open', '', 1678901239000, 'session_006', 'here'),
-
-      CustomerOrder2('7', 107, 60.00, 10.00, true, [
-        DrinkOrder(11, 'Screwdriver', 'regular', 'double', 1),
-        DrinkOrder(12, 'Pina Colada', 'points', '', 1),
-        DrinkOrder(13, 'Bloody Mary', 'regular', 'double', 1),
-      ], 'open', '', 1678901240000, 'session_007', 'here'),
-    ];
+        BartenderOrder(
+            '1',
+            101,
+            20.50,
+            3.00,
+            true,
+            [
+              DrinkOrder(1, 'Mojito', 'regular', 'single', 1),
+              DrinkOrder(2, 'Whiskey Sour', 'regular', 'double', 2),
+            ],
+            'claimed',
+            'A',
+            1678901234000,
+            'session_001',
+            'Unnamed'),
+        BartenderOrder(
+            '2',
+            102,
+            35.75,
+            5.25,
+            false,
+            [
+              DrinkOrder(3, 'Old Fashioned', 'regular', 'single', 1),
+              DrinkOrder(4, 'Martini', 'points', 'double', 1),
+            ],
+            'claimed',
+            'D',
+            1678901235000,
+            'session_002',
+            'Michael Bay'),
+        BartenderOrder(
+            '3',
+            103,
+            50.00,
+            8.00,
+            true,
+            [
+              DrinkOrder(5, 'Gin and Tonic', 'regular', 'single', 3),
+              DrinkOrder(6, 'Cosmopolitan', 'regular', 'double', 1),
+            ],
+            'open',
+            '',
+            1678901236000,
+            'session_003',
+            'John Doe'),
+        BartenderOrder(
+            '4',
+            104,
+            40.00,
+            6.50,
+            false,
+            [
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+            ],
+            'open',
+            '',
+            1678901237000,
+            'session_004',
+            'Kermit'),
+        BartenderOrder(
+            '5',
+            105,
+            30.00,
+            4.50,
+            true,
+            [
+              DrinkOrder(8, 'Daiquiri', 'regular', 'single', 1),
+              DrinkOrder(9, 'Negroni', 'regular', 'double', 1),
+            ],
+            'ready',
+            'X',
+            1678901238000,
+            'session_005',
+            'James bond'),
+        BartenderOrder(
+            '6',
+            106,
+            25.00,
+            3.75,
+            false,
+            [
+              DrinkOrder(10, 'Long Island Iced Tea', 'points', 'single', 2),
+            ],
+            'arrived',
+            'A',
+            1678901239000,
+            'session_006',
+            'Alexandria Oscasio-Cortez'),
+        BartenderOrder(
+            '7',
+            107,
+            60.00,
+            10.00,
+            true,
+            [
+              DrinkOrder(11, 'Screwdriver', 'regular', 'double', 1),
+              DrinkOrder(12, 'Pina Colada', 'points', '', 1),
+              DrinkOrder(13, 'Bloody Mary', 'regular', 'double', 1),
+            ],
+            'open',
+            '',
+            1678901240000,
+            'session_007',
+            'Donald Trump'),
+        BartenderOrder(
+            '1',
+            101,
+            20.50,
+            3.00,
+            true,
+            [
+              DrinkOrder(1, 'Mojito', 'regular', 'single', 1),
+              DrinkOrder(2, 'Whiskey Sour', 'regular', 'double', 2),
+            ],
+            'claimed',
+            'A',
+            1678901234000,
+            'session_001',
+            'here'),
+        BartenderOrder(
+            '2',
+            102,
+            35.75,
+            5.25,
+            false,
+            [
+              DrinkOrder(3, 'Old Fashioned', 'regular', 'single', 1),
+              DrinkOrder(4, 'Martini', 'points', 'double', 1),
+            ],
+            'claimed',
+            'D',
+            1678901235000,
+            'session_002',
+            'arrived at Bay'),
+        BartenderOrder(
+            '3',
+            103,
+            50.00,
+            8.00,
+            true,
+            [
+              DrinkOrder(5, 'Gin and Tonic', 'regular', 'single', 3),
+              DrinkOrder(6, 'Cosmopolitan', 'regular', 'double', 1),
+            ],
+            'open',
+            '',
+            1678901236000,
+            'session_003',
+            'look up'),
+        BartenderOrder(
+            '4',
+            104,
+            40.00,
+            6.50,
+            false,
+            [
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+            ],
+            'open',
+            '',
+            1678901237000,
+            'session_004',
+            'give me '),
+        BartenderOrder(
+            '5',
+            105,
+            30.00,
+            4.50,
+            true,
+            [
+              DrinkOrder(8, 'Daiquiri', 'regular', 'single', 1),
+              DrinkOrder(9, 'Negroni', 'regular', 'double', 1),
+            ],
+            'ready',
+            'X',
+            1678901238000,
+            'session_005',
+            'imatthelocationsothatswhyyoushouldgiveittome'),
+        BartenderOrder(
+            '6',
+            106,
+            25.00,
+            3.75,
+            false,
+            [
+              DrinkOrder(10, 'Long Island Iced Tea', 'points', 'single', 2),
+            ],
+            'open',
+            '',
+            1678901239000,
+            'session_006',
+            'here'),
+        BartenderOrder(
+            '7',
+            107,
+            60.00,
+            10.00,
+            true,
+            [
+              DrinkOrder(11, 'Screwdriver', 'regular', 'double', 1),
+              DrinkOrder(12, 'Pina Colada', 'points', '', 1),
+              DrinkOrder(13, 'Bloody Mary', 'regular', 'double', 1),
+            ],
+            'open',
+            '',
+            1678901240000,
+            'session_007',
+            'here'),
+      ];
     }
 
     _updateLists();
@@ -378,82 +536,88 @@ void showServerSignatureInfo() {
     super.dispose();
   }
 
-void _updateLists() {
-  setState(() {
-    // Separate "arrived" orders
-    List<CustomerOrder2> arrivedOrders = allOrders.where((order) => order.status == 'arrived').toList();
+  void _updateLists() {
+    setState(() {
+      // Separate "arrived" orders
+      List<BartenderOrder> arrivedOrders =
+          allOrders.where((order) => order.status == 'arrived').toList();
 
-    // Separate claimed and unclaimed orders, excluding "arrived" orders
-    List<CustomerOrder2> claimedOrders = allOrders
-        .where((order) => order.claimer == widget.bartenderID && order.status != 'arrived')
-        .toList();
-    List<CustomerOrder2> unclaimedOrders = allOrders
-        .where((order) => order.claimer != widget.bartenderID && order.status != 'arrived')
-        .toList();
-
-    // Sort each category by timestamp (older first)
-    arrivedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    claimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    // Combine sorted lists with "arrived" orders at the top
-    List<CustomerOrder2> sortedOrders = [
-      ...arrivedOrders,
-      ...claimedOrders,
-      ...unclaimedOrders,
-    ];
-
-    // Apply filters
-    List<CustomerOrder2> filteredOrders = sortedOrders;
-
-    // Include "arrived" orders in both filterReady = true and filterReady = false
-    if (filterReady) {
-      filteredOrders = filteredOrders
-          .where((order) => order.status == 'ready' || order.status == 'arrived')
+      // Separate claimed and unclaimed orders, excluding "arrived" orders
+      List<BartenderOrder> claimedOrders = allOrders
+          .where((order) =>
+              order.claimer == widget.bartenderID && order.status != 'arrived')
           .toList();
-    } else {
-      filteredOrders = filteredOrders
-          .where((order) => order.status != 'ready' || order.status == 'arrived')
+      List<BartenderOrder> unclaimedOrders = allOrders
+          .where((order) =>
+              order.claimer != widget.bartenderID && order.status != 'arrived')
           .toList();
-    }
 
-    // Apply the "Your Orders Only" filter if filterUnique is true
-    if (filterUnique) {
-      filteredOrders = filteredOrders.where((order) =>
-          order.claimer == widget.bartenderID ||
-          (order.claimer.isEmpty && (order.userId % bartenderCount) == bartenderNumber) ||
-          order.status == 'arrived' // Always include "arrived" orders
-      ).toList();
-    }
+      // Sort each category by timestamp (older first)
+      arrivedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      claimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-    // Update the display list with the filtered orders
-    displayList = filteredOrders;
+      // Combine sorted lists with "arrived" orders at the top
+      List<BartenderOrder> sortedOrders = [
+        ...arrivedOrders,
+        ...claimedOrders,
+        ...unclaimedOrders,
+      ];
 
-    // Handle terminal disablement
-    if (disabledTerminal && !allOrders.any((order) => order.claimer == widget.bartenderID)) {
-      socket!.sink.add(
-        json.encode({
-          'action': 'dispose',
-          'barID': widget.barID,
-        }),
-      );
+      // Apply filters
+      List<BartenderOrder> filteredOrders = sortedOrders;
 
-      if (socket != null) {
-        socket!.sink.close();
-        socket = null;
+      // Include "arrived" orders in both filterReady = true and filterReady = false
+      if (filterReady) {
+        filteredOrders = filteredOrders
+            .where(
+                (order) => order.status == 'ready' || order.status == 'arrived')
+            .toList();
+      } else {
+        filteredOrders = filteredOrders
+            .where(
+                (order) => order.status != 'ready' || order.status == 'arrived')
+            .toList();
       }
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
-        (Route<dynamic> route) => false,
-      );
-    }
-  });
-}
+      // Apply the "Your Orders Only" filter if filterUnique is true
+      if (filterUnique) {
+        filteredOrders = filteredOrders
+            .where((order) =>
+                    order.claimer == widget.bartenderID ||
+                    (order.claimer.isEmpty &&
+                        (order.userId % bartenderCount) == bartenderNumber) ||
+                    order.status == 'arrived' // Always include "arrived" orders
+                )
+            .toList();
+      }
 
+      // Update the display list with the filtered orders
+      displayList = filteredOrders;
 
+      // Handle terminal disablement
+      if (disabledTerminal &&
+          !allOrders.any((order) => order.claimer == widget.bartenderID)) {
+        socket!.sink.add(
+          json.encode({
+            'action': 'dispose',
+            'barID': widget.barID,
+          }),
+        );
 
+        if (socket != null) {
+          socket!.sink.close();
+          socket = null;
+        }
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
+          (Route<dynamic> route) => false,
+        );
+      }
+    });
+  }
 
   void _disableTerminal() {
     // Check if there are any orders that are not marked as delivered or canceled
@@ -564,7 +728,7 @@ void _updateLists() {
     setState(() {});
   }
 
-  void _executeFunctionForUnclaimed(CustomerOrder2 order) {
+  void _executeFunctionForUnclaimed(BartenderOrder order) {
     // Construct the message
     final claimRequest = {
       'action': 'claim',
@@ -579,7 +743,7 @@ void _updateLists() {
     debugPrint("attempting claim");
   }
 
-  void _executeFunctionForClaimed(CustomerOrder2 order) {
+  void _executeFunctionForClaimed(BartenderOrder order) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -666,7 +830,7 @@ void _updateLists() {
     );
   }
 
-  void _executeFunctionForClaimedAndReady(CustomerOrder2 order) {
+  void _executeFunctionForClaimedAndReady(BartenderOrder order) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -754,7 +918,7 @@ void _updateLists() {
     );
   }
 
-  void _onOrderTap(CustomerOrder2 order) {
+  void _onOrderTap(BartenderOrder order) {
     if (order.claimer.isEmpty) {
       _executeFunctionForUnclaimed(order);
     } else if (order.claimer == widget.bartenderID) {
@@ -766,7 +930,7 @@ void _updateLists() {
     }
   }
 
-  Color _getOrderTintColor(CustomerOrder2 order) {
+  Color _getOrderTintColor(BartenderOrder order) {
     final ageInSeconds = order.getAge();
 
     // Debug print to show age and userID
@@ -774,7 +938,6 @@ void _updateLists() {
     if (order.claimer != '' && order.claimer != widget.bartenderID) {
       return Colors.grey[700]!;
     }
-
 
     if (order.status == 'ready') return Colors.green;
     if (order.status == 'arrived') return const Color.fromARGB(255, 0, 187, 255);
@@ -798,69 +961,68 @@ void _updateLists() {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-  backgroundColor: Colors.black,
-  title: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      IconButton(
-        icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
-        color: Colors.white,
-        onPressed: () {
-          if (!disabledTerminal) {
-            debugPrint("disable");
-            socket!.sink.add(
-              json.encode({
-                'action': 'disable',
-                'bartenderID': widget.bartenderID.toString(),
-                'barID': widget.barID,
-              }),
-            );
-          }
-        },
-      ),
-      // Centered Row for circles
-      const SizedBox(width: 20),
-      Row(
-        mainAxisSize: MainAxisSize.min, // This keeps the Row compact around its children
-        children: [
-          Icon(
-            filterReady ? Icons.circle_outlined : Icons.circle,
-            color: Colors.white,
-            size: 12.0,
-          ),
-          const SizedBox(width: 8),
-          Icon(
-            filterReady ? Icons.circle : Icons.circle_outlined,
-            color: Colors.white,
-            size: 12.0,
-          ),
-        ],
-      ),
-      // Row with Claim Tips and Filter button
-      Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ElevatedButton(
-            onPressed: claimTips,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
+        backgroundColor: Colors.black,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
+              color: Colors.white,
+              onPressed: () {
+                if (!disabledTerminal) {
+                  debugPrint("disable");
+                  socket!.sink.add(
+                    json.encode({
+                      'action': 'disable',
+                      'bartenderID': widget.bartenderID.toString(),
+                      'barID': widget.barID,
+                    }),
+                  );
+                }
+              },
             ),
-            child: const Text("Claim Tips"),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            color: Colors.white,
-            iconSize: 28,
-            onPressed: _showFilterMenu,
-          ),
-        ],
+            // Centered Row for circles
+            const SizedBox(width: 20),
+            Row(
+              mainAxisSize: MainAxisSize
+                  .min, // This keeps the Row compact around its children
+              children: [
+                Icon(
+                  filterReady ? Icons.circle_outlined : Icons.circle,
+                  color: Colors.white,
+                  size: 12.0,
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  filterReady ? Icons.circle : Icons.circle_outlined,
+                  color: Colors.white,
+                  size: 12.0,
+                ),
+              ],
+            ),
+            // Row with Claim Tips and Filter button
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton(
+                  onPressed: claimTips,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                  ),
+                  child: const Text("Claim Tips"),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.filter_list),
+                  color: Colors.white,
+                  iconSize: 28,
+                  onPressed: _showFilterMenu,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-    ],
-  ),
-),
-
-
       body: Stack(
         children: [
           RefreshIndicator(
@@ -876,21 +1038,23 @@ void _updateLists() {
                     final order = displayList[index];
                     final tintColor = _getOrderTintColor(order);
 
-                      final unpaidDrinks = order.drinks.where((drink) {
-                        return drink.paymentType.toLowerCase() == "regular" && !order.inAppPayments;
-                      }).toList();
+                    final unpaidDrinks = order.drinks.where((drink) {
+                      return drink.paymentType.toLowerCase() == "regular" &&
+                          !order.inAppPayments;
+                    }).toList();
 
-                      final paidDrinks = order.drinks.where((drink) {
-                        return !(drink.paymentType.toLowerCase() == "regular" && !order.inAppPayments);
-                      }).toList();
+                    final paidDrinks = order.drinks.where((drink) {
+                      return !(drink.paymentType.toLowerCase() == "regular" &&
+                          !order.inAppPayments);
+                    }).toList();
 
-                        String formatDrink(DrinkOrder drink) {
-                          return drink.sizeType.isNotEmpty
-                              ? '${drink.drinkName} [${drink.sizeType}] x ${drink.quantity}'
-                              : '${drink.drinkName} x ${drink.quantity}';
-                        }
+                    String formatDrink(DrinkOrder drink) {
+                      return drink.sizeType.isNotEmpty
+                          ? '${drink.drinkName} [${drink.sizeType}] x ${drink.quantity}'
+                          : '${drink.drinkName} x ${drink.quantity}';
+                    }
 
-                      return GestureDetector(
+                    return GestureDetector(
                       onTap: () => {
                         _onOrderTap(order),
                       },
@@ -934,7 +1098,8 @@ void _updateLists() {
                                     children: [
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
                                           children: [
                                             const Text(
                                               'UNPAID ❗',
@@ -960,7 +1125,8 @@ void _updateLists() {
                                                     shadows: [
                                                       Shadow(
                                                         color: Colors.black,
-                                                        offset: Offset(1.0, 1.0),
+                                                        offset:
+                                                            Offset(1.0, 1.0),
                                                         blurRadius: 1.0,
                                                       ),
                                                     ],
@@ -972,11 +1138,13 @@ void _updateLists() {
                                       ),
                                       Container(
                                         width: 1,
-                                        color: Colors.white, // Divider line color
+                                        color:
+                                            Colors.white, // Divider line color
                                       ),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
                                           children: [
                                             const Text(
                                               'PAID ✔️',
@@ -1002,7 +1170,8 @@ void _updateLists() {
                                                     shadows: [
                                                       Shadow(
                                                         color: Colors.black,
-                                                        offset: Offset(1.0, 1.0),
+                                                        offset:
+                                                            Offset(1.0, 1.0),
                                                         blurRadius: 1.0,
                                                       ),
                                                     ],
@@ -1015,37 +1184,41 @@ void _updateLists() {
                                     ],
                                   ),
                                 ),
-                         // Right side: DisplayName with max width
-  ConstrainedBox(
-    constraints: const BoxConstraints(
-      maxWidth: 100, // Maximum width
-      minHeight: 50, // Minimum height to ensure alignment
-    ),
-    child: SizedBox(
- height: (order.name.length / 10).ceil() * 25.0, // Dynamically adjust height based on displayName length
-        child: Center(
-        child: Text(
-          order.name,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            shadows: [
-              Shadow(
-                color: Colors.black,
-                offset: Offset(1.0, 1.0),
-                blurRadius: 1.0,
-              ),
-            ],
-          ),
-          textAlign: TextAlign.center,
-          maxLines: 5, // Wrap text to fit within the height
-          overflow: TextOverflow.ellipsis, // Graceful text overflow
-        ),
-      ),
-    ),
-  ),
-],
+                                // Right side: DisplayName with max width
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 100, // Maximum width
+                                    minHeight:
+                                        50, // Minimum height to ensure alignment
+                                  ),
+                                  child: SizedBox(
+                                    height: (order.name.length / 10).ceil() *
+                                        25.0, // Dynamically adjust height based on displayName length
+                                    child: Center(
+                                      child: Text(
+                                        order.name,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black,
+                                              offset: Offset(1.0, 1.0),
+                                              blurRadius: 1.0,
+                                            ),
+                                          ],
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        maxLines:
+                                            5, // Wrap text to fit within the height
+                                        overflow: TextOverflow
+                                            .ellipsis, // Graceful text overflow
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -1231,19 +1404,20 @@ void _updateLists() {
 
           // Check which key is present in the response and handle accordingly
           switch (response.keys.first) {
-
             case 'Tip Claim Successful':
               Navigator.pop(context); // Dismiss the name and email input dialog
               showReceiptDialog(response); // Display the receipt dialog
-            break;
+              break;
 
             case 'Tip Claim Failed':
               Navigator.pop(context); // Dismiss the name and email input dialog
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Failed. Please contact barzzy.llc@gmail.com for assistance.')),
+                const SnackBar(
+                    content: Text(
+                        'Failed. Please contact barzzy.llc@gmail.com for assistance.')),
               );
               break;
-              
+
             case 'error':
               // Use _showErrorSnackbar to display the error message
               _showErrorSnackbar(response['error']);
@@ -1270,7 +1444,7 @@ void _updateLists() {
               debugPrint('when are you triggering');
               final Map<String, dynamic> ordersJson = response;
 
-              final incomingOrder = CustomerOrder2.fromJson(ordersJson);
+              final incomingOrder = BartenderOrder.fromJson(ordersJson);
 
               // Check if the order exists in allOrders
               int index = allOrders
@@ -1301,9 +1475,9 @@ void _updateLists() {
 
               // Convert JSON to Order objects and update allOrders
               final incomingOrders = ordersJson
-                  .map((json) => CustomerOrder2.fromJson(json))
+                  .map((json) => BartenderOrder.fromJson(json))
                   .toList();
-              for (CustomerOrder2 incomingOrder in incomingOrders) {
+              for (BartenderOrder incomingOrder in incomingOrders) {
                 // Check if the order exists in allOrders
                 int index = allOrders.indexWhere(
                     (order) => order.userId == incomingOrder.userId);
@@ -1329,20 +1503,23 @@ void _updateLists() {
               break;
 
             case 'sessionId': // Somebody changed up how orders are sent back. They changed it so that orders are sent back as {Order} instead of {orders:[Order1, Order2...]}
-              // Parse the response directly into a CustomerOrder2 object
-              final incomingOrder = CustomerOrder2.fromJson(response);
+              // Parse the response directly into a BartenderOrder object
+              final incomingOrder = BartenderOrder.fromJson(response);
 
               // Check if the order exists in allOrders
-              int index = allOrders.indexWhere((order) => order.userId == incomingOrder.userId);
+              int index = allOrders
+                  .indexWhere((order) => order.userId == incomingOrder.userId);
               if (index != -1) {
                 // If it exists, replace the old order
                 allOrders[index] = incomingOrder;
-                if (allOrders[index].status == 'delivered' || allOrders[index].status == 'canceled') {
+                if (allOrders[index].status == 'delivered' ||
+                    allOrders[index].status == 'canceled') {
                   allOrders.removeAt(index);
                 }
               } else {
                 // If it doesn't exist, add the new order to allOrders
-                if (incomingOrder.status != 'delivered' && incomingOrder.status != 'canceled') {
+                if (incomingOrder.status != 'delivered' &&
+                    incomingOrder.status != 'canceled') {
                   allOrders.add(incomingOrder);
                 }
               }

@@ -1,7 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy/Backend/activeorder.dart';
+import 'package:barzzy/Backend/customer_order.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:barzzy/Backend/user.dart';
 import 'package:flutter/material.dart';
@@ -187,6 +187,33 @@ class Hierarchy extends ChangeNotifier {
     }
   }
 
+  void sendArriveMessage(int barId) async {
+  try {
+    // Fetch userId from LoginCache
+    final loginCache = Provider.of<LoginCache>(navigatorKey.currentContext!, listen: false);
+    final userId = await loginCache.getUID();
+
+    // Ensure WebSocket connection is active
+    if (_channel != null) {
+      // Create the message
+      final message = {
+        "action": "arrive",
+        "userId": userId,
+        "barId": barId,
+      };
+
+      // Convert message to JSON and send
+      final jsonMessage = jsonEncode(message);
+      debugPrint('Sending arrive message: $jsonMessage');
+      _channel!.sink.add(jsonMessage);
+    } else {
+      debugPrint('Failed to send arrive message: WebSocket is not connected');
+    }
+  } catch (e) {
+    debugPrint('Error while sending arrive message: $e');
+  }
+}
+
   // Method to handle create order responses
   void _createOrderResponse(Map<String, dynamic> data) async {
     try {
@@ -208,6 +235,7 @@ class Hierarchy extends ChangeNotifier {
       debugPrint('Error while creating CustomerOrder: $e');
     }
   }
+
 
   // Method to handle update responses and send notifications
   void _handleUpdateResponse(Map<String, dynamic> data) async {

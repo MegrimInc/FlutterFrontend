@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 // Same as https://github.com/BarzzyLLC/RedisMicroService/blob/0.0.0/src/main/java/edu/help/dto/Order.java. 
 //This version is the future version, supposed to replace activeorder.dart. 
 
-class CustomerOrder2 {
+class BartenderOrder {
   String barId; // Stored as a String on the frontend, converted to int for JSON
   int userId;
   double totalRegularPrice;
@@ -16,7 +16,7 @@ class CustomerOrder2 {
   String sessionId;
   String name; // The name that is displayed whenever an order is created. Does not need to be unique. OrderID will be the same.
 
-  CustomerOrder2(
+  BartenderOrder(
     this.barId,
     this.userId,
     this.totalRegularPrice,
@@ -31,7 +31,7 @@ class CustomerOrder2 {
   );
 
   // Factory constructor for creating a CustomerOrder from JSON data
-  factory CustomerOrder2.fromJson(Map<String, dynamic> json) {
+  factory BartenderOrder.fromJson(Map<String, dynamic> json) {
     debugPrint('Parsing JSON data: $json');
 
     List<DrinkOrder> drinks = [];
@@ -42,7 +42,7 @@ class CustomerOrder2 {
           .toList();
     }
 
-    return CustomerOrder2(
+    return BartenderOrder(
       json['barId'].toString(), // Convert barId to String for frontend storage
       json['userId'] as int,
       (json['totalRegularPrice'] as num).toDouble(),
