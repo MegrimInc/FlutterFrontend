@@ -1,9 +1,9 @@
-import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/OrdersPage/websocket.dart';
-import 'package:barzzy/Backend/activeorder.dart';
+import 'package:barzzy/Backend/customer_order.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
@@ -18,11 +18,20 @@ class PickupPage extends StatefulWidget {
 class PickupPageState extends State<PickupPage> {
   late PageController _pageController; // Define a PageController
   int currentPage = 0;
+  late double screenHeight;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(); // Initialize the controller
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Dynamically calculate the available screen height
+    screenHeight = MediaQuery.of(context).size.height -
+        (3 * kToolbarHeight); // Subtract twice the AppBar height
   }
 
   @override
@@ -59,48 +68,55 @@ class PickupPageState extends State<PickupPage> {
             );
           }
 
+          if (hierarchy.isLoading) {
+            return const Center(
+              child: SpinKitThreeBounce(
+                color: Colors.white,
+                size: 30.0,
+              ),
+            );
+          }
+
           final orders = hierarchy.getOrders();
 
           return Consumer<LocalDatabase>(
             builder: (context, localDatabase, child) {
               return RefreshIndicator(
-                onRefresh: () => _refreshOrders(context),
-                color: Colors.black,
-                child: orders.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No orders have been placed yet.',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                          ),
-                        ),
-                      )
-                    : PageView.builder(
-                        controller: _pageController,
-                        scrollDirection: Axis.vertical,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: orders.length,
-                        itemBuilder: (context, verticalIndex) {
-                          final barId = orders[verticalIndex];
-                          final order = localDatabase.getOrderForBar(barId);
+                  onRefresh: () => _refreshOrders(context),
+                  color: Colors.black,
+                  child: orders.length > 1 // Check if there are multiple orders
+                      ? PageView.builder(
+                          controller: _pageController,
+                          scrollDirection: Axis.vertical,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: orders.length,
+                          itemBuilder: (context, verticalIndex) {
+                            final barId = orders[verticalIndex];
+                            final order = localDatabase.getOrderForBar(barId);
 
-                          if (order == null) {
-                            return const Center(
-                              child: Text(
-                                'No orders found for this bar.',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 17,
+                            if (order == null) {
+                              return const Center(
+                                child: Text(
+                                  'No orders found for this bar.',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                  ),
                                 ),
-                              ),
-                            );
-                          }
+                              );
+                            }
 
-                          return _buildOrderCard(order);
-                        },
-                      ),
-              );
+                            return _buildOrderCard(order);
+                          },
+                        )
+                      : SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: SizedBox(
+                            height: screenHeight, // Use the class variable here
+                            child: _buildOrderCard(
+                                localDatabase.getOrderForBar(orders.first)!),
+                          ),
+                        ));
             },
           );
         },
@@ -157,7 +173,7 @@ class PickupPageState extends State<PickupPage> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Text(
-                    'Order #${order.userId}',
+                    '*${order.name}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 21,
@@ -166,7 +182,7 @@ class PickupPageState extends State<PickupPage> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    'Station: ${order.claimer.isNotEmpty ? order.claimer : 'N/A'}',
+                    ' Bartender: ${order.claimer.isNotEmpty ? order.claimer : 'N/A'}',
                     style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 21,
@@ -193,6 +209,7 @@ class PickupPageState extends State<PickupPage> {
     Color inQueueColor = Colors.orange;
     Color claimedColor = Colors.yellow.shade400;
     Color readyColor = Colors.lightGreenAccent;
+    Color arrivedColor = Colors.blueAccent;
 
     IconData inQueueIcon = Icons.access_time;
     IconData claimedIcon = Icons.wine_bar;
@@ -201,6 +218,7 @@ class PickupPageState extends State<PickupPage> {
     bool isInQueue = status == "unready" && claimer.isEmpty;
     bool isClaimed = status == "unready" && claimer.isNotEmpty;
     bool isReady = status == "ready" && claimer.isNotEmpty;
+    bool isArrived = status == "arrived" && claimer.isNotEmpty;
     bool isDeliveredOrCanceled =
         (status == "delivered" || status == "canceled") && claimer.isNotEmpty;
 
@@ -209,7 +227,7 @@ class PickupPageState extends State<PickupPage> {
         onPressed: () {},
         style: ElevatedButton.styleFrom(
           backgroundColor:
-              status == "delivered" ? Colors.blueGrey : Colors.red.shade300,
+              status == "delivered" ? Colors.grey : Colors.red.shade300,
         ),
         child: Text(
           status == "delivered" ? "Delivered" : "Canceled",
@@ -245,6 +263,12 @@ class PickupPageState extends State<PickupPage> {
       readyStageColor = inactiveColor;
       firstConnectorColor = inactiveColor;
       secondConnectorColor = inactiveColor;
+    } else if (isArrived) {
+      queueColor = arrivedColor;
+      claimedStageColor = arrivedColor;
+      readyStageColor = arrivedColor;
+      firstConnectorColor = arrivedColor;
+      secondConnectorColor = arrivedColor;
     } else {
       queueColor = inactiveColor;
       claimedStageColor = inactiveColor;
@@ -481,6 +505,8 @@ class PickupPageState extends State<PickupPage> {
     Color activeColor;
     if (order.status == "ready" && order.claimer.isNotEmpty) {
       activeColor = Colors.lightGreenAccent;
+    } else if (order.status == "arrived" && order.claimer.isNotEmpty) {
+      activeColor = Colors.blueAccent;
     } else if (order.status == "unready" && order.claimer.isNotEmpty) {
       activeColor = Colors.yellow.shade400;
     } else if (order.status == "unready" && order.claimer.isEmpty) {
@@ -496,20 +522,14 @@ class PickupPageState extends State<PickupPage> {
       return Center(
         child: SizedBox(
           height: 40,
-          child: AnimatedTextKit(
-            animatedTexts: [
-              FadeAnimatedText(
-                "Order #${order.userId} is now in queue",
-                textStyle: GoogleFonts.poppins(
-                  color: activeColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                duration: const Duration(milliseconds: 3000),
-              ),
-            ],
-            isRepeatingAnimation: true,
-            repeatForever: true,
+          child: Text(
+            "Your order is now in queue",
+            style: GoogleFonts.poppins(
+              color: activeColor,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
           ),
         ),
       );
@@ -517,41 +537,31 @@ class PickupPageState extends State<PickupPage> {
       return Center(
         child: SizedBox(
           height: 40,
-          child: AnimatedTextKit(
-            animatedTexts: [
-              FadeAnimatedText(
-                'Order #${order.userId} is being prepared',
-                textStyle: GoogleFonts.poppins(
-                  color: activeColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                duration: const Duration(milliseconds: 3000),
-              ),
-            ],
-            isRepeatingAnimation: true,
-            repeatForever: true,
+          child: Text(
+            'Your order is being prepared',
+            style: GoogleFonts.poppins(
+              color: activeColor,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
           ),
         ),
       );
     } else if (order.status == "ready" && order.claimer.isNotEmpty) {
+      return Center(child: _buildArriveButton(order));
+    } else if (order.status == "arrived" && order.claimer.isNotEmpty) {
       return Center(
         child: SizedBox(
           height: 40,
-          child: AnimatedTextKit(
-            animatedTexts: [
-              FadeAnimatedText(
-                'Order #${order.userId} is ready at station ${order.claimer} ',
-                textStyle: GoogleFonts.poppins(
-                  color: activeColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                duration: const Duration(milliseconds: 3000),
-              ),
-            ],
-            isRepeatingAnimation: true,
-            repeatForever: true,
+          child: Text(
+            'Bartender ${order.claimer} has been notified',
+            style: GoogleFonts.poppins(
+              color: activeColor,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
           ),
         ),
       );
@@ -591,6 +601,47 @@ class PickupPageState extends State<PickupPage> {
           children: [
             Text(
               "       Reorder        ",
+              style: GoogleFonts.poppins(
+                color: Colors.black,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildArriveButton(CustomerOrder order) {
+    return GestureDetector(
+      onTap: () {
+        final barIdString = order.barId;
+
+        // Convert barId to int
+        final int barId =
+            int.tryParse(barIdString) ?? -1; // Fallback to -1 if parsing fails
+
+        if (barId != -1) {
+          // Send the arrive message
+          final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+          hierarchy.sendArriveMessage(barId);
+
+          debugPrint('Arrive message sent for barId: $barId');
+        } else {
+          debugPrint('Failed to parse barId: $barIdString');
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Text(
+              "        I'm Here        ",
               style: GoogleFonts.poppins(
                 color: Colors.black,
                 fontSize: 14,

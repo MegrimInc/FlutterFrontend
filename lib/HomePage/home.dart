@@ -23,6 +23,8 @@ class HomePage extends StatefulWidget {
 class HomePageState extends State<HomePage> {
   List<String> masterList = [];
   List<String> tappedIds = [];
+  Offset? _startPosition;
+  static const double swipeThreshold = 50.0;
 
   @override
   void initState() {
@@ -79,110 +81,107 @@ class HomePageState extends State<HomePage> {
             padding: const EdgeInsets.only(bottom: 8.29),
             child: const MyTopIcons(),
           ),
-      
+
           //MASTER LIST
-      
+
           Consumer<Recommended>(
             builder: (context, recommended, _) {
               final recommendedIds = recommended.barIds;
               masterList = [...recommendedIds].take(4).toList();
-      
-              return Padding(
-                padding: const EdgeInsets.only(left: 4.5),
-                child: Container(
-                  padding: const EdgeInsets.only(bottom: 15),
-                  height: 128,
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Color.fromARGB(255, 126, 126, 126),
-                        width: 0.1,
-                      ),
+
+              return Container(
+                padding: const EdgeInsets.only(bottom: 15),
+                height: 128,
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Color.fromARGB(255, 126, 126, 126),
+                      width: 0.1,
                     ),
                   ),
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: masterList.length,
-                    itemBuilder: (context, index) {
-                      final barId = masterList[index];
-                      //final isTapped = barHistory.barIds.contains(barId);
-                      final isRecommended = recommendedIds.contains(barId);
-                      final bar = LocalDatabase.getBarById(barId);
-                      return GestureDetector(
-                          behavior: HitTestBehavior.translucent,
-                          onTap: () {
-                             Navigator.push(context, MaterialPageRoute(
-                          builder: (context) {
-                            // Create a new Cart instance and initialize it
-                            Cart cart = Cart();
-                            cart.setBar(barId); // Set the bar ID for the cart
+                ),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: masterList.length,
+                  itemBuilder: (context, index) {
+                    final barId = masterList[index];
+                    //final isTapped = barHistory.barIds.contains(barId);
+                    final isRecommended = recommendedIds.contains(barId);
+                    final bar = LocalDatabase.getBarById(barId);
+                    return GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) {
+                              // Create a new Cart instance and initialize it
+                              Cart cart = Cart();
+                              cart.setBar(barId); // Set the bar ID for the cart
 
-                            // Pass the newly created Cart instance to the MenuPage
-                            return MenuPage(
-                              barId: barId,
-                              cart: cart,
-                            );
-                          },
-                        ));
-                          },
-                          child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 85,
-                                  height: 85,
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 5),
-                                  decoration: BoxDecoration(
-                                    color: const Color.fromARGB(255, 0, 0, 0),
-                                    borderRadius: BorderRadius.circular(60),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(60),
-                                    child: Stack(
-                                      fit: StackFit.expand,
-                                      children: [
-                                        // Always display the image
-                                        CachedNetworkImage(
-                                          imageUrl: bar?.tagimg ??
-                                              'https://www.barzzy.site/images/default.png',
-                                          fit: BoxFit.cover,
-                                        ),
-      
-                                        // Conditionally display the icon over the image
-                                        if (isRecommended)
-                                          const Padding(
-                                              padding: EdgeInsets.all(20),
-                                              child: Padding(
-                                                padding: EdgeInsets.fromLTRB(
-                                                    20, 8, 0, 2),
-                                                child: Iconify(
-                                                  HeroiconsSolid.search,
-                                                  color: Colors.white,
-                                                ),
-                                              )),
-                                      ],
-                                    ),
+                              // Pass the newly created Cart instance to the MenuPage
+                              return MenuPage(
+                                barId: barId,
+                                cart: cart,
+                              );
+                            },
+                          ));
+                        },
+                        child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 85,
+                                height: 85,
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color.fromARGB(255, 0, 0, 0),
+                                  borderRadius: BorderRadius.circular(60),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(60),
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      // Always display the image
+                                      CachedNetworkImage(
+                                        imageUrl: bar?.tagimg ??
+                                            'https://www.barzzy.site/images/default.png',
+                                        fit: BoxFit.cover,
+                                      ),
+
+                                      // Conditionally display the icon over the image
+                                      if (isRecommended)
+                                        const Padding(
+                                            padding: EdgeInsets.all(20),
+                                            child: Padding(
+                                              padding: EdgeInsets.fromLTRB(
+                                                  20, 8, 0, 2),
+                                              child: Iconify(
+                                                HeroiconsSolid.search,
+                                                color: Colors.white,
+                                              ),
+                                            )),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 2),
-                                Text(bar?.tag ?? 'No Tag',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                    ))
-                              ]));
-                    },
-                  ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(bar?.tag ?? 'No Tag',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ))
+                            ]));
+                  },
                 ),
               );
             },
           ),
-      
+
           // EVERYTHING BELOW THE MASTER LIST
-      
+
           // TOP ROW WITH BAR NAME AND WAIT TIME
-      
+
           if (barHistory.currentTappedBarId != null)
             SizedBox(
               height: 65.5,
@@ -192,8 +191,7 @@ class HomePageState extends State<HomePage> {
                     Padding(
                       padding: const EdgeInsets.only(left: 17),
                       child: Text(
-                        LocalDatabase.getBarById(
-                                    barHistory.currentTappedBarId!)
+                        LocalDatabase.getBarById(barHistory.currentTappedBarId!)
                                 ?.name ??
                             'No Name',
                         style: const TextStyle(
@@ -213,34 +211,49 @@ class HomePageState extends State<HomePage> {
                     ),
                   ]),
             ),
-      
+
           // MAIN MOST RECENT BAR
-      
+
           if (barHistory.currentTappedBarId != null)
             Expanded(
               child: GestureDetector(
-               onTap: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) {
-        // Create a new Cart instance and initialize it
-        Cart cart = Cart();
-        cart.setBar(barHistory.currentTappedBarId!); // Set the bar ID for the cart
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) {
+                        // Create a new Cart instance and initialize it
+                        Cart cart = Cart();
+                        cart.setBar(barHistory
+                            .currentTappedBarId!); // Set the bar ID for the cart
 
-        // Pass the newly created Cart instance to the MenuPage
-        return MenuPage(
-          barId: barHistory.currentTappedBarId!,
-          cart: cart,
-        );
-      },
-    ),
-  );
-},
+                        // Pass the newly created Cart instance to the MenuPage
+                        return MenuPage(
+                          barId: barHistory.currentTappedBarId!,
+                          cart: cart,
+                        );
+                      },
+                    ),
+                  );
+                },
+                onPanStart: (details) {
+                  _startPosition = details.globalPosition;
+                },
+                onPanEnd: (details) {
+                  if (_startPosition == null) return;
+
+                  final Offset endPosition = details.globalPosition;
+                  final double dy = endPosition.dy - _startPosition!.dy;
+
+                  if (dy.abs() > swipeThreshold) {
+                    if (dy < 0) {
+                      _handleInfo(context);
+                    }
+                  }
+                },
                 child: Container(
                   decoration: const BoxDecoration(
                     color: Colors.black,
-                    
                   ),
                   child: CachedNetworkImage(
                     imageUrl: LocalDatabase.getBarById(
@@ -252,9 +265,9 @@ class HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-      
+
           //BOTTOM ROW WITH RECENT DRINKS AND WAIT TIME
-      
+
           if (barHistory.currentTappedBarId != null)
             GestureDetector(
               onVerticalDragEnd: (details) {
@@ -271,8 +284,7 @@ class HomePageState extends State<HomePage> {
                     Padding(
                       padding: const EdgeInsets.only(left: 17),
                       child: Text(
-                        LocalDatabase.getBarById(
-                                    barHistory.currentTappedBarId!)
+                        LocalDatabase.getBarById(barHistory.currentTappedBarId!)
                                 ?.openhours ??
                             'No Hours Available',
                         style: const TextStyle(
@@ -295,39 +307,75 @@ class HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-        
-      
+
           FutureBuilder<int>(
-        future: Provider.of<LoginCache>(context, listen: false).getUID(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-      return const SizedBox.shrink(); // Return nothing while waiting
-          }
-          if (snapshot.hasData && snapshot.data == 0) {
-      return const SizedBox(
-        height: 80,
-        
-        child: Column(
-          children: [
-            SizedBox(height: 5),
-            Text(
-              'WARNING: VIEW ONLY',
-              style: TextStyle(
-                color: Colors.white54,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-            Spacer()
-          ],
-        ),
-      );
-          }
-          return const SizedBox.shrink(); // Return nothing if userId is not 0
-        },
-      )
+            future: Provider.of<LoginCache>(context, listen: false).getUID(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SizedBox.shrink(); // Return nothing while waiting
+              }
+              if (snapshot.hasData && snapshot.data == 0) {
+                return const SizedBox(
+                  height: 80,
+                  child: Column(
+                    children: [
+                      SizedBox(height: 5),
+                      Text(
+                        'WARNING: VIEW ONLY',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      Spacer()
+                    ],
+                  ),
+                );
+              }
+              return const SizedBox
+                  .shrink(); // Return nothing if userId is not 0
+            },
+          )
         ],
       ),
+    );
+  }
+
+  void _handleInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: Colors.white,
+          title: const Row(
+            children: [
+              SizedBox(width: 75),
+              Icon(Icons.error_outline, color: Colors.black),
+              SizedBox(width: 5),
+              Text(
+                'Oops :/',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+           "Looks like you tried to scoll. Please click on a venues' image to view its menu.",
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        );
+      },
     );
   }
 }

@@ -49,5 +49,7 @@
 	</array>
 	<key>aps-environment</key>
 	<string>production</string>
+	<key>NSApplePayUsageDescription</key>
+	<string>This app uses Apple Pay for seamless and secure payments.</string>
 </dict>
 </plist>

@@ -1,10 +1,9 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy/Backend/activeorder.dart';
+import 'package:barzzy/Backend/customer_order.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:barzzy/Backend/user.dart';
-import 'package:barzzy/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +19,7 @@ class Hierarchy extends ChangeNotifier {
   final Map<String, int> _createdOrderBarIds = {};
   bool _isConnected = false;
   final GlobalKey<NavigatorState> navigatorKey;
+  bool isLoading = false;
 
   Hierarchy(BuildContext context, this.navigatorKey)
       : localDatabase = Provider.of<LocalDatabase>(context, listen: false);
@@ -66,7 +66,7 @@ class Hierarchy extends ChangeNotifier {
                   // You can also extract the 'data' from the message and use it as needed
                   final data = decodedMessage['data'];
                   _createOrderResponse(data);
-                  await handleCache(data);    
+                  await handleCache(data);
                   break;
 
                 case 'create':
@@ -74,21 +74,13 @@ class Hierarchy extends ChangeNotifier {
                   final data = decodedMessage['data'];
                   _createOrderResponse(
                       data); // Trigger the createOrderResponse method
-                 // _updateCategoryRanks(context, data, increase: true);
-
-                  break;
-
-                case 'delete':
-                  debugPrint('Delete response received.');
-                  final data = decodedMessage['data'];
-                  _createOrderResponse(data);
-                 // _updateCategoryRanks(context, data, increase: false);
                   break;
 
                 case 'error':
                   debugPrint('error response received.');
                   final String errorMessage = decodedMessage['message'];
                   _handleError(context, errorMessage);
+                   setLoading(false);
                   break;
 
                 case 'update':
@@ -97,16 +89,9 @@ class Hierarchy extends ChangeNotifier {
                   _handleUpdateResponse(data); // Use the new method for updates
                   break;
 
-                case 'broke':
-                  debugPrint('Broke response received.');
-                  final String errorMessage = decodedMessage['message'];
-                  final data = decodedMessage['data'];
-                  _handleBrokeResponse(context, errorMessage,
-                      data); // Use the new method for updates
-                  break;
-
                 default:
                   debugPrint('Unknown message type: $messageType');
+                   setLoading(false);
                   // Handle any other message types or log an error
                   break;
               }
@@ -136,6 +121,7 @@ class Hierarchy extends ChangeNotifier {
         _channel = null; // Ensure _channel is null before reconnecting
         _attemptReconnect(
             context); // Attempt reconnection on connection failure
+        notifyListeners();
       }
     }
   }
@@ -186,12 +172,13 @@ class Hierarchy extends ChangeNotifier {
 // Method to send an order
   void createOrder(Map<String, dynamic> order) {
     try {
-
       if (_channel != null) {
         final jsonOrder = jsonEncode(order); // Convert the order to JSON
         debugPrint('Sending create order: $jsonOrder');
         _channel!.sink.add(jsonOrder); // Send the order over WebSocket
         debugPrint('Order sent.');
+        setLoading(true);
+        debugPrint('isLoading is set to true');
       } else {
         debugPrint('Failed to send order: WebSocket is not connected');
       }
@@ -200,6 +187,33 @@ class Hierarchy extends ChangeNotifier {
     }
   }
 
+  void sendArriveMessage(int barId) async {
+  try {
+    // Fetch userId from LoginCache
+    final loginCache = Provider.of<LoginCache>(navigatorKey.currentContext!, listen: false);
+    final userId = await loginCache.getUID();
+
+    // Ensure WebSocket connection is active
+    if (_channel != null) {
+      // Create the message
+      final message = {
+        "action": "arrive",
+        "userId": userId,
+        "barId": barId,
+      };
+
+      // Convert message to JSON and send
+      final jsonMessage = jsonEncode(message);
+      debugPrint('Sending arrive message: $jsonMessage');
+      _channel!.sink.add(jsonMessage);
+    } else {
+      debugPrint('Failed to send arrive message: WebSocket is not connected');
+    }
+  } catch (e) {
+    debugPrint('Error while sending arrive message: $e');
+  }
+}
+
   // Method to handle create order responses
   void _createOrderResponse(Map<String, dynamic> data) async {
     try {
@@ -207,20 +221,21 @@ class Hierarchy extends ChangeNotifier {
       final customerOrder = CustomerOrder.fromJson(data);
       debugPrint('CustomerOrder created: $customerOrder');
 
-     localDatabase.addOrUpdateOrderForBar(customerOrder);
+      localDatabase.addOrUpdateOrderForBar(customerOrder);
       // Directly update the map with the new timestamp for the barId
       _createdOrderBarIds[customerOrder.barId] = customerOrder.timestamp;
 
       // Print statement to confirm addition
-      debugPrint(
-          'CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
-          debugPrint(' hierarchy localDatabase instance ID: ${localDatabase.hashCode}');
-      await sendGetRequest2();
-       notifyListeners();
+      debugPrint('CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
+      debugPrint('hierarchy localDatabase instance ID: ${localDatabase.hashCode}');
+      setLoading(false);
+      //await sendGetRequest2();
+      notifyListeners();
     } catch (e) {
       debugPrint('Error while creating CustomerOrder: $e');
     }
   }
+
 
   // Method to handle update responses and send notifications
   void _handleUpdateResponse(Map<String, dynamic> data) async {
@@ -228,125 +243,6 @@ class Hierarchy extends ChangeNotifier {
     _createOrderResponse(data);
   }
 
-
-
-  void _handleBrokeResponse(
-      BuildContext context, String message, Map<String, dynamic> orderData) {
-    final safeContext = navigatorKey.currentContext;
-
-    if (safeContext == null) {
-      debugPrint('Safe context is null. Cannot show dialog.');
-      return;
-    }
-
-    showDialog(
-      context: safeContext,
-      builder: (BuildContext context) {
-        HapticFeedback.heavyImpact();
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          backgroundColor: Colors.white,
-          title: const Row(
-            children: [
-              SizedBox(width: 75),
-              Icon(Icons.error_outline, color: Colors.black),
-              SizedBox(width: 5),
-              Text(
-                'Oops :/',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22,
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            message,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 16,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          actions: <Widget>[
-            Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-              TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  minimumSize: const Size(100, 50),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'No',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop(); // Dismiss the dialog
-                },
-              ),
-              TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  minimumSize: const Size(100, 50),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'Yes',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                onPressed: () async {
-                  final loginCache =
-                      Provider.of<LoginCache>(context, listen: false);
-                  final userId = await loginCache.getUID();
-
-                  // Reconstruct the order object as expected
-                  final reorder = {
-                    "action": "create",
-                    "barId": int.parse(orderData['barId']
-                        .toString()), // Ensure barId is an int
-                    "userId": userId,
-                    "points":
-                        false, // Override points to false for this attempt
-                    "drinks":
-                        (orderData['drinks'] as List<dynamic>).map((drink) {
-                      return {
-                        "drinkId": int.parse(
-                            drink['id'].toString()), // Ensure drinkId is int
-                        "quantity": int.parse(drink['quantity']
-                            .toString()), // Ensure quantity is int
-                      };
-                    }).toList(),
-                  };
-
-                  Navigator.of(context).pop(); // Dismiss the dialog
-                  createOrder(reorder); // Create the order
-                },
-              ),
-            ])
-          ],
-        );
-      },
-    );
-  }
 
   void disconnect() {
     if (_channel != null) {
@@ -415,21 +311,28 @@ class Hierarchy extends ChangeNotifier {
   }
 
   Future<void> handleCache(dynamic ordersData) async {
-  final user = Provider.of<User>(navigatorKey.currentContext!, listen: false);
+    final user = Provider.of<User>(navigatorKey.currentContext!, listen: false);
 
-  // Check if `ordersData` is a list or a single object
-  final List<dynamic> orders = ordersData is List<dynamic>
-      ? ordersData // Already a list
-      : [ordersData]; // Wrap single object in a list
+    // Check if `ordersData` is a list or a single object
+    final List<dynamic> orders = ordersData is List<dynamic>
+        ? ordersData // Already a list
+        : [ordersData]; // Wrap single object in a list
 
-  for (var order in orders) {
-    final barId = order['barId']?.toString(); // Extract barId as a string
-    if (barId != null && barId.isNotEmpty) {
-      debugPrint('Fetching tags and drinks for barId: $barId');
-      await user.fetchTagsAndDrinks(barId); // Trigger the fetch
+    for (var order in orders) {
+      final barId = order['barId']?.toString(); // Extract barId as a string
+      if (barId != null && barId.isNotEmpty) {
+        debugPrint('Fetching tags and drinks for barId: $barId');
+        await user.fetchTagsAndDrinks(barId); // Trigger the fetch
+      }
     }
   }
-}
 
   bool get isConnected => _isConnected;
+
+  void setLoading(bool value) {
+    if (isLoading != value) {
+      isLoading = value;
+      notifyListeners();
+    }
+  }
 }

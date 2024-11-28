@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-// Same as https://github.com/BarzzyLLC/RedisMicroService/blob/0.0.0/src/main/java/edu/help/dto/Order.java. 
-//This version is the future version, supposed to replace activeorder.dart. 
+// Same as https://github.com/BarzzyLLC/RedisMicroService/blob/0.0.0/src/main/java/edu/help/dto/Order.java.
+//This version is the future version, supposed to replace activeorder.dart.
 
-class CustomerOrder2 {
+class CustomerOrder {
+  String name; 
   String barId; // Stored as a String on the frontend, converted to int for JSON
   int userId;
   double totalRegularPrice;
@@ -14,9 +15,10 @@ class CustomerOrder2 {
   String claimer;
   int timestamp; // Stored as an int on the frontend, converted to String for JSON
   String sessionId;
-  String name; // The name that is displayed whenever an order is created. Does not need to be unique. OrderID will be the same.
 
-  CustomerOrder2(
+
+  CustomerOrder(
+    this.name,
     this.barId,
     this.userId,
     this.totalRegularPrice,
@@ -27,11 +29,11 @@ class CustomerOrder2 {
     this.claimer,
     this.timestamp,
     this.sessionId,
-    this.name
+
   );
 
   // Factory constructor for creating a CustomerOrder from JSON data
-  factory CustomerOrder2.fromJson(Map<String, dynamic> json) {
+  factory CustomerOrder.fromJson(Map<String, dynamic> json) {
     debugPrint('Parsing JSON data: $json');
 
     List<DrinkOrder> drinks = [];
@@ -42,7 +44,8 @@ class CustomerOrder2 {
           .toList();
     }
 
-    return CustomerOrder2(
+    return CustomerOrder(
+      json['name'] as String,
       json['barId'].toString(), // Convert barId to String for frontend storage
       json['userId'] as int,
       (json['totalRegularPrice'] as num).toDouble(),
@@ -51,15 +54,16 @@ class CustomerOrder2 {
       drinks,
       json['status'] as String,
       json['claimer'] as String,
-      int.parse(json['timestamp']), // Convert timestamp to int for frontend storage
+      int.parse(
+          json['timestamp']), // Convert timestamp to int for frontend storage
       json['sessionId'] as String,
-      json['name'] as String
     );
   }
 
   // Method to convert a CustomerOrder instance to JSON
   Map<String, dynamic> toJson() {
     return {
+      'name': name,
       'barId': int.parse(barId), // Convert barId back to int for JSON
       'userId': userId,
       'totalRegularPrice': totalRegularPrice,
@@ -70,7 +74,6 @@ class CustomerOrder2 {
       'claimer': claimer,
       'timestamp': timestamp.toString(), // Convert timestamp to String for JSON
       'sessionId': sessionId,
-      'name': name
     };
   }
 
@@ -84,7 +87,6 @@ class CustomerOrder2 {
   bool getInAppPayments() => inAppPayments;
   double getTip() => tip;
   String getSessionId() => sessionId;
-  String getDisplayName() => name;
 
   // Setter methods
   void setBarId(String value) => barId = value;
@@ -97,7 +99,6 @@ class CustomerOrder2 {
   void setClaimer(String value) => claimer = value;
   void setTimestamp(int value) => timestamp = value;
   void setSessionId(String value) => sessionId = value;
-  void setDisplayName(String value) => name = value;
 
   // Helper methods
   int getAge() {
@@ -144,4 +145,12 @@ class DrinkOrder {
       'quantity': quantity,
     };
   }
+
+  int getDrinkId() => drinkId;
+  String getDrinkName() => drinkName;
+  String getPaymentType() => paymentType;
+  String getSizeType() => sizeType;
+  int getQuantity() => quantity;
+
+  List<String> get types => [sizeType, paymentType];
 }

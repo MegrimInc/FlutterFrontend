@@ -94,9 +94,18 @@ class DrinkFeedState extends State<DrinkFeed>
       final message = inAppPayments
           ? 'You can only add up to 10 drinks for in-app payments.'
           : 'You can only add up to 3 drinks for in-person payments.';
-      _showLimitExceededDialog(message);
+      _showNotAllowedDialog(message);
       return; // Exit if limit is exceeded
     }
+
+     // New Check: Ensure the user has enough points locally
+  final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
+  final availablePoints = localDatabase.getPointsForBar(widget.barId)?.points ?? 0;
+  if (cart.totalCartPoints > availablePoints) {
+    const message = 'You do not have enough points to place this order.';
+    _showNotAllowedDialog(message);
+    return; // Exit if not enough points
+  }
 
     // Step 3: Check if the user has a payment method
     try {
@@ -117,37 +126,39 @@ class DrinkFeedState extends State<DrinkFeed>
 
     final barId = widget.barId;
 
-   // Build the list of drink orders with variations
-List<Map<String, dynamic>> drinkOrders = cart.barCart.entries.expand((entry) {
-  final drinkId = entry.key;
+    // Build the list of drink orders with variations
+    List<Map<String, dynamic>> drinkOrders =
+        cart.barCart.entries.expand((entry) {
+      final drinkId = entry.key;
 
-  // Process each type entry for the drink
-  return entry.value.entries.map((typeEntry) {
-    final typeKey = typeEntry.key; // Example: "single_points", "double_dollars"
-    final quantity = typeEntry.value;
+      // Process each type entry for the drink
+      return entry.value.entries.map((typeEntry) {
+        final typeKey =
+            typeEntry.key; // Example: "single_points", "double_dollars"
+        final quantity = typeEntry.value;
 
-    // Determine the sizeType based on the typeKey
-    String sizeType = "";
-    if (typeKey.contains("double")) {
-      sizeType = "double";
-    } else if (typeKey.contains("single")) {
-      sizeType = "single";
-    } else {
-      sizeType = ""; // No specific size type
-    }
+        // Determine the sizeType based on the typeKey
+        String sizeType = "";
+        if (typeKey.contains("double")) {
+          sizeType = "double";
+        } else if (typeKey.contains("single")) {
+          sizeType = "single";
+        } else {
+          sizeType = ""; // No specific size type
+        }
 
-    // Determine payment type
-    final isPoints = typeKey.contains("points");
+        // Determine payment type
+        final isPoints = typeKey.contains("points");
 
-    // Construct the drink order map
-    return {
-      "drinkId": int.parse(drinkId),
-      "quantity": quantity,
-      "paymentType": isPoints ? "points" : "regular",
-      "sizeType": sizeType,
-    };
-  }).toList();
-}).toList();
+        // Construct the drink order map
+        return {
+          "drinkId": int.parse(drinkId),
+          "quantity": quantity,
+          "paymentType": isPoints ? "points" : "regular",
+          "sizeType": sizeType,
+        };
+      }).toList();
+    }).toList();
 
     // Calculate the total regular price for all items paid with money
 
@@ -203,6 +214,12 @@ List<Map<String, dynamic>> drinkOrders = cart.barCart.entries.expand((entry) {
           paymentSheetParameters: SetupPaymentSheetParameters(
             setupIntentClientSecret: setupIntentClientSecret,
             customerId: customerId,
+            merchantDisplayName: "Barzzy",
+            style: ThemeMode.system,
+            allowsDelayedPaymentMethods: true, // Required for Apple Pay
+            applePay: const PaymentSheetApplePay(
+              merchantCountryCode: 'US',
+            ),
           ),
         );
 
@@ -388,37 +405,39 @@ List<Map<String, dynamic>> drinkOrders = cart.barCart.entries.expand((entry) {
         const Spacer(flex: 1),
         Center(
           child: SizedBox(
-            height: 30,
-            child: AnimatedTextKit(
-              animatedTexts: [
-                FadeAnimatedText(
-                  'Swipe Left To View Cart',
-                  textStyle: GoogleFonts.poppins(
-                    color: Colors.white54,
-                    fontSize: 21,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  duration: const Duration(milliseconds: 3000),
-                ),
-              ],
-              isRepeatingAnimation: true,
-              repeatForever: true,
+            height: 29,
+            child: Consumer<Cart>(
+              builder: (context, cart, _) {
+                // Show the animated text only if the cart is not empty
+                return
+                    //cart.getTotalDrinkCount() > 0 ?
+                    AnimatedTextKit(
+                  animatedTexts: [
+                    FadeAnimatedText(
+                      'Swipe Left To View Cart',
+                      textStyle: GoogleFonts.poppins(
+                        color: Colors.lightGreenAccent,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      duration: const Duration(milliseconds: 3000),
+                    ),
+                  ],
+                  isRepeatingAnimation: true,
+                  repeatForever: true,
+                );
+                //: const SizedBox(); // Keep the space if the cart is empty
+              },
             ),
           ),
         ),
-
         const Spacer(flex: 2),
-
         _buildDrinkInfo(context),
-
         const Spacer(flex: 2),
         _buildQuantityControlButtons(context),
-
         const Spacer(flex: 2),
-
         _buildBottomBar(context),
-
-        const Spacer(flex: 1)
+        const Spacer(flex: 1),
       ],
     );
   }
@@ -458,7 +477,7 @@ List<Map<String, dynamic>> drinkOrders = cart.barCart.entries.expand((entry) {
                     FadeAnimatedText(
                       'Available Balance: $pointBalance pts',
                       textStyle: GoogleFonts.poppins(
-                        color: Colors.white54,
+                        color: Colors.lightGreenAccent,
                         fontSize: 21,
                         fontWeight: FontWeight.w600,
                       ),
@@ -487,87 +506,95 @@ List<Map<String, dynamic>> drinkOrders = cart.barCart.entries.expand((entry) {
         if (hasItems)
           Expanded(
             flex: 20,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: cart.barCart.keys.map((drinkId) {
-                  return Column(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 10.0),
+              child: RawScrollbar(
+                 thumbColor: Colors.white,
+                  thickness: 3,
+                  thumbVisibility: true,
+                child: SingleChildScrollView(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
-                    children: cart.barCart[drinkId]!.entries.map((entry) {
-                      final drink = LocalDatabase().getDrinkById(drinkId);
-
-                      final sizeText = entry.key.contains("double")
-                          ? " (dbl)"
-                          : entry.key.contains("single")
-                              ? " (sgl)>"
-                              : "";
-
-                      final maxLength = 21 -
-                          sizeText
-                              .length; // Remaining characters allowed for the name
-                      final adjustedDrinkName =
-                          _truncateWithEllipsis(drink.name, maxLength);
-
-                      final drinkName =
-                          adjustedDrinkName + (entry.value > 1 ? 's' : '');
-
-                      final isHappyHour = cart.isHappyHour;
-
-                      final price = entry.key.contains("single")
-                          ? (isHappyHour
-                              ? drink.singleHappyPrice
-                              : drink.singlePrice)
-                          : (isHappyHour
-                              ? drink.doubleHappyPrice
-                              : drink.doublePrice);
-
-                      final priceOrPoints = entry.key.contains("points")
-                          ? "${(entry.value * drink.points).toInt()} pts"
-                          : "\$${(entry.value * price).toStringAsFixed(2)}";
-
-                      return GestureDetector(
-                        onTap: () {
-                          String newDrinkId = drink.id;
-                          currentDrink.value =
-                              LocalDatabase().getDrinkById(newDrinkId);
-                          _pageController.animateToPage(
-                            0,
-                            duration: const Duration(
-                                milliseconds: 250), // Duration of the animation
-                            curve: Curves.easeInOut, // Curve for the animation
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: Text.rich(
-                            TextSpan(
-                              text:
-                                  '${entry.value} $drinkName$sizeText - $priceOrPoints',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              children: [
+                    children: cart.barCart.keys.map((drinkId) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: cart.barCart[drinkId]!.entries.map((entry) {
+                          final drink = LocalDatabase().getDrinkById(drinkId);
+                          
+                          final sizeText = entry.key.contains("double")
+                              ? " (dbl)"
+                              : entry.key.contains("single")
+                                  ? " (sgl)"
+                                  : "";
+                
+                          final maxLength = 21 -
+                              sizeText
+                                  .length; // Remaining characters allowed for the name
+                          final adjustedDrinkName =
+                              _truncateWithEllipsis(drink.name, maxLength);
+                
+                          final drinkName =
+                              adjustedDrinkName + (entry.value > 1 ? 's' : '');
+                
+                          final isHappyHour = cart.isHappyHour;
+                
+                          final price = entry.key.contains("single")
+                              ? (isHappyHour
+                                  ? drink.singleHappyPrice
+                                  : drink.singlePrice)
+                              : (isHappyHour
+                                  ? drink.doubleHappyPrice
+                                  : drink.doublePrice);
+                
+                          final priceOrPoints = entry.key.contains("points")
+                              ? "${(entry.value * drink.points).toInt()} pts"
+                              : "\$${(entry.value * price).toStringAsFixed(2)}";
+                
+                          return GestureDetector(
+                            onTap: () {
+                              String newDrinkId = drink.id;
+                              currentDrink.value =
+                                  LocalDatabase().getDrinkById(newDrinkId);
+                              _pageController.animateToPage(
+                                0,
+                                duration: const Duration(
+                                    milliseconds: 250), // Duration of the animation
+                                curve: Curves.easeInOut, // Curve for the animation
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                              child: Text.rich(
                                 TextSpan(
-                                  text: '  edit',
+                                  text:
+                                      '${entry.value} $drinkName$sizeText - $priceOrPoints',
                                   style: GoogleFonts.poppins(
-                                    color: Colors.white54, // Set to white70
+                                    color: Colors.white,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w500,
                                   ),
+                                  children: [
+                                    TextSpan(
+                                      text: '  edit',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white54, // Set to white70
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+                          );
+                        }).toList(),
                       );
                     }).toList(),
-                  );
-                }).toList(),
+                  ),
+                ),
               ),
             ),
           )
@@ -1104,7 +1131,7 @@ List<Map<String, dynamic>> drinkOrders = cart.barCart.entries.expand((entry) {
     );
   }
 
-  void _showLimitExceededDialog(String message) {
+  void _showNotAllowedDialog(String message) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

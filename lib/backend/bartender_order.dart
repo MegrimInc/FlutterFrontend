@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 // Same as https://github.com/BarzzyLLC/RedisMicroService/blob/0.0.0/src/main/java/edu/help/dto/Order.java. 
 //This version is the future version, supposed to replace activeorder.dart. 
 
-class CustomerOrder {
+class BartenderOrder {
   String barId; // Stored as a String on the frontend, converted to int for JSON
   int userId;
   double totalRegularPrice;
@@ -14,9 +14,9 @@ class CustomerOrder {
   String claimer;
   int timestamp; // Stored as an int on the frontend, converted to String for JSON
   String sessionId;
-  String name;
+  String name; // The name that is displayed whenever an order is created. Does not need to be unique. OrderID will be the same.
 
-  CustomerOrder(
+  BartenderOrder(
     this.barId,
     this.userId,
     this.totalRegularPrice,
@@ -27,11 +27,11 @@ class CustomerOrder {
     this.claimer,
     this.timestamp,
     this.sessionId,
-    this.name,
+    this.name
   );
 
   // Factory constructor for creating a CustomerOrder from JSON data
-  factory CustomerOrder.fromJson(Map<String, dynamic> json) {
+  factory BartenderOrder.fromJson(Map<String, dynamic> json) {
     debugPrint('Parsing JSON data: $json');
 
     List<DrinkOrder> drinks = [];
@@ -42,7 +42,7 @@ class CustomerOrder {
           .toList();
     }
 
-    return CustomerOrder(
+    return BartenderOrder(
       json['barId'].toString(), // Convert barId to String for frontend storage
       json['userId'] as int,
       (json['totalRegularPrice'] as num).toDouble(),
@@ -84,6 +84,7 @@ class CustomerOrder {
   bool getInAppPayments() => inAppPayments;
   double getTip() => tip;
   String getSessionId() => sessionId;
+  String getDisplayName() => name;
 
   // Setter methods
   void setBarId(String value) => barId = value;
@@ -96,6 +97,7 @@ class CustomerOrder {
   void setClaimer(String value) => claimer = value;
   void setTimestamp(int value) => timestamp = value;
   void setSessionId(String value) => sessionId = value;
+  void setDisplayName(String value) => name = value;
 
   // Helper methods
   int getAge() {
@@ -142,12 +144,4 @@ class DrinkOrder {
       'quantity': quantity,
     };
   }
-
-  int getDrinkId() => drinkId;
-  String getDrinkName() => drinkName;
-  String getPaymentType() => paymentType;
-  String getSizeType() => sizeType;
-  int getQuantity() => quantity;
-
-  List<String> get types => [sizeType, paymentType];
 }
