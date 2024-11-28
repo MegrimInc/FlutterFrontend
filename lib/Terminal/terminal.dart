@@ -1,11 +1,9 @@
 // ignore_for_file: use_build_context_synchronously
-//TODO claimtips button green, remove bar # from tips screen, and center dot. //
-//Submit button green, change field in claimtips. Change recipt color
 
 import 'dart:async'; // Import the async package for Timer
-import 'dart:convert'; //TODO check bar is active
+import 'dart:convert';
 import 'dart:io';
-
+import 'package:http/http.dart' as http;
 import 'package:barzzy/Backend/bartender_order.dart';
 import 'package:barzzy/Terminal/stationid.dart';
 import 'package:flutter/material.dart';
@@ -29,15 +27,14 @@ class OrdersPage extends StatefulWidget {
 
 class _OrdersPageState extends State<OrdersPage> {
   List<BartenderOrder> allOrders = [];
-
-  List<BartenderOrder> displayList = [];
-
-//TESTING VARIABLE
-  bool testing = true; //TODO CHANGE BACK TO TESTING = FALSE
+  List<BartenderOrder> readyOrders = [];
+  List<BartenderOrder> otherOrders = [];
+  int index = 0;
+  //TESTING VARIABLE
+  bool testing = false;
   bool connected = false;
   int _reconnectAttempts = 0;
   bool filterUnique = true;
-  bool filterReady = false;
   int bartenderCount = 1; // Number of bartenders
   int bartenderNumber = 2; // Set to bartenderCount + 1
   bool disabledTerminal = false; // Tracks if terminal is disabled
@@ -49,284 +46,249 @@ class _OrdersPageState extends State<OrdersPage> {
   Timer? _timer;
   WebSocket? websocket;
 
-void claimTips() {
-  bool isSubmitting = false; // Track button status within the dialog
+  void claimTips() {
+    bool isSubmitting = false; // Track button status within the dialog
 
-  showDialog(
-    context: context,
-    barrierDismissible: false, // Prevent closing by tapping outside
-    builder: (BuildContext context) {
-      final TextEditingController nameController = TextEditingController();
-      final TextEditingController emailController = TextEditingController();
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent closing by tapping outside
+      builder: (BuildContext context) {
+        final TextEditingController nameController = TextEditingController();
+        final TextEditingController emailController = TextEditingController();
 
-      return StatefulBuilder(
-        builder: (BuildContext context, StateSetter setState) {
-          return AlertDialog(
-            title: Text(
-              'Claim Tips for Station ${widget.bartenderID} at Bar #${widget.barID}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: "Your Name"),
-                  onChanged: (value) {
-                    setState(() {
-                      // Enable Submit if name field is not empty
-                      isSubmitting = value.isEmpty;
-                    });
-                  },
-                ),
-                TextField(
-                  controller: emailController,
-                  decoration: const InputDecoration(labelText: "Your Email (optional)"),
-                ),
-              ],
-            ),
-            actions: [
-              // Cancel button
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close the dialog
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.red,
-                ),
-                child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: Text(
+                '           Claim tips for ${widget.bartenderID}            ',
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              TextButton(
-                onPressed: isSubmitting
-                    ? null // Disable if currently submitting
-                    : () async {
-                        if (nameController.text.isNotEmpty) {
-                          debugPrint("Attempting to submit request for claimTips");
-
-                          final Map<String, dynamic> request = {
-                            'bartenderName': nameController.text,
-                            'bartenderEmail': emailController.text,
-                            'station': widget.bartenderID,
-                            'barId': widget.barID,
-                          };
-
-                          setState(() {
-                            isSubmitting = true; // Temporarily disable button
-                          });
-
-                          final String url = "http://34.230.32.169:8080/orders/claim";
-
-                          try {
-                            final response = await http.post(
-                              Uri.parse(url),
-                              headers: {'Content-Type': 'application/json'},
-                              body: jsonEncode(request),
-                            );
-
-                            if (response.statusCode == 200) {
-                              debugPrint("Successfully submitted request for claimTips");
-                                final responseData = jsonDecode(response.body);
-
-  final double claimedTips = double.parse(responseData.toString()); // Assuming the key is 'claimedTips'
-
-                              Navigator.of(context).pop(); // Close the input dialog
-
-                              // Display success dialog
-                              if( claimedTips == -1 ) {
-                                 showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text(
-          "Success",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          "You have no tips available :(",
-          style: const TextStyle(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("Close"),
-          ),
-        ],
-      );
-    },
-  );
-  
-                              } else {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text(
-          "Success",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          "You have claimed \$${claimedTips.toStringAsFixed(2)} in tips!",
-          style: const TextStyle(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("Close"),
-          ),
-          TextButton(
-            onPressed: () {
-              debugPrint("More Info clicked");
-              // Placeholder function for More Info
-              showServerSignatureInfo();
-            },
-            child: const Text("More Info"),
-          ),
-        ],
-      );
-    },
-  );
-}
-                            } else {
-                              debugPrint("Failed to submit request. Status code: ${response.statusCode}");
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Failed to submit claimTips request. Try again."),
-                                ),
-                              );
-                            }
-                          } catch (error) {
-                            debugPrint("Error during HTTP request: $error");
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("An error occurred while submitting the request."),
-                              ),
-                            );
-                          } finally {
-                            setState(() {
-                              isSubmitting = false; // Re-enable button after HTTP request
-                            });
-                          }
-                        }
-                      },
-                style: TextButton.styleFrom(
-                  backgroundColor: isSubmitting ? Colors.grey : Colors.green,
-                ),
-                child: const Text("Submit", style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  ).then((_) {
-    // Reset the button state when the dialog is closed
-    setState(() {
-      isSubmitting = false;
-    });
-  });
-}
-
-/*
-void showReceiptDialog(Map<String, dynamic> response) {
-  List<BartenderOrder> orders = (response['orders'] as List)
-      .map((orderJson) => BartenderOrder.fromJson(orderJson))
-      .toList();
-  double totalTip = orders.fold(0, (sum, order) => sum + order.tip);
-
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        backgroundColor: Colors.black,
-        title: const Text(
-          'Tips Claimed!',
-          style: TextStyle(color: Colors.yellowAccent, fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  color: Colors.yellow[700],
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                child: Column(
-                  children: [
-                    const Text('Receipt', style: TextStyle(fontSize: 18, color: Colors.black)),
-                    Text('Bar #${response['barID'] ?? "Unknown"}'),
-                    Text('Bartender: ${response['bartenderID'] ?? "Unknown"} (${response['bartenderName'] ?? "Unknown"})'),
-                    Text(
-                      'Date: ${DateTime.fromMillisecondsSinceEpoch(response['dateClaimed'] ?? 0).toLocal()}',
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController, // Assign the controller
+                    cursorColor: Colors.black, // Set the cursor color to black
+                    decoration: const InputDecoration(
+                      labelText: "Your Name",
+                      labelStyle: TextStyle(color: Colors.black),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                            color:
+                                Colors.black), // Set underline color to black
+                      ),
                     ),
-                    Text('Total Tip Amount: \$${totalTip.toStringAsFixed(2)}'),
-                    SizedBox(
-                      height: 200.0,
-                      child: orders.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'No orders to display.',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            )
-                          : ListView(
-                              children: orders.map((order) {
-                                return ListTile(
-                                  title: Text(
-                                    'Order ${order.userId}: \$${order.tip.toStringAsFixed(2)}',
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                  subtitle: Text(
-                                    '@ ${DateTime.fromMillisecondsSinceEpoch(order.timestamp).toLocal()}',
-                                    style: const TextStyle(color: Colors.grey),
+                    onChanged: (value) {
+                      setState(() {
+                        // Enable Submit if name field is not empty
+                        isSubmitting = value.isEmpty;
+                      });
+                    },
+                  ),
+                  TextField(
+                    controller: emailController, // Assign the controller
+                    cursorColor: Colors.black, // Set the cursor color to black
+                    decoration: const InputDecoration(
+                      labelText: "Your Email (optional)",
+                      labelStyle: TextStyle(color: Colors.black),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                            color:
+                                Colors.black), // Set underline color to black
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                    // Cancel button
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close the dialog
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
+                    child: const Text("Cancel",
+                        style: TextStyle(color: Colors.white)),
+                  ),
+
+                  const SizedBox(width: 100),
+                  TextButton(
+                    onPressed: isSubmitting
+                        ? null // Disable if currently submitting
+                        : () async {
+                            if (nameController.text.isNotEmpty) {
+                              debugPrint(
+                                  "Attempting to submit request for claimTips");
+                  
+                              final Map<String, dynamic> request = {
+                                'bartenderName': nameController.text,
+                                'bartenderEmail': emailController.text,
+                                'station': widget.bartenderID,
+                                'barId': widget.barID,
+                              };
+                  
+                              setState(() {
+                                isSubmitting = true; // Temporarily disable button
+                              });
+                  
+                              const String url =
+                                  "http://34.230.32.169:8080/orders/claim";
+                  
+                              try {
+                                final response = await http.post(
+                                  Uri.parse(url),
+                                  headers: {'Content-Type': 'application/json'},
+                                  body: jsonEncode(request),
+                                );
+                  
+                                if (response.statusCode == 200) {
+                                  debugPrint(
+                                      "Successfully submitted request for claimTips");
+                                  final responseData = jsonDecode(response.body);
+                  
+                                  final double claimedTips = double.parse(responseData
+                                      .toString()); // Assuming the key is 'claimedTips'
+                  
+                                  Navigator.of(context)
+                                      .pop(); // Close the input dialog
+                  
+                                  // Display success dialog
+                                  if (claimedTips == -1) {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return const AlertDialog(
+                                          title: Text(
+                                            "Oops!",
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                ),
+                                                  textAlign: TextAlign.center,
+                                          ),
+                                          content: Text(
+                                            "You have no tips available :(",
+                                            style: TextStyle(fontSize: 16),
+                                            textAlign: TextAlign.center,
+                                          ),
+                  
+                                        );
+                                      },
+                                    );
+                                  } else {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          title: const Text(
+                                            "Success",
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold),
+                                                 textAlign: TextAlign.center,
+                                          ),
+                                          content: Text(
+                                            "You have claimed \$${claimedTips.toStringAsFixed(2)} in tips!",
+                                            style: const TextStyle(fontSize: 16),
+                                             textAlign: TextAlign.center,
+                                          ),
+                                          actions: [
+                    Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center, // Center the buttons horizontally
+                        children: [
+                          TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(context).pop(),
+                                              child: const Text("Close",
+                                              style: TextStyle(color: Colors.black)
+                                              ),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                debugPrint("More Info clicked");
+                                                // Placeholder function for More Info
+                                                showServerSignatureInfo();
+                                              },
+                                              child: const Text("More Info", 
+                                              style: TextStyle(color: Colors.black)
+                                            ),
+                                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                                        );
+                                      },
+                                    );
+                                  }
+                                } else {
+                                  debugPrint(
+                                      "Failed to submit request. Status code: ${response.statusCode}");
+                  
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          "Failed to submit claimTips request. Try again."),
+                                    ),
+                                  );
+                                }
+                              } catch (error) {
+                                debugPrint("Error during HTTP request: $error");
+                  
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        "An error occurred while submitting the request."),
                                   ),
                                 );
-                              }).toList(),
-                            ),
+                              } finally {
+                                setState(() {
+                                  isSubmitting =
+                                      false; // Re-enable button after HTTP request
+                                });
+                              }
+                            }
+                          },
+                    style: TextButton.styleFrom(
+                      backgroundColor: isSubmitting ? Colors.grey : Colors.green,
                     ),
-                    Text('Server Signature: ${response['digitalSignature'] ?? "N/A"}'),
-                  ],
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Close',
-                  style: TextStyle(color: Colors.red, fontSize: 20),
-                ),
-              ),
-              TextButton(
-                onPressed: showServerSignatureInfo,
-                child: const Text(
-                  'What is a Server Signature?',
-                  style: TextStyle(color: Colors.yellow),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
-*/
+                    child: const Text("Submit",
+                        style: TextStyle(color: Colors.white)),
+                  ),
+                  ],),
+                )
+              ],
+            );
+          },
+        );
+      },
+    ).then((_) {
+      // Reset the button state when the dialog is closed
+      setState(() {
+        isSubmitting = false;
+      });
+    });
+  }
 
-void showServerSignatureInfo() {
-  const publicKey = 'MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAqePMRYC7/28i9reLDqd77xHIuwHOEGL6sTO6MCSSrjNBJHH6xJnDPs8is3VyfbyZc01ql6H7k565W30OnGgkxBgPdAcaSySLm+G7MMJlviiw2jY6UmuEdOkA5e21GrOikQG3aBz1TtK4fbDL8R7wlKkHEpBzFLDRXHOlK3qyFVph3osU1bTB6nd+z5PRfRbJsUiOOXKJjUa7hXYQI6Z4PwasHDEWBy2HycdIRLdjOmlSjnsX22LsOo0/FEtF2VQU+CiDNXs1evBxDIi9JRMwwETq8L6y5EhRb8LlxpgL5sLaCyzyecyK3NIWwPsLJgOcJWDByUg2FWp/72UYp4mIutraXgEIcO0F/y4FViw8c38DN7V7SX0cUdYJdmkzByApQg0/s8D1krdrE3oyrP2BQ/s7x0SDT4QYt1hoeyZ2PKK6zjLG7nXhbWljhl3fehXuWXRDhcbkPCU0kBu7jk2nYuhRroPy5Brxc5ylwSNZZsqQxZMTxxh/n/T7zWMrdYXSbYsGjk8U6/W1Dru1f8LBMnSQNI8h7uWlv3/uSxsinUg3xeMl9AqPVugH8yGR8EJlJLEftpGmmjNBPtSIN3VWldvJ6NFWT0cX9rxyfT5oxeNScSJPwKUTKfFxC/mzW8KoDGsJjlg+ULFZxv2+5kgfR4XwJ9UxqfM+s6Z1c1CmjFMCAwEAAQ==';
+  void showServerSignatureInfo() {
+    const publicKey =
+        'MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAqePMRYC7/28i9reLDqd77xHIuwHOEGL6sTO6MCSSrjNBJHH6xJnDPs8is3VyfbyZc01ql6H7k565W30OnGgkxBgPdAcaSySLm+G7MMJlviiw2jY6UmuEdOkA5e21GrOikQG3aBz1TtK4fbDL8R7wlKkHEpBzFLDRXHOlK3qyFVph3osU1bTB6nd+z5PRfRbJsUiOOXKJjUa7hXYQI6Z4PwasHDEWBy2HycdIRLdjOmlSjnsX22LsOo0/FEtF2VQU+CiDNXs1evBxDIi9JRMwwETq8L6y5EhRb8LlxpgL5sLaCyzyecyK3NIWwPsLJgOcJWDByUg2FWp/72UYp4mIutraXgEIcO0F/y4FViw8c38DN7V7SX0cUdYJdmkzByApQg0/s8D1krdrE3oyrP2BQ/s7x0SDT4QYt1hoeyZ2PKK6zjLG7nXhbWljhl3fehXuWXRDhcbkPCU0kBu7jk2nYuhRroPy5Brxc5ylwSNZZsqQxZMTxxh/n/T7zWMrdYXSbYsGjk8U6/W1Dru1f8LBMnSQNI8h7uWlv3/uSxsinUg3xeMl9AqPVugH8yGR8EJlJLEftpGmmjNBPtSIN3VWldvJ6NFWT0cX9rxyfT5oxeNScSJPwKUTKfFxC/mzW8KoDGsJjlg+ULFZxv2+5kgfR4XwJ9UxqfM+s6Z1c1CmjFMCAwEAAQ==';
 
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('What is a Server Signature?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              '''A digital signature (Server Signature) is a guarantee that only an entity with a private key (like Barzzy) can generate a message that validates for a public key. To verify:
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('What is a Server Signature?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '''A digital signature (Server Signature) is a guarantee that only an entity with a private key (like Barzzy) can generate a message that validates for a public key. To verify:
 
 1. Copy our permanent public key:
 2. Go to https://8gwifi.org/RSAFunctionality?rsasignverifyfunctions=rsasignverifyfunctions&keysize=4096 or any other RSA signature verifier of your choice.
@@ -342,30 +304,30 @@ void showServerSignatureInfo() {
 - Remove extra input: You may have inserted an extra line into the Plaintext Section. You should remove that if you may have put it in accidentally.
 - Other websites: Our signature is in BASE64, key format is PEM, charset is UTF-8, and our plaintext is STRING.
 - If it still says "Signature Verification Failed" then we didn't generate the report. You should inquire with the person who gave you the report as to where they got it from, because the report was clearly modified by a bad actor. If you got the report directly from emails ending with @barzzy.site, then send an inquiry to barzzy.llc@gmail.com explaining your issue, and forward the receipt email as well.''',
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                Clipboard.setData(const ClipboardData(text: publicKey));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Public key copied to clipboard')),
-                );
-              },
-              child: const Text('Click to Copy Public Key'),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  Clipboard.setData(const ClipboardData(text: publicKey));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Public key copied to clipboard')),
+                  );
+                },
+                child: const Text('Click to Copy Public Key'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
+        );
+      },
+    );
+  }
 
   @override
   void initState() {
@@ -386,140 +348,308 @@ void showServerSignatureInfo() {
 
     // Listen for the response from the server
 
-    if(testing) {
+    if (testing) {
       allOrders = [
-      BartenderOrder('1', 101, 20.50, 3.00, true, [
-        DrinkOrder(1, 'Mojito', 'regular', 'single', 1),
-        DrinkOrder(2, 'Whiskey Sour', 'regular', 'double', 2),
-      ], 'claimed', 'A', 1678901234000, 'session_001', 'Unnamed'),
-
-      BartenderOrder('2', 102, 35.75, 5.25, false, [
-        DrinkOrder(3, 'Old Fashioned', 'regular', 'single', 1),
-        DrinkOrder(4, 'Martini', 'points', 'double', 1),
-      ], 'claimed', 'D', 1678901235000, 'session_002', 'Michael Bay'),
-
-      BartenderOrder('3', 103, 50.00, 8.00, true, [
-        DrinkOrder(5, 'Gin and Tonic', 'regular', 'single', 3),
-        DrinkOrder(6, 'Cosmopolitan', 'regular', 'double', 1),
-      ], 'open', '', 1678901236000, 'session_003', 'John Doe'),
-
-      BartenderOrder('4', 104, 40.00, 6.50, false, [
-        DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-      ], 'open', '', 1678901237000, 'session_004', 'Kermit'),
-
-      BartenderOrder('5', 105, 30.00, 4.50, true, [
-        DrinkOrder(8, 'Daiquiri', 'regular', 'single', 1),
-        DrinkOrder(9, 'Negroni', 'regular', 'double', 1),
-      ], 'ready', 'X', 1678901238000, 'session_005', 'James bond'),
-
-      BartenderOrder('6', 106, 25.00, 3.75, false, [
-        DrinkOrder(10, 'Long Island Iced Tea', 'points', 'single', 2),
-      ], 'arrived', 'A', 1678901239000, 'session_006', 'Alexandria Oscasio-Cortez'),
-
-      BartenderOrder('7', 107, 60.00, 10.00, true, [
-        DrinkOrder(11, 'Screwdriver', 'regular', 'double', 1),
-        DrinkOrder(12, 'Pina Colada', 'points', '', 1),
-        DrinkOrder(13, 'Bloody Mary', 'regular', 'double', 1),
-      ], 'open', '', 1678901240000, 'session_007', 'Donald Trump'),
-      
-      BartenderOrder('1', 101, 20.50, 3.00, true, [
-        DrinkOrder(1, 'Mojito', 'regular', 'single', 1),
-        DrinkOrder(2, 'Whiskey Sour', 'regular', 'double', 2),
-      ], 'claimed', 'A', 1678901234000, 'session_001', 'here'),
-
-      BartenderOrder('2', 102, 35.75, 5.25, false, [
-        DrinkOrder(3, 'Old Fashioned', 'regular', 'single', 1),
-        DrinkOrder(4, 'Martini', 'points', 'double', 1),
-      ], 'claimed', 'D', 1678901235000, 'session_002', 'arrived at Bay'),
-
-      BartenderOrder('3', 103, 50.00, 8.00, true, [
-        DrinkOrder(5, 'Gin and Tonic', 'regular', 'single', 3),
-        DrinkOrder(6, 'Cosmopolitan', 'regular', 'double', 1),
-      ], 'open', '', 1678901236000, 'session_003', 'look up'),
-
-      BartenderOrder('4', 104, 40.00, 6.50, false, [
-        DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),      DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-      ], 'open', '', 1678901237000, 'session_004', 'give me '),
-
-      BartenderOrder('5', 105, 30.00, 4.50, true, [
-        DrinkOrder(8, 'Daiquiri', 'regular', 'single', 1),
-        DrinkOrder(9, 'Negroni', 'regular', 'double', 1),
-      ], 'ready', 'X', 1678901238000, 'session_005', 'imatthelocationsothatswhyyoushouldgiveittome'),
-
-      BartenderOrder('6', 106, 25.00, 3.75, false, [
-        DrinkOrder(10, 'Long Island Iced Tea', 'points', 'single', 2),
-      ], 'open', '', 1678901239000, 'session_006', 'here'),
-
-      BartenderOrder('7', 107, 60.00, 10.00, true, [
-        DrinkOrder(11, 'Screwdriver', 'regular', 'double', 1),
-        DrinkOrder(12, 'Pina Colada', 'points', '', 1),
-        DrinkOrder(13, 'Bloody Mary', 'regular', 'double', 1),
-      ], 'open', '', 1678901240000, 'session_007', 'here'),
-    ];
+        BartenderOrder(
+            '1',
+            101,
+            20.50,
+            3.00,
+            true,
+            [
+              DrinkOrder(1, 'Mojito', 'regular', 'single', 1),
+              DrinkOrder(2, 'Whiskey Sour', 'regular', 'double', 2),
+            ],
+            'claimed',
+            'A',
+            1678901234000,
+            'session_001',
+            'Unnamed'),
+        BartenderOrder(
+            '2',
+            102,
+            35.75,
+            5.25,
+            false,
+            [
+              DrinkOrder(3, 'Old Fashioned', 'regular', 'single', 1),
+              DrinkOrder(4, 'Martini', 'points', 'double', 1),
+            ],
+            'claimed',
+            'D',
+            1678901235000,
+            'session_002',
+            'Michael Bay'),
+        BartenderOrder(
+            '3',
+            103,
+            50.00,
+            8.00,
+            true,
+            [
+              DrinkOrder(5, 'Gin and Tonic', 'regular', 'single', 3),
+              DrinkOrder(6, 'Cosmopolitan', 'regular', 'double', 1),
+            ],
+            'open',
+            '',
+            1678901236000,
+            'session_003',
+            'John Doe'),
+        BartenderOrder(
+            '4',
+            104,
+            40.00,
+            6.50,
+            false,
+            [
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+            ],
+            'open',
+            '',
+            1678901237000,
+            'session_004',
+            'Kermit'),
+        BartenderOrder(
+            '5',
+            105,
+            30.00,
+            4.50,
+            true,
+            [
+              DrinkOrder(8, 'Daiquiri', 'regular', 'single', 1),
+              DrinkOrder(9, 'Negroni', 'regular', 'double', 1),
+            ],
+            'ready',
+            'X',
+            1678901238000,
+            'session_005',
+            'James bond'),
+        BartenderOrder(
+            '6',
+            106,
+            25.00,
+            3.75,
+            false,
+            [
+              DrinkOrder(10, 'Long Island Iced Tea', 'points', 'single', 2),
+            ],
+            'arrived',
+            'A',
+            1678901239000,
+            'session_006',
+            'Alexandria Oscasio-Cortez'),
+        BartenderOrder(
+            '7',
+            107,
+            60.00,
+            10.00,
+            true,
+            [
+              DrinkOrder(11, 'Screwdriver', 'regular', 'double', 1),
+              DrinkOrder(12, 'Pina Colada', 'points', '', 1),
+              DrinkOrder(13, 'Bloody Mary', 'regular', 'double', 1),
+            ],
+            'open',
+            '',
+            1678901240000,
+            'session_007',
+            'Donald Trump'),
+        BartenderOrder(
+            '1',
+            101,
+            20.50,
+            3.00,
+            true,
+            [
+              DrinkOrder(1, 'Mojito', 'regular', 'single', 1),
+              DrinkOrder(2, 'Whiskey Sour', 'regular', 'double', 2),
+            ],
+            'claimed',
+            'A',
+            1678901234000,
+            'session_001',
+            'here'),
+        BartenderOrder(
+            '2',
+            102,
+            35.75,
+            5.25,
+            false,
+            [
+              DrinkOrder(3, 'Old Fashioned', 'regular', 'single', 1),
+              DrinkOrder(4, 'Martini', 'points', 'double', 1),
+            ],
+            'claimed',
+            'D',
+            1678901235000,
+            'session_002',
+            'arrived at Bay'),
+        BartenderOrder(
+            '3',
+            103,
+            50.00,
+            8.00,
+            true,
+            [
+              DrinkOrder(5, 'Gin and Tonic', 'regular', 'single', 3),
+              DrinkOrder(6, 'Cosmopolitan', 'regular', 'double', 1),
+            ],
+            'open',
+            '',
+            1678901236000,
+            'session_003',
+            'look up'),
+        BartenderOrder(
+            '4',
+            104,
+            40.00,
+            6.50,
+            false,
+            [
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
+            ],
+            'open',
+            '',
+            1678901237000,
+            'session_004',
+            'give me '),
+        BartenderOrder(
+            '5',
+            105,
+            30.00,
+            4.50,
+            true,
+            [
+              DrinkOrder(8, 'Daiquiri', 'regular', 'single', 1),
+              DrinkOrder(9, 'Negroni', 'regular', 'double', 1),
+            ],
+            'ready',
+            'X',
+            1678901238000,
+            'session_005',
+            'imatthelocationsothatswhyyoushouldgiveittome'),
+        BartenderOrder(
+            '6',
+            106,
+            25.00,
+            3.75,
+            false,
+            [
+              DrinkOrder(10, 'Long Island Iced Tea', 'points', 'single', 2),
+            ],
+            'open',
+            '',
+            1678901239000,
+            'session_006',
+            'here'),
+        BartenderOrder(
+            '7',
+            107,
+            60.00,
+            10.00,
+            true,
+            [
+              DrinkOrder(11, 'Screwdriver', 'regular', 'double', 1),
+              DrinkOrder(12, 'Pina Colada', 'points', '', 1),
+              DrinkOrder(13, 'Bloody Mary', 'regular', 'double', 1),
+            ],
+            'open',
+            '',
+            1678901240000,
+            'session_007',
+            'here'),
+      ];
     }
 
     _updateLists();
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel(); // Cancel the timer when the widget is disposed
-    super.dispose();
-  }
+  void _updateLists() {
+    debugPrint("Starting _updateLists...");
 
-void _updateLists() {
-  setState(() {
-    // Separate "arrived" orders
-    List<BartenderOrder> arrivedOrders = allOrders.where((order) => order.status == 'arrived').toList();
-
-    // Separate claimed and unclaimed orders, excluding "arrived" orders
-    List<BartenderOrder> claimedOrders = allOrders
-        .where((order) => order.claimer == widget.bartenderID && order.status != 'arrived')
-        .toList();
-    List<BartenderOrder> unclaimedOrders = allOrders
-        .where((order) => order.claimer != widget.bartenderID && order.status != 'arrived')
-        .toList();
-
-    // Sort each category by timestamp (older first)
-    arrivedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    claimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    // Combine sorted lists with "arrived" orders at the top
-    List<BartenderOrder> sortedOrders = [
-      ...arrivedOrders,
-      ...claimedOrders,
-      ...unclaimedOrders,
-    ];
-
-    // Apply filters
-    List<BartenderOrder> filteredOrders = sortedOrders;
-
-    // Include "arrived" orders in both filterReady = true and filterReady = false
-    if (filterReady) {
-      filteredOrders = filteredOrders
-          .where((order) => order.status == 'ready' || order.status == 'arrived')
-          .toList();
-    } else {
-      filteredOrders = filteredOrders
-          .where((order) => order.status != 'ready' || order.status == 'arrived')
-          .toList();
+    debugPrint("All Orders:");
+    for (var order in allOrders) {
+      debugPrint(
+          "Order ID: ${order.userId}, Status: ${order.status}, Claimer: ${order.claimer}");
     }
 
-    // Apply the "Your Orders Only" filter if filterUnique is true
-    if (filterUnique) {
-      filteredOrders = filteredOrders.where((order) =>
-          order.claimer == widget.bartenderID ||
-          (order.claimer.isEmpty && (order.userId % bartenderCount) == bartenderNumber) ||
-          order.status == 'arrived' // Always include "arrived" orders
-      ).toList();
-    }
+    setState(() {
+      // Separate "arrived" orders
+      List<BartenderOrder> arrivedOrders =
+          allOrders.where((order) => order.status == 'arrived').toList();
+      debugPrint("Arrived Orders Count: ${arrivedOrders.length}");
 
-    // Update the display list with the filtered orders
-    displayList = filteredOrders;
+      // Separate claimed and unclaimed orders, excluding "arrived" orders
+      List<BartenderOrder> claimedOrders = allOrders
+          .where((order) =>
+              order.claimer == widget.bartenderID && order.status != 'arrived')
+          .toList();
+      debugPrint("Claimed Orders Count: ${claimedOrders.length}");
 
-    // Handle terminal disablement
-    if (disabledTerminal && !allOrders.any((order) => order.claimer == widget.bartenderID)) {
+      List<BartenderOrder> unclaimedOrders = allOrders
+          .where((order) =>
+              order.claimer != widget.bartenderID && order.status != 'arrived')
+          .toList();
+      debugPrint("Unclaimed Orders Count: ${unclaimedOrders.length}");
+
+      // Sort each category by timestamp (older first)
+      arrivedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      claimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+      debugPrint("Sorted orders by timestamp.");
+
+      // Combine sorted lists
+      List<BartenderOrder> sortedOrders = [
+        ...arrivedOrders,
+        ...claimedOrders,
+        ...unclaimedOrders,
+      ];
+      debugPrint("Total Sorted Orders Count: ${sortedOrders.length}");
+
+      // Precompute lists for "ready" and "other" orders
+      readyOrders = sortedOrders
+          .where(
+              (order) => order.status == 'ready' || order.status == 'arrived')
+          .toList();
+      debugPrint("Ready Orders Count: ${readyOrders.length}");
+
+      otherOrders = sortedOrders
+          .where(
+              (order) => order.status != 'ready' || order.status == 'arrived')
+          .toList();
+      debugPrint("Other Orders Count: ${otherOrders.length}");
+
+      // Apply the "Your Orders Only" filter to both lists if filterUnique is true
+      if (filterUnique) {
+        readyOrders = readyOrders
+            .where((order) =>
+                order.claimer == widget.bartenderID ||
+                (order.claimer.isEmpty &&
+                    (order.userId % bartenderCount) == bartenderNumber))
+            .toList();
+        debugPrint("Filtered Ready Orders Count: ${readyOrders.length}");
+
+        otherOrders = otherOrders
+            .where((order) =>
+                order.claimer == widget.bartenderID ||
+                (order.claimer.isEmpty &&
+                    (order.userId % bartenderCount) == bartenderNumber))
+            .toList();
+        debugPrint("Filtered Other Orders Count: ${otherOrders.length}");
+      }
+
+      // Handle terminal disablement logic
+    if (disabledTerminal &&
+        !allOrders.any((order) => order.claimer == widget.bartenderID)) {
       socket!.sink.add(
         json.encode({
           'action': 'dispose',
@@ -538,11 +668,10 @@ void _updateLists() {
         (Route<dynamic> route) => false,
       );
     }
-  });
-}
+    });
 
-
-
+    debugPrint("Finished _updateLists.");
+  }
 
   void _disableTerminal() {
     // Check if there are any orders that are not marked as delivered or canceled
@@ -559,7 +688,6 @@ void _updateLists() {
       terminalStatus = false;
       bartenderNumber = bartenderCount;
       filterUnique = true;
-      filterReady = false;
       disabledTerminal = true;
     });
 
@@ -572,7 +700,7 @@ void _updateLists() {
       context: context,
       position: RelativeRect.fromLTRB(
         MediaQuery.of(context).size.width - 150,
-        kToolbarHeight,
+        kToolbarHeight + 21,
         0.0,
         0.0,
       ),
@@ -640,7 +768,8 @@ void _updateLists() {
 
   void _refresh() {
     allOrders.clear();
-    displayList.clear();
+    readyOrders.clear();
+    otherOrders.clear();
 
     // Send a 'refresh' action to the server via WebSocket
     debugPrint("refresh sent");
@@ -676,7 +805,7 @@ void _updateLists() {
           backgroundColor: const Color.fromARGB(135, 36, 36, 36),
           title: Center(
             child: Text(
-              'Order #${order.userId}',
+              order.name,
               style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -763,7 +892,7 @@ void _updateLists() {
           backgroundColor: const Color.fromARGB(135, 36, 36, 36),
           title: Center(
             child: Text(
-              'Order #${order.userId}',
+              order.name,
               style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -864,9 +993,8 @@ void _updateLists() {
       return Colors.grey[700]!;
     }
 
-
     if (order.status == 'ready') return Colors.green;
-    if (order.status == 'arrived') return const Color.fromARGB(255, 0, 187, 255);
+    if (order.status == 'arrived') return Colors.blueAccent;
     if (ageInSeconds <= 180) return Colors.yellow[200]!; // 0-3 minutes old
     if (ageInSeconds <= 300) return Colors.orange[200]!; // 3-5 minutes old
     if (ageInSeconds <= 600) return Colors.orange[500]!; // 5-10 minutes old
@@ -875,7 +1003,6 @@ void _updateLists() {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("Rebuilding OrdersPage with ${displayList.length} items");
     if (!connected) {
       return const Center(
         child: CircularProgressIndicator(
@@ -887,307 +1014,316 @@ void _updateLists() {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-  backgroundColor: Colors.black,
-  title: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      IconButton(
-        icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
-        color: Colors.white,
-        onPressed: () {
-          if (!disabledTerminal) {
-            debugPrint("disable");
-            socket!.sink.add(
-              json.encode({
-                'action': 'disable',
-                'bartenderID': widget.bartenderID.toString(),
-                'barID': widget.barID,
-              }),
-            );
-          }
-        },
-      ),
-      // Centered Row for circles
-      const SizedBox(width: 20),
-      Row(
-        mainAxisSize: MainAxisSize.min, // This keeps the Row compact around its children
-        children: [
-          Icon(
-            filterReady ? Icons.circle_outlined : Icons.circle,
-            color: Colors.white,
-            size: 12.0,
-          ),
-          const SizedBox(width: 8),
-          Icon(
-            filterReady ? Icons.circle : Icons.circle_outlined,
-            color: Colors.white,
-            size: 12.0,
-          ),
-        ],
-      ),
-      // Row with Claim Tips and Filter button
-      Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ElevatedButton(
-            onPressed: claimTips,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange[400],
+        backgroundColor: Colors.black,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
+              color: Colors.white,
+              onPressed: () {
+                if (!disabledTerminal) {
+                  debugPrint("disable");
+                  socket!.sink.add(
+                    json.encode({
+                      'action': 'disable',
+                      'bartenderID': widget.bartenderID.toString(),
+                      'barID': widget.barID,
+                    }),
+                  );
+                }
+              },
             ),
-            child: const Text("Claim Tips"),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            color: Colors.white,
-            iconSize: 28,
-            onPressed: _showFilterMenu,
-          ),
-        ],
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize
+                      .min, // Keeps the Row compact around its children
+                  children: [
+                    Icon(
+                      Icons.circle,
+                      color: index == 0
+                          ? Colors.white
+                          : Colors.grey, // Blue for index 0, grey otherwise
+                      size: 12.0,
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.circle,
+                      color: index == 0
+                          ? Colors.grey
+                          : Colors.white, // Grey for index 0, blue otherwise
+                      size: 12.0,
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 20),
+                ElevatedButton(
+                  onPressed: claimTips,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: const Text("Claim Tips"),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.filter_list),
+                  color: Colors.white,
+                  iconSize: 28,
+                  onPressed: _showFilterMenu,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-    ],
-  ),
-),
-
-
-      body: Stack(
-        children: [
-          RefreshIndicator(
+      body: PageView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: 2, // Number of pages (e.g., unpaid, paid)
+        onPageChanged: (pageIndex) {
+          setState(() {
+            index = pageIndex; // Update the index when the page changes
+            debugPrint("Page changed to: $index");
+          });
+        },
+        itemBuilder: (context, pageIndex) {
+          final displayList = pageIndex == 0 ? otherOrders : readyOrders;
+          return RefreshIndicator(
             onRefresh: () async {
               _refresh(); // Call your existing refresh method
             },
             child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8.0), // Add horizontal padding
-                child: ListView.builder(
-                  itemCount: displayList.length,
-                  itemBuilder: (context, index) {
-                    final order = displayList[index];
-                    final tintColor = _getOrderTintColor(order);
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: ListView.builder(
+                itemCount: displayList.length,
+                itemBuilder: (context, index) {
+                  final order = displayList[index];
+                  final tintColor = _getOrderTintColor(order);
 
-                      final unpaidDrinks = order.drinks.where((drink) {
-                        return drink.paymentType.toLowerCase() == "regular" && !order.inAppPayments;
-                      }).toList();
+                  final unpaidDrinks = order.drinks.where((drink) {
+                    return drink.paymentType.toLowerCase() == "regular" &&
+                        !order.inAppPayments;
+                  }).toList();
 
-                      final paidDrinks = order.drinks.where((drink) {
-                        return !(drink.paymentType.toLowerCase() == "regular" && !order.inAppPayments);
-                      }).toList();
+                  final paidDrinks = order.drinks.where((drink) {
+                    return !(drink.paymentType.toLowerCase() == "regular" &&
+                        !order.inAppPayments);
+                  }).toList();
 
-                        String formatDrink(DrinkOrder drink) {
-                          return drink.sizeType.isNotEmpty
-                              ? '${drink.drinkName} [${drink.sizeType}] x ${drink.quantity}'
-                              : '${drink.drinkName} x ${drink.quantity}';
-                        }
+                  String formatDrink(DrinkOrder drink) {
+                    return drink.sizeType.isNotEmpty
+                        ? '${drink.drinkName} (${drink.sizeType}) x ${drink.quantity}'
+                        : '${drink.drinkName} x ${drink.quantity}';
+                  }
 
-                      return GestureDetector(
-                      onTap: () => {
-                        _onOrderTap(order),
-                      },
-                      child: Card(
-                        margin: const EdgeInsets.all(8.0),
-                        color: tintColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        child: IntrinsicHeight(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: <Widget>[
-                                // Left side: Claimer or Loading Indicator
-                                order.claimer.isEmpty
-                                    ? const SpinKitThreeBounce(
-                                        color: Colors.white,
-                                        size: 30.0,
-                                      )
-                                    : Text(
-                                        '@${order.claimer}',
-                                        style: const TextStyle(
-                                          fontSize: 32,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                          shadows: [
-                                            Shadow(
-                                              color: Colors.black,
-                                              offset: Offset(1.0, 1.0),
-                                              blurRadius: 1.0,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                // Middle: Unpaid and Paid sections
-                                Expanded(
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.center,
-                                          children: [
-                                            const Text(
-                                              'UNPAID ❗',
-                                              style: TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                                shadows: [
-                                                  Shadow(
-                                                    color: Colors.black,
-                                                    offset: Offset(1.0, 1.0),
-                                                    blurRadius: 1.0,
-                                                  ),
-                                                ],
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                            ...unpaidDrinks.map((drink) => Text(
-                                                  formatDrink(drink),
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    color: Colors.white,
-                                                    shadows: [
-                                                      Shadow(
-                                                        color: Colors.black,
-                                                        offset: Offset(1.0, 1.0),
-                                                        blurRadius: 1.0,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                )),
-                                          ],
-                                        ),
-                                      ),
-                                      Container(
-                                        width: 1,
-                                        color: Colors.white, // Divider line color
-                                      ),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.center,
-                                          children: [
-                                            const Text(
-                                              'PAID ✔️',
-                                              style: TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                                shadows: [
-                                                  Shadow(
-                                                    color: Colors.black,
-                                                    offset: Offset(1.0, 1.0),
-                                                    blurRadius: 1.0,
-                                                  ),
-                                                ],
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                            ...paidDrinks.map((drink) => Text(
-                                                  formatDrink(drink),
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    color: Colors.white,
-                                                    shadows: [
-                                                      Shadow(
-                                                        color: Colors.black,
-                                                        offset: Offset(1.0, 1.0),
-                                                        blurRadius: 1.0,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                )),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                  return GestureDetector(
+                    onTap: () => _onOrderTap(order),
+                    child: Card(
+                      margin: const EdgeInsets.all(8.0),
+                      color: tintColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 10),
+                          Row(children: [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 10),
+                              child: Text(
+                                '*${order.name}',
+                                style: const TextStyle(
+                                  fontSize: 21,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black,
+                                      offset: Offset(1.0, 1.0),
+                                      blurRadius: 1.0,
+                                    ),
+                                  ],
                                 ),
-                         // Right side: DisplayName with max width
-  ConstrainedBox(
-    constraints: const BoxConstraints(
-      maxWidth: 100, // Maximum width
-      minHeight: 50, // Minimum height to ensure alignment
-    ),
-    child: SizedBox(
- height: (order.name.length / 10).ceil() * 25.0, // Dynamically adjust height based on displayName length
-        child: Center(
-        child: Text(
-          order.name,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            shadows: [
-              Shadow(
-                color: Colors.black,
-                offset: Offset(1.0, 1.0),
-                blurRadius: 1.0,
-              ),
-            ],
-          ),
-          textAlign: TextAlign.center,
-          maxLines: 5, // Wrap text to fit within the height
-          overflow: TextOverflow.ellipsis, // Graceful text overflow
-        ),
-      ),
-    ),
-  ),
-],
+                                textAlign: TextAlign.start,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const Spacer(),
+                            Padding(
+                              padding: const EdgeInsets.only(right: 10),
+                              child: Text(
+                                'Tip: \$${order.tip}',
+                                style: const TextStyle(
+                                  fontSize: 21,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black,
+                                      offset: Offset(1.0, 1.0),
+                                      blurRadius: 1.0,
+                                    ),
+                                  ],
+                                ),
+                                textAlign: TextAlign.start,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ]),
+                          IntrinsicHeight(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: <Widget>[
+                                  // Left side: Claimer or Loading Indicator
+                                  order.claimer.isEmpty
+                                      ? const SpinKitThreeBounce(
+                                          color: Colors.white,
+                                          size: 30.0,
+                                        )
+                                      : Text(
+                                          '@${order.claimer}',
+                                          style: const TextStyle(
+                                            fontSize: 30,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                            shadows: [
+                                              Shadow(
+                                                color: Colors.black,
+                                                offset: Offset(1.0, 1.0),
+                                                blurRadius: 1.0,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                  // Middle: Unpaid and Paid sections
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              const Text(
+                                                'UNPAID ❗',
+                                                style: TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                  shadows: [
+                                                    Shadow(
+                                                      color: Colors.black,
+                                                      offset: Offset(1.0, 1.0),
+                                                      blurRadius: 1.0,
+                                                    ),
+                                                  ],
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              ...unpaidDrinks.map((drink) =>
+                                                  Text(
+                                                    formatDrink(drink),
+                                                    style: const TextStyle(
+                                                      fontSize: 16,
+                                                      color: Colors.white,
+                                                      shadows: [
+                                                        Shadow(
+                                                          color: Colors.black,
+                                                          offset:
+                                                              Offset(1.0, 1.0),
+                                                          blurRadius: 1.0,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                  )),
+                                            ],
+                                          ),
+                                        ),
+                                        Container(
+                                          width: 1,
+                                          color: Colors.white,
+                                        ),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              const Text(
+                                                'PAID ✔️',
+                                                style: TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                  shadows: [
+                                                    Shadow(
+                                                      color: Colors.black,
+                                                      offset: Offset(1.0, 1.0),
+                                                      blurRadius: 1.0,
+                                                    ),
+                                                  ],
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              ...paidDrinks.map((drink) => Text(
+                                                    formatDrink(drink),
+                                                    style: const TextStyle(
+                                                      fontSize: 16,
+                                                      color: Colors.white,
+                                                      shadows: [
+                                                        Shadow(
+                                                          color: Colors.black,
+                                                          offset:
+                                                              Offset(1.0, 1.0),
+                                                          blurRadius: 1.0,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                  )),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  Text(
+                                    formatElapsedTime(order
+                                        .getAge()), // Use the getAge method
+                                    style: const TextStyle(
+                                      fontSize: 30,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black,
+                                          offset: Offset(1.0, 1.0),
+                                          blurRadius: 1.0,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    );
-                  },
-                )),
-          ),
-
-          // Positioned widget on the right side for swipe detection
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: 125, // Adjust this width as needed
-            child: GestureDetector(
-              onHorizontalDragEnd: (details) {
-                if (details.velocity.pixelsPerSecond.dx < 0) {
-                  setState(() {
-                    filterReady = true;
-                    _updateLists(); // Apply filters when changed
-                  });
-                }
-              },
-              child: Container(
-                color: Colors
-                    .transparent, // Optional: change to transparent in production
+                    ),
+                  );
+                },
               ),
             ),
-          ),
-
-// Positioned widget on the left side for swipe detection
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 125, // Adjust this width as needed
-            child: GestureDetector(
-              onHorizontalDragEnd: (details) {
-                if (details.velocity.pixelsPerSecond.dx > 0) {
-                  setState(() {
-                    filterReady = false;
-                    _updateLists(); // Apply filters when changed
-                  });
-                }
-              },
-              child: Container(
-                color: Colors
-                    .transparent, // Optional: change to transparent in production
-              ),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -1320,18 +1456,6 @@ void _updateLists() {
 
           // Check which key is present in the response and handle accordingly
           switch (response.keys.first) {
-/*
-            case 'Tip Claim Successful':
-              Navigator.pop(context); // Dismiss the name and email input dialog
-            break;
-
-            case 'Tip Claim Failed':
-              Navigator.pop(context); // Dismiss the name and email input dialog
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Failed. Please contact barzzy.llc@gmail.com for assistance.')),
-              );
-              break;
-              */
             case 'error':
               // Use _showErrorSnackbar to display the error message
               _showErrorSnackbar(response['error']);
@@ -1352,36 +1476,6 @@ void _updateLists() {
                 socket = null; // Set the WebSocket reference to null
               }
 
-              break;
-
-            case 'barId':
-              debugPrint('when are you triggering');
-              final Map<String, dynamic> ordersJson = response;
-
-              final incomingOrder = BartenderOrder.fromJson(ordersJson);
-
-              // Check if the order exists in allOrders
-              int index = allOrders
-                  .indexWhere((order) => order.userId == incomingOrder.userId);
-              if (index != -1) {
-                // If it exists, replace the old order
-                allOrders[index] = incomingOrder;
-                if (allOrders[index].status == 'delivered' ||
-                    allOrders[index].status == 'canceled') {
-                  allOrders.remove(allOrders[index]);
-                }
-              } else {
-                // If it doesn't exist, add the new order to allOrders
-                if (incomingOrder.status != 'delivered' &&
-                    incomingOrder.status != 'canceled') {
-                  allOrders.add(incomingOrder);
-                }
-              }
-
-              setState(() {
-                // Update the displayList based on the new allOrders
-                _updateLists();
-              });
               break;
 
             case 'orders':
@@ -1421,16 +1515,19 @@ void _updateLists() {
               final incomingOrder = BartenderOrder.fromJson(response);
 
               // Check if the order exists in allOrders
-              int index = allOrders.indexWhere((order) => order.userId == incomingOrder.userId);
+              int index = allOrders
+                  .indexWhere((order) => order.userId == incomingOrder.userId);
               if (index != -1) {
                 // If it exists, replace the old order
                 allOrders[index] = incomingOrder;
-                if (allOrders[index].status == 'delivered' || allOrders[index].status == 'canceled') {
+                if (allOrders[index].status == 'delivered' ||
+                    allOrders[index].status == 'canceled') {
                   allOrders.removeAt(index);
                 }
               } else {
                 // If it doesn't exist, add the new order to allOrders
-                if (incomingOrder.status != 'delivered' && incomingOrder.status != 'canceled') {
+                if (incomingOrder.status != 'delivered' &&
+                    incomingOrder.status != 'canceled') {
                   allOrders.add(incomingOrder);
                 }
               }
@@ -1506,5 +1603,16 @@ void _updateLists() {
     // Log the new bar status
     debugPrint(
         'Bar status toggled. New status: ${barOpenStatus ? "Open" : "Closed"}');
+  }
+
+  String formatElapsedTime(int seconds) {
+    int minutes = (seconds / 60).floor(); // Convert seconds to minutes
+    return "${minutes}m";
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel(); // Cancel the timer when the widget is disposed
+    super.dispose();
   }
 }
