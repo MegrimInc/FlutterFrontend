@@ -1,8 +1,11 @@
 // ignore_for_file: use_build_context_synchronously
+//TODO claimtips button green, remove bar # from tips screen, and center dot. //
+//Submit button green, change field in claimtips. Change recipt color
 
 import 'dart:async'; // Import the async package for Timer
 import 'dart:convert'; //TODO check bar is active
 import 'dart:io';
+import 'package:http/http.dart' as http;
 
 import 'package:barzzy/Backend/customerorder2.dart';
 import 'package:barzzy/Terminal/stationid.dart';
@@ -47,99 +50,186 @@ class _OrdersPageState extends State<OrdersPage> {
   Timer? _timer;
   WebSocket? websocket;
 
+void claimTips() {
+  bool isSubmitting = false; // Track button status within the dialog
 
-  void claimTips() {
-    bool isSubmitting = false; // Track button status within the dialog
+  showDialog(
+    context: context,
+    barrierDismissible: false, // Prevent closing by tapping outside
+    builder: (BuildContext context) {
+      final TextEditingController nameController = TextEditingController();
+      final TextEditingController emailController = TextEditingController();
 
-    showDialog(
-      context: context,
-      barrierDismissible: false, // Prevent closing by tapping outside
-      builder: (BuildContext context) {
-        final TextEditingController nameController = TextEditingController();
-        final TextEditingController emailController = TextEditingController();
-
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              title: Text(
-                'Claim Tips for Station ${widget.bartenderID} at Bar #${widget.barID}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: "Your Name"),
-                    onChanged: (value) {
-                      setState(() {
-                        // Enable Submit if name field is not empty
-                        isSubmitting = value.isEmpty;
-                      });
-                    },
-                  ),
-                  TextField(
-                    controller: emailController,
-                    decoration: const InputDecoration(labelText: "Your Email (optional)"),
-                  ),
-                ],
-              ),
-              actions: [
-                // Cancel button
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
+      return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return AlertDialog(
+            title: Text(
+              'Claim Tips for Station ${widget.bartenderID} at Bar #${widget.barID}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: "Your Name"),
+                  onChanged: (value) {
+                    setState(() {
+                      // Enable Submit if name field is not empty
+                      isSubmitting = value.isEmpty;
+                    });
                   },
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.red,
-                  ),
-                  child: const Text("Cancel", style: TextStyle(color: Colors.white)),
                 ),
-                TextButton(
-                  onPressed: isSubmitting
-                      ? null // Disable if currently submitting
-                      : () {
-                          if (nameController.text.isNotEmpty) {
-                            debugPrint("Attempting to submit request for claimtips");
-
-                            final Map<String, dynamic> request = {
-                              'action': 'Claim Tips',
-                              'name': nameController.text,
-                              'email': emailController.text,
-                              'bartenderID': widget.bartenderID,
-                              'barID': widget.barID,
-                            };
-debugPrint("request generated");
-                            // Send request to backend
-                            socket!.sink.add(json.encode(request));
-debugPrint("request sent");
-
-                            setState(() {
-                              isSubmitting = true; // Temporarily disable button
-                            });
-                             debugPrint("Successfully submit request for claimtips");
-
-                          }
-                        },
-                  style: TextButton.styleFrom(
-                    backgroundColor: isSubmitting ? Colors.grey : Colors.blue,
-                  ),
-                  child: const Text("Submit", style: TextStyle(color: Colors.white)),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(labelText: "Your Email (optional)"),
                 ),
               ],
-            );
-          },
-        );
-      },
-    ).then((_) {
-      // Reset the button state when the dialog is closed
-      setState(() {
-        isSubmitting = false;
-      });
+            ),
+            actions: [
+              // Cancel button
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.red,
+                ),
+                child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+              ),
+              TextButton(
+                onPressed: isSubmitting
+                    ? null // Disable if currently submitting
+                    : () async {
+                        if (nameController.text.isNotEmpty) {
+                          debugPrint("Attempting to submit request for claimTips");
+
+                          final Map<String, dynamic> request = {
+                            'bartenderName': nameController.text,
+                            'bartenderEmail': emailController.text,
+                            'station': widget.bartenderID,
+                            'barId': widget.barID,
+                          };
+
+                          setState(() {
+                            isSubmitting = true; // Temporarily disable button
+                          });
+
+                          final String url = "http://34.230.32.169:8080/orders/claim";
+
+                          try {
+                            final response = await http.post(
+                              Uri.parse(url),
+                              headers: {'Content-Type': 'application/json'},
+                              body: jsonEncode(request),
+                            );
+
+                            if (response.statusCode == 200) {
+                              debugPrint("Successfully submitted request for claimTips");
+                                final responseData = jsonDecode(response.body);
+
+  final double claimedTips = double.parse(responseData.toString()); // Assuming the key is 'claimedTips'
+
+                              Navigator.of(context).pop(); // Close the input dialog
+
+                              // Display success dialog
+                              if( claimedTips == -1 ) {
+                                 showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text(
+          "Success",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          "You have no tips available :(",
+          style: const TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Close"),
+          ),
+        ],
+      );
+    },
+  );
+  
+                              } else {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text(
+          "Success",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          "You have claimed \$${claimedTips.toStringAsFixed(2)} in tips!",
+          style: const TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Close"),
+          ),
+          TextButton(
+            onPressed: () {
+              debugPrint("More Info clicked");
+              // Placeholder function for More Info
+              showServerSignatureInfo();
+            },
+            child: const Text("More Info"),
+          ),
+        ],
+      );
+    },
+  );
+}
+                            } else {
+                              debugPrint("Failed to submit request. Status code: ${response.statusCode}");
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Failed to submit claimTips request. Try again."),
+                                ),
+                              );
+                            }
+                          } catch (error) {
+                            debugPrint("Error during HTTP request: $error");
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("An error occurred while submitting the request."),
+                              ),
+                            );
+                          } finally {
+                            setState(() {
+                              isSubmitting = false; // Re-enable button after HTTP request
+                            });
+                          }
+                        }
+                      },
+                style: TextButton.styleFrom(
+                  backgroundColor: isSubmitting ? Colors.grey : Colors.blue,
+                ),
+                child: const Text("Submit", style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  ).then((_) {
+    // Reset the button state when the dialog is closed
+    setState(() {
+      isSubmitting = false;
     });
-  }
+  });
+}
 
-
+/*
 void showReceiptDialog(Map<String, dynamic> response) {
   List<CustomerOrder2> orders = (response['orders'] as List)
       .map((orderJson) => CustomerOrder2.fromJson(orderJson))
@@ -223,7 +313,7 @@ void showReceiptDialog(Map<String, dynamic> response) {
     },
   );
 }
-
+*/
 
 void showServerSignatureInfo() {
   const publicKey = 'MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAqePMRYC7/28i9reLDqd77xHIuwHOEGL6sTO6MCSSrjNBJHH6xJnDPs8is3VyfbyZc01ql6H7k565W30OnGgkxBgPdAcaSySLm+G7MMJlviiw2jY6UmuEdOkA5e21GrOikQG3aBz1TtK4fbDL8R7wlKkHEpBzFLDRXHOlK3qyFVph3osU1bTB6nd+z5PRfRbJsUiOOXKJjUa7hXYQI6Z4PwasHDEWBy2HycdIRLdjOmlSjnsX22LsOo0/FEtF2VQU+CiDNXs1evBxDIi9JRMwwETq8L6y5EhRb8LlxpgL5sLaCyzyecyK3NIWwPsLJgOcJWDByUg2FWp/72UYp4mIutraXgEIcO0F/y4FViw8c38DN7V7SX0cUdYJdmkzByApQg0/s8D1krdrE3oyrP2BQ/s7x0SDT4QYt1hoeyZ2PKK6zjLG7nXhbWljhl3fehXuWXRDhcbkPCU0kBu7jk2nYuhRroPy5Brxc5ylwSNZZsqQxZMTxxh/n/T7zWMrdYXSbYsGjk8U6/W1Dru1f8LBMnSQNI8h7uWlv3/uSxsinUg3xeMl9AqPVugH8yGR8EJlJLEftpGmmjNBPtSIN3VWldvJ6NFWT0cX9rxyfT5oxeNScSJPwKUTKfFxC/mzW8KoDGsJjlg+ULFZxv2+5kgfR4XwJ9UxqfM+s6Z1c1CmjFMCAwEAAQ==';
@@ -1231,10 +1321,9 @@ void _updateLists() {
 
           // Check which key is present in the response and handle accordingly
           switch (response.keys.first) {
-
+/*
             case 'Tip Claim Successful':
               Navigator.pop(context); // Dismiss the name and email input dialog
-              showReceiptDialog(response); // Display the receipt dialog
             break;
 
             case 'Tip Claim Failed':
@@ -1243,7 +1332,7 @@ void _updateLists() {
                 const SnackBar(content: Text('Failed. Please contact barzzy.llc@gmail.com for assistance.')),
               );
               break;
-              
+              */
             case 'error':
               // Use _showErrorSnackbar to display the error message
               _showErrorSnackbar(response['error']);
