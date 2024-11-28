@@ -5,7 +5,6 @@
 import 'dart:async'; // Import the async package for Timer
 import 'dart:convert'; //TODO check bar is active
 import 'dart:io';
-import 'package:http/http.dart' as http;
 
 import 'package:barzzy/Backend/bartender_order.dart';
 import 'package:barzzy/Terminal/stationid.dart';
