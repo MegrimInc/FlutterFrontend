@@ -140,7 +140,7 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
                             vertical: 20, horizontal: 10),
                       ),
                       child: Text(
-                        'ESC',
+                        'Logout',
                         style: GoogleFonts.poppins(
                           textStyle: const TextStyle(
                             fontSize: 24,

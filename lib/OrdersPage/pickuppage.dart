@@ -112,10 +112,23 @@ class PickupPageState extends State<PickupPage> {
                       : SingleChildScrollView(
                           physics: const AlwaysScrollableScrollPhysics(),
                           child: SizedBox(
-                            height: screenHeight, // Use the class variable here
-                            child: _buildOrderCard(
-                                localDatabase.getOrderForBar(orders.first)!),
-                          ),
+                              height:
+                                  screenHeight, // Use the class variable here
+                              child: orders.isNotEmpty &&
+                                      localDatabase
+                                              .getOrderForBar(orders.first) !=
+                                          null
+                                  ? _buildOrderCard(localDatabase
+                                      .getOrderForBar(orders.first)!)
+                                  : const Center(
+                                      child: Text(
+                                        'No orders found for this bar.',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 17,
+                                        ),
+                                      ),
+                                    )),
                         ));
             },
           );
