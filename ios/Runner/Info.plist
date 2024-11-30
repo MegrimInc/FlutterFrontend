@@ -49,7 +49,14 @@
 	</array>
 	<key>aps-environment</key>
 	<string>production</string>
+<!-- Privacy usage descriptions -->
 	<key>NSApplePayUsageDescription</key>
-	<string>This app uses Apple Pay for seamless and secure payments.</string>
+	<string>This app uses Apple Pay for secure payments through the Stripe SDK.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app uses the camera for card scanning or other payment-related functionality provided by the Stripe SDK.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app accesses the photo library for uploading images or receipts, enabled through the Stripe SDK.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app uses location data to support localized payment features, enabled by the Stripe SDK.</string>
 </dict>
 </plist>

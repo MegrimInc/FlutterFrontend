@@ -108,21 +108,19 @@ class DrinkFeedState extends State<DrinkFeed>
   }
 
     // Step 3: Check if the user has a payment method
-    try {
-      final hasPaymentMethod = await _checkPaymentMethod(userId);
-      if (!hasPaymentMethod) {
-        // If no payment method, show Stripe payment sheet and exit
-        await _showStripeSetupSheet(context, userId);
-        return;
-      }
-    } catch (e) {
-      debugPrint('Error checking payment method: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Error: Unable to verify payment method.')),
-      );
+   if (inAppPayments) {
+  try {
+    final hasPaymentMethod = await _checkPaymentMethod(userId);
+    if (!hasPaymentMethod) {
+      // If no payment method, show Stripe payment sheet and exit
+      await _showStripeSetupSheet(context, userId);
       return;
     }
+  } catch (e) {
+    debugPrint('Error checking payment method: $e');
+    return;
+  }
+}
 
     final barId = widget.barId;
 
