@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 
 class User extends ChangeNotifier {
   static final User _singleton = User._internal();
+   
 
   factory User() {
     return _singleton;

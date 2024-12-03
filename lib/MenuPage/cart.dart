@@ -14,7 +14,7 @@ class Cart extends ChangeNotifier {
   int totalCartPoints = 0;
   bool isHappyHour = false;
   double tipPercentage = 0.18;
-
+  
 
   // Set the current bar ID and clear the cart when switching bars
   void setBar(String newBarId) {

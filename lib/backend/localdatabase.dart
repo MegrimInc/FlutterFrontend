@@ -29,6 +29,14 @@ class LocalDatabase with ChangeNotifier {
   final Map<String, CustomerOrder> _barOrders = {};
   final Map<String, Point> _userPoints = {};
   final Map<String, bool> _happyHourStatusMap = {};
+   bool isPaymentPresent = false;
+   
+
+    void updatePaymentStatus(bool status) {
+    isPaymentPresent = status;
+    notifyListeners();
+  }
+
 
   void addOrUpdateOrderForBar(CustomerOrder order) {
     _barOrders[order.barId] = order;

@@ -50,9 +50,7 @@ class DrinkFeedState extends State<DrinkFeed>
   @override
   void initState() {
     super.initState();
-
     currentDrink = ValueNotifier(widget.drink);
-
     _pageController = PageController(
       initialPage: widget.initialPage, // NEW: Use the initialPage from widget
     );
@@ -85,6 +83,20 @@ class DrinkFeedState extends State<DrinkFeed>
       return;
     }
 
+    if (inAppPayments) {
+      final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
+
+      if (!localDatabase.isPaymentPresent) {
+        try {
+         _showStripeSetupSheet(context, userId);
+          return;
+        } catch (e) {
+          debugPrint('Error presenting Stripe setup sheet: $e');
+          return;
+        }
+      }
+    }
+
     // Determine the quantity limit based on payment method
     final quantityLimit = inAppPayments ? 10 : 3;
     final totalQuantity = cart.getTotalDrinkCount();
@@ -98,29 +110,15 @@ class DrinkFeedState extends State<DrinkFeed>
       return; // Exit if limit is exceeded
     }
 
-     // New Check: Ensure the user has enough points locally
-  final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
-  final availablePoints = localDatabase.getPointsForBar(widget.barId)?.points ?? 0;
-  if (cart.totalCartPoints > availablePoints) {
-    const message = 'You do not have enough points to place this order.';
-    _showNotAllowedDialog(message);
-    return; // Exit if not enough points
-  }
-
-    // Step 3: Check if the user has a payment method
-   if (inAppPayments) {
-  try {
-    final hasPaymentMethod = await _checkPaymentMethod(userId);
-    if (!hasPaymentMethod) {
-      // If no payment method, show Stripe payment sheet and exit
-      await _showStripeSetupSheet(context, userId);
-      return;
+    // New Check: Ensure the user has enough points locally
+    final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
+    final availablePoints =
+        localDatabase.getPointsForBar(widget.barId)?.points ?? 0;
+    if (cart.totalCartPoints > availablePoints) {
+      const message = 'You do not have enough points to place this order.';
+      _showNotAllowedDialog(message);
+      return; // Exit if not enough points
     }
-  } catch (e) {
-    debugPrint('Error checking payment method: $e');
-    return;
-  }
-}
 
     final barId = widget.barId;
 
@@ -173,25 +171,13 @@ class DrinkFeedState extends State<DrinkFeed>
       "tip": orderTip,
     };
 
-    hierarchy.createOrder(order);
 
+     hierarchy.createOrder(order);
     Navigator.of(context).pushNamedAndRemoveUntil(
       '/orders',
       (Route<dynamic> route) => false,
       arguments: barId,
     );
-  }
-
-  // Private method to check if a payment method exists
-  Future<bool> _checkPaymentMethod(int userId) async {
-    final response = await http.get(Uri.parse(
-        'https://www.barzzy.site/customer/checkPaymentMethod/$userId'));
-    if (response.statusCode == 200) {
-      return jsonDecode(
-          response.body); // true if payment exists, false otherwise
-    } else {
-      throw Exception('Failed to check payment method');
-    }
   }
 
   Future<void> _showStripeSetupSheet(BuildContext context, int userId) async {
@@ -205,6 +191,7 @@ class DrinkFeedState extends State<DrinkFeed>
         final responseData = jsonDecode(response.body);
         final setupIntentClientSecret = responseData["setupIntentClientSecret"];
         final customerId = responseData["customerId"];
+        final setupIntentId = setupIntentClientSecret.split('_secret_')[0];
         debugPrint('SetupIntent Response Body: ${response.body}');
 
         // Initialize the payment sheet with the SetupIntent
@@ -221,31 +208,40 @@ class DrinkFeedState extends State<DrinkFeed>
           ),
         );
 
+
+        final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
+            localDatabase.updatePaymentStatus(true);
+
         // Present the Stripe payment sheet to collect and save payment info
         await Stripe.instance.presentPaymentSheet();
-        await _savePaymentMethodToDatabase(userId, customerId);
+        await _savePaymentMethodToDatabase(userId, customerId, setupIntentId);
       } else {
+        final localDatabase =
+            Provider.of<LocalDatabase>(context, listen: false);
+        localDatabase.updatePaymentStatus(false);
+
         debugPrint(
             "Failed to load setup intent data. Status code: ${response.statusCode}");
         debugPrint("Error Response Body: ${response.body}");
-        throw Exception(
-            "Failed to load setup intent data with status code: ${response.statusCode}");
       }
     } catch (e) {
+      final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
+      localDatabase.updatePaymentStatus(false);
       debugPrint('Error presenting Stripe setup sheet: $e');
     }
   }
 
 // Private method to save the payment method to the database
   Future<void> _savePaymentMethodToDatabase(
-      int userId, String customerId) async {
+      int userId, String customerId, String setupIntentId) async {
     try {
       final response = await http.post(
         Uri.parse('https://www.barzzy.site/customer/addPaymentIdToDatabase'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "customerId": userId, // userId is the customer ID for your app
-          "stripeId": customerId // Stripe customer ID returned by Stripe
+          "stripeId": customerId, // Stripe customer ID returned by Stripe
+          "setupIntentId": setupIntentId // SetupIntent ID from Stripe
         }),
       );
 
@@ -323,13 +319,12 @@ class DrinkFeedState extends State<DrinkFeed>
                                   context); // Drink page rebuilds when currentDrink changes
                             },
                           ),
-                          ValueListenableBuilder<Drink>(
+                           ValueListenableBuilder<Drink>(
                             valueListenable: currentDrink,
                             builder: (context, drink, _) {
                               return _buildSummaryPage(
                                   context); // Summary page rebuilds when currentDrink changes
-                            },
-                          ),
+                            })
                         ],
                       ),
                     ),
@@ -507,9 +502,9 @@ class DrinkFeedState extends State<DrinkFeed>
             child: Padding(
               padding: const EdgeInsets.only(right: 10.0),
               child: RawScrollbar(
-                 thumbColor: Colors.white,
-                  thickness: 3,
-                  thumbVisibility: true,
+                thumbColor: Colors.white,
+                thickness: 3,
+                thumbVisibility: true,
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -518,24 +513,24 @@ class DrinkFeedState extends State<DrinkFeed>
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: cart.barCart[drinkId]!.entries.map((entry) {
                           final drink = LocalDatabase().getDrinkById(drinkId);
-                          
+
                           final sizeText = entry.key.contains("double")
                               ? " (dbl)"
                               : entry.key.contains("single")
                                   ? " (sgl)"
                                   : "";
-                
+
                           final maxLength = 21 -
                               sizeText
                                   .length; // Remaining characters allowed for the name
                           final adjustedDrinkName =
                               _truncateWithEllipsis(drink.name, maxLength);
-                
+
                           final drinkName =
                               adjustedDrinkName + (entry.value > 1 ? 's' : '');
-                
+
                           final isHappyHour = cart.isHappyHour;
-                
+
                           final price = entry.key.contains("single")
                               ? (isHappyHour
                                   ? drink.singleHappyPrice
@@ -543,11 +538,11 @@ class DrinkFeedState extends State<DrinkFeed>
                               : (isHappyHour
                                   ? drink.doubleHappyPrice
                                   : drink.doublePrice);
-                
+
                           final priceOrPoints = entry.key.contains("points")
                               ? "${(entry.value * drink.points).toInt()} pts"
                               : "\$${(entry.value * price).toStringAsFixed(2)}";
-                
+
                           return GestureDetector(
                             onTap: () {
                               String newDrinkId = drink.id;
@@ -556,12 +551,15 @@ class DrinkFeedState extends State<DrinkFeed>
                               _pageController.animateToPage(
                                 0,
                                 duration: const Duration(
-                                    milliseconds: 250), // Duration of the animation
-                                curve: Curves.easeInOut, // Curve for the animation
+                                    milliseconds:
+                                        250), // Duration of the animation
+                                curve:
+                                    Curves.easeInOut, // Curve for the animation
                               );
                             },
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 4.0),
                               child: Text.rich(
                                 TextSpan(
                                   text:
@@ -905,8 +903,10 @@ class DrinkFeedState extends State<DrinkFeed>
                 child: GestureDetector(
                   onTap: isCartEmpty
                       ? null
-                      : () => _submitOrder(context,
-                          inAppPayments: false, tips: false),
+                      : () {
+                          _submitOrder(context,
+                              inAppPayments: false, tips: false);
+                        },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 80, vertical: 19),
@@ -940,8 +940,10 @@ class DrinkFeedState extends State<DrinkFeed>
                 GestureDetector(
                   onTap: isCartEmpty
                       ? null
-                      : () => _submitOrder(context,
-                          inAppPayments: false, tips: false),
+                      : () {
+                          _submitOrder(context,
+                              inAppPayments: false, tips: false);
+                        },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 20),
@@ -963,8 +965,10 @@ class DrinkFeedState extends State<DrinkFeed>
                 GestureDetector(
                   onTap: isCartEmpty
                       ? null
-                      : () => _submitOrder(context,
-                          inAppPayments: true, tips: true),
+                      : () {
+                          _submitOrder(context,
+                              inAppPayments: true, tips: true);
+                        },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 20),
@@ -972,13 +976,23 @@ class DrinkFeedState extends State<DrinkFeed>
                       color: isCartEmpty ? Colors.white24 : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(
-                      'Pay in app',
-                      style: GoogleFonts.poppins(
-                        color: isCartEmpty ? Colors.white70 : Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: Consumer<LocalDatabase>(
+                      builder: (context, localDatabase, _) {
+                        return Text(
+                          localDatabase.isPaymentPresent
+                              ? 'Pay in app'
+                              : 'Set up card',
+                          style: GoogleFonts.poppins(
+                            color: isCartEmpty
+            ? Colors.white70
+            : localDatabase.isPaymentPresent
+                ? Colors.black
+                : Colors.red,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -1054,6 +1068,7 @@ class DrinkFeedState extends State<DrinkFeed>
     );
   }
 
+
   Widget _buildBottomBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1073,13 +1088,6 @@ class DrinkFeedState extends State<DrinkFeed>
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _pageController.dispose();
-    super.dispose();
   }
 
   void _showLoginAlertDialog(BuildContext context) {
@@ -1188,5 +1196,12 @@ class DrinkFeedState extends State<DrinkFeed>
         );
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _pageController.dispose();
+    super.dispose();
   }
 }

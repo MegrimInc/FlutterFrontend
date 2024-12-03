@@ -97,6 +97,7 @@ class _ProfilePageState extends State<ProfilePage> {
         final responseData = jsonDecode(response.body);
         final setupIntentClientSecret = responseData["setupIntentClientSecret"];
         final customerId = responseData["customerId"];
+        final setupIntentId = setupIntentClientSecret.split('_secret_')[0];
         debugPrint('SetupIntent Response Body: ${response.body}');
 
         // Initialize the payment sheet with the SetupIntent
@@ -115,7 +116,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
         // Present the Stripe payment sheet to collect and save payment info
         await Stripe.instance.presentPaymentSheet();
-        await _savePaymentMethodToDatabase(userId, customerId);
+        await _savePaymentMethodToDatabase(userId, customerId, setupIntentId);
       } else {
         debugPrint(
             "Failed to load setup intent data. Status code: ${response.statusCode}");
@@ -130,14 +131,15 @@ class _ProfilePageState extends State<ProfilePage> {
 
 // Private method to save the payment method to the database
   Future<void> _savePaymentMethodToDatabase(
-      int userId, String customerId) async {
+      int userId, String customerId, String setupIntentId) async {
     try {
       final response = await http.post(
         Uri.parse('https://www.barzzy.site/customer/addPaymentIdToDatabase'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "customerId": userId, // userId is the customer ID for your app
-          "stripeId": customerId // Stripe customer ID returned by Stripe
+          "stripeId": customerId, // Stripe customer ID returned by Stripe
+          "setupIntentId": setupIntentId // SetupIntent ID from Stripe
         }),
       );
 

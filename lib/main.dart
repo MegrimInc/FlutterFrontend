@@ -34,7 +34,7 @@ Future<void> main() async {
   debugPrint("current date: ${DateTime.now()}");
 
   Stripe.publishableKey =
-      'pk_test_51QIHPQALmk8hqurjW70pr2kLZg1lr0bXN9K6uMdf9oDPwn3olIIPRd2kJncr8rGMKjVgSUsZztTtIcPwDlLfchgu00dprIZKma';
+      'pk_live_51QIHPQALmk8hqurj9QQVsCMabyzQ3hCJrxk1PhLNJFXDHfbmQqkJzEdOIrXlGd27hBEJchOuLBjIrb6WKxKiUKoo00tOVyaRdA';
   Stripe.merchantIdentifier = 'merchant.com.barzzy';
 
   try {
@@ -108,6 +108,10 @@ Future<void> main() async {
   LocalDatabase localDatabase = LocalDatabase();
   await sendGetRequest();
   await sendGetRequest2();
+  if (uid != 0) {
+    await checkPaymentMethod(localDatabase, uid);
+  }
+
 
   // Create the MethodChannel
   const MethodChannel notificationChannel =
@@ -183,6 +187,8 @@ Future<void> sendGetRequest() async {
   }
 }
 
+
+
 Future<void> sendGetRequest2() async {
   try {
     // Add or update points in the LocalDatabase for each bar
@@ -244,6 +250,29 @@ Future<void> sendGetRequest2() async {
     debugPrint('Error sending GET request for points: $e');
   }
 }
+
+Future<void> checkPaymentMethod(LocalDatabase localDatabase, int userId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('https://www.barzzy.site/customer/checkPaymentMethod/$userId'),
+    );
+
+    if (response.statusCode == 200) {
+      final paymentPresent = jsonDecode(response.body); // true or false
+      debugPrint('Payment method check result: $paymentPresent');
+      localDatabase.updatePaymentStatus(paymentPresent);
+    } else {
+      debugPrint(
+          'Failed to check payment method. Status code: ${response.statusCode}');
+      localDatabase.updatePaymentStatus(false);
+    }
+  } catch (e) {
+    debugPrint('Error checking payment method: $e');
+    localDatabase.updatePaymentStatus(false);
+  }
+}
+
+
 
 class Barzzy extends StatelessWidget {
   final bool loggedInAlready;

@@ -249,6 +249,9 @@ class HomePageState extends State<HomePage> {
                     if (dy < 0) {
                       _handleInfo(context);
                     }
+                    if (dy > 0) {
+                      _handleInfo(context);
+                    }
                   }
                 },
                 child: Container(
