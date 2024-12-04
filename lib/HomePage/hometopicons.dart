@@ -19,18 +19,17 @@ class _MyTopIconsState extends State<MyTopIcons> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          //Doug
 
           Container(
             padding: const EdgeInsets.only(top: 5.5),
             width: (MediaQuery.of(context).size.width / 3) * 2 + 0,
             height: 45,
             child: Text(
-              'D O U G',
+              'b a r t r',
               style: GoogleFonts.megrim(
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
-                fontSize: 24,
+                fontSize: 31,
               ),
             ),
           ),

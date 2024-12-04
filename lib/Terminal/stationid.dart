@@ -59,11 +59,11 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 Text(
-                  'D O U G',
+                  'b a r t r',
                   style: GoogleFonts.megrim(
                     textStyle: const TextStyle(
                       color: Colors.white,
-                      fontSize: 40,
+                      fontSize: 47,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
