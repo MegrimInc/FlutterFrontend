@@ -93,13 +93,18 @@ Future<void> main() async {
     body: requestBody,
   );
 
+
   // Check the response
-  if (response.statusCode == 200) {
-    debugPrint('Init Request successful');
-    if (int.parse(response.body) != 0) httpRequest = true;
-  } else {
-    debugPrint('Init Request failed with status: ${response.statusCode}');
+if (response.statusCode == 200) {
+  debugPrint('Init Request successful');
+  final serverUID = int.parse(response.body); // Get the UID from server response
+  if (serverUID != 0) {
+    httpRequest = true;
+    await loginCache.setUID(serverUID); // Update the UID in LoginCache
   }
+} else {
+  debugPrint('Init Request failed with status: ${response.statusCode}');
+}
 
   final uid = await loginCache.getUID();
   final isBar = uid < 0;

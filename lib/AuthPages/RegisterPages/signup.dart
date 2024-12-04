@@ -183,7 +183,7 @@ class RegisterPageState extends State<RegisterPage>
               const SizedBox(height: 75),
               Center(
                 child: Text(
-                  'B A R Z Z Y',
+                  'D O U G',
                   style: GoogleFonts.megrim(
                     fontWeight: FontWeight.w900,
                     color: Colors.white,

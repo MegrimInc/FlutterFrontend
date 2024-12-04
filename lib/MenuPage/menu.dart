@@ -284,16 +284,20 @@ class MenuPageState extends State<MenuPage>
       BuildContext context, String tagName, List<int> drinkIds) {
     const int itemsPerPage = 9; // Display 9 drinks per page in a 3x3 grid
     final int pageCount = (drinkIds.length / itemsPerPage).ceil();
-    //final double boxHeight = 440.0; // Adjusted height to fit 9 items comfortably
+    final screenHeight = MediaQuery.of(context).size.height;
+
 
     double boxHeight;
 
     if (drinkIds.length <= 3) {
-      boxHeight = 150; // Height for 1 row
+      //boxHeight = 150; // Height for 1 row
+       boxHeight = screenHeight * 0.19;
     } else if (drinkIds.length <= 6) {
-      boxHeight = 300.0; // Height for 2 rows
+      //boxHeight = 300.0; // Height for 2 rows
+      boxHeight = screenHeight * 0.37; 
     } else {
-      boxHeight = 450; // Height for 3 rows
+      //boxHeight = 450; // Height for 3 rows
+      boxHeight = screenHeight * 0.55;
     }
 
     PageController pageController = _getPageController(tagName);
@@ -332,7 +336,6 @@ class MenuPageState extends State<MenuPage>
         // Display the drink grid
         SizedBox(
           height: boxHeight,
-          //color: Colors.red,
           child: PageView.builder(
             controller: pageController,
             itemCount: pageCount,
@@ -348,6 +351,7 @@ class MenuPageState extends State<MenuPage>
                   (startIndex + itemsPerPage).clamp(0, drinkIds.length);
 
               return GridView.builder(
+                 shrinkWrap: true,
                 physics:
                     const NeverScrollableScrollPhysics(), // Disable inner scrolling
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -371,7 +375,7 @@ class MenuPageState extends State<MenuPage>
                     },
                     child: Column(
                       children: [
-                        Expanded(
+                        Flexible(
                           flex: 12,
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(5),
@@ -388,7 +392,7 @@ class MenuPageState extends State<MenuPage>
                                     builder: (context, cart, _) {
                                       int drinkQuantities = cart
                                           .getTotalQuantityForDrink(drink.id);
-
+                    
                                       if (drinkQuantities > 0) {
                                         return Container(
                                           decoration: BoxDecoration(
