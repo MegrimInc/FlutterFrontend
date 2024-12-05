@@ -195,7 +195,7 @@ class PickupPageState extends State<PickupPage> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    ' Bartender: ${order.claimer.isNotEmpty ? order.claimer : 'N/A'}',
+                    ' Worker: ${order.claimer.isNotEmpty ? order.claimer : 'N/A'}',
                     style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 21,

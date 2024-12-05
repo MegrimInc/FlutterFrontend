@@ -92,8 +92,6 @@ Future<void> notifyServerEmailNeedsReset() async {
 
 
 
-
-
   Future<void> checkVerificationCode() async {
     setState(() {
       isSubmitButtonEnabled = false; // Disable submit button during verification

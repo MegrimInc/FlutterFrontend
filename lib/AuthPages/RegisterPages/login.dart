@@ -154,11 +154,11 @@ class _LoginPageState extends State<LoginPage> {
 
             Center(
               child: Text(
-                'b a r t r',
+                'B A R Z Z Y',
                 style: GoogleFonts.megrim(
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
-                  fontSize: 42,
+                  fontSize: 35,
                 ),
               ),
             ),

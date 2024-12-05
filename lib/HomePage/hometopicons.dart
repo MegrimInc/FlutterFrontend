@@ -19,17 +19,18 @@ class _MyTopIconsState extends State<MyTopIcons> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          //BARZZY TAG
 
           Container(
             padding: const EdgeInsets.only(top: 5.5),
             width: (MediaQuery.of(context).size.width / 3) * 2 + 0,
             height: 45,
             child: Text(
-              'b a r t r',
+              'B A R Z Z Y',
               style: GoogleFonts.megrim(
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
-                fontSize: 31,
+                fontSize: 24,
               ),
             ),
           ),
