@@ -42,9 +42,45 @@ class _OrdersPageState extends State<OrdersPage> {
   bool happyHour = false;
   WebSocketChannel? socket;
   bool terminalStatus = true;
+  int heartbeat = 0;
 
   Timer? _timer;
   WebSocket? websocket;
+
+  void _heartbeat() async {
+
+                                final Map<String, dynamic> request = {
+                                'barId': widget.barID,
+                                'bartenderId': widget.bartenderID,
+                              };
+                  
+                  
+                              const String url =
+                                  "http://34.230.32.169:8080/orders/heartbeat";
+                  
+                              if(connected) { 
+                                debugPrint("wss connected. attempting heartbeat");
+                                try {
+                                final response = await http.post(
+                                  Uri.parse(url),
+                                  headers: {'Content-Type': 'application/json'},
+                                  body: jsonEncode(request),
+                                );
+                  
+                                if (response.statusCode == 200) {
+                                  debugPrint("Successful heartbeat");
+                                }
+                              } catch (e) {
+                                debugPrint("Something went wrong with heartbeat");
+                              }
+                              }
+
+    // Call this function when sending initialize - DONE
+
+    // Call this function when reenabling websocket - done
+
+    // Only send if actually connected to websocket - done
+  }
 
   void claimTips() {
     bool isSubmitting = false; // Track button status within the dialog
@@ -341,8 +377,10 @@ class _OrdersPageState extends State<OrdersPage> {
     bartenderNumber = 0;
     bartenderCount = 1;
 
+    _heartbeat();
     // Start a timer to update the list every 30 seconds
     _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if( heartbeat++ >= 4 ) { heartbeat = 0; _heartbeat(); }
       _updateLists();
     });
 
@@ -1421,6 +1459,7 @@ class _OrdersPageState extends State<OrdersPage> {
         'bartenderID': widget.bartenderID
       };
       debugPrint("login");
+      _heartbeat();
       socket!.sink.add(jsonEncode(bartenderLogin));
 
       socket!.stream.listen(
