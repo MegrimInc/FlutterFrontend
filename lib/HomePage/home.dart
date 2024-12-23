@@ -1,5 +1,4 @@
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy/HomePage/bottomsheet.dart';
 import 'package:barzzy/HomePage/hometopicons.dart';
 import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/OrdersPage/websocket.dart';
@@ -50,21 +49,6 @@ class HomePageState extends State<HomePage> {
     });
   }
 
-  void showBottomSheet(
-    BuildContext context,
-    String barId,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.black,
-      builder: (BuildContext context) {
-        return BarBottomSheet(
-          barId: barId,
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -183,39 +167,42 @@ class HomePageState extends State<HomePage> {
           // TOP ROW WITH BAR NAME AND WAIT TIME
 
           if (barHistory.currentTappedBarId != null)
-            SizedBox(
-              height: 65.5,
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 17),
-                      child: Text(
-                        LocalDatabase.getBarById(barHistory.currentTappedBarId!)
-                                ?.name ??
-                            'No Name',
-                        style: const TextStyle(
-                          color: Colors.white,
+            Flexible(
+              flex: 2,
+              child: Column(
+                children: [
+                  const Spacer(),
+                  Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: Text(
+                            LocalDatabase.getBarById(barHistory.currentTappedBarId!)
+                                    ?.name ??
+                                'No Name',
+                            style: const TextStyle(
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 2),
-                      child: IconButton(
-                          icon: const Icon(Icons.notifications_active,
-                              size: 23.75, color: Colors.grey),
-                          onPressed: () {
-                            showBottomSheet(
-                                context, barHistory.currentTappedBarId!);
-                          }),
-                    ),
-                  ]),
+                        IconButton(
+                            icon: const Icon(Icons.more_horiz,
+                                size: 23.75, color: Colors.grey),
+                            onPressed: () {
+                                          
+                            }),
+                      ]),
+                        const Spacer(),
+                ],
+              ),
             ),
 
           // MAIN MOST RECENT BAR
 
           if (barHistory.currentTappedBarId != null)
             Expanded(
+              flex: 15,
               child: GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -271,43 +258,43 @@ class HomePageState extends State<HomePage> {
 
           //BOTTOM ROW WITH RECENT DRINKS AND WAIT TIME
 
+          //Spacer(flex: 1),
+
           if (barHistory.currentTappedBarId != null)
-            GestureDetector(
-              onVerticalDragEnd: (details) {
-                if (details.velocity.pixelsPerSecond.dy < -50) {
-                  showBottomSheet(context, barHistory.currentTappedBarId!);
-                }
-              },
-              child: Container(
-                decoration: const BoxDecoration(),
-                height: 65.5,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 17),
-                      child: Text(
-                        LocalDatabase.getBarById(barHistory.currentTappedBarId!)
-                                ?.openhours ??
-                            'No Hours Available',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          //fontWeight: FontWeight.bold,
+            Flexible(
+              flex: 2,
+              child: Column(
+                children: [
+                 const Spacer(), 
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 10),
+                        child: Text(
+                          LocalDatabase.getBarById(barHistory.currentTappedBarId!)
+                                  ?.openhours ??
+                              'No Hours Available',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            //fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.only(right: 17),
-                      child: Text(
-                        'Floor: 1 / 1',
-                        style: TextStyle(
-                          color: Colors.white,
-                          //fontWeight: FontWeight.bold
+                      const Padding(
+                        padding: EdgeInsets.only(right: 10),
+                        child: Text(
+                          'Floor: 1 / 1',
+                          style: TextStyle(
+                            color: Colors.white,
+                            //fontWeight: FontWeight.bold
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                  const Spacer(),
+                ],
               ),
             ),
 

@@ -279,6 +279,7 @@ Future<void> checkPaymentMethod(LocalDatabase localDatabase, int userId) async {
 
 
 
+
 class Barzzy extends StatelessWidget {
   final bool loggedInAlready;
   final bool isBar;

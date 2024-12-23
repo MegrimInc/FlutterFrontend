@@ -166,7 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             //const Spacer(flex: 3),
 
-            const SizedBox(height: 65),
+            const SizedBox(height: 50),
             // Profile Header
             const CircleAvatar(
               radius: 50,

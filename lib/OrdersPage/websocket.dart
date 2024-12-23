@@ -4,6 +4,7 @@ import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/Backend/customer_order.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:barzzy/Backend/user.dart';
+import 'package:barzzy/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -229,7 +230,6 @@ class Hierarchy extends ChangeNotifier {
       debugPrint('CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
       debugPrint('hierarchy localDatabase instance ID: ${localDatabase.hashCode}');
       setLoading(false);
-      //await sendGetRequest2();
       notifyListeners();
     } catch (e) {
       debugPrint('Error while creating CustomerOrder: $e');
@@ -238,10 +238,21 @@ class Hierarchy extends ChangeNotifier {
 
 
   // Method to handle update responses and send notifications
-  void _handleUpdateResponse(Map<String, dynamic> data) async {
-    // Call createOrderResponse to handle the data processing
-    _createOrderResponse(data);
+void _handleUpdateResponse(Map<String, dynamic> data) async {
+  // Call createOrderResponse to handle the data processing
+  _createOrderResponse(data);
+
+  try {
+    // Check if the status in the data is "delivered" or "canceled"
+    if (data['status'] == 'delivered' || data['status'] == 'canceled') {
+      debugPrint('Status is delivered or canceled. Triggering sendGetRequest2...');
+      await sendGetRequest2();
+      debugPrint('sendGetRequest2 triggered successfully.');
+    }
+  } catch (e) {
+    debugPrint('Error while handling update response: $e');
   }
+}
 
 
   void disconnect() {
