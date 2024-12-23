@@ -3,6 +3,7 @@
 import 'dart:async'; // Import the async package for Timer
 import 'dart:convert';
 import 'dart:io';
+import 'package:barzzy/Terminal/pos.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy/Backend/bartender_order.dart';
 import 'package:barzzy/Terminal/stationid.dart';
@@ -29,7 +30,7 @@ class _OrdersPageState extends State<OrdersPage> {
   List<BartenderOrder> allOrders = [];
   List<BartenderOrder> readyOrders = [];
   List<BartenderOrder> otherOrders = [];
-  int index = 0;
+  int index = 1;
   //TESTING VARIABLE
   bool testing = false;
   bool connected = false;
@@ -141,162 +142,181 @@ class _OrdersPageState extends State<OrdersPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                    // Cancel button
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(); // Close the dialog
-                    },
-                    style: TextButton.styleFrom(
-                      backgroundColor: Colors.red,
-                    ),
-                    child: const Text("Cancel",
-                        style: TextStyle(color: Colors.white)),
-                  ),
-
-                  const SizedBox(width: 100),
-                  TextButton(
-                    onPressed: isSubmitting
-                        ? null // Disable if currently submitting
-                        : () async {
-                            if (nameController.text.isNotEmpty) {
-                              debugPrint(
-                                  "Attempting to submit request for claimTips");
-                  
-                              final Map<String, dynamic> request = {
-                                'bartenderName': nameController.text,
-                                'bartenderEmail': emailController.text,
-                                'station': widget.bartenderID,
-                                'barId': widget.barID,
-                              };
-                  
-                              setState(() {
-                                isSubmitting = true; // Temporarily disable button
-                              });
-                  
-                              const String url =
-                                  "http://34.230.32.169:8080/orders/claim";
-                  
-                              try {
-                                final response = await http.post(
-                                  Uri.parse(url),
-                                  headers: {'Content-Type': 'application/json'},
-                                  body: jsonEncode(request),
-                                );
-                  
-                                if (response.statusCode == 200) {
-                                  debugPrint(
-                                      "Successfully submitted request for claimTips");
-                                  final responseData = jsonDecode(response.body);
-                  
-                                  final double claimedTips = double.parse(responseData
-                                      .toString()); // Assuming the key is 'claimedTips'
-                  
-                                  Navigator.of(context)
-                                      .pop(); // Close the input dialog
-                  
-                                  // Display success dialog
-                                  if (claimedTips == -1) {
-                                    showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return const AlertDialog(
-                                          title: Text(
-                                            "Oops!",
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                ),
-                                                  textAlign: TextAlign.center,
-                                          ),
-                                          content: Text(
-                                            "You have no tips available :(",
-                                            style: TextStyle(fontSize: 16),
-                                            textAlign: TextAlign.center,
-                                          ),
-                  
-                                        );
-                                      },
-                                    );
-                                  } else {
-                                    showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return AlertDialog(
-                                          title: const Text(
-                                            "Success",
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.bold),
-                                                 textAlign: TextAlign.center,
-                                          ),
-                                          content: Text(
-                                            "You have claimed \$${claimedTips.toStringAsFixed(2)} in tips!",
-                                            style: const TextStyle(fontSize: 16),
-                                             textAlign: TextAlign.center,
-                                          ),
-                                          actions: [
-                    Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center, // Center the buttons horizontally
-                        children: [
-                          TextButton(
-                                              onPressed: () =>
-                                                  Navigator.of(context).pop(),
-                                              child: const Text("Close",
-                                              style: TextStyle(color: Colors.black)
-                                              ),
-                                            ),
-                                            TextButton(
-                                              onPressed: () {
-                                                debugPrint("More Info clicked");
-                                                // Placeholder function for More Info
-                                                showServerSignatureInfo();
-                                              },
-                                              child: const Text("More Info", 
-                                              style: TextStyle(color: Colors.black)
-                                            ),
-                                            ),
-                        ],
+                      // Cancel button
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(); // Close the dialog
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        child: const Text("Cancel",
+                            style: TextStyle(color: Colors.white)),
                       ),
-                    ),
-                  ],
-                                        );
-                                      },
-                                    );
-                                  }
-                                } else {
+
+                      const SizedBox(width: 100),
+                      TextButton(
+                        onPressed: isSubmitting
+                            ? null // Disable if currently submitting
+                            : () async {
+                                if (nameController.text.isNotEmpty) {
                                   debugPrint(
-                                      "Failed to submit request. Status code: ${response.statusCode}");
-                  
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                          "Failed to submit claimTips request. Try again."),
-                                    ),
-                                  );
+                                      "Attempting to submit request for claimTips");
+
+                                  final Map<String, dynamic> request = {
+                                    'bartenderName': nameController.text,
+                                    'bartenderEmail': emailController.text,
+                                    'station': widget.bartenderID,
+                                    'barId': widget.barID,
+                                  };
+
+                                  setState(() {
+                                    isSubmitting =
+                                        true; // Temporarily disable button
+                                  });
+
+                                  const String url =
+                                      "http://34.230.32.169:8080/orders/claim";
+
+                                  try {
+                                    final response = await http.post(
+                                      Uri.parse(url),
+                                      headers: {
+                                        'Content-Type': 'application/json'
+                                      },
+                                      body: jsonEncode(request),
+                                    );
+
+                                    if (response.statusCode == 200) {
+                                      debugPrint(
+                                          "Successfully submitted request for claimTips");
+                                      final responseData =
+                                          jsonDecode(response.body);
+
+                                      final double claimedTips = double.parse(
+                                          responseData
+                                              .toString()); // Assuming the key is 'claimedTips'
+
+                                      Navigator.of(context)
+                                          .pop(); // Close the input dialog
+
+                                      // Display success dialog
+                                      if (claimedTips == -1) {
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return const AlertDialog(
+                                              title: Text(
+                                                "Oops!",
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              content: Text(
+                                                "You have no tips available :(",
+                                                style: TextStyle(fontSize: 16),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      } else {
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return AlertDialog(
+                                              title: const Text(
+                                                "Success",
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              content: Text(
+                                                "You have claimed \$${claimedTips.toStringAsFixed(2)} in tips!",
+                                                style: const TextStyle(
+                                                    fontSize: 16),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              actions: [
+                                                Center(
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center, // Center the buttons horizontally
+                                                    children: [
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.of(
+                                                                    context)
+                                                                .pop(),
+                                                        child: const Text(
+                                                            "Close",
+                                                            style: TextStyle(
+                                                                color: Colors
+                                                                    .black)),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          debugPrint(
+                                                              "More Info clicked");
+                                                          // Placeholder function for More Info
+                                                          showServerSignatureInfo();
+                                                        },
+                                                        child: const Text(
+                                                            "More Info",
+                                                            style: TextStyle(
+                                                                color: Colors
+                                                                    .black)),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      }
+                                    } else {
+                                      debugPrint(
+                                          "Failed to submit request. Status code: ${response.statusCode}");
+
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              "Failed to submit claimTips request. Try again."),
+                                        ),
+                                      );
+                                    }
+                                  } catch (error) {
+                                    debugPrint(
+                                        "Error during HTTP request: $error");
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            "An error occurred while submitting the request."),
+                                      ),
+                                    );
+                                  } finally {
+                                    setState(() {
+                                      isSubmitting =
+                                          false; // Re-enable button after HTTP request
+                                    });
+                                  }
                                 }
-                              } catch (error) {
-                                debugPrint("Error during HTTP request: $error");
-                  
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        "An error occurred while submitting the request."),
-                                  ),
-                                );
-                              } finally {
-                                setState(() {
-                                  isSubmitting =
-                                      false; // Re-enable button after HTTP request
-                                });
-                              }
-                            }
-                          },
-                    style: TextButton.styleFrom(
-                      backgroundColor: isSubmitting ? Colors.grey : Colors.green,
-                    ),
-                    child: const Text("Submit",
-                        style: TextStyle(color: Colors.white)),
+                              },
+                        style: TextButton.styleFrom(
+                          backgroundColor:
+                              isSubmitting ? Colors.grey : Colors.green,
+                        ),
+                        child: const Text("Submit",
+                            style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
                   ),
-                  ],),
                 )
               ],
             );
@@ -686,26 +706,26 @@ class _OrdersPageState extends State<OrdersPage> {
       }
 
       // Handle terminal disablement logic
-    if (disabledTerminal &&
-        !allOrders.any((order) => order.claimer == widget.bartenderID)) {
-      socket!.sink.add(
-        json.encode({
-          'action': 'dispose',
-          'barID': widget.barID,
-        }),
-      );
+      if (disabledTerminal &&
+          !allOrders.any((order) => order.claimer == widget.bartenderID)) {
+        socket!.sink.add(
+          json.encode({
+            'action': 'dispose',
+            'barID': widget.barID,
+          }),
+        );
 
-      if (socket != null) {
-        socket!.sink.close();
-        socket = null;
+        if (socket != null) {
+          socket!.sink.close();
+          socket = null;
+        }
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
+          (Route<dynamic> route) => false,
+        );
       }
-
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
-        (Route<dynamic> route) => false,
-      );
-    }
     });
 
     debugPrint("Finished _updateLists.");
@@ -1040,331 +1060,283 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (!connected) {
-      return const Center(
-        child: CircularProgressIndicator(
-          color: Colors.white,
-        ),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            IconButton(
-              icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
-              color: Colors.white,
-              onPressed: () {
-                if (!disabledTerminal) {
-                  debugPrint("disable");
-                  socket!.sink.add(
-                    json.encode({
-                      'action': 'disable',
-                      'bartenderID': widget.bartenderID.toString(),
-                      'barID': widget.barID,
-                    }),
-                  );
-                }
-              },
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize
-                      .min, // Keeps the Row compact around its children
-                  children: [
-                    Icon(
-                      Icons.circle,
-                      color: index == 0
-                          ? Colors.white
-                          : Colors.grey, // Blue for index 0, grey otherwise
-                      size: 12.0,
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.circle,
-                      color: index == 0
-                          ? Colors.grey
-                          : Colors.white, // Grey for index 0, blue otherwise
-                      size: 12.0,
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 20),
-                ElevatedButton(
-                  onPressed: claimTips,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                  ),
-                  child: const Text("Claim Tips"),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.filter_list),
-                  color: Colors.white,
-                  iconSize: 28,
-                  onPressed: _showFilterMenu,
-                ),
-              ],
-            ),
-          ],
-        ),
+Widget build(BuildContext context) {
+  if (!connected) {
+    return const Center(
+      child: CircularProgressIndicator(
+        color: Colors.white,
       ),
-      body: PageView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 2, // Number of pages (e.g., unpaid, paid)
-        onPageChanged: (pageIndex) {
-          setState(() {
-            index = pageIndex; // Update the index when the page changes
-            debugPrint("Page changed to: $index");
-          });
-        },
-        itemBuilder: (context, pageIndex) {
-          final displayList = pageIndex == 0 ? otherOrders : readyOrders;
-          return RefreshIndicator(
-            onRefresh: () async {
-              _refresh(); // Call your existing refresh method
+    );
+  }
+
+  return Scaffold(
+    backgroundColor: Colors.black,
+    appBar: AppBar(
+      backgroundColor: Colors.black,
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
+            color: Colors.white,
+            onPressed: () {
+              if (!disabledTerminal) {
+                debugPrint("disable");
+                socket!.sink.add(
+                  json.encode({
+                    'action': 'disable',
+                    'bartenderID': widget.bartenderID.toString(),
+                    'barID': widget.barID,
+                  }),
+                );
+              }
             },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: ListView.builder(
-                itemCount: displayList.length,
-                itemBuilder: (context, index) {
-                  final order = displayList[index];
-                  final tintColor = _getOrderTintColor(order);
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(3, (pageIndex) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Icon(
+                      Icons.circle,
+                      color: index == pageIndex ? Colors.white : Colors.grey,
+                      size: 12.0,
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(width: 20),
+              ElevatedButton(
+                onPressed: claimTips,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                ),
+                child: const Text("Claim Tips"),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                color: Colors.white,
+                iconSize: 28,
+                onPressed: _showFilterMenu,
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+    body: PageView.builder(
+      controller: PageController(initialPage: 1),
+      scrollDirection: Axis.horizontal,
+      itemCount: 3,
+      onPageChanged: (pageIndex) {
+        setState(() {
+          index = pageIndex;
+          debugPrint("Page changed to: $index");
+        });
+      },
+      itemBuilder: (context, pageIndex) {
+        if (pageIndex == 0) {
+          return const POSPage();
+        } else if (pageIndex == 1) {
+          return _buildOrderList(otherOrders);
+        } else {
+          return _buildOrderList(readyOrders);
+        }
+      },
+    ),
+  );
+}
 
-                  final unpaidDrinks = order.drinks.where((drink) {
-                    return drink.paymentType.toLowerCase() == "regular" &&
-                        !order.inAppPayments;
-                  }).toList();
+Widget _buildOrderList(List<BartenderOrder> displayList) {
+  return RefreshIndicator(
+    onRefresh: () async {
+      _refresh();
+    },
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: ListView.builder(
+        itemCount: displayList.length,
+        itemBuilder: (context, index) {
+          final order = displayList[index];
+          final tintColor = _getOrderTintColor(order);
 
-                  final paidDrinks = order.drinks.where((drink) {
-                    return !(drink.paymentType.toLowerCase() == "regular" &&
-                        !order.inAppPayments);
-                  }).toList();
+          final unpaidDrinks = order.drinks.where((drink) {
+            return drink.paymentType.toLowerCase() == "regular" &&
+                !order.inAppPayments;
+          }).toList();
 
-                  String formatDrink(DrinkOrder drink) {
-                    return drink.sizeType.isNotEmpty
-                        ? '${drink.drinkName} (${drink.sizeType}) x ${drink.quantity}'
-                        : '${drink.drinkName} x ${drink.quantity}';
-                  }
+          final paidDrinks = order.drinks.where((drink) {
+            return !(drink.paymentType.toLowerCase() == "regular" &&
+                !order.inAppPayments);
+          }).toList();
 
-                  return GestureDetector(
-                    onTap: () => _onOrderTap(order),
-                    child: Card(
-                      margin: const EdgeInsets.all(8.0),
-                      color: tintColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8.0),
+          String formatDrink(DrinkOrder drink) {
+            return drink.sizeType.isNotEmpty
+                ? '${drink.drinkName} (${drink.sizeType}) x ${drink.quantity}'
+                : '${drink.drinkName} x ${drink.quantity}';
+          }
+
+          return GestureDetector(
+            onTap: () => _onOrderTap(order),
+            child: Card(
+              margin: const EdgeInsets.all(8.0),
+              color: tintColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: Text(
+                        '*${order.name}',
+                        style: const TextStyle(
+                          fontSize: 21,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              offset: Offset(1.0, 1.0),
+                              blurRadius: 1.0,
+                            ),
+                          ],
+                        ),
+                        textAlign: TextAlign.start,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 10),
-                          Row(children: [
-                            Padding(
-                              padding: const EdgeInsets.only(left: 10),
-                              child: Text(
-                                '*${order.name}',
-                                style: const TextStyle(
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black,
-                                      offset: Offset(1.0, 1.0),
-                                      blurRadius: 1.0,
-                                    ),
-                                  ],
-                                ),
-                                textAlign: TextAlign.start,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                    ),
+                    const Spacer(),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Text(
+                        'Tip: \$${order.tip}',
+                        style: const TextStyle(
+                          fontSize: 21,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              offset: Offset(1.0, 1.0),
+                              blurRadius: 1.0,
                             ),
-                            const Spacer(),
-                            Padding(
-                              padding: const EdgeInsets.only(right: 10),
-                              child: Text(
-                                'Tip: \$${order.tip}',
-                                style: const TextStyle(
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.bold,
+                          ],
+                        ),
+                        textAlign: TextAlign.start,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ]),
+                  IntrinsicHeight(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          order.claimer.isEmpty
+                              ? const SpinKitThreeBounce(
                                   color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black,
-                                      offset: Offset(1.0, 1.0),
-                                      blurRadius: 1.0,
-                                    ),
-                                  ],
+                                  size: 30.0,
+                                )
+                              : Text(
+                                  '@${order.claimer}',
+                                  style: const TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                                textAlign: TextAlign.start,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ]),
-                          IntrinsicHeight(
-                            child: Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: <Widget>[
-                                  // Left side: Claimer or Loading Indicator
-                                  order.claimer.isEmpty
-                                      ? const SpinKitThreeBounce(
-                                          color: Colors.white,
-                                          size: 30.0,
-                                        )
-                                      : Text(
-                                          '@${order.claimer}',
-                                          style: const TextStyle(
-                                            fontSize: 30,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                            shadows: [
-                                              Shadow(
-                                                color: Colors.black,
-                                                offset: Offset(1.0, 1.0),
-                                                blurRadius: 1.0,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                  // Middle: Unpaid and Paid sections
-                                  Expanded(
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.center,
-                                            children: [
-                                              const Text(
-                                                'UNPAID ❗',
-                                                style: TextStyle(
-                                                  fontSize: 20,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                  shadows: [
-                                                    Shadow(
-                                                      color: Colors.black,
-                                                      offset: Offset(1.0, 1.0),
-                                                      blurRadius: 1.0,
-                                                    ),
-                                                  ],
-                                                ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                              ...unpaidDrinks.map((drink) =>
-                                                  Text(
-                                                    formatDrink(drink),
-                                                    style: const TextStyle(
-                                                      fontSize: 16,
-                                                      color: Colors.white,
-                                                      shadows: [
-                                                        Shadow(
-                                                          color: Colors.black,
-                                                          offset:
-                                                              Offset(1.0, 1.0),
-                                                          blurRadius: 1.0,
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    textAlign: TextAlign.center,
-                                                  )),
-                                            ],
-                                          ),
-                                        ),
-                                        Container(
-                                          width: 1,
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      const Text(
+                                        'UNPAID ❗',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
                                           color: Colors.white,
                                         ),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.center,
-                                            children: [
-                                              const Text(
-                                                'PAID ✔️',
-                                                style: TextStyle(
-                                                  fontSize: 20,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                  shadows: [
-                                                    Shadow(
-                                                      color: Colors.black,
-                                                      offset: Offset(1.0, 1.0),
-                                                      blurRadius: 1.0,
-                                                    ),
-                                                  ],
-                                                ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                              ...paidDrinks.map((drink) => Text(
-                                                    formatDrink(drink),
-                                                    style: const TextStyle(
-                                                      fontSize: 16,
-                                                      color: Colors.white,
-                                                      shadows: [
-                                                        Shadow(
-                                                          color: Colors.black,
-                                                          offset:
-                                                              Offset(1.0, 1.0),
-                                                          blurRadius: 1.0,
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    textAlign: TextAlign.center,
-                                                  )),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      ...unpaidDrinks.map((drink) => Text(
+                                            formatDrink(drink),
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.white,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          )),
+                                    ],
                                   ),
-
-                                  Text(
-                                    formatElapsedTime(order
-                                        .getAge()), // Use the getAge method
-                                    style: const TextStyle(
-                                      fontSize: 30,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black,
-                                          offset: Offset(1.0, 1.0),
-                                          blurRadius: 1.0,
+                                ),
+                                Container(
+                                  width: 1,
+                                  color: Colors.white,
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      const Text(
+                                        'PAID ✔️',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
                                         ),
-                                      ],
-                                    ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      ...paidDrinks.map((drink) => Text(
+                                            formatDrink(drink),
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.white,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          )),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            formatElapsedTime(order.getAge()),
+                            style: const TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
             ),
           );
         },
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _handleWebSocketError(error) {
     _showErrorSnackbar(error.toString());

@@ -31,33 +31,51 @@ class PickupPageState extends State<PickupPage> {
     super.didChangeDependencies();
     // Dynamically calculate the available screen height
     screenHeight = MediaQuery.of(context).size.height -
-        (3 * kToolbarHeight); // Subtract twice the AppBar height
+        (4 * kToolbarHeight); // Subtract twice the AppBar height
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        elevation: 2.0,
-        title: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: Colors.grey)),
-          ),
-          child: Text(
-            'Orders',
-            style: GoogleFonts.poppins(
+     appBar: AppBar(
+  backgroundColor: Colors.black,
+  surfaceTintColor: Colors.transparent,
+  centerTitle: true,
+  elevation: 2.0,
+  title: Consumer<Hierarchy>(
+    builder: (context, hierarchy, child) {
+      final totalOrders = hierarchy.getOrders().length;
+
+      // Determine the text based on the number of orders
+      final displayText = totalOrders == 0
+          ? '0' : '${currentPage + 1} / $totalOrders';
+
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'O R D E R S',
+            style: GoogleFonts.megrim(
+              fontWeight: FontWeight.w900,
               color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+              fontSize: 25,
             ),
           ),
-        ),
-      ),
+          const Spacer(),
+          Text(
+            displayText, // Display the appropriate text
+            style: GoogleFonts.poppins(
+              color: Colors.grey,
+              fontSize: 18,
+             fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      );
+    },
+  ),
+),
       body: Consumer<Hierarchy>(
         builder: (context, hierarchy, child) {
           if (!hierarchy.isConnected) {

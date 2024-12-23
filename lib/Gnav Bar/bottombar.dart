@@ -1,13 +1,13 @@
+import 'package:barzzy/Gnav%20Bar/scanner.dart';
 import 'package:barzzy/HomePage/home.dart';
 import 'package:barzzy/OrdersPage/pickuppage.dart';
 import 'package:barzzy/ProfilePage/profile.dart';
 import 'package:barzzy/BankPage/bank.dart';
 import 'package:flutter/material.dart';
-import 'package:google_nav_bar/google_nav_bar.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AuthPage extends StatefulWidget {
   final int selectedTab;
+
   const AuthPage({super.key, this.selectedTab = 0});
 
   @override
@@ -15,124 +15,144 @@ class AuthPage extends StatefulWidget {
 }
 
 class AuthPageState extends State<AuthPage> {
-  late int _selectedIndex;
+  late int _currentIndex;
 
-  late List<Widget> _pages;
+  final List<Widget> _screens = [
+    const HomePage(),
+    const PickupPage(),
+    Container(), // Placeholder for modal action
+    const BankPage(),
+    const ProfilePage(),
+  ];
 
   @override
   void initState() {
     super.initState();
-    _selectedIndex = widget.selectedTab;
-
-    _initPages();
+    _currentIndex = widget.selectedTab;
   }
 
-  void _initPages() {
-    _pages = [
-      const HomePage(),
-      const PickupPage(),
-      //const BankPage(),
-       BankPage(key: UniqueKey()),
-      const ProfilePage(),
-    ];
+  void _onTabTapped(int index) {
+    if (index == 2) {
+      showBottomSheet(context); // Trigger modal sheet for central button
+    } else {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+  void showBottomSheet(
+    BuildContext context,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.black,
+      builder: (BuildContext context) {
+        return const BlueToothScanner();
+      },
     );
   }
 
-  Widget _buildBottomNavigationBar() {
-    return Container(
+  @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: _screens[_currentIndex],
+    bottomNavigationBar: Container(
       decoration: const BoxDecoration(
-        color: Colors.black,
         border: Border(
-            top: BorderSide(
-                color: Color.fromARGB(255, 126, 126, 126), width: .08)),
+          top: BorderSide(
+            color: Colors.grey, // Border color
+            width: .05,         // Border width
+          ),
+        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 3),
-        child: GNav(
-          backgroundColor: Colors.black,
-          gap: 7.65,
-          color: Colors.grey,
-          activeColor: Colors.grey,
-          padding: const EdgeInsets.fromLTRB(20, 13, 20, 31),
-          selectedIndex: _selectedIndex,
-          onTabChange: (index) {
-            setState(() {
-              _selectedIndex = index;
-               if (index == 2) {
-                // Force BankPage to rebuild by assigning a new key
-                _pages[2] = BankPage(key: UniqueKey());
-              }
-            });
-          },
-          tabs: [
-            GButton(
-              icon: Icons.home_rounded,
-              iconSize: 25.75,
-              text: 'Home',
-              iconActiveColor: Colors.white,
-              textStyle: GoogleFonts.sourceSans3(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: _selectedIndex == 0
-                    ? const Color.fromARGB(255, 255, 255, 255)
-                    : Colors.grey,
+      child: BottomAppBar(
+        color: const Color.fromRGBO(0, 0, 0, 1),
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 6.0,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Left icons
+            IconButton(
+              icon: const Icon(Icons.home_rounded),
+              color: _currentIndex == 0 ? Colors.white : Colors.grey,
+              iconSize: 29,
+              onPressed: () => _onTabTapped(0),
+            ),
+            IconButton(
+              icon: const Icon(Icons.description),
+              color: _currentIndex == 1 ? Colors.white : Colors.grey,
+              iconSize: 24,
+              onPressed: () => _onTabTapped(1),
+            ),
+
+            GestureDetector(
+              onTap: () => showBottomSheet(context),
+              child: Container(
+                height: 75,
+                width: 75,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+      
+                      Colors.white,
+                      Colors.blue,
+                      //Colors.white
+                          
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Center(
+                  child: Container(
+                    height: 50, // Slightly smaller to create the border effect
+                    width: 50,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black, // Black inner circle
+                    ),
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [
+                      Colors.white,
+                      //Colors.blue,
+                      Colors.white
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(bounds),
+                      child: const Icon(
+                        Icons.bluetooth,
+                        size: 30,
+                        color: Colors.white, // Acts as a fallback
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
-            GButton(
-              icon: Icons.description,
-              iconSize: 22,
-              text: 'Orders',
-              iconActiveColor: Colors.white,
-              textStyle: GoogleFonts.sourceSans3(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: _selectedIndex == 1
-                    ? const Color.fromARGB(255, 255, 255, 255)
-                    : Colors.grey,
-              ),
+
+            // Right icons
+            IconButton(
+              icon: const Icon(Icons.attach_money),
+              color: _currentIndex == 3 ? Colors.white : Colors.grey,
+              iconSize: 29,
+              onPressed: () => _onTabTapped(3),
             ),
-            GButton(
-              icon: Icons.attach_money,
-              iconSize: 26,
-              text: 'Bank',
-              iconActiveColor: Colors.white,
-              textStyle: GoogleFonts.sourceSans3(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: _selectedIndex == 2
-                      ? const Color.fromARGB(255, 255, 255, 255)
-                      : Colors.grey),
-            ),
-            GButton(
-              icon: Icons.person,
-              iconSize: 25.88,
-              text: 'Me',
-              iconActiveColor: Colors.white,
-              textStyle: GoogleFonts.sourceSans3(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: _selectedIndex == 3
-                      ? const Color.fromARGB(255, 255, 255, 255)
-                      : Colors.grey),
+            IconButton(
+              icon: const Icon(Icons.person),
+              color: _currentIndex == 4 ? Colors.white : Colors.grey,
+              iconSize: 27,
+              onPressed: () => _onTabTapped(4),
             ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

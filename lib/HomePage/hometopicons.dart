@@ -30,7 +30,7 @@ class _MyTopIconsState extends State<MyTopIcons> {
               style: GoogleFonts.megrim(
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
-                fontSize: 24,
+                fontSize: 25,
               ),
             ),
           ),
@@ -52,28 +52,13 @@ class _MyTopIconsState extends State<MyTopIcons> {
               width: 40,
               child: Iconify(
                 HeroiconsSolid.search,
-                size: 24,
+                size: 25,
                 color: Colors.grey,
               ),
             ),
           ),
 
-          //const SizedBox(width: 15),
-
-          // //TAB BUTTON
-          // GestureDetector(
-          //   onTap: () {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(builder: (context) => const TabsPage()),
-          //     );
-          //   },
-          //   child: const Iconify(
-          //     HeroiconsSolid.clipboard_list,
-          //     size: 24.9,
-          //     color: Colors.grey,
-          //   ),
-          // ),
+        
         ],
       ),
     );

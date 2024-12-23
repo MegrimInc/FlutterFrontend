@@ -2,6 +2,7 @@ import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/MenuPage/menu.dart';
 import 'package:barzzy/main.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
@@ -37,6 +38,13 @@ class _BankPageState extends State<BankPage> {
   Widget build(BuildContext context) {
     final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
 
+    // Calculate the total points
+    final totalPoints = localDatabase
+        .getSearchableBarInfo()
+        .keys
+        .map((barId) => localDatabase.getPointsForBar(barId)?.points ?? 0)
+        .fold(0, (sum, points) => sum + points);
+
     final filteredBars = localDatabase.getSearchableBarInfo().entries.where(
       (entry) {
         final name = entry.value['name'] ?? '';
@@ -48,11 +56,59 @@ class _BankPageState extends State<BankPage> {
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            const SizedBox(height: 35),
-            _buildSearchBar(),
-            const SizedBox(height: 35),
+            // Header with "Bank" and Total Points
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'B A N K',
+                    style: GoogleFonts.megrim(
+                      color: Colors.white,
+                      fontSize: 25,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '$totalPoints pts',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white70,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 50),
+            // Search Bar
+            Container(
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.grey, // Color of the border
+                    width: .09, // Thickness of the border
+                  ),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: _buildSearchBar(),
+                  ),
+                  const SizedBox(height: 25),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 25),
+
+            // List of Bars
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _refreshData,
@@ -74,11 +130,9 @@ class _BankPageState extends State<BankPage> {
                       onTap: () {
                         Navigator.push(context, MaterialPageRoute(
                           builder: (context) {
-                            // Create a new Cart instance and initialize it
                             Cart cart = Cart();
-                            cart.setBar(barId); // Set the bar ID for the cart
+                            cart.setBar(barId);
 
-                            // Pass the newly created Cart instance to the MenuPage
                             return MenuPage(
                               barId: barId,
                               cart: cart,
@@ -86,20 +140,17 @@ class _BankPageState extends State<BankPage> {
                           },
                         ));
                       },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            radius: 30,
-                            backgroundColor: Colors.transparent,
-                            backgroundImage:
-                                CachedNetworkImageProvider(tagImage),
-                          ),
-                          title: Text(
-                            '$barName - $points pts',
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 18),
-                          ),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          radius: 30,
+                          backgroundColor: Colors.transparent,
+                          backgroundImage:
+                              CachedNetworkImageProvider(tagImage),
+                        ),
+                        title: Text(
+                          '$barName - $points pts',
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 18),
                         ),
                       ),
                     );
@@ -113,38 +164,42 @@ class _BankPageState extends State<BankPage> {
     );
   }
 
-  Widget _buildSearchBar() {
-    return Container(
-      height: 65,
-      decoration: const BoxDecoration(
-        color: Color.fromARGB(255, 0, 0, 0),
-        border: Border(
-          bottom: BorderSide(color: Colors.grey, width: 0.0415),
+ Widget _buildSearchBar() {
+  return Container(
+    height: 50,
+    decoration: BoxDecoration(
+      color: Colors.grey[900],
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: TextField(
+      controller: _searchController,
+      focusNode: _focusNode,
+      style: const TextStyle(color: Colors.white),
+      cursorColor: Colors.white,
+      textAlignVertical: TextAlignVertical.center, // Ensure vertical centering
+      decoration: InputDecoration(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+        border: InputBorder.none,
+        hintText: 'Search... ',
+        hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.clear, color: Colors.white),
+          onPressed: () {
+            setState(() {
+              _searchController.clear();
+              _searchText = '';
+            });
+          },
         ),
       ),
-      child: TextField(
-        controller: _searchController,
-        focusNode: _focusNode,
-        style: const TextStyle(color: Colors.white),
-        cursorColor: Colors.white,
-        textAlign: TextAlign.center,
-        textAlignVertical: TextAlignVertical.center,
-        decoration: InputDecoration(
-          filled: true,
-          border: InputBorder.none,
-          fillColor: const Color.fromARGB(255, 0, 0, 0),
-          hintText: _focusNode.hasFocus ? '' : 'Search... e.g. The Burg',
-          hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
-        ),
-        onChanged: (text) {
-          setState(() {
-            _searchText = text;
-          });
-        },
-        keyboardAppearance: Brightness.light,
-      ),
-    );
-  }
+      onChanged: (text) {
+        setState(() {
+          _searchText = text;
+        });
+      },
+    ),
+  );
+}
 
   @override
   void dispose() {
