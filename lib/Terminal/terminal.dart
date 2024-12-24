@@ -77,19 +77,19 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 
   void _heartbeat() async {
-    final Map<String, dynamic> request = {
-      'barId': "${widget.barID}",
-      'bartenderId': widget.bartenderID,
-    };
+  final url = Uri.parse(
+    'https://www.barzzy.site/newsignup/heartbeat?barId=${widget.barID}&bartenderId=${widget.bartenderID}'
+  );
 
-    const String url = "https://www.barzzy.site/newsignup/heartbeat";
+
 
     debugPrint("Attempting heartbeat");
     try {
       final response = await http.post(
-        Uri.parse(url),
+        url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(request),
+        // Possibly an empty body, or some other JSON if needed, but 'barId' and 'bartenderId'
+        // must appear in the query string to match the @RequestParam usage.
       );
       debugPrint("Response: ${response.body}");
 
