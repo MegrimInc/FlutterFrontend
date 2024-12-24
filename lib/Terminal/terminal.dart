@@ -3,6 +3,7 @@
 import 'dart:async'; // Import the async package for Timer
 import 'dart:convert';
 import 'dart:io';
+import 'package:barzzy/Backend/bar.dart';
 import 'package:barzzy/Terminal/pos.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy/Backend/bartender_order.dart';
@@ -15,11 +16,13 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 class OrdersPage extends StatefulWidget {
   final String bartenderID; // Bartender ID parameter
   final int barID;
+  final Bar bar;
 
   const OrdersPage({
     super.key,
     required this.bartenderID,
     required this.barID,
+    required this.bar,
   });
 
   @override
@@ -44,346 +47,8 @@ class _OrdersPageState extends State<OrdersPage> {
   WebSocketChannel? socket;
   bool terminalStatus = true;
   int heartbeat = 0;
-
   Timer? _timer;
   WebSocket? websocket;
-
-  void _heartbeat() async {
-
-                                final Map<String, dynamic> request = {
-                                'barId': widget.barID,
-                                'bartenderId': widget.bartenderID,
-                              };
-                  
-                  
-                              const String url =
-                                  "http://34.230.32.169:8080/orders/heartbeat";
-                  
-                              if(connected) { 
-                                debugPrint("wss connected. attempting heartbeat");
-                                try {
-                                final response = await http.post(
-                                  Uri.parse(url),
-                                  headers: {'Content-Type': 'application/json'},
-                                  body: jsonEncode(request),
-                                );
-                  
-                                if (response.statusCode == 200) {
-                                  debugPrint("Successful heartbeat");
-                                }
-                              } catch (e) {
-                                debugPrint("Something went wrong with heartbeat");
-                              }
-                              }
-
-    // Call this function when sending initialize - DONE
-
-    // Call this function when reenabling websocket - done
-
-    // Only send if actually connected to websocket - done
-  }
-
-  void claimTips() {
-    bool isSubmitting = false; // Track button status within the dialog
-
-    showDialog(
-      context: context,
-      barrierDismissible: false, // Prevent closing by tapping outside
-      builder: (BuildContext context) {
-        final TextEditingController nameController = TextEditingController();
-        final TextEditingController emailController = TextEditingController();
-
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              title: Text(
-                '           Claim tips for ${widget.bartenderID}            ',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController, // Assign the controller
-                    cursorColor: Colors.black, // Set the cursor color to black
-                    decoration: const InputDecoration(
-                      labelText: "Your Name",
-                      labelStyle: TextStyle(color: Colors.black),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(
-                            color:
-                                Colors.black), // Set underline color to black
-                      ),
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        // Enable Submit if name field is not empty
-                        isSubmitting = value.isEmpty;
-                      });
-                    },
-                  ),
-                  TextField(
-                    controller: emailController, // Assign the controller
-                    cursorColor: Colors.black, // Set the cursor color to black
-                    decoration: const InputDecoration(
-                      labelText: "Your Email (optional)",
-                      labelStyle: TextStyle(color: Colors.black),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(
-                            color:
-                                Colors.black), // Set underline color to black
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Cancel button
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(); // Close the dialog
-                        },
-                        style: TextButton.styleFrom(
-                          backgroundColor: Colors.red,
-                        ),
-                        child: const Text("Cancel",
-                            style: TextStyle(color: Colors.white)),
-                      ),
-
-                      const SizedBox(width: 100),
-                      TextButton(
-                        onPressed: isSubmitting
-                            ? null // Disable if currently submitting
-                            : () async {
-                                if (nameController.text.isNotEmpty) {
-                                  debugPrint(
-                                      "Attempting to submit request for claimTips");
-
-                                  final Map<String, dynamic> request = {
-                                    'bartenderName': nameController.text,
-                                    'bartenderEmail': emailController.text,
-                                    'station': widget.bartenderID,
-                                    'barId': widget.barID,
-                                  };
-
-                                  setState(() {
-                                    isSubmitting =
-                                        true; // Temporarily disable button
-                                  });
-
-                                  const String url =
-                                      "http://34.230.32.169:8080/orders/claim";
-
-                                  try {
-                                    final response = await http.post(
-                                      Uri.parse(url),
-                                      headers: {
-                                        'Content-Type': 'application/json'
-                                      },
-                                      body: jsonEncode(request),
-                                    );
-
-                                    if (response.statusCode == 200) {
-                                      debugPrint(
-                                          "Successfully submitted request for claimTips");
-                                      final responseData =
-                                          jsonDecode(response.body);
-
-                                      final double claimedTips = double.parse(
-                                          responseData
-                                              .toString()); // Assuming the key is 'claimedTips'
-
-                                      Navigator.of(context)
-                                          .pop(); // Close the input dialog
-
-                                      // Display success dialog
-                                      if (claimedTips == -1) {
-                                        showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return const AlertDialog(
-                                              title: Text(
-                                                "Oops!",
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                              content: Text(
-                                                "You have no tips available :(",
-                                                style: TextStyle(fontSize: 16),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      } else {
-                                        showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return AlertDialog(
-                                              title: const Text(
-                                                "Success",
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                              content: Text(
-                                                "You have claimed \$${claimedTips.toStringAsFixed(2)} in tips!",
-                                                style: const TextStyle(
-                                                    fontSize: 16),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                              actions: [
-                                                Center(
-                                                  child: Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .center, // Center the buttons horizontally
-                                                    children: [
-                                                      TextButton(
-                                                        onPressed: () =>
-                                                            Navigator.of(
-                                                                    context)
-                                                                .pop(),
-                                                        child: const Text(
-                                                            "Close",
-                                                            style: TextStyle(
-                                                                color: Colors
-                                                                    .black)),
-                                                      ),
-                                                      TextButton(
-                                                        onPressed: () {
-                                                          debugPrint(
-                                                              "More Info clicked");
-                                                          // Placeholder function for More Info
-                                                          showServerSignatureInfo();
-                                                        },
-                                                        child: const Text(
-                                                            "More Info",
-                                                            style: TextStyle(
-                                                                color: Colors
-                                                                    .black)),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        );
-                                      }
-                                    } else {
-                                      debugPrint(
-                                          "Failed to submit request. Status code: ${response.statusCode}");
-
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                              "Failed to submit claimTips request. Try again."),
-                                        ),
-                                      );
-                                    }
-                                  } catch (error) {
-                                    debugPrint(
-                                        "Error during HTTP request: $error");
-
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            "An error occurred while submitting the request."),
-                                      ),
-                                    );
-                                  } finally {
-                                    setState(() {
-                                      isSubmitting =
-                                          false; // Re-enable button after HTTP request
-                                    });
-                                  }
-                                }
-                              },
-                        style: TextButton.styleFrom(
-                          backgroundColor:
-                              isSubmitting ? Colors.grey : Colors.green,
-                        ),
-                        child: const Text("Submit",
-                            style: TextStyle(color: Colors.white)),
-                      ),
-                    ],
-                  ),
-                )
-              ],
-            );
-          },
-        );
-      },
-    ).then((_) {
-      // Reset the button state when the dialog is closed
-      setState(() {
-        isSubmitting = false;
-      });
-    });
-  }
-
-  void showServerSignatureInfo() {
-    const publicKey =
-        'MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAqePMRYC7/28i9reLDqd77xHIuwHOEGL6sTO6MCSSrjNBJHH6xJnDPs8is3VyfbyZc01ql6H7k565W30OnGgkxBgPdAcaSySLm+G7MMJlviiw2jY6UmuEdOkA5e21GrOikQG3aBz1TtK4fbDL8R7wlKkHEpBzFLDRXHOlK3qyFVph3osU1bTB6nd+z5PRfRbJsUiOOXKJjUa7hXYQI6Z4PwasHDEWBy2HycdIRLdjOmlSjnsX22LsOo0/FEtF2VQU+CiDNXs1evBxDIi9JRMwwETq8L6y5EhRb8LlxpgL5sLaCyzyecyK3NIWwPsLJgOcJWDByUg2FWp/72UYp4mIutraXgEIcO0F/y4FViw8c38DN7V7SX0cUdYJdmkzByApQg0/s8D1krdrE3oyrP2BQ/s7x0SDT4QYt1hoeyZ2PKK6zjLG7nXhbWljhl3fehXuWXRDhcbkPCU0kBu7jk2nYuhRroPy5Brxc5ylwSNZZsqQxZMTxxh/n/T7zWMrdYXSbYsGjk8U6/W1Dru1f8LBMnSQNI8h7uWlv3/uSxsinUg3xeMl9AqPVugH8yGR8EJlJLEftpGmmjNBPtSIN3VWldvJ6NFWT0cX9rxyfT5oxeNScSJPwKUTKfFxC/mzW8KoDGsJjlg+ULFZxv2+5kgfR4XwJ9UxqfM+s6Z1c1CmjFMCAwEAAQ==';
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('What is a Server Signature?'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                '''A digital signature (Server Signature) is a guarantee that only an entity with a private key (like Barzzy) can generate a message that validates for a public key. To verify:
-
-1. Copy our permanent public key:
-2. Go to https://8gwifi.org/RSAFunctionality?rsasignverifyfunctions=rsasignverifyfunctions&keysize=4096 or any other RSA signature verifier of your choice.
-3. Click "Verify Signature"
-4. Paste our permanent public key into the "Public Key" field. You may ignore the private key field. We do not intend to give this out.
-5. Paste the "Receipt Verification Plaintext" from your email receipt into the "ClearText Message" field.
-6. Paste the Digital Signature from your email receipt into the "Provide Signature Value (Base64)" field.
-7. Select the "SHA256withRSA" option below.
-8. You will see that page says "Signature Verification Passed". That means we generated the report!
-9. If it says signature verification failed, try some of the steps below.
-- Check options: Make sure you're on "Verify Signature", "4096 bit key", "SHA256withRSA"
-- Check fields: Make sure you put the public key in the public key field, and the plaintext in the plaintext, and so on.
-- Remove extra input: You may have inserted an extra line into the Plaintext Section. You should remove that if you may have put it in accidentally.
-- Other websites: Our signature is in BASE64, key format is PEM, charset is UTF-8, and our plaintext is STRING.
-- If it still says "Signature Verification Failed" then we didn't generate the report. You should inquire with the person who gave you the report as to where they got it from, because the report was clearly modified by a bad actor. If you got the report directly from emails ending with @barzzy.site, then send an inquiry to barzzy.llc@gmail.com explaining your issue, and forward the receipt email as well.''',
-              ),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () {
-                  Clipboard.setData(const ClipboardData(text: publicKey));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Public key copied to clipboard')),
-                  );
-                },
-                child: const Text('Click to Copy Public Key'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   @override
   void initState() {
@@ -400,270 +65,71 @@ class _OrdersPageState extends State<OrdersPage> {
     _heartbeat();
     // Start a timer to update the list every 30 seconds
     _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if( heartbeat++ >= 4 ) { heartbeat = 0; _heartbeat(); }
+      if (heartbeat++ >= 4) {
+        heartbeat = 0;
+        _heartbeat();
+      }
       _updateLists();
     });
 
     // Listen for the response from the server
+    _updateLists();
+  }
 
-    if (testing) {
-      allOrders = [
-        BartenderOrder(
-            '1',
-            101,
-            20.50,
-            3.00,
-            true,
-            [
-              DrinkOrder(1, 'Mojito', 'regular', 'single', 1),
-              DrinkOrder(2, 'Whiskey Sour', 'regular', 'double', 2),
-            ],
-            'claimed',
-            'A',
-            1678901234000,
-            'session_001',
-            'Unnamed'),
-        BartenderOrder(
-            '2',
-            102,
-            35.75,
-            5.25,
-            false,
-            [
-              DrinkOrder(3, 'Old Fashioned', 'regular', 'single', 1),
-              DrinkOrder(4, 'Martini', 'points', 'double', 1),
-            ],
-            'claimed',
-            'D',
-            1678901235000,
-            'session_002',
-            'Michael Bay'),
-        BartenderOrder(
-            '3',
-            103,
-            50.00,
-            8.00,
-            true,
-            [
-              DrinkOrder(5, 'Gin and Tonic', 'regular', 'single', 3),
-              DrinkOrder(6, 'Cosmopolitan', 'regular', 'double', 1),
-            ],
-            'open',
-            '',
-            1678901236000,
-            'session_003',
-            'John Doe'),
-        BartenderOrder(
-            '4',
-            104,
-            40.00,
-            6.50,
-            false,
-            [
-              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-            ],
-            'open',
-            '',
-            1678901237000,
-            'session_004',
-            'Kermit'),
-        BartenderOrder(
-            '5',
-            105,
-            30.00,
-            4.50,
-            true,
-            [
-              DrinkOrder(8, 'Daiquiri', 'regular', 'single', 1),
-              DrinkOrder(9, 'Negroni', 'regular', 'double', 1),
-            ],
-            'ready',
-            'X',
-            1678901238000,
-            'session_005',
-            'James bond'),
-        BartenderOrder(
-            '6',
-            106,
-            25.00,
-            3.75,
-            false,
-            [
-              DrinkOrder(10, 'Long Island Iced Tea', 'points', 'single', 2),
-            ],
-            'arrived',
-            'A',
-            1678901239000,
-            'session_006',
-            'Alexandria Oscasio-Cortez'),
-        BartenderOrder(
-            '7',
-            107,
-            60.00,
-            10.00,
-            true,
-            [
-              DrinkOrder(11, 'Screwdriver', 'regular', 'double', 1),
-              DrinkOrder(12, 'Pina Colada', 'points', '', 1),
-              DrinkOrder(13, 'Bloody Mary', 'regular', 'double', 1),
-            ],
-            'open',
-            '',
-            1678901240000,
-            'session_007',
-            'Donald Trump'),
-        BartenderOrder(
-            '1',
-            101,
-            20.50,
-            3.00,
-            true,
-            [
-              DrinkOrder(1, 'Mojito', 'regular', 'single', 1),
-              DrinkOrder(2, 'Whiskey Sour', 'regular', 'double', 2),
-            ],
-            'claimed',
-            'A',
-            1678901234000,
-            'session_001',
-            'here'),
-        BartenderOrder(
-            '2',
-            102,
-            35.75,
-            5.25,
-            false,
-            [
-              DrinkOrder(3, 'Old Fashioned', 'regular', 'single', 1),
-              DrinkOrder(4, 'Martini', 'points', 'double', 1),
-            ],
-            'claimed',
-            'D',
-            1678901235000,
-            'session_002',
-            'arrived at Bay'),
-        BartenderOrder(
-            '3',
-            103,
-            50.00,
-            8.00,
-            true,
-            [
-              DrinkOrder(5, 'Gin and Tonic', 'regular', 'single', 3),
-              DrinkOrder(6, 'Cosmopolitan', 'regular', 'double', 1),
-            ],
-            'open',
-            '',
-            1678901236000,
-            'session_003',
-            'look up'),
-        BartenderOrder(
-            '4',
-            104,
-            40.00,
-            6.50,
-            false,
-            [
-              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-              DrinkOrder(7, 'Margarita', 'points', 'double', 2),
-            ],
-            'open',
-            '',
-            1678901237000,
-            'session_004',
-            'give me '),
-        BartenderOrder(
-            '5',
-            105,
-            30.00,
-            4.50,
-            true,
-            [
-              DrinkOrder(8, 'Daiquiri', 'regular', 'single', 1),
-              DrinkOrder(9, 'Negroni', 'regular', 'double', 1),
-            ],
-            'ready',
-            'X',
-            1678901238000,
-            'session_005',
-            'imatthelocationsothatswhyyoushouldgiveittome'),
-        BartenderOrder(
-            '6',
-            106,
-            25.00,
-            3.75,
-            false,
-            [
-              DrinkOrder(10, 'Long Island Iced Tea', 'points', 'single', 2),
-            ],
-            'open',
-            '',
-            1678901239000,
-            'session_006',
-            'here'),
-        BartenderOrder(
-            '7',
-            107,
-            60.00,
-            10.00,
-            true,
-            [
-              DrinkOrder(11, 'Screwdriver', 'regular', 'double', 1),
-              DrinkOrder(12, 'Pina Colada', 'points', '', 1),
-              DrinkOrder(13, 'Bloody Mary', 'regular', 'double', 1),
-            ],
-            'open',
-            '',
-            1678901240000,
-            'session_007',
-            'here'),
-      ];
+  void _heartbeat() async {
+    final Map<String, dynamic> request = {
+      'barId': "${widget.barID}",
+      'bartenderId': widget.bartenderID,
+    };
+
+    const String url = "https://www.barzzy.site/newsignup/heartbeat";
+
+    debugPrint("Attempting heartbeat");
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(request),
+      );
+      debugPrint("Response: ${response.body}");
+
+      if (response.statusCode == 200) {
+        debugPrint("Successful heartbeat");
+      }
+    } catch (e) {
+      debugPrint("Something went wrong with heartbeat");
     }
 
-    _updateLists();
+    // Call this function when sending initialize - DONE
+
+    // Call this function when reenabling websocket - done
+
+    // Only send if actually connected to websocket - done
   }
 
   void _updateLists() {
     debugPrint("Starting _updateLists...");
 
-    debugPrint("All Orders:");
-    for (var order in allOrders) {
-      debugPrint(
-          "Order ID: ${order.userId}, Status: ${order.status}, Claimer: ${order.claimer}");
-    }
-
     setState(() {
       // Separate "arrived" orders
       List<BartenderOrder> arrivedOrders =
           allOrders.where((order) => order.status == 'arrived').toList();
-      debugPrint("Arrived Orders Count: ${arrivedOrders.length}");
 
       // Separate claimed and unclaimed orders, excluding "arrived" orders
       List<BartenderOrder> claimedOrders = allOrders
           .where((order) =>
               order.claimer == widget.bartenderID && order.status != 'arrived')
           .toList();
-      debugPrint("Claimed Orders Count: ${claimedOrders.length}");
 
       List<BartenderOrder> unclaimedOrders = allOrders
           .where((order) =>
               order.claimer != widget.bartenderID && order.status != 'arrived')
           .toList();
-      debugPrint("Unclaimed Orders Count: ${unclaimedOrders.length}");
 
       // Sort each category by timestamp (older first)
       arrivedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       claimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-      debugPrint("Sorted orders by timestamp.");
 
       // Combine sorted lists
       List<BartenderOrder> sortedOrders = [
@@ -671,20 +137,17 @@ class _OrdersPageState extends State<OrdersPage> {
         ...claimedOrders,
         ...unclaimedOrders,
       ];
-      debugPrint("Total Sorted Orders Count: ${sortedOrders.length}");
 
       // Precompute lists for "ready" and "other" orders
       readyOrders = sortedOrders
           .where(
               (order) => order.status == 'ready' || order.status == 'arrived')
           .toList();
-      debugPrint("Ready Orders Count: ${readyOrders.length}");
 
       otherOrders = sortedOrders
           .where(
               (order) => order.status != 'ready' || order.status == 'arrived')
           .toList();
-      debugPrint("Other Orders Count: ${otherOrders.length}");
 
       // Apply the "Your Orders Only" filter to both lists if filterUnique is true
       if (filterUnique) {
@@ -694,7 +157,6 @@ class _OrdersPageState extends State<OrdersPage> {
                 (order.claimer.isEmpty &&
                     (order.userId % bartenderCount) == bartenderNumber))
             .toList();
-        debugPrint("Filtered Ready Orders Count: ${readyOrders.length}");
 
         otherOrders = otherOrders
             .where((order) =>
@@ -702,7 +164,6 @@ class _OrdersPageState extends State<OrdersPage> {
                 (order.claimer.isEmpty &&
                     (order.userId % bartenderCount) == bartenderNumber))
             .toList();
-        debugPrint("Filtered Other Orders Count: ${otherOrders.length}");
       }
 
       // Handle terminal disablement logic
@@ -812,15 +273,6 @@ class _OrdersPageState extends State<OrdersPage> {
           ),
         ),
       ],
-    );
-  }
-
-  void _showErrorSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 3),
-      ),
     );
   }
 
@@ -1060,283 +512,594 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 
   @override
-Widget build(BuildContext context) {
-  if (!connected) {
-    return const Center(
-      child: CircularProgressIndicator(
-        color: Colors.white,
+  Widget build(BuildContext context) {
+    if (!connected) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Colors.white,
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
+              color: Colors.white,
+              onPressed: () {
+                if (!disabledTerminal) {
+                  debugPrint("disable");
+                  socket!.sink.add(
+                    json.encode({
+                      'action': 'disable',
+                      'bartenderID': widget.bartenderID.toString(),
+                      'barID': widget.barID,
+                    }),
+                  );
+                }
+              },
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(3, (pageIndex) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Icon(
+                        Icons.circle,
+                        color: index == pageIndex ? Colors.white : Colors.grey,
+                        size: 12.0,
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(width: 20),
+                ElevatedButton(
+                  onPressed: claimTips,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: const Text("Claim Tips"),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.filter_list),
+                  color: Colors.white,
+                  iconSize: 28,
+                  onPressed: _showFilterMenu,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      body: PageView.builder(
+        controller: PageController(initialPage: 1),
+        scrollDirection: Axis.horizontal,
+        itemCount: 3,
+        onPageChanged: (pageIndex) {
+          setState(() {
+            index = pageIndex;
+            debugPrint("Page changed to: $index");
+          });
+        },
+        itemBuilder: (context, pageIndex) {
+          if (pageIndex == 0) {
+            return const POSPage();
+          } else if (pageIndex == 1) {
+            return _buildOrderList(otherOrders);
+          } else {
+            return _buildOrderList(readyOrders);
+          }
+        },
       ),
     );
   }
 
-  return Scaffold(
-    backgroundColor: Colors.black,
-    appBar: AppBar(
-      backgroundColor: Colors.black,
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
-            color: Colors.white,
-            onPressed: () {
-              if (!disabledTerminal) {
-                debugPrint("disable");
-                socket!.sink.add(
-                  json.encode({
-                    'action': 'disable',
-                    'bartenderID': widget.bartenderID.toString(),
-                    'barID': widget.barID,
-                  }),
-                );
-              }
-            },
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(3, (pageIndex) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: Icon(
-                      Icons.circle,
-                      color: index == pageIndex ? Colors.white : Colors.grey,
-                      size: 12.0,
-                    ),
-                  );
-                }),
-              ),
-              const SizedBox(width: 20),
-              ElevatedButton(
-                onPressed: claimTips,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
+  Widget _buildOrderList(List<BartenderOrder> displayList) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        _refresh();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: ListView.builder(
+          itemCount: displayList.length,
+          itemBuilder: (context, index) {
+            final order = displayList[index];
+            final tintColor = _getOrderTintColor(order);
+
+            final unpaidDrinks = order.drinks.where((drink) {
+              return drink.paymentType.toLowerCase() == "regular" &&
+                  !order.inAppPayments;
+            }).toList();
+
+            final paidDrinks = order.drinks.where((drink) {
+              return !(drink.paymentType.toLowerCase() == "regular" &&
+                  !order.inAppPayments);
+            }).toList();
+
+            String formatDrink(DrinkOrder drink) {
+              return drink.sizeType.isNotEmpty
+                  ? '${drink.drinkName} (${drink.sizeType}) x ${drink.quantity}'
+                  : '${drink.drinkName} x ${drink.quantity}';
+            }
+
+            return GestureDetector(
+              onTap: () => _onOrderTap(order),
+              child: Card(
+                margin: const EdgeInsets.all(8.0),
+                color: tintColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.0),
                 ),
-                child: const Text("Claim Tips"),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.filter_list),
-                color: Colors.white,
-                iconSize: 28,
-                onPressed: _showFilterMenu,
-              ),
-            ],
-          ),
-        ],
-      ),
-    ),
-    body: PageView.builder(
-      controller: PageController(initialPage: 1),
-      scrollDirection: Axis.horizontal,
-      itemCount: 3,
-      onPageChanged: (pageIndex) {
-        setState(() {
-          index = pageIndex;
-          debugPrint("Page changed to: $index");
-        });
-      },
-      itemBuilder: (context, pageIndex) {
-        if (pageIndex == 0) {
-          return const POSPage();
-        } else if (pageIndex == 1) {
-          return _buildOrderList(otherOrders);
-        } else {
-          return _buildOrderList(readyOrders);
-        }
-      },
-    ),
-  );
-}
-
-Widget _buildOrderList(List<BartenderOrder> displayList) {
-  return RefreshIndicator(
-    onRefresh: () async {
-      _refresh();
-    },
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: ListView.builder(
-        itemCount: displayList.length,
-        itemBuilder: (context, index) {
-          final order = displayList[index];
-          final tintColor = _getOrderTintColor(order);
-
-          final unpaidDrinks = order.drinks.where((drink) {
-            return drink.paymentType.toLowerCase() == "regular" &&
-                !order.inAppPayments;
-          }).toList();
-
-          final paidDrinks = order.drinks.where((drink) {
-            return !(drink.paymentType.toLowerCase() == "regular" &&
-                !order.inAppPayments);
-          }).toList();
-
-          String formatDrink(DrinkOrder drink) {
-            return drink.sizeType.isNotEmpty
-                ? '${drink.drinkName} (${drink.sizeType}) x ${drink.quantity}'
-                : '${drink.drinkName} x ${drink.quantity}';
-          }
-
-          return GestureDetector(
-            onTap: () => _onOrderTap(order),
-            child: Card(
-              margin: const EdgeInsets.all(8.0),
-              color: tintColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-                  Row(children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 10),
-                      child: Text(
-                        '*${order.name}',
-                        style: const TextStyle(
-                          fontSize: 21,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black,
-                              offset: Offset(1.0, 1.0),
-                              blurRadius: 1.0,
-                            ),
-                          ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 10),
+                    Row(children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 10),
+                        child: Text(
+                          '*${order.name}',
+                          style: const TextStyle(
+                            fontSize: 21,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black,
+                                offset: Offset(1.0, 1.0),
+                                blurRadius: 1.0,
+                              ),
+                            ],
+                          ),
+                          textAlign: TextAlign.start,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        textAlign: TextAlign.start,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    const Spacer(),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: Text(
-                        'Tip: \$${order.tip}',
-                        style: const TextStyle(
-                          fontSize: 21,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black,
-                              offset: Offset(1.0, 1.0),
-                              blurRadius: 1.0,
-                            ),
-                          ],
+                      const Spacer(),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Text(
+                          'Tip: \$${order.tip}',
+                          style: const TextStyle(
+                            fontSize: 21,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black,
+                                offset: Offset(1.0, 1.0),
+                                blurRadius: 1.0,
+                              ),
+                            ],
+                          ),
+                          textAlign: TextAlign.start,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        textAlign: TextAlign.start,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ]),
-                  IntrinsicHeight(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          order.claimer.isEmpty
-                              ? const SpinKitThreeBounce(
-                                  color: Colors.white,
-                                  size: 30.0,
-                                )
-                              : Text(
-                                  '@${order.claimer}',
-                                  style: const TextStyle(
-                                    fontSize: 30,
-                                    fontWeight: FontWeight.bold,
+                    ]),
+                    IntrinsicHeight(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: <Widget>[
+                            order.claimer.isEmpty
+                                ? const SpinKitThreeBounce(
+                                    color: Colors.white,
+                                    size: 30.0,
+                                  )
+                                : Text(
+                                    '@${order.claimer}',
+                                    style: const TextStyle(
+                                      fontSize: 30,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        const Text(
+                                          'UNPAID ❗',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        ...unpaidDrinks.map((drink) => Text(
+                                              formatDrink(drink),
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.white,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            )),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 1,
                                     color: Colors.white,
                                   ),
-                                ),
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      const Text(
-                                        'UNPAID ❗',
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        const Text(
+                                          'PAID ✔️',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                          textAlign: TextAlign.center,
                                         ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      ...unpaidDrinks.map((drink) => Text(
-                                            formatDrink(drink),
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          )),
-                                    ],
+                                        ...paidDrinks.map((drink) => Text(
+                                              formatDrink(drink),
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.white,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            )),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                Container(
-                                  width: 1,
-                                  color: Colors.white,
-                                ),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      const Text(
-                                        'PAID ✔️',
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      ...paidDrinks.map((drink) => Text(
-                                            formatDrink(drink),
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          )),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                          Text(
-                            formatElapsedTime(order.getAge()),
-                            style: const TextStyle(
-                              fontSize: 30,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                            Text(
+                              formatElapsedTime(order.getAge()),
+                              style: const TextStyle(
+                                fontSize: 30,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void claimTips() {
+    bool isSubmitting = false; // Track button status within the dialog
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent closing by tapping outside
+      builder: (BuildContext context) {
+        final TextEditingController nameController = TextEditingController();
+        final TextEditingController emailController = TextEditingController();
+
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: Text(
+                '           Claim tips for ${widget.bartenderID}            ',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController, // Assign the controller
+                    cursorColor: Colors.black, // Set the cursor color to black
+                    decoration: const InputDecoration(
+                      labelText: "Your Name",
+                      labelStyle: TextStyle(color: Colors.black),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                            color:
+                                Colors.black), // Set underline color to black
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        // Enable Submit if name field is not empty
+                        isSubmitting = value.isEmpty;
+                      });
+                    },
+                  ),
+                  TextField(
+                    controller: emailController, // Assign the controller
+                    cursorColor: Colors.black, // Set the cursor color to black
+                    decoration: const InputDecoration(
+                      labelText: "Your Email (optional)",
+                      labelStyle: TextStyle(color: Colors.black),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                            color:
+                                Colors.black), // Set underline color to black
                       ),
                     ),
                   ),
                 ],
               ),
+              actions: [
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Cancel button
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(); // Close the dialog
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        child: const Text("Cancel",
+                            style: TextStyle(color: Colors.white)),
+                      ),
+
+                      const SizedBox(width: 100),
+                      TextButton(
+                        onPressed: isSubmitting
+                            ? null // Disable if currently submitting
+                            : () async {
+                                if (nameController.text.isNotEmpty) {
+                                  debugPrint(
+                                      "Attempting to submit request for claimTips");
+
+                                  final Map<String, dynamic> request = {
+                                    'bartenderName': nameController.text,
+                                    'bartenderEmail': emailController.text,
+                                    'station': widget.bartenderID,
+                                    'barId': widget.barID,
+                                  };
+
+                                  setState(() {
+                                    isSubmitting =
+                                        true; // Temporarily disable button
+                                  });
+
+                                  const String url =
+                                      "https://www.barzzy.site/orders/claim";
+
+                                  try {
+                                    final response = await http.post(
+                                      Uri.parse(url),
+                                      headers: {
+                                        'Content-Type': 'application/json'
+                                      },
+                                      body: jsonEncode(request),
+                                    );
+
+                                    if (response.statusCode == 200) {
+                                      debugPrint(
+                                          "Successfully submitted request for claimTips");
+                                      final responseData =
+                                          jsonDecode(response.body);
+
+                                      final double claimedTips = double.parse(
+                                          responseData
+                                              .toString()); // Assuming the key is 'claimedTips'
+
+                                      Navigator.of(context)
+                                          .pop(); // Close the input dialog
+
+                                      // Display success dialog
+                                      if (claimedTips == -1) {
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return const AlertDialog(
+                                              title: Text(
+                                                "Oops!",
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              content: Text(
+                                                "You have no tips available :(",
+                                                style: TextStyle(fontSize: 16),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      } else {
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return AlertDialog(
+                                              title: const Text(
+                                                "Success",
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              content: Text(
+                                                "You have claimed \$${claimedTips.toStringAsFixed(2)} in tips!",
+                                                style: const TextStyle(
+                                                    fontSize: 16),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              actions: [
+                                                Center(
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center, // Center the buttons horizontally
+                                                    children: [
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.of(
+                                                                    context)
+                                                                .pop(),
+                                                        child: const Text(
+                                                            "Close",
+                                                            style: TextStyle(
+                                                                color: Colors
+                                                                    .black)),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          debugPrint(
+                                                              "More Info clicked");
+                                                          // Placeholder function for More Info
+                                                          showServerSignatureInfo();
+                                                        },
+                                                        child: const Text(
+                                                            "More Info",
+                                                            style: TextStyle(
+                                                                color: Colors
+                                                                    .black)),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      }
+                                    } else {
+                                      debugPrint(
+                                          "Failed to submit request. Status code: ${response.statusCode}");
+
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              "Failed to submit claimTips request. Try again."),
+                                        ),
+                                      );
+                                    }
+                                  } catch (error) {
+                                    debugPrint(
+                                        "Error during HTTP request: $error");
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            "An error occurred while submitting the request."),
+                                      ),
+                                    );
+                                  } finally {
+                                    setState(() {
+                                      isSubmitting =
+                                          false; // Re-enable button after HTTP request
+                                    });
+                                  }
+                                }
+                              },
+                        style: TextButton.styleFrom(
+                          backgroundColor:
+                              isSubmitting ? Colors.grey : Colors.green,
+                        ),
+                        child: const Text("Submit",
+                            style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            );
+          },
+        );
+      },
+    ).then((_) {
+      // Reset the button state when the dialog is closed
+      setState(() {
+        isSubmitting = false;
+      });
+    });
+  }
+
+  void showServerSignatureInfo() {
+    const publicKey =
+        'MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAqePMRYC7/28i9reLDqd77xHIuwHOEGL6sTO6MCSSrjNBJHH6xJnDPs8is3VyfbyZc01ql6H7k565W30OnGgkxBgPdAcaSySLm+G7MMJlviiw2jY6UmuEdOkA5e21GrOikQG3aBz1TtK4fbDL8R7wlKkHEpBzFLDRXHOlK3qyFVph3osU1bTB6nd+z5PRfRbJsUiOOXKJjUa7hXYQI6Z4PwasHDEWBy2HycdIRLdjOmlSjnsX22LsOo0/FEtF2VQU+CiDNXs1evBxDIi9JRMwwETq8L6y5EhRb8LlxpgL5sLaCyzyecyK3NIWwPsLJgOcJWDByUg2FWp/72UYp4mIutraXgEIcO0F/y4FViw8c38DN7V7SX0cUdYJdmkzByApQg0/s8D1krdrE3oyrP2BQ/s7x0SDT4QYt1hoeyZ2PKK6zjLG7nXhbWljhl3fehXuWXRDhcbkPCU0kBu7jk2nYuhRroPy5Brxc5ylwSNZZsqQxZMTxxh/n/T7zWMrdYXSbYsGjk8U6/W1Dru1f8LBMnSQNI8h7uWlv3/uSxsinUg3xeMl9AqPVugH8yGR8EJlJLEftpGmmjNBPtSIN3VWldvJ6NFWT0cX9rxyfT5oxeNScSJPwKUTKfFxC/mzW8KoDGsJjlg+ULFZxv2+5kgfR4XwJ9UxqfM+s6Z1c1CmjFMCAwEAAQ==';
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('What is a Server Signature?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '''A digital signature (Server Signature) is a guarantee that only an entity with a private key (like Barzzy) can generate a message that validates for a public key. To verify:
+
+1. Copy our permanent public key:
+2. Go to https://8gwifi.org/RSAFunctionality?rsasignverifyfunctions=rsasignverifyfunctions&keysize=4096 or any other RSA signature verifier of your choice.
+3. Click "Verify Signature"
+4. Paste our permanent public key into the "Public Key" field. You may ignore the private key field. We do not intend to give this out.
+5. Paste the "Receipt Verification Plaintext" from your email receipt into the "ClearText Message" field.
+6. Paste the Digital Signature from your email receipt into the "Provide Signature Value (Base64)" field.
+7. Select the "SHA256withRSA" option below.
+8. You will see that page says "Signature Verification Passed". That means we generated the report!
+9. If it says signature verification failed, try some of the steps below.
+- Check options: Make sure you're on "Verify Signature", "4096 bit key", "SHA256withRSA"
+- Check fields: Make sure you put the public key in the public key field, and the plaintext in the plaintext, and so on.
+- Remove extra input: You may have inserted an extra line into the Plaintext Section. You should remove that if you may have put it in accidentally.
+- Other websites: Our signature is in BASE64, key format is PEM, charset is UTF-8, and our plaintext is STRING.
+- If it still says "Signature Verification Failed" then we didn't generate the report. You should inquire with the person who gave you the report as to where they got it from, because the report was clearly modified by a bad actor. If you got the report directly from emails ending with @barzzy.site, then send an inquiry to barzzy.llc@gmail.com explaining your issue, and forward the receipt email as well.''',
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  Clipboard.setData(const ClipboardData(text: publicKey));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Public key copied to clipboard')),
+                  );
+                },
+                child: const Text('Click to Copy Public Key'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
             ),
-          );
-        },
+          ],
+        );
+      },
+    );
+  }
+
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 3),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _handleWebSocketError(error) {
     _showErrorSnackbar(error.toString());
@@ -1430,7 +1193,7 @@ Widget _buildOrderList(List<BartenderOrder> displayList) {
         'barID': widget.barID,
         'bartenderID': widget.bartenderID
       };
-      debugPrint("login");
+      debugPrint("bartender id login");
       _heartbeat();
       socket!.sink.add(jsonEncode(bartenderLogin));
 

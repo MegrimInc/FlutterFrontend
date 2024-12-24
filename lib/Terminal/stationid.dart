@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:barzzy/Backend/bar.dart';
+import 'package:http/http.dart' as http;
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:barzzy/Terminal/terminal.dart';
@@ -13,6 +16,39 @@ class BartenderIDScreen extends StatefulWidget {
 
 class BartenderIDScreenState extends State<BartenderIDScreen> {
   final ValueNotifier<String?> selectedLetter = ValueNotifier<String?>(null);
+  Bar? bar;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchBarDetails();
+  }
+
+
+  Future<void> fetchBarDetails() async {
+  const String baseUrl = "https://www.barzzy.site"; // Define URL locally
+
+  try {
+    final loginData = LoginCache();
+    final negativeBarID = await loginData.getUID();
+    final barId = -1 * negativeBarID;
+
+    final response = await http.get(Uri.parse("$baseUrl/bars/$barId"));
+    debugPrint("Received response with status code: ${response.statusCode}");
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      debugPrint("Response data: $data");
+
+     bar = Bar.fromJson(data);
+      debugPrint("Parsed bar object: $bar");
+    } else {
+      throw Exception("Failed to fetch bar details. Status: ${response.statusCode}");
+    }
+  } catch (error) {
+    debugPrint("Error fetching bar details: $error");
+  }
+}
 
   Future<void> _handleSubmit(String bartenderID) async {
     final loginData = LoginCache();
@@ -26,6 +62,7 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
         builder: (context) => OrdersPage(
           bartenderID: bartenderID.toUpperCase(),
           barID: barId,
+          bar: bar!
         ),
       ),
       (Route<dynamic> route) => false, // Remove all previous routes

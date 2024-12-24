@@ -54,40 +54,57 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> startScanning() async {
-    if (isScanning.value) return;
+ Future<void> startScanning() async {
+  if (isScanning.value) return;
 
-    await FlutterBluePlus.adapterState
-        .where((state) => state == BluetoothAdapterState.on)
-        .first;
+  // Ensure Bluetooth is ON before starting the scan
+  await FlutterBluePlus.adapterState
+      .where((state) => state == BluetoothAdapterState.on)
+      .first;
 
-    isScanning.value = true;
-    scanResults.value = []; // Clear previous results
+  isScanning.value = true;
 
-    scanSubscription = FlutterBluePlus.onScanResults.listen((results) {
-      // Convert the string UUID into a Guid object
-      final serviceGuid = Guid("25f7d535-ab21-4ae5-8d0b-adfae5609005");
+  final Map<String, ScanResult> currentResults = {}; // Key by device remoteId
 
-      // Filter results based on the service UUID
-      final filteredResults = results.where((result) {
-        final advertisedServiceUuids = result.advertisementData.serviceUuids;
+   final targetServiceUuid = Guid("25f7d535-ab21-4ae5-8d0b-adfae5609005");
+                                
+  // Listen to scan results
+  scanSubscription = FlutterBluePlus.onScanResults.listen((results) {
+    // Temporary map to hold filtered results by service UUID
+    final Map<String, ScanResult> filteredResults = {};
 
-        // Check if serviceGuid is in advertisedServiceUuids
-        return advertisedServiceUuids.contains(serviceGuid);
-      }).toList();
+    for (final result in results) {
+      // Check if the target service UUID is in the advertisement data
+      final advertisedServiceUuids = result.advertisementData.serviceUuids;
+      if (advertisedServiceUuids.contains(targetServiceUuid)) {
+        filteredResults[result.device.remoteId.toString()] = result;
+      }
+    }
 
-      // Deduplicate and sort by signal strength (RSSI)
-      filteredResults.sort((a, b) => b.rssi.compareTo(a.rssi));
-      scanResults.value = filteredResults;
-    });
-    // Start scanning without a timeout
-    FlutterBluePlus.startScan().catchError((error) {
-      debugPrint("Error starting scan: $error");
-      isScanning.value = false; // Reset scanning state in case of an error
-    });
+    // Update current results with new filtered results
+    for (final entry in filteredResults.entries) {
+      currentResults[entry.key] = entry.value;
+    }
 
-    debugPrint("Scanning started indefinitely with service UUID filtering.");
-  }
+    // Remove devices that are no longer being scanned
+    final scannedDeviceIds = filteredResults.keys.toSet();
+    currentResults.removeWhere((id, _) => !scannedDeviceIds.contains(id));
+
+    // Update the scanResults ValueNotifier with the sorted list
+    scanResults.value = currentResults.values.toList()
+      ..sort((a, b) => b.rssi.compareTo(a.rssi)); // Sort by signal strength
+
+    debugPrint("Updated scan results: ${scanResults.value.length} devices found.");
+  });
+
+  // Start scanning without a timeout
+  FlutterBluePlus.startScan().catchError((error) {
+    debugPrint("Error starting scan: $error");
+    isScanning.value = false; // Reset scanning state in case of an error
+  });
+
+  debugPrint("Scanning started indefinitely with live result updates and service filtering.");
+}
 
   @override
   Widget build(BuildContext context) {
@@ -194,73 +211,51 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
     );
   }
 
-  Future<void> attemptPairing(ScanResult result) async {
-    try {
-      final device = result.device;
+ Future<void> attemptPairing(ScanResult result) async {
+  const String readCharacteristicUuid = "d973f26e-8da7-4a96-a7d6-cbca9f2d9a7e";
+  const String writeCharacteristicUuid = "6b18f42b-c62d-4e5c-9d4c-53c90b4ad5cc";
+  
+  try {
+    final device = result.device;
 
-      debugPrint(
-          'Attempting to connect to ${device.platformName} (${device.remoteId})');
+    debugPrint('Attempting to connect to ${device.platformName} (${device.remoteId})');
+    await device.connect(timeout: const Duration(seconds: 10));
+    debugPrint('Connected to ${device.platformName}');
 
-      // Connect to the device
-      await device.connect(timeout: const Duration(seconds: 10));
-      debugPrint('Connected to ${device.platformName}');
+    // Discover services and characteristics
+    final services = await device.discoverServices();
 
-      // Discover services and characteristics
-      List<BluetoothService> services = await device.discoverServices();
+    // Attempt to find the read and write characteristics
+    for (final service in services) {
+      for (final characteristic in service.characteristics) {
+        if (characteristic.uuid.toString() == readCharacteristicUuid) {
+          debugPrint('Matched read characteristic UUID: ${characteristic.uuid}');
+          // Read the secretCode
+          final response = await characteristic.read();
+          final secretCode = int.parse(String.fromCharCodes(response));
+          debugPrint('Received secretCode: $secretCode');
 
-      // Extract the advertised data and parse the digit
-      final advertisedData = result.advertisementData.serviceData;
-      if (advertisedData.isEmpty) {
-        debugPrint('No service data found in advertisement');
-        await device.disconnect();
-        return;
-      }
+          // Calculate expected value
+          const multiplier = 73490286;
+          final expectedValue = secretCode * multiplier;
 
-      int? digit;
-      for (var data in advertisedData.values) {
-        if (data.isNotEmpty) {
-          digit = data.first; // Example: Take the first byte as the digit
-          break;
-        }
-      }
-
-      if (digit == null) {
-        debugPrint('No valid digit found in service data');
-        await device.disconnect();
-        return;
-      }
-
-      const multiplier = 73490286; // Replace with your 4-digit multiplier
-      final calculatedValue = digit * multiplier;
-      debugPrint('Calculated value: $calculatedValue');
-
-      // Write the calculated value to the broadcasting device
-      bool writeSuccessful = false;
-      for (BluetoothService service in services) {
-        for (BluetoothCharacteristic characteristic
-            in service.characteristics) {
-          if (characteristic.properties.write) {
-            final dataToSend = calculatedValue.toString().codeUnits;
-            await characteristic.write(dataToSend, withoutResponse: true);
-            debugPrint('Sent calculated value: $calculatedValue');
-            writeSuccessful = true;
-            break;
+          // Find the write characteristic and send the expected value
+          for (final char in service.characteristics) {
+            if (char.uuid.toString() == writeCharacteristicUuid) {
+              await char.write(expectedValue.toString().codeUnits, withoutResponse: true);
+              debugPrint('Sent expectedValue: $expectedValue');
+              return; // Exit after successful write
+            }
           }
+          debugPrint('Write characteristic not found.');
         }
-        if (writeSuccessful) break;
       }
-
-      if (!writeSuccessful) {
-        debugPrint('No writable characteristic found');
-      }
-
-      // Disconnect from the device
-      await device.disconnect();
-      debugPrint('Disconnected from ${device.platformName}');
-    } catch (e) {
-      debugPrint('Error during pairing or communication: $e');
     }
+    debugPrint('Read characteristic not found.');
+  } catch (e) {
+    debugPrint('Error during pairing: $e');
   }
+}
 
   void stopScanning() {
     try {
