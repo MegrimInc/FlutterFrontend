@@ -38,44 +38,44 @@ class PickupPageState extends State<PickupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-     appBar: AppBar(
-  backgroundColor: Colors.black,
-  surfaceTintColor: Colors.transparent,
-  centerTitle: true,
-  elevation: 2.0,
-  title: Consumer<Hierarchy>(
-    builder: (context, hierarchy, child) {
-      final totalOrders = hierarchy.getOrders().length;
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: true,
+        elevation: 2.0,
+        title: Consumer<Hierarchy>(
+          builder: (context, hierarchy, child) {
+            final totalOrders = hierarchy.getOrders().length;
 
-      // Determine the text based on the number of orders
-      final displayText = totalOrders == 0
-          ? '0' : '${currentPage + 1} / $totalOrders';
+            // Determine the text based on the number of orders
+            final displayText =
+                totalOrders == 0 ? '0' : '${currentPage + 1} / $totalOrders';
 
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'O R D E R S',
-            style: GoogleFonts.megrim(
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              fontSize: 25,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            displayText, // Display the appropriate text
-            style: GoogleFonts.poppins(
-              color: Colors.grey,
-              fontSize: 18,
-             fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      );
-    },
-  ),
-),
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'O R D E R S',
+                  style: GoogleFonts.megrim(
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    fontSize: 25,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  displayText, // Display the appropriate text
+                  style: GoogleFonts.poppins(
+                    color: Colors.grey,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
       body: Consumer<Hierarchy>(
         builder: (context, hierarchy, child) {
           if (!hierarchy.isConnected) {
@@ -108,6 +108,11 @@ class PickupPageState extends State<PickupPage> {
                           scrollDirection: Axis.vertical,
                           physics: const AlwaysScrollableScrollPhysics(),
                           itemCount: orders.length,
+                          onPageChanged: (index) {
+                            setState(() {
+                              currentPage = index;
+                            });
+                          },
                           itemBuilder: (context, verticalIndex) {
                             final barId = orders[verticalIndex];
                             final order = localDatabase.getOrderForBar(barId);

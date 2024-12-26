@@ -1,12 +1,19 @@
 import 'dart:math';
 import 'dart:typed_data';
+import 'package:barzzy/Terminal/inventory.dart';
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 class POSPage extends StatefulWidget {
-  const POSPage({super.key});
+    final Inventory inv;
+
+  const POSPage({
+    super.key,
+    required this.inv,
+    });
 
   @override
   State<POSPage> createState() => _POSPageState();
@@ -16,13 +23,18 @@ class _POSPageState extends State<POSPage> {
   final PeripheralManager _peripheralManager = PeripheralManager();
   final Uuid uuid = const Uuid();
   static const String serviceUuid = "25f7d535-ab21-4ae5-8d0b-adfae5609005";
-  static const String readCharacteristicUuid = "d973f26e-8da7-4a96-a7d6-cbca9f2d9a7e";
-  static const String writeCharacteristicUuid = "6b18f42b-c62d-4e5c-9d4c-53c90b4ad5cc";
-  static const String notifyCharacteristicUuid = "2c21e1f7-35a6-469b-900f-c8e3b788e355";
-  final int secretCode = Random().nextInt(9000) + 1000; // Generate a 4-digit number
+  static const String readCharacteristicUuid =
+      "d973f26e-8da7-4a96-a7d6-cbca9f2d9a7e";
+  static const String writeCharacteristicUuid =
+      "6b18f42b-c62d-4e5c-9d4c-53c90b4ad5cc";
+  static const String notifyCharacteristicUuid =
+      "2c21e1f7-35a6-469b-900f-c8e3b788e355";
+  final int secretCode =
+      Random().nextInt(9000) + 1000; // Generate a 4-digit number
   final int multiplier = 73490286; // Fixed multiplier
   late final int expectedValue; // Calculated product
-  final ValueNotifier<String> statusNotifier = ValueNotifier("Waiting for connection...");
+  final ValueNotifier<String> statusNotifier =
+      ValueNotifier("Waiting for connection...");
   late GATTService _gattService;
   bool isBroadcasting = false;
   bool isDeviceConnected = false;
@@ -32,7 +44,7 @@ class _POSPageState extends State<POSPage> {
     super.initState();
     debugPrint("POSPage widget initialized.");
     expectedValue = secretCode * multiplier;
-     debugPrint("Expected value (secretCode * multiplier): $expectedValue");
+    debugPrint("Expected value (secretCode * multiplier): $expectedValue");
     _requestPermissions();
   }
 
@@ -51,76 +63,79 @@ class _POSPageState extends State<POSPage> {
     } else {
       debugPrint("Location permission already granted.");
     }
-     _initializePeripheral();
+    _initializePeripheral();
   }
 
- Future<void> _initializePeripheral() async {
-  debugPrint("Initializing peripheral...");
+  Future<void> _initializePeripheral() async {
+    debugPrint("Initializing peripheral...");
 
-  // Convert predefined characteristic UUIDs to byte arrays
-  final serviceUuidBytes = _stringToBytes(serviceUuid);
-  final readCharacteristicBytes = _stringToBytes(readCharacteristicUuid);
-  final writeCharacteristicBytes = _stringToBytes(writeCharacteristicUuid);
-  final notifyCharacteristicBytes = _stringToBytes(notifyCharacteristicUuid);
+    // Convert predefined characteristic UUIDs to byte arrays
+    final serviceUuidBytes = _stringToBytes(serviceUuid);
+    final readCharacteristicBytes = _stringToBytes(readCharacteristicUuid);
+    final writeCharacteristicBytes = _stringToBytes(writeCharacteristicUuid);
+    final notifyCharacteristicBytes = _stringToBytes(notifyCharacteristicUuid);
 
+    // Define the read characteristic
+    final readCharacteristic = GATTCharacteristic.mutable(
+        uuid: UUID(readCharacteristicBytes),
+        properties: [GATTCharacteristicProperty.read],
+        permissions: [GATTCharacteristicPermission.read],
+        descriptors: []);
 
-  // Define the read characteristic
-  final readCharacteristic = GATTCharacteristic.mutable(
-    uuid: UUID(readCharacteristicBytes),
-    properties: [GATTCharacteristicProperty.read],
-    permissions: [GATTCharacteristicPermission.read],
-     descriptors: []
-  );
+    // // Define the write characteristic
+    final writeCharacteristic = GATTCharacteristic.mutable(
+      uuid: UUID(writeCharacteristicBytes),
+      properties: [GATTCharacteristicProperty.write],
+      permissions: [GATTCharacteristicPermission.write],
+      descriptors: [],
+    );
 
+    // // Define the notify characteristic
+    final notifyCharacteristic = GATTCharacteristic.mutable(
+      uuid: UUID(notifyCharacteristicBytes),
+      properties: [GATTCharacteristicProperty.notify],
+      permissions: [GATTCharacteristicPermission.read],
+      descriptors: [],
+    );
 
-  // // Define the write characteristic
-  final writeCharacteristic = GATTCharacteristic.mutable(
-    uuid: UUID(writeCharacteristicBytes),
-    properties: [GATTCharacteristicProperty.write],
-    permissions: [GATTCharacteristicPermission.write],
-    descriptors: [],
-  );
+    // Define the GATT service
+    _gattService = GATTService(
+      uuid: UUID(serviceUuidBytes),
+      characteristics: [
+        readCharacteristic,
+        writeCharacteristic,
+        notifyCharacteristic
+      ],
+      isPrimary: true,
+      includedServices: [],
+    );
 
-  // // Define the notify characteristic
-  final notifyCharacteristic = GATTCharacteristic.mutable(
-    uuid: UUID(notifyCharacteristicBytes),
-    properties: [GATTCharacteristicProperty.notify],
-    permissions: [GATTCharacteristicPermission.read],
-    descriptors: [],
-  );
+    debugPrint("GATT service created.");
 
-  // Define the GATT service
-  _gattService = GATTService(
-    uuid: UUID(serviceUuidBytes),
-    characteristics: [readCharacteristic, writeCharacteristic, notifyCharacteristic],
-    isPrimary: true,
-    includedServices: [],
-  );
+    debugPrint("GATT service created with UUID: ${_gattService.uuid}");
+    debugPrint(
+        "Service characteristics: ${_gattService.characteristics.map((c) => c.uuid.toString()).join(', ')}");
 
-  debugPrint("GATT service created.");
+    try {
+      await _peripheralManager.addService(_gattService);
+      debugPrint("GATT service added successfully");
+    } catch (error) {
+      debugPrint("Error adding GATT service: $error");
+      return;
+    }
 
-  debugPrint("GATT service created with UUID: ${_gattService.uuid}");
-  debugPrint("Service characteristics: ${_gattService.characteristics.map((c) => c.uuid.toString()).join(', ')}");
+    // Set up listeners for read and write requests
+    _peripheralManager.characteristicReadRequested.listen(_onReadRequest);
+    _peripheralManager.characteristicWriteRequested.listen(_onWriteRequest);
 
-  try {
-    await _peripheralManager.addService(_gattService);
-    debugPrint("GATT service added successfully");
-  } catch (error) {
-    debugPrint("Error adding GATT service: $error");
-    return;
+    debugPrint("Peripheral initialization completed");
   }
 
-  // Set up listeners for read and write requests
-  _peripheralManager.characteristicReadRequested.listen(_onReadRequest);
-  _peripheralManager.characteristicWriteRequested.listen(_onWriteRequest);
-
-  debugPrint("Peripheral initialization completed");
-}
-
-  
-  Future<void> _onReadRequest(GATTCharacteristicReadRequestedEventArgs args) async {
+  Future<void> _onReadRequest(
+      GATTCharacteristicReadRequestedEventArgs args) async {
     debugPrint("Read request received.");
-    final responseValue = Uint8List.fromList(secretCode.toString().codeUnits); // Send secretCode
+    final responseValue =
+        Uint8List.fromList(secretCode.toString().codeUnits); // Send secretCode
     await _peripheralManager.respondReadRequestWithValue(
       args.request,
       value: responseValue,
@@ -128,7 +143,8 @@ class _POSPageState extends State<POSPage> {
     debugPrint("Read request responded with: $secretCode");
   }
 
-  Future<void> _onWriteRequest(GATTCharacteristicWriteRequestedEventArgs args) async {
+  Future<void> _onWriteRequest(
+      GATTCharacteristicWriteRequestedEventArgs args) async {
     final writtenValue = args.request.value;
     debugPrint("Write request received with value: $writtenValue");
 
@@ -182,15 +198,24 @@ class _POSPageState extends State<POSPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ElevatedButton(
-        onPressed: _toggleAdvertising,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isBroadcasting ? Colors.red : Colors.green,
-        ),
-        child: Text(
-          isBroadcasting ? "Stop Advertising" : "Start Advertising",
-          style: const TextStyle(color: Colors.white),
+    return ChangeNotifierProvider.value(
+      value: widget.inv,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Center(
+              child: ElevatedButton(
+                onPressed: _toggleAdvertising,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isBroadcasting ? Colors.red : Colors.green,
+                ),
+                child: Text(
+                  isBroadcasting ? "Stop Advertising" : "Start Advertising",
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,66 +1,48 @@
 import 'dart:convert';
 
+import 'package:barzzy/Backend/bar.dart';
 import 'package:barzzy/Backend/categories.dart';
 import 'package:barzzy/Backend/drink.dart';
-import 'package:barzzy/Backend/localdatabase.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-class User extends ChangeNotifier {
-  static final User _singleton = User._internal();
-   
+class Inventory extends ChangeNotifier {
+  late Bar bar;
+  final Map<String, Drink> _drinks = {};
+  late Categories categories;
 
-  factory User() {
-    return _singleton;
+  Future<void> fetchBarDetails(int barId) async {
+    const String baseUrl = "https://www.barzzy.site"; // Define URL locally
+    try {
+      // final loginData = LoginCache();
+      // final negativeBarID = await loginData.getUID();
+      // final barId = -1 * negativeBarID;
+
+      final response = await http.get(Uri.parse("$baseUrl/bars/$barId"));
+      debugPrint("Received response with status code: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        debugPrint("Response data: $data");
+
+        setBar(Bar.fromJson(data));
+        debugPrint("Parsed bar object: $bar");
+
+        await fetchTagsAndDrinks(barId);
+
+      } else {
+        throw Exception(
+            "Failed to fetch bar details. Status: ${response.statusCode}");
+      }
+    } catch (error) {
+      debugPrint("Error fetching bar details: $error");
+    }
   }
 
-
-  User._internal();
-
-  // Map to store Categories objects with barId as the key
-  Map<String, Categories> categoriesMap = {};
-
-  void addCategories(String barId, Categories categories) {
-    categoriesMap[barId] = categories;
-    notifyListeners();
-  }
-
-  // Check if Categories already exist for a barId
-  bool categoriesExistForBar(String barId) {
-    return categoriesMap.containsKey(barId);
-  }
-
-  // Method to get full list of drink IDs for a bar by categories
-  Map<String, List<int>> getFullDrinkListByBarId(String barId) {
-    final categories = categoriesMap[barId];
-    return {
-      'tag172': categories?.tag172 ?? [],
-      'tag173': categories?.tag173 ?? [],
-      'tag174': categories?.tag174 ?? [],
-      'tag175': categories?.tag175 ?? [],
-      'tag176': categories?.tag176 ?? [],
-      'tag177': categories?.tag177 ?? [],
-      'tag178': categories?.tag178 ?? [],
-      'tag179': categories?.tag179 ?? [],
-      'tag181': categories?.tag181 ?? [],
-      'tag183': categories?.tag183 ?? [],
-      'tag184': categories?.tag184 ?? [],
-      'tag186': categories?.tag186 ?? [],
-    };
-  }
-
-
-  Future<void> fetchTagsAndDrinks(String barId) async {
+  Future<void> fetchTagsAndDrinks(int barId) async {
     debugPrint('Fetching drinks for bar ID: $barId');
 
-    LocalDatabase localDatabase = LocalDatabase();
-
-    if (categoriesExistForBar(barId)) {
-      debugPrint('Categories already exist for bar $barId, skipping fetch.');
-      return; // Exit early if categories already exist
-    }
-
+    // KEEP PLEASE
     // ignore: unused_local_variable
     List<MapEntry<int, String>> tagList = [
       const MapEntry(179, 'lager'),
@@ -78,7 +60,7 @@ class User extends ChangeNotifier {
     ];
 
     Categories categories = Categories(
-      barId: int.parse(barId),
+      barId: barId,
       tag172: [],
       tag173: [],
       tag174: [],
@@ -107,24 +89,10 @@ class User extends ChangeNotifier {
 
         if (drinkId != null) {
           Drink drink = Drink.fromJson(drinkJson);
-          localDatabase.addDrink(drink);
-         
-          debugPrint('Drink with ID: ${drink.id} added to LocalDatabase.');
 
-          if (drink.image.isNotEmpty) {
-            final cachedImage = CachedNetworkImageProvider(drink.image);
-            cachedImage.resolve(const ImageConfiguration()).addListener(
-                  ImageStreamListener(
-                    (ImageInfo image, bool synchronousCall) {
-                      debugPrint(
-                          'Drink image successfully cached: ${drink.image}');
-                    },
-                    onError: (dynamic exception, StackTrace? stackTrace) {
-                      debugPrint('Failed to cache drink image: $exception');
-                    },
-                  ),
-                );
-          }
+          addDrink(drink);
+
+          debugPrint('Drink with ID: ${drink.id} added to Inventory.');
 
           for (String tagId in drink.tagId) {
             //debugPrint('Processing tagId: $tagId for drinkId: $drinkId');
@@ -173,15 +141,31 @@ class User extends ChangeNotifier {
           debugPrint('Warning: Drink ID is null for drink: $drinkJson');
         }
       }
-
-      addCategories(barId, categories);
-      debugPrint(
-          'Drinks for bar $barId have been categorized and added to the User object.');
+      setCategories(categories);
+      debugPrint('Drinks for bar $barId have been categorized and added to the Inventory object.');
     } else {
       debugPrint(
           'Failed to load drinks for bar $barId. Status code: ${response.statusCode}');
     }
 
     debugPrint('Finished processing drinks for barId: $barId');
+  }
+
+  // Setters for the bar object
+  void setBar(Bar newBar) {
+    bar = newBar;
+    notifyListeners(); // Notify listeners of the change
+  }
+
+  // Add a drink to the map
+  void addDrink(Drink drink) {
+    _drinks[drink.id] = drink;
+    notifyListeners(); // Notify listeners of the change
+  }
+
+  // Set categories object
+  void setCategories(Categories categories) {
+    categories = categories;
+    notifyListeners(); // Notify listeners of the change
   }
 }

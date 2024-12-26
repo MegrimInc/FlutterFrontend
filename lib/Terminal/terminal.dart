@@ -3,38 +3,37 @@
 import 'dart:async'; // Import the async package for Timer
 import 'dart:convert';
 import 'dart:io';
-import 'package:barzzy/Backend/bar.dart';
+import 'package:barzzy/Terminal/inventory.dart';
 import 'package:barzzy/Terminal/pos.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy/Backend/bartender_order.dart';
-import 'package:barzzy/Terminal/stationid.dart';
+import 'package:barzzy/Terminal/select.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:provider/provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-class OrdersPage extends StatefulWidget {
+class Terminal extends StatefulWidget {
   final String bartenderID; // Bartender ID parameter
   final int barID;
-  final Bar bar;
+  final Inventory inv;
 
-  const OrdersPage({
-    super.key,
-    required this.bartenderID,
-    required this.barID,
-    required this.bar,
-  });
+  const Terminal(
+      {super.key,
+      required this.bartenderID,
+      required this.barID,
+      required this.inv});
 
   @override
-  State<OrdersPage> createState() => _OrdersPageState();
+  State<Terminal> createState() => _OrdersPageState();
 }
 
-class _OrdersPageState extends State<OrdersPage> {
+class _OrdersPageState extends State<Terminal> {
   List<BartenderOrder> allOrders = [];
   List<BartenderOrder> readyOrders = [];
   List<BartenderOrder> otherOrders = [];
   int index = 1;
-  //TESTING VARIABLE
   bool testing = false;
   bool connected = false;
   int _reconnectAttempts = 0;
@@ -72,7 +71,19 @@ class _OrdersPageState extends State<OrdersPage> {
     _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
       _updateLists();
     });
+
+     _setUpInventory();
   }
+
+  Future<void> _setUpInventory() async {
+  try {
+    debugPrint("Setting up inventory...");
+    await widget.inv.fetchBarDetails(widget.barID); // Call fetchBarDetails with the barID
+    debugPrint("Inventory setup completed successfully.");
+  } catch (e) {
+    debugPrint("Error setting up inventory: $e");
+  }
+}
 
   void _heartbeat() async {
     final url = Uri.parse(
@@ -516,85 +527,91 @@ class _OrdersPageState extends State<OrdersPage> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            IconButton(
-              icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
-              color: Colors.white,
-              onPressed: () {
-                if (!disabledTerminal) {
-                  debugPrint("disable");
-                  socket!.sink.add(
-                    json.encode({
-                      'action': 'disable',
-                      'bartenderID': widget.bartenderID.toString(),
-                      'barID': widget.barID,
-                    }),
-                  );
-                }
-              },
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
+    return ChangeNotifierProvider.value(
+      value: widget.inv,
+      child: SafeArea(
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                IconButton(
+                  icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
+                  color: Colors.white,
+                  onPressed: () {
+                    if (!disabledTerminal) {
+                      debugPrint("disable");
+                      socket!.sink.add(
+                        json.encode({
+                          'action': 'disable',
+                          'bartenderID': widget.bartenderID.toString(),
+                          'barID': widget.barID,
+                        }),
+                      );
+                    }
+                  },
+                ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: List.generate(3, (pageIndex) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      child: Icon(
-                        Icons.circle,
-                        color: index == pageIndex ? Colors.white : Colors.grey,
-                        size: 12.0,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(3, (pageIndex) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                          child: Icon(
+                            Icons.circle,
+                            color:
+                                index == pageIndex ? Colors.white : Colors.grey,
+                            size: 12.0,
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(width: 20),
+                    ElevatedButton(
+                      onPressed: claimTips,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
                       ),
-                    );
-                  }),
-                ),
-                const SizedBox(width: 20),
-                ElevatedButton(
-                  onPressed: claimTips,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                  ),
-                  child: const Text("Claim Tips"),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.filter_list),
-                  color: Colors.white,
-                  iconSize: 28,
-                  onPressed: _showFilterMenu,
+                      child: const Text("Claim Tips"),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.filter_list),
+                      color: Colors.white,
+                      iconSize: 28,
+                      onPressed: _showFilterMenu,
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
+          body: PageView.builder(
+            controller: PageController(initialPage: 1),
+            scrollDirection: Axis.horizontal,
+            itemCount: 3,
+            onPageChanged: (pageIndex) {
+              setState(() {
+                index = pageIndex;
+                debugPrint("Page changed to: $index");
+              });
+            },
+            itemBuilder: (context, pageIndex) {
+              if (pageIndex == 0) {
+                return POSPage(inv: widget.inv);
+              } else if (pageIndex == 1) {
+                return _buildOrderList(otherOrders);
+              } else {
+                return _buildOrderList(readyOrders);
+              }
+            },
+          ),
         ),
-      ),
-      body: PageView.builder(
-        controller: PageController(initialPage: 1),
-        scrollDirection: Axis.horizontal,
-        itemCount: 3,
-        onPageChanged: (pageIndex) {
-          setState(() {
-            index = pageIndex;
-            debugPrint("Page changed to: $index");
-          });
-        },
-        itemBuilder: (context, pageIndex) {
-          if (pageIndex == 0) {
-            return const POSPage();
-          } else if (pageIndex == 1) {
-            return _buildOrderList(otherOrders);
-          } else {
-            return _buildOrderList(readyOrders);
-          }
-        },
       ),
     );
   }

@@ -97,11 +97,8 @@ class HomePageState extends State<HomePage> {
                         onTap: () {
                           Navigator.push(context, MaterialPageRoute(
                             builder: (context) {
-                              // Create a new Cart instance and initialize it
                               Cart cart = Cart();
                               cart.setBar(barId); // Set the bar ID for the cart
-
-                              // Pass the newly created Cart instance to the MenuPage
                               return MenuPage(
                                 barId: barId,
                                 cart: cart,

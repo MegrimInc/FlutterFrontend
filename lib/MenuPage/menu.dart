@@ -3,7 +3,7 @@
 import 'package:another_flushbar/flushbar.dart';
 import 'package:barzzy/Backend/barhistory.dart';
 import 'package:barzzy/Backend/drink.dart';
-import 'package:barzzy/Backend/user.dart';
+import 'package:barzzy/Backend/preferences.dart';
 import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/MenuPage/drinkfeed.dart';
 import 'package:barzzy/main.dart';
@@ -48,7 +48,6 @@ class MenuPageState extends State<MenuPage>
   void initState() {
     super.initState();
 
-    debugPrint('are you working or nah');
     _fetchBarData();
 
     if (widget.drinkId != null) {

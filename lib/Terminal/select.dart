@@ -1,8 +1,6 @@
-import 'dart:convert';
-import 'package:barzzy/Backend/bar.dart';
-import 'package:http/http.dart' as http;
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/AuthPages/components/toggle.dart';
+import 'package:barzzy/Terminal/inventory.dart';
 import 'package:barzzy/Terminal/terminal.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,53 +14,28 @@ class BartenderIDScreen extends StatefulWidget {
 
 class BartenderIDScreenState extends State<BartenderIDScreen> {
   final ValueNotifier<String?> selectedLetter = ValueNotifier<String?>(null);
-  Bar? bar;
+ 
 
   @override
   void initState() {
     super.initState();
-    fetchBarDetails();
   }
 
-
-  Future<void> fetchBarDetails() async {
-  const String baseUrl = "https://www.barzzy.site"; // Define URL locally
-
-  try {
-    final loginData = LoginCache();
-    final negativeBarID = await loginData.getUID();
-    final barId = -1 * negativeBarID;
-
-    final response = await http.get(Uri.parse("$baseUrl/bars/$barId"));
-    debugPrint("Received response with status code: ${response.statusCode}");
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      debugPrint("Response data: $data");
-
-     bar = Bar.fromJson(data);
-      debugPrint("Parsed bar object: $bar");
-    } else {
-      throw Exception("Failed to fetch bar details. Status: ${response.statusCode}");
-    }
-  } catch (error) {
-    debugPrint("Error fetching bar details: $error");
-  }
-}
-
+  
   Future<void> _handleSubmit(String bartenderID) async {
     final loginData = LoginCache();
     final negativeBarID = await loginData.getUID();
     final barId = -1 * negativeBarID;
+    Inventory inv = Inventory();
 
     Navigator.pushAndRemoveUntil(
       // ignore: use_build_context_synchronously
       context,
       MaterialPageRoute(
-        builder: (context) => OrdersPage(
+        builder: (context) => Terminal(
           bartenderID: bartenderID.toUpperCase(),
           barID: barId,
-          bar: bar!
+          inv: inv
         ),
       ),
       (Route<dynamic> route) => false, // Remove all previous routes

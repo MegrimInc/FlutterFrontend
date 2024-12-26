@@ -4,13 +4,13 @@ import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:barzzy/Backend/bar.dart';
 import 'package:barzzy/Backend/searchengine.dart';
 import 'package:barzzy/Backend/recommended.dart';
-import 'package:barzzy/Backend/user.dart';
+import 'package:barzzy/Backend/preferences.dart';
 import 'package:barzzy/Gnav%20Bar/bottombar.dart';
 import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/MenuPage/drinkfeed.dart';
 import 'package:barzzy/MenuPage/menu.dart';
 import 'package:barzzy/OrdersPage/websocket.dart';
-import 'package:barzzy/Terminal/stationid.dart';
+import 'package:barzzy/Terminal/select.dart';
 import 'package:barzzy/Backend/point.dart';
 
 import 'package:firebase_core/firebase_core.dart';

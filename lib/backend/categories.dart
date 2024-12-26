@@ -26,7 +26,6 @@ class Categories {
     required this.tag178,
     required this.tag179,
     required this.tag181,
-    // required this.tag182,
     required this.tag183,
     required this.tag184,
     required this.tag186,
