@@ -62,26 +62,21 @@ class _OrdersPageState extends State<OrdersPage> {
     bartenderNumber = 0;
     bartenderCount = 1;
 
-    _heartbeat();
-    // Start a timer to update the list every 30 seconds
-    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (heartbeat++ >= 4) {
-        heartbeat = 0;
-        _heartbeat();
-      }
-      _updateLists();
+    // Start a timer to send a heartbeat every 30 minutes
+    Timer.periodic(const Duration(minutes: 30), (timer) {
+      debugPrint("30-minute heartbeat triggered");
+      _heartbeat();
     });
 
-    // Listen for the response from the server
-    _updateLists();
+    // Start a timer to update the list every 30 seconds
+    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _updateLists();
+    });
   }
 
   void _heartbeat() async {
-  final url = Uri.parse(
-    'https://www.barzzy.site/newsignup/heartbeat?barId=${widget.barID}&bartenderId=${widget.bartenderID}'
-  );
-
-
+    final url = Uri.parse(
+        'https://www.barzzy.site/newsignup/heartbeat?barId=${widget.barID}&bartenderId=${widget.bartenderID}');
 
     debugPrint("Attempting heartbeat");
     try {
