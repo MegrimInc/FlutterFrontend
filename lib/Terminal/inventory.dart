@@ -14,9 +14,6 @@ class Inventory extends ChangeNotifier {
   Future<void> fetchBarDetails(int barId) async {
     const String baseUrl = "https://www.barzzy.site"; // Define URL locally
     try {
-      // final loginData = LoginCache();
-      // final negativeBarID = await loginData.getUID();
-      // final barId = -1 * negativeBarID;
 
       final response = await http.get(Uri.parse("$baseUrl/bars/$barId"));
       debugPrint("Received response with status code: ${response.statusCode}");
