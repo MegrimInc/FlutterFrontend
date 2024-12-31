@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:barzzy/Backend/bar.dart';
 import 'package:barzzy/Backend/categories.dart';
 import 'package:barzzy/Backend/drink.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
@@ -49,11 +50,48 @@ class User extends ChangeNotifier {
     };
   }
 
+Future<void> checkForBar(String barId) async {
+
+   LocalDatabase localDatabase = LocalDatabase();
+  
+  try {
+    // Check if the bar exists in the local database
+    if (!localDatabase.bars.containsKey(barId)) {
+      debugPrint("Bar with ID $barId not found in local database. Fetching details...");
+
+      // Fetch bar details from the API
+      const String baseUrl = "https://www.barzzy.site";
+      final response = await http.get(Uri.parse("$baseUrl/bars/$barId"));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        debugPrint("Bar details fetched: $data");
+
+        // Parse the bar and add it to the local database
+        final Bar bar = Bar.fromJson(data);
+       localDatabase.addBar(bar);
+        debugPrint("Bar with ID $barId added to the local database.");
+      } else {
+        throw Exception(
+            "Failed to fetch bar details. Status code: ${response.statusCode}");
+      }
+    } else {
+      debugPrint("Bar with ID $barId found in local database.");
+    }
+
+    debugPrint("Tags and drinks fetched for bar ID $barId.");
+  } catch (error) {
+    debugPrint("Error in checkForBar for barId $barId: $error");
+  }
+}
+
 
   Future<void> fetchTagsAndDrinks(String barId) async {
     debugPrint('Fetching drinks for bar ID: $barId');
 
     LocalDatabase localDatabase = LocalDatabase();
+
+    checkForBar(barId);
 
     if (categoriesExistForBar(barId)) {
       debugPrint('Categories already exist for bar $barId, skipping fetch.');

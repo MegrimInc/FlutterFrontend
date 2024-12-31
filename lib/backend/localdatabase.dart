@@ -78,6 +78,9 @@ class LocalDatabase with ChangeNotifier {
         MapEntry(id, {'name': bar.name ?? '', 'address': bar.address ?? ''}));
   }
 
+  // In LocalDatabase class
+Map<String, Bar> get bars => _bars;
+
   //Method to get all bar IDs
   List<String> getAllBarIds() {
     return _bars.keys.toList();
@@ -274,4 +277,7 @@ class LocalDatabase with ChangeNotifier {
   bool isBarInHappyHour(String barId) {
     return _happyHourStatusMap[barId] ?? false;
   }
+
+  
+
 }

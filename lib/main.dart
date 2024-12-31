@@ -10,6 +10,7 @@ import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/MenuPage/drinkfeed.dart';
 import 'package:barzzy/MenuPage/menu.dart';
 import 'package:barzzy/OrdersPage/websocket.dart';
+import 'package:barzzy/Terminal/inventory.dart';
 import 'package:barzzy/Terminal/select.dart';
 import 'package:barzzy/Backend/point.dart';
 
@@ -138,6 +139,7 @@ if (response.statusCode == 200) {
         ChangeNotifierProvider(create: (context) => localDatabase),
         ChangeNotifierProvider(create: (context) => BarHistory()),
         ChangeNotifierProvider(create: (context) => Recommended()),
+         ChangeNotifierProvider(create: (_) => Inventory()),
         ChangeNotifierProvider(
             create: (context) => Hierarchy(context, navigatorKey)),
         ChangeNotifierProvider(create: (_) => LoginCache()),
@@ -330,11 +332,13 @@ class Barzzy extends StatelessWidget {
     final String barId = args['barId'];
     final Cart cart = args['cart'];
     final String? drinkId = args['drinkId']; // Optional parameter
+    final String? claimer = args['claimer'];
 
     return MenuPage(
       barId: barId,
       cart: cart,
       drinkId: drinkId, // Pass the optional drinkId
+      claimer: claimer,
     );
   },
   '/drinkFeed': (context) {
@@ -344,6 +348,8 @@ class Barzzy extends StatelessWidget {
       cart: args['cart'],
       barId: args['barId'],
       initialPage: args['initialPage'],
+       claimer: args['claimer'],
+
     );
   },
       },

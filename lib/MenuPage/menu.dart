@@ -19,12 +19,14 @@ class MenuPage extends StatefulWidget {
   final String barId;
   final Cart cart;
   final String? drinkId;
+  final String? claimer;
 
   const MenuPage({
     super.key,
     required this.barId,
     required this.cart,
     this.drinkId,
+    this.claimer,
   });
 
   @override
@@ -56,7 +58,7 @@ class MenuPageState extends State<MenuPage>
       final drink = localDatabase.getDrinkById(widget.drinkId!);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).push(
-          _createRoute(drink, widget.cart, targetPage: 1),
+          _createRoute(drink, widget.cart, targetPage: 1,),
         );
       });
     }
@@ -450,12 +452,14 @@ class MenuPageState extends State<MenuPage>
   }
 
   Route _createRoute(Drink drink, Cart cart, {int targetPage = 0}) {
+    debugPrint("MenuPage: Passing claimer = ${widget.claimer}"); 
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => DrinkFeed(
         drink: drink,
         cart: cart,
         barId: widget.barId,
         initialPage: targetPage,
+        claimer: widget.claimer,
       ),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         var begin = 0.0;

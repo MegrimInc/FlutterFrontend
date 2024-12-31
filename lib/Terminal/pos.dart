@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:barzzy/Terminal/inventory.dart';
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
@@ -8,12 +8,9 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 class POSPage extends StatefulWidget {
-    final Inventory inv;
+  final String bartenderId;
 
-  const POSPage({
-    super.key,
-    required this.inv,
-    });
+  const POSPage({super.key, required this.bartenderId});
 
   @override
   State<POSPage> createState() => _POSPageState();
@@ -21,30 +18,21 @@ class POSPage extends StatefulWidget {
 
 class _POSPageState extends State<POSPage> {
   final PeripheralManager _peripheralManager = PeripheralManager();
-  final Uuid uuid = const Uuid();
-  static const String serviceUuid = "25f7d535-ab21-4ae5-8d0b-adfae5609005";
+  //static const String serviceUuid = "25f7d535-ab21-4ae5-8d0b-adfae5609005";
+  final String serviceUuid = const Uuid().v4();
   static const String readCharacteristicUuid =
       "d973f26e-8da7-4a96-a7d6-cbca9f2d9a7e";
-  static const String writeCharacteristicUuid =
-      "6b18f42b-c62d-4e5c-9d4c-53c90b4ad5cc";
-  static const String notifyCharacteristicUuid =
-      "2c21e1f7-35a6-469b-900f-c8e3b788e355";
-  final int secretCode =
-      Random().nextInt(9000) + 1000; // Generate a 4-digit number
-  final int multiplier = 73490286; // Fixed multiplier
-  late final int expectedValue; // Calculated product
   final ValueNotifier<String> statusNotifier =
       ValueNotifier("Waiting for connection...");
-  late GATTService _gattService;
+  late GATTService gattService;
   bool isBroadcasting = false;
   bool isDeviceConnected = false;
+  String selectedCategory = 'tag172';
 
   @override
   void initState() {
     super.initState();
     debugPrint("POSPage widget initialized.");
-    expectedValue = secretCode * multiplier;
-    debugPrint("Expected value (secretCode * multiplier): $expectedValue");
     _requestPermissions();
   }
 
@@ -69,64 +57,38 @@ class _POSPageState extends State<POSPage> {
   Future<void> _initializePeripheral() async {
     debugPrint("Initializing peripheral...");
 
+    _peripheralManager.stopAdvertising();
+    _peripheralManager.removeAllServices();
+
     // Convert predefined characteristic UUIDs to byte arrays
     final serviceUuidBytes = _stringToBytes(serviceUuid);
     final readCharacteristicBytes = _stringToBytes(readCharacteristicUuid);
-    final writeCharacteristicBytes = _stringToBytes(writeCharacteristicUuid);
-    final notifyCharacteristicBytes = _stringToBytes(notifyCharacteristicUuid);
 
-    // Define the read characteristic
-    final readCharacteristic = GATTCharacteristic.mutable(
-        uuid: UUID(readCharacteristicBytes),
-        properties: [GATTCharacteristicProperty.read],
-        permissions: [GATTCharacteristicPermission.read],
-        descriptors: []);
-
-    // // Define the write characteristic
-    final writeCharacteristic = GATTCharacteristic.mutable(
-      uuid: UUID(writeCharacteristicBytes),
-      properties: [GATTCharacteristicProperty.write],
-      permissions: [GATTCharacteristicPermission.write],
-      descriptors: [],
-    );
-
-    // // Define the notify characteristic
-    final notifyCharacteristic = GATTCharacteristic.mutable(
-      uuid: UUID(notifyCharacteristicBytes),
-      properties: [GATTCharacteristicProperty.notify],
-      permissions: [GATTCharacteristicPermission.read],
-      descriptors: [],
-    );
-
-    // Define the GATT service
-    _gattService = GATTService(
-      uuid: UUID(serviceUuidBytes),
+    // Main Service
+    final gattService = GATTService(
+      uuid: UUID(serviceUuidBytes), // Custom Service UUID
       characteristics: [
-        readCharacteristic,
-        writeCharacteristic,
-        notifyCharacteristic
+        GATTCharacteristic.mutable(
+          uuid: UUID(readCharacteristicBytes), // Read
+          properties: [GATTCharacteristicProperty.read],
+          permissions: [GATTCharacteristicPermission.read],
+          descriptors: [],
+        ),
       ],
       isPrimary: true,
       includedServices: [],
     );
 
-    debugPrint("GATT service created.");
-
-    debugPrint("GATT service created with UUID: ${_gattService.uuid}");
-    debugPrint(
-        "Service characteristics: ${_gattService.characteristics.map((c) => c.uuid.toString()).join(', ')}");
+    debugPrint("GATT service created with UUID: ${gattService.uuid}");
 
     try {
-      await _peripheralManager.addService(_gattService);
+      await _peripheralManager.addService(gattService);
       debugPrint("GATT service added successfully");
     } catch (error) {
-      debugPrint("Error adding GATT service: $error");
-      return;
+      debugPrint("Error adding GATT services: $error");
     }
 
-    // Set up listeners for read and write requests
     _peripheralManager.characteristicReadRequested.listen(_onReadRequest);
-    _peripheralManager.characteristicWriteRequested.listen(_onWriteRequest);
 
     debugPrint("Peripheral initialization completed");
   }
@@ -134,34 +96,30 @@ class _POSPageState extends State<POSPage> {
   Future<void> _onReadRequest(
       GATTCharacteristicReadRequestedEventArgs args) async {
     debugPrint("Read request received.");
-    final responseValue =
-        Uint8List.fromList(secretCode.toString().codeUnits); // Send secretCode
-    await _peripheralManager.respondReadRequestWithValue(
-      args.request,
-      value: responseValue,
-    );
-    debugPrint("Read request responded with: $secretCode");
-  }
 
-  Future<void> _onWriteRequest(
-      GATTCharacteristicWriteRequestedEventArgs args) async {
-    final writtenValue = args.request.value;
-    debugPrint("Write request received with value: $writtenValue");
+    try {
+      final inv = Provider.of<Inventory>(context, listen: false);
+      // Serialize the current inventory cart
+      final serializedInventory =
+          inv.serializeInventoryCart(inv.inventoryCart, widget.bartenderId);
 
-    // Convert the received bytes to an integer
-    final receivedValue = int.tryParse(String.fromCharCodes(writtenValue));
-    debugPrint("Converted received value: $receivedValue");
+      debugPrint("Serialized inventory cart: $serializedInventory");
 
-    if (receivedValue == expectedValue) {
-      debugPrint("Verification successful!");
-      statusNotifier.value = "Authorized device connected!";
-    } else {
-      debugPrint("Verification failed! Disconnecting...");
-      statusNotifier.value = "Unauthorized device! Connection rejected.";
-      await _stopAdvertising(); // Disconnect if the device is unauthorized
+      // Convert the serialized inventory to a byte array
+      final responseValue =
+          Uint8List.fromList(utf8.encode(serializedInventory));
+
+      // Respond to the read request with the serialized data
+      await _peripheralManager.respondReadRequestWithValue(
+        args.request,
+        value: responseValue,
+      );
+
+      debugPrint("Read request responded with inventory data.");
+    } catch (error, stackTrace) {
+      debugPrint("Error responding to read request: $error");
+      debugPrint("Stack trace: $stackTrace");
     }
-
-    await _peripheralManager.respondWriteRequest(args.request);
   }
 
   Future<void> _toggleAdvertising() async {
@@ -178,8 +136,12 @@ class _POSPageState extends State<POSPage> {
   Future<void> _startAdvertising() async {
     debugPrint("Attempting to start BLE advertising...");
 
+    final inv = Provider.of<Inventory>(context, listen: false);
+    final barId = inv.bar.id ?? "UnknownTag";
+    final bartenderId = widget.bartenderId;
+
     final advertisement = Advertisement(
-      name: "BarzzyPOS", // iOS supports name in advertisements
+      name: "$barId~$bartenderId|${const Uuid().v4()}",
       serviceUUIDs: [
         UUID(_stringToBytes(serviceUuid)) // Add service UUID if needed
       ],
@@ -198,24 +160,344 @@ class _POSPageState extends State<POSPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: widget.inv,
-      child: SafeArea(
-        child: Column(
-          children: [
-            Center(
-              child: ElevatedButton(
-                onPressed: _toggleAdvertising,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isBroadcasting ? Colors.red : Colors.green,
+    final inv = Provider.of<Inventory>(context, listen: false);
+    final drinksInCategory = inv.getCategoryDrinks(selectedCategory);
+
+    return Scaffold(
+      body: Column(
+        children: [
+          // Main Row with Drinks List and Categories
+          Expanded(
+            child: Row(
+              children: [
+                // Left Side: Drinks List (70%)
+                Expanded(
+                  flex: 7,
+                  child: Container(
+                    color: Colors.black,
+                    child: ListView.builder(
+                      itemCount: drinksInCategory.length,
+                      itemBuilder: (context, index) {
+                        final drinkId = drinksInCategory[index];
+                        final drink = inv.getDrinkById(drinkId.toString());
+
+                        if (drink == null) {
+                          return const ListTile(
+                            title: Text(
+                              'Unknown Drink',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          );
+                        }
+
+                        return Container(
+                          margin: const EdgeInsets.symmetric(
+                              vertical: 5, horizontal: 10),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[900],
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              // Drink Name
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  drink.name,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+
+                              // Add Buttons
+                              if (drink.singlePrice == drink.doublePrice)
+                                // If single and double prices are the same, show one button
+                                Expanded(
+                                  flex: 2,
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      inv.addDrink(drinkId.toString(),
+                                          isDouble: false);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                    ),
+                                    child: const Text(
+                                      "Add 1",
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                )
+                              else
+                                // If single and double prices are different, show two buttons
+                                Expanded(
+                                  flex: 3,
+                                  child: Row(
+                                    children: [
+                                      // Add Single Button
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          onPressed: () {
+                                            inv.addDrink(drinkId.toString(),
+                                                isDouble: false);
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.blue,
+                                          ),
+                                          child: const Text(
+                                            "Add Single",
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      // Add Double Button
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          onPressed: () {
+                                            inv.addDrink(drinkId.toString(),
+                                                isDouble: true);
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.orange,
+                                          ),
+                                          child: const Text(
+                                            "Add Double",
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ),
-                child: Text(
-                  isBroadcasting ? "Stop Advertising" : "Start Advertising",
-                  style: const TextStyle(color: Colors.white),
+
+                // Right Side: Categories List (30%)
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.black,
+                      border: Border(
+                        left: BorderSide(
+                            color: Colors.white, width: .25), // Top border
+                        bottom: BorderSide(
+                            color: Colors.white, width: .25), // Right border
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: buildCategoryList(),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
+
+          // Bottom Row
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.15,
+            child: Row(
+              children: [
+                // Left Section of Bottom Row (70%)
+                Expanded(
+                  flex: 7,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.black,
+                      border: Border(
+                        top: BorderSide(
+                            color: Colors.white, width: 0.25), // Top border
+                        right: BorderSide(
+                            color: Colors.white, width: 0.25), // Right border
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(10),
+                    child: Consumer<Inventory>(
+                      builder: (context, inv, child) {
+                        if (inv.inventoryCart.isEmpty) {
+                          // Display this when the inventoryCart is empty
+                          return const Center(
+                            child: Text(
+                              'Empty',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 21,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        }
+
+                        // Process the inventoryCart when it's not empty
+                        return ListView(
+                          children: inv.inventoryCart.keys.map((drinkId) {
+                            final drink = inv.getDrinkById(drinkId);
+                            if (drink == null) {
+                              return const SizedBox
+                                  .shrink(); // Skip invalid drinks
+                            }
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: inv.inventoryCart[drinkId]!.entries
+                                  .map((entry) {
+                                // Extract size information
+                                final sizeText = entry.key.contains("double")
+                                    ? " (dbl)"
+                                    : entry.key.contains("single")
+                                        ? " (sgl)"
+                                        : "";
+
+                                // Construct display name with size and quantity
+                                final displayText =
+                                    "${entry.value} ${drink.name}$sizeText";
+
+                                return Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.add,
+                                          color: Colors.green),
+                                      onPressed: () {
+                                        inv.addDrink(drinkId,
+                                            isDouble:
+                                                entry.key.contains("double"));
+                                      },
+                                    ),
+
+                                    // Drink Name
+                                    Text(
+                                      displayText,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+
+                                    IconButton(
+                                      icon: const Icon(Icons.remove,
+                                          color: Colors.red),
+                                      onPressed: () {
+                                        inv.removeDrink(drinkId,
+                                            isDouble:
+                                                entry.key.contains("double"));
+                                      },
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+
+                // Right Section of Bottom Row (30%)
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    color: Colors.black,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Center(
+                          child: ElevatedButton(
+                            onPressed: _toggleAdvertising,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  isBroadcasting ? Colors.red : Colors.green,
+                            ),
+                            child: Text(
+                              isBroadcasting
+                                  ? "Stop Advertising"
+                                  : "Start Advertising",
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+// Build the vertical list of categories
+  Widget buildCategoryList() {
+    // Define a map of category names to their tags
+    final categories = {
+      'Lager': 'tag179',
+      'Vodka': 'tag172',
+      'Tequila': 'tag175',
+      'Whiskey': 'tag174',
+      'Gin': 'tag173',
+      'Brandy': 'tag176',
+      'Rum': 'tag177',
+      'Seltzer': 'tag186',
+      'Ale': 'tag178',
+      'Red Wine': 'tag183',
+      'White Wine': 'tag184',
+      'Virgin': 'tag181',
+    };
+
+    final inv = Provider.of<Inventory>(context, listen: false);
+
+    // Filter out categories with zero drinks
+    final filteredCategories = categories.entries
+        .where((entry) => inv.getCategoryDrinks(entry.value).isNotEmpty)
+        .toList();
+
+    return ListView(
+      children: filteredCategories.map((entry) {
+        return _categoryButton(entry.key, entry.value);
+      }).toList(),
+    );
+  }
+
+// Category button widget
+  Widget _categoryButton(String label, String tag) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+      child: SizedBox(
+        height: 75,
+        child: ElevatedButton(
+          onPressed: () {
+            setState(() {
+              selectedCategory = tag;
+            });
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor:
+                selectedCategory == tag ? Colors.blue : Colors.grey[800],
+            padding: const EdgeInsets.all(15.0),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white),
+          ),
         ),
       ),
     );
@@ -228,6 +510,7 @@ class _POSPageState extends State<POSPage> {
       setState(() {
         isBroadcasting = false;
       });
+
       debugPrint("BLE advertising stopped.");
     } catch (e) {
       debugPrint("Error stopping BLE advertising: $e");
@@ -237,11 +520,9 @@ class _POSPageState extends State<POSPage> {
   Uint8List _stringToBytes(String uuidString) {
     debugPrint("Converting UUID string to bytes: $uuidString");
     final cleanUuid = uuidString.replaceAll('-', '');
-    debugPrint("Clean UUID: $cleanUuid");
 
     final byteBuffer = List<int>.generate(cleanUuid.length ~/ 2, (i) {
       final byte = int.parse(cleanUuid.substring(i * 2, i * 2 + 2), radix: 16);
-      debugPrint("Parsed byte: $byte");
       return byte;
     });
 
@@ -253,7 +534,8 @@ class _POSPageState extends State<POSPage> {
   @override
   void dispose() {
     debugPrint("POSPage widget disposed.");
-    _stopAdvertising();
+    _peripheralManager.removeAllServices();
+    _peripheralManager.stopAdvertising();
     super.dispose();
   }
 }

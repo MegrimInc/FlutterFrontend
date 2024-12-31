@@ -52,7 +52,7 @@ class Bar {
   // Factory constructor for creating an instance from JSON
   factory Bar.fromJson(Map<String, dynamic> json) {
     return Bar(
-      id: json['id']?.toString(),
+      id: (json['id'] ?? json['barId'])?.toString(),
       name: json['name'] as String?,
       address: json['address'] as String?,
       tag: json['barTag'] as String?,

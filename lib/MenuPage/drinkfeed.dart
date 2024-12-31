@@ -24,6 +24,7 @@ class DrinkFeed extends StatefulWidget {
   final Cart cart;
   final String barId;
   final int initialPage;
+  final String? claimer;
 
   const DrinkFeed({
     super.key,
@@ -31,6 +32,7 @@ class DrinkFeed extends StatefulWidget {
     required this.cart,
     required this.barId,
     this.initialPage = 0,
+    this.claimer,
   });
 
   @override
@@ -169,8 +171,8 @@ class DrinkFeedState extends State<DrinkFeed>
       "drinks": drinkOrders,
       "happyHour": cart.isHappyHour,
       "tip": orderTip,
+      if (widget.claimer != null) "claimer": widget.claimer,
     };
-
 
      hierarchy.createOrder(order);
     Navigator.of(context).pushNamedAndRemoveUntil(

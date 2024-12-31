@@ -17,13 +17,12 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 class Terminal extends StatefulWidget {
   final String bartenderID; // Bartender ID parameter
   final int barID;
-  final Inventory inv;
+ 
 
   const Terminal(
       {super.key,
       required this.bartenderID,
-      required this.barID,
-      required this.inv});
+      required this.barID });
 
   @override
   State<Terminal> createState() => _OrdersPageState();
@@ -48,6 +47,7 @@ class _OrdersPageState extends State<Terminal> {
   int heartbeat = 0;
   Timer? _timer;
   WebSocket? websocket;
+ 
 
   @override
   void initState() {
@@ -55,6 +55,8 @@ class _OrdersPageState extends State<Terminal> {
 
     debugPrint("Socket is ${socket == null}");
     if (socket == null) initWebsocket();
+    
+    _setUpInventory();
 
     // Initialize filters and bartender number
     filterUnique = true;
@@ -71,19 +73,19 @@ class _OrdersPageState extends State<Terminal> {
     _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
       _updateLists();
     });
-
-     _setUpInventory();
   }
 
   Future<void> _setUpInventory() async {
-  try {
-    debugPrint("Setting up inventory...");
-    await widget.inv.fetchBarDetails(widget.barID); // Call fetchBarDetails with the barID
-    debugPrint("Inventory setup completed successfully.");
-  } catch (e) {
-    debugPrint("Error setting up inventory: $e");
+    try {
+      debugPrint("Setting up inventory...");
+       final inv = Provider.of<Inventory>(context, listen: false);
+      await inv
+          .fetchBarDetails(widget.barID); // Call fetchBarDetails with the barID
+      debugPrint("Inventory setup completed successfully.");
+    } catch (e) {
+      debugPrint("Error setting up inventory: $e");
+    }
   }
-}
 
   void _heartbeat() async {
     final url = Uri.parse(
@@ -527,90 +529,87 @@ class _OrdersPageState extends State<Terminal> {
       );
     }
 
-    return ChangeNotifierProvider.value(
-      value: widget.inv,
-      child: SafeArea(
-        child: Scaffold(
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
           backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
-                  color: Colors.white,
-                  onPressed: () {
-                    if (!disabledTerminal) {
-                      debugPrint("disable");
-                      socket!.sink.add(
-                        json.encode({
-                          'action': 'disable',
-                          'bartenderID': widget.bartenderID.toString(),
-                          'barID': widget.barID,
-                        }),
-                      );
-                    }
-                  },
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: List.generate(3, (pageIndex) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                          child: Icon(
-                            Icons.circle,
-                            color:
-                                index == pageIndex ? Colors.white : Colors.grey,
-                            size: 12.0,
-                          ),
-                        );
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
+                color: Colors.white,
+                onPressed: () {
+                  if (!disabledTerminal) {
+                    debugPrint("disable");
+                    socket!.sink.add(
+                      json.encode({
+                        'action': 'disable',
+                        'bartenderID': widget.bartenderID.toString(),
+                        'barID': widget.barID,
                       }),
+                    );
+                  }
+                },
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(3, (pageIndex) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: Icon(
+                          Icons.circle,
+                          color:
+                              index == pageIndex ? Colors.white : Colors.grey,
+                          size: 12.0,
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(width: 20),
+                  ElevatedButton(
+                    onPressed: claimTips,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
                     ),
-                    const SizedBox(width: 20),
-                    ElevatedButton(
-                      onPressed: claimTips,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                      ),
-                      child: const Text("Claim Tips"),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.filter_list),
-                      color: Colors.white,
-                      iconSize: 28,
-                      onPressed: _showFilterMenu,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                    child: const Text("Claim Tips"),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.filter_list),
+                    color: Colors.white,
+                    iconSize: 28,
+                    onPressed: _showFilterMenu,
+                  ),
+                ],
+              ),
+            ],
           ),
-          body: PageView.builder(
-            controller: PageController(initialPage: 1),
-            scrollDirection: Axis.horizontal,
-            itemCount: 3,
-            onPageChanged: (pageIndex) {
-              setState(() {
-                index = pageIndex;
-                debugPrint("Page changed to: $index");
-              });
-            },
-            itemBuilder: (context, pageIndex) {
-              if (pageIndex == 0) {
-                return POSPage(inv: widget.inv);
-              } else if (pageIndex == 1) {
-                return _buildOrderList(otherOrders);
-              } else {
-                return _buildOrderList(readyOrders);
-              }
-            },
-          ),
+        ),
+        body: PageView.builder(
+          controller: PageController(initialPage: 1),
+          scrollDirection: Axis.horizontal,
+          itemCount: 3,
+          onPageChanged: (pageIndex) {
+            setState(() {
+              index = pageIndex;
+              debugPrint("Page changed to: $index");
+            });
+          },
+          itemBuilder: (context, pageIndex) {
+            if (pageIndex == 0) {
+              return POSPage(bartenderId: widget.bartenderID,);
+            } else if (pageIndex == 1) {
+              return _buildOrderList(otherOrders);
+            } else {
+              return _buildOrderList(readyOrders);
+            }
+          },
         ),
       ),
     );

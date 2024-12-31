@@ -1,6 +1,5 @@
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/AuthPages/components/toggle.dart';
-import 'package:barzzy/Terminal/inventory.dart';
 import 'package:barzzy/Terminal/terminal.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -26,7 +25,7 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
     final loginData = LoginCache();
     final negativeBarID = await loginData.getUID();
     final barId = -1 * negativeBarID;
-    Inventory inv = Inventory();
+  
 
     Navigator.pushAndRemoveUntil(
       // ignore: use_build_context_synchronously
@@ -35,7 +34,6 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
         builder: (context) => Terminal(
           bartenderID: bartenderID.toUpperCase(),
           barID: barId,
-          inv: inv
         ),
       ),
       (Route<dynamic> route) => false, // Remove all previous routes

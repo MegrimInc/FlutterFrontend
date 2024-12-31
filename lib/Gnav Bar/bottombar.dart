@@ -47,7 +47,12 @@ class AuthPageState extends State<AuthPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.grey,
+      shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(20), // Customize the curve
+      ),
+    ),
       builder: (BuildContext context) {
         return const BlueToothScanner();
       },
@@ -99,7 +104,7 @@ Widget build(BuildContext context) {
                     colors: [
       
                       Colors.white,
-                      Colors.blue,
+                      Colors.grey,
                       //Colors.white
                           
                     ],
@@ -126,7 +131,7 @@ Widget build(BuildContext context) {
                         end: Alignment.bottomRight,
                       ).createShader(bounds),
                       child: const Icon(
-                        Icons.bluetooth,
+                        Icons.cloud,
                         size: 30,
                         color: Colors.white, // Acts as a fallback
                       ),

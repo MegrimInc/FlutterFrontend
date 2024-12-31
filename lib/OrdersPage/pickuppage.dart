@@ -49,7 +49,7 @@ class PickupPageState extends State<PickupPage> {
 
             // Determine the text based on the number of orders
             final displayText =
-                totalOrders == 0 ? '0' : '${currentPage + 1} / $totalOrders';
+                totalOrders == 0 ? '...' : '${currentPage + 1} / $totalOrders';
 
             return Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -120,7 +120,7 @@ class PickupPageState extends State<PickupPage> {
                             if (order == null) {
                               return const Center(
                                 child: Text(
-                                  'No orders found for this bar.',
+                                  'No orders found',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 17,
@@ -145,7 +145,7 @@ class PickupPageState extends State<PickupPage> {
                                       .getOrderForBar(orders.first)!)
                                   : const Center(
                                       child: Text(
-                                        'No orders found for this bar.',
+                                        'No orders found.',
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 17,
