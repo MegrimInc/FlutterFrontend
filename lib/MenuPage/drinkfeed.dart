@@ -90,7 +90,7 @@ class DrinkFeedState extends State<DrinkFeed>
 
       if (!localDatabase.isPaymentPresent) {
         try {
-         _showStripeSetupSheet(context, userId);
+          _showStripeSetupSheet(context, userId);
           return;
         } catch (e) {
           debugPrint('Error presenting Stripe setup sheet: $e');
@@ -174,7 +174,7 @@ class DrinkFeedState extends State<DrinkFeed>
       if (widget.claimer != null) "claimer": widget.claimer,
     };
 
-     hierarchy.createOrder(order);
+    hierarchy.createOrder(order);
     Navigator.of(context).pushNamedAndRemoveUntil(
       '/orders',
       (Route<dynamic> route) => false,
@@ -210,9 +210,9 @@ class DrinkFeedState extends State<DrinkFeed>
           ),
         );
 
-
-        final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
-            localDatabase.updatePaymentStatus(true);
+        final localDatabase =
+            Provider.of<LocalDatabase>(context, listen: false);
+        localDatabase.updatePaymentStatus(true);
 
         // Present the Stripe payment sheet to collect and save payment info
         await Stripe.instance.presentPaymentSheet();
@@ -321,12 +321,12 @@ class DrinkFeedState extends State<DrinkFeed>
                                   context); // Drink page rebuilds when currentDrink changes
                             },
                           ),
-                           ValueListenableBuilder<Drink>(
-                            valueListenable: currentDrink,
-                            builder: (context, drink, _) {
-                              return _buildSummaryPage(
-                                  context); // Summary page rebuilds when currentDrink changes
-                            })
+                          ValueListenableBuilder<Drink>(
+                              valueListenable: currentDrink,
+                              builder: (context, drink, _) {
+                                return _buildSummaryPage(
+                                    context); // Summary page rebuilds when currentDrink changes
+                              })
                         ],
                       ),
                     ),
@@ -466,23 +466,15 @@ class DrinkFeedState extends State<DrinkFeed>
                 localDatabase.getPointsForBar(widget.barId)?.points ?? 0;
             return Center(
               child: SizedBox(
-                height: 30,
-                child: AnimatedTextKit(
-                  animatedTexts: [
-                    FadeAnimatedText(
-                      'Available Balance: $pointBalance pts',
-                      textStyle: GoogleFonts.poppins(
-                        color: Colors.lightGreenAccent,
-                        fontSize: 21,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      duration: const Duration(milliseconds: 1500),
+                  height: 30,
+                  child: Text(
+                    'Available Balance: $pointBalance pts',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w600,
                     ),
-                  ],
-                  isRepeatingAnimation: true,
-                  repeatForever: true,
-                ),
-              ),
+                  )),
             );
           },
         ),
@@ -986,10 +978,10 @@ class DrinkFeedState extends State<DrinkFeed>
                               : 'Set up card',
                           style: GoogleFonts.poppins(
                             color: isCartEmpty
-            ? Colors.white70
-            : localDatabase.isPaymentPresent
-                ? Colors.black
-                : Colors.red,
+                                ? Colors.white70
+                                : localDatabase.isPaymentPresent
+                                    ? Colors.black
+                                    : Colors.red,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -1069,7 +1061,6 @@ class DrinkFeedState extends State<DrinkFeed>
       },
     );
   }
-
 
   Widget _buildBottomBar(BuildContext context) {
     return Container(

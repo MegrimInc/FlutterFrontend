@@ -17,12 +17,8 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 class Terminal extends StatefulWidget {
   final String bartenderID; // Bartender ID parameter
   final int barID;
- 
 
-  const Terminal(
-      {super.key,
-      required this.bartenderID,
-      required this.barID });
+  const Terminal({super.key, required this.bartenderID, required this.barID});
 
   @override
   State<Terminal> createState() => _OrdersPageState();
@@ -32,6 +28,7 @@ class _OrdersPageState extends State<Terminal> {
   List<BartenderOrder> allOrders = [];
   List<BartenderOrder> readyOrders = [];
   List<BartenderOrder> otherOrders = [];
+  final PageController _pageController = PageController(initialPage: 1);
   int index = 1;
   bool testing = false;
   bool connected = false;
@@ -47,7 +44,6 @@ class _OrdersPageState extends State<Terminal> {
   int heartbeat = 0;
   Timer? _timer;
   WebSocket? websocket;
- 
 
   @override
   void initState() {
@@ -55,7 +51,7 @@ class _OrdersPageState extends State<Terminal> {
 
     debugPrint("Socket is ${socket == null}");
     if (socket == null) initWebsocket();
-    
+
     _setUpInventory();
 
     // Initialize filters and bartender number
@@ -78,7 +74,7 @@ class _OrdersPageState extends State<Terminal> {
   Future<void> _setUpInventory() async {
     try {
       debugPrint("Setting up inventory...");
-       final inv = Provider.of<Inventory>(context, listen: false);
+      final inv = Provider.of<Inventory>(context, listen: false);
       await inv
           .fetchBarDetails(widget.barID); // Call fetchBarDetails with the barID
       debugPrint("Inventory setup completed successfully.");
@@ -107,12 +103,6 @@ class _OrdersPageState extends State<Terminal> {
     } catch (e) {
       debugPrint("Something went wrong with heartbeat");
     }
-
-    // Call this function when sending initialize - DONE
-
-    // Call this function when reenabling websocket - done
-
-    // Only send if actually connected to websocket - done
   }
 
   void _updateLists() {
@@ -179,7 +169,7 @@ class _OrdersPageState extends State<Terminal> {
           !allOrders.any((order) => order.claimer == widget.bartenderID)) {
         socket!.sink.add(
           json.encode({
-            'action': 'dispose',
+            'action': 'disable',
             'barID': widget.barID,
           }),
         );
@@ -438,6 +428,14 @@ class _OrdersPageState extends State<Terminal> {
                           }),
                         );
                         Navigator.of(context).pop();
+                        if (order.status == "arrived" && order.pointOfSale) {
+                          // Navigate to page 0 if conditions are met
+                          _pageController.animateToPage(
+                            0,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
@@ -465,7 +463,17 @@ class _OrdersPageState extends State<Terminal> {
                             'barID': widget.barID,
                           }),
                         );
+
                         Navigator.of(context).pop();
+
+                        if (order.status == "arrived" && order.pointOfSale) {
+                          // Navigate to page 0 if conditions are met
+                          _pageController.animateToPage(
+                            0,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
@@ -506,16 +514,17 @@ class _OrdersPageState extends State<Terminal> {
     final ageInSeconds = order.getAge();
 
     // Debug print to show age and userID
-    debugPrint('USER ID: ${order.userId}, Age: $ageInSeconds seconds');
     if (order.claimer != '' && order.claimer != widget.bartenderID) {
       return Colors.grey[700]!;
     }
 
     if (order.status == 'ready') return Colors.green;
-    if (order.status == 'arrived') return Colors.blueAccent;
-    if (ageInSeconds <= 180) return Colors.yellow[200]!; // 0-3 minutes old
-    if (ageInSeconds <= 300) return Colors.orange[200]!; // 3-5 minutes old
-    if (ageInSeconds <= 600) return Colors.orange[500]!; // 5-10 minutes old
+    if (order.status == 'arrived') {
+      return order.pointOfSale ? Colors.purple : Colors.blueAccent;
+    }
+    if (ageInSeconds <= 180) return Colors.orange[200]!; // 0-3 minutes old
+    if (ageInSeconds <= 300) return Colors.orange[400]!; // 3-5 minutes old
+    if (ageInSeconds <= 600) return Colors.orange[600]!; // 5-10 minutes old
     return Colors.red[700]!; // Over 10 minutes old
   }
 
@@ -537,21 +546,37 @@ class _OrdersPageState extends State<Terminal> {
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              IconButton(
-                icon: Icon(disabledTerminal ? Icons.power_off : Icons.power),
-                color: Colors.white,
-                onPressed: () {
-                  if (!disabledTerminal) {
-                    debugPrint("disable");
-                    socket!.sink.add(
-                      json.encode({
-                        'action': 'disable',
-                        'bartenderID': widget.bartenderID.toString(),
-                        'barID': widget.barID,
-                      }),
-                    );
-                  }
-                },
+              Row(
+                children: [
+                  IconButton(
+                    icon:
+                        Icon(disabledTerminal ? Icons.power_off : Icons.power),
+                    color: Colors.white,
+                    onPressed: () {
+                      if (!disabledTerminal) {
+                        debugPrint("disable");
+                        socket!.sink.add(
+                          json.encode({
+                            'action': 'disable',
+                            'bartenderID': widget.bartenderID.toString(),
+                            'barID': widget.barID,
+                          }),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 5),
+                  const Icon(Icons.person, color: Colors.grey),
+                  const SizedBox(width: 2.5),
+                  Text(
+                    '${bartenderCount - 1}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ), // Small spacing between icon and count
+                ],
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -577,7 +602,10 @@ class _OrdersPageState extends State<Terminal> {
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.black,
                     ),
-                    child: const Text("Claim Tips"),
+                    child: const Text(
+                      "Claim Tips",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
@@ -592,7 +620,7 @@ class _OrdersPageState extends State<Terminal> {
           ),
         ),
         body: PageView.builder(
-          controller: PageController(initialPage: 1),
+          controller: _pageController,
           scrollDirection: Axis.horizontal,
           itemCount: 3,
           onPageChanged: (pageIndex) {
@@ -603,7 +631,11 @@ class _OrdersPageState extends State<Terminal> {
           },
           itemBuilder: (context, pageIndex) {
             if (pageIndex == 0) {
-              return POSPage(bartenderId: widget.bartenderID,);
+              // Pass the PageController to POSPage
+              return POSPage(
+                bartenderId: widget.bartenderID,
+                pageController: _pageController,
+              );
             } else if (pageIndex == 1) {
               return _buildOrderList(otherOrders);
             } else {
@@ -719,58 +751,93 @@ class _OrdersPageState extends State<Terminal> {
                                       color: Colors.white,
                                     ),
                                   ),
+                                 
                             Expanded(
                               child: Row(
                                 children: [
+                                   if (unpaidDrinks.isNotEmpty) 
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.center,
                                       children: [
                                         const Text(
-                                          'UNPAID ❗',
+                                          'UNPAID:',
                                           style: TextStyle(
-                                            fontSize: 20,
+                                            fontSize: 22,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
+                                            shadows: [
+                                              Shadow(
+                                                color: Colors.black,
+                                                offset: Offset(1.0, 1.0),
+                                                blurRadius: 1.0,
+                                              ),
+                                            ],
                                           ),
                                           textAlign: TextAlign.center,
                                         ),
+                                        if (unpaidDrinks.isNotEmpty && paidDrinks.isNotEmpty)
+                                        const Divider(
+        color: Colors.white54,
+        thickness: 1, 
+        indent:  30, 
+        endIndent:  0 
+      ),
+      const SizedBox(height: 5),
                                         ...unpaidDrinks.map((drink) => Text(
                                               formatDrink(drink),
                                               style: const TextStyle(
-                                                fontSize: 16,
-                                                color: Colors.white,
-                                              ),
+                                                  fontSize: 16,
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold),
                                               textAlign: TextAlign.center,
                                             )),
                                       ],
                                     ),
                                   ),
+                                  if (unpaidDrinks.isNotEmpty && paidDrinks.isNotEmpty)
                                   Container(
                                     width: 1,
-                                    color: Colors.white,
+                                    color: Colors.white54,
                                   ),
+                                  if (paidDrinks.isNotEmpty) 
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.center,
                                       children: [
+                                         
                                         const Text(
-                                          'PAID ✔️',
+                                          'PAID:',
                                           style: TextStyle(
-                                            fontSize: 20,
+                                            fontSize: 22,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
+                                            shadows: [
+                                              Shadow(
+                                                color: Colors.black,
+                                                offset: Offset(1.0, 1.0),
+                                                blurRadius: 1.0,
+                                              ),
+                                            ],
                                           ),
                                           textAlign: TextAlign.center,
                                         ),
+                                         if (unpaidDrinks.isNotEmpty && paidDrinks.isNotEmpty)
+                                        const Divider(
+        color: Colors.white54,
+        thickness: 1, 
+        indent:  0, 
+        endIndent:  30 
+      ),
+      const SizedBox(height: 5),
                                         ...paidDrinks.map((drink) => Text(
                                               formatDrink(drink),
                                               style: const TextStyle(
-                                                fontSize: 16,
-                                                color: Colors.white,
-                                              ),
+                                                  fontSize: 16,
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold),
                                               textAlign: TextAlign.center,
                                             )),
                                       ],
@@ -1288,39 +1355,60 @@ class _OrdersPageState extends State<Terminal> {
                     allOrders.add(incomingOrder);
                   }
                 }
+
+                // Auto-claim the order if eligible
+                if (incomingOrder.claimer.isEmpty &&
+                    (incomingOrder.userId % bartenderCount) ==
+                        bartenderNumber) {
+                  final claimRequest = {
+                    'action': 'claim',
+                    'bartenderID': widget.bartenderID,
+                    'userID': incomingOrder.userId,
+                    'barID': widget.barID,
+                  };
+
+                  try {
+                    socket!.sink.add(jsonEncode(claimRequest));
+                    debugPrint(
+                        "Auto-claimed order for user ID: ${incomingOrder.userId}");
+                  } catch (e) {
+                    debugPrint(
+                        "Error auto-claiming order for user ID: ${incomingOrder.userId}: $e");
+                  }
+                }
               }
-              setState(() {
-                // Update the displayList based on the new allOrders
-                _updateLists();
-              });
+              _updateLists();
+
               break;
 
-            case 'sessionId': // Somebody changed up how orders are sent back. They changed it so that orders are sent back as {Order} instead of {orders:[Order1, Order2...]}
-              // Parse the response directly into a BartenderOrder object
-              final incomingOrder = BartenderOrder.fromJson(response);
+            case 'update':
+              final List<dynamic> ordersJson = response['update'];
 
-              // Check if the order exists in allOrders
-              int index = allOrders
-                  .indexWhere((order) => order.userId == incomingOrder.userId);
-              if (index != -1) {
-                // If it exists, replace the old order
-                allOrders[index] = incomingOrder;
-                if (allOrders[index].status == 'delivered' ||
-                    allOrders[index].status == 'canceled') {
-                  allOrders.removeAt(index);
-                }
-              } else {
-                // If it doesn't exist, add the new order to allOrders
-                if (incomingOrder.status != 'delivered' &&
-                    incomingOrder.status != 'canceled') {
-                  allOrders.add(incomingOrder);
+              // Convert JSON to Order objects and update allOrders
+              final incomingOrders = ordersJson
+                  .map((json) => BartenderOrder.fromJson(json))
+                  .toList();
+              for (BartenderOrder incomingOrder in incomingOrders) {
+                // Check if the order exists in allOrders
+                int index = allOrders.indexWhere(
+                    (order) => order.userId == incomingOrder.userId);
+                if (index != -1) {
+                  // If it exists, replace the old order
+                  allOrders[index] = incomingOrder;
+                  if (allOrders[index].status == 'delivered' ||
+                      allOrders[index].status == 'canceled') {
+                    allOrders.remove(allOrders[index]);
+                  }
+                } else {
+                  // If it doesn't exist, add the new order to allOrders
+                  if (incomingOrder.status != 'delivered' &&
+                      incomingOrder.status != 'canceled') {
+                    allOrders.add(incomingOrder);
+                  }
                 }
               }
+              _updateLists();
 
-              setState(() {
-                // Update the displayList based on the new allOrders
-                _updateLists();
-              });
               break;
 
             case 'barStatus':
@@ -1397,6 +1485,7 @@ class _OrdersPageState extends State<Terminal> {
 
   @override
   void dispose() {
+    _pageController.dispose();
     _timer?.cancel(); // Cancel the timer when the widget is disposed
     super.dispose();
   }

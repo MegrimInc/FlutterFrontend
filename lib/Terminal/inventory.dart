@@ -21,6 +21,8 @@ class Inventory extends ChangeNotifier {
   final Map<String, Drink> _drinks = {};
   late Categories categories;
   final Map<String, Map<String, int>> _inventoryCart = {};
+  final List<String> _inventoryOrder = [];
+  String _selectedCategory = 'tag172';
 
   Future<void> fetchBarDetails(int barId) async {
     const String baseUrl = "https://www.barzzy.site"; // Define URL locally
@@ -79,6 +81,7 @@ class Inventory extends ChangeNotifier {
       tag183: [],
       tag184: [],
       tag186: [],
+      tagSpecial: [],
     );
 
     final url =
@@ -100,47 +103,52 @@ class Inventory extends ChangeNotifier {
 
           debugPrint('Drink with ID: ${drink.id} added to Inventory.');
 
-          for (String tagId in drink.tagId) {
-            //debugPrint('Processing tagId: $tagId for drinkId: $drinkId');
-            switch (int.parse(tagId)) {
-              case 172:
-                categories.tag172.add(int.parse(drinkId));
-                break;
-              case 173:
-                categories.tag173.add(int.parse(drinkId));
-                break;
-              case 174:
-                categories.tag174.add(int.parse(drinkId));
-                break;
-              case 175:
-                categories.tag175.add(int.parse(drinkId));
-                break;
-              case 176:
-                categories.tag176.add(int.parse(drinkId));
-                break;
-              case 177:
-                categories.tag177.add(int.parse(drinkId));
-                break;
-              case 178:
-                categories.tag178.add(int.parse(drinkId));
-                break;
-              case 179:
-                categories.tag179.add(int.parse(drinkId));
-                break;
-              case 181:
-                categories.tag181.add(int.parse(drinkId));
-                break;
-              case 183:
-                categories.tag183.add(int.parse(drinkId));
-                break;
-              case 184:
-                categories.tag184.add(int.parse(drinkId));
-                break;
-              case 186:
-                categories.tag186.add(int.parse(drinkId));
-                break;
-              default:
-              //debugPrint('Unknown tagId: $tagId for drinkId: $drinkId');
+          if (drink.tagId.length > 1) {
+            // If the drink has multiple tags, add it to the Special category
+            categories.tagSpecial.add(int.parse(drinkId));
+          } else {
+            for (String tagId in drink.tagId) {
+              //debugPrint('Processing tagId: $tagId for drinkId: $drinkId');
+              switch (int.parse(tagId)) {
+                case 172:
+                  categories.tag172.add(int.parse(drinkId));
+                  break;
+                case 173:
+                  categories.tag173.add(int.parse(drinkId));
+                  break;
+                case 174:
+                  categories.tag174.add(int.parse(drinkId));
+                  break;
+                case 175:
+                  categories.tag175.add(int.parse(drinkId));
+                  break;
+                case 176:
+                  categories.tag176.add(int.parse(drinkId));
+                  break;
+                case 177:
+                  categories.tag177.add(int.parse(drinkId));
+                  break;
+                case 178:
+                  categories.tag178.add(int.parse(drinkId));
+                  break;
+                case 179:
+                  categories.tag179.add(int.parse(drinkId));
+                  break;
+                case 181:
+                  categories.tag181.add(int.parse(drinkId));
+                  break;
+                case 183:
+                  categories.tag183.add(int.parse(drinkId));
+                  break;
+                case 184:
+                  categories.tag184.add(int.parse(drinkId));
+                  break;
+                case 186:
+                  categories.tag186.add(int.parse(drinkId));
+                  break;
+                default:
+                //debugPrint('Unknown tagId: $tagId for drinkId: $drinkId');
+              }
             }
           }
         } else {
@@ -176,6 +184,10 @@ class Inventory extends ChangeNotifier {
     debugPrint("Instance ID: $hashCode");
     debugPrint('Updated inventory cart: $_inventoryCart');
 
+    if (!_inventoryOrder.contains('$drinkId-$sizeType')) {
+      _inventoryOrder.add('$drinkId-$sizeType');
+    }
+
     notifyListeners();
   }
 
@@ -204,6 +216,8 @@ class Inventory extends ChangeNotifier {
         if (inventoryCart[drinkId]!.isEmpty) {
           inventoryCart.remove(drinkId);
         }
+
+        _inventoryOrder.remove('$drinkId-$sizeType');
       }
 
       notifyListeners();
@@ -213,7 +227,8 @@ class Inventory extends ChangeNotifier {
     }
   }
 
-  String serializeInventoryCart(Map<String, Map<String, int>> inventoryCart, String bartenderId) {
+  String serializeInventoryCart(
+      Map<String, Map<String, int>> inventoryCart, String bartenderId) {
     // Ensure the barId is included
     final barId = bar.id; // Assuming `bar` is already set and has a valid ID
 
@@ -310,6 +325,8 @@ class Inventory extends ChangeNotifier {
         return categories.tag184;
       case 'tag186':
         return categories.tag186;
+      case 'special':
+        return categories.tagSpecial;
       default:
         return [];
     }
@@ -317,8 +334,19 @@ class Inventory extends ChangeNotifier {
 
   Map<String, Map<String, int>> get inventoryCart => _inventoryCart;
 
+  String get selectedCategory => _selectedCategory;
+
+  List<String> get inventoryOrder => _inventoryOrder;
+
+  // Method to set the selected category
+  void setSelectedCategory(String category) {
+    _selectedCategory = category;
+    notifyListeners(); // Notify widgets about the change
+  }
+
   void clearInventory() {
     _inventoryCart.clear();
+    _inventoryOrder.clear();
     notifyListeners(); // Notify UI to refresh only when necessary
   }
 }

@@ -1,5 +1,3 @@
-
-
 class Categories {
   final int barId;
   final List<int> tag172;
@@ -14,6 +12,7 @@ class Categories {
   final List<int> tag183;
   final List<int> tag184;
   final List<int> tag186;
+  final List<int> tagSpecial;
 
   Categories({
     required this.barId,
@@ -29,8 +28,6 @@ class Categories {
     required this.tag183,
     required this.tag184,
     required this.tag186,
+    this.tagSpecial = const [],
   });
-
-
-  
 }

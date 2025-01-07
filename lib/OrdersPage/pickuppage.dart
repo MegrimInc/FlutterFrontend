@@ -591,7 +591,7 @@ class PickupPageState extends State<PickupPage> {
         child: SizedBox(
           height: 40,
           child: Text(
-            'Bartender ${order.claimer} has been notified',
+            'Worker ${order.claimer} has been notified',
             style: GoogleFonts.poppins(
               color: activeColor,
               fontSize: 18,

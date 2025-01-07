@@ -4,6 +4,7 @@ import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/OrdersPage/websocket.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/heroicons_solid.dart';
 import 'package:provider/provider.dart';
@@ -49,7 +50,6 @@ class HomePageState extends State<HomePage> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     final barHistory = Provider.of<BarHistory>(context);
@@ -94,6 +94,13 @@ class HomePageState extends State<HomePage> {
                     final bar = LocalDatabase.getBarById(barId);
                     return GestureDetector(
                         behavior: HitTestBehavior.translucent,
+                        onLongPress: () {
+                          HapticFeedback.heavyImpact();
+                          final barHistory =
+                              Provider.of<BarHistory>(context, listen: false);
+                          barHistory.setTappedBarId(barId);
+                          debugPrint('are you updating');
+                        },
                         onTap: () {
                           Navigator.push(context, MaterialPageRoute(
                             builder: (context) {
@@ -175,7 +182,8 @@ class HomePageState extends State<HomePage> {
                         Padding(
                           padding: const EdgeInsets.only(left: 10),
                           child: Text(
-                            LocalDatabase.getBarById(barHistory.currentTappedBarId!)
+                            LocalDatabase.getBarById(
+                                        barHistory.currentTappedBarId!)
                                     ?.name ??
                                 'No Name',
                             style: const TextStyle(
@@ -186,11 +194,9 @@ class HomePageState extends State<HomePage> {
                         IconButton(
                             icon: const Icon(Icons.more_horiz,
                                 size: 23.75, color: Colors.grey),
-                            onPressed: () {
-                                          
-                            }),
+                            onPressed: () {}),
                       ]),
-                        const Spacer(),
+                  const Spacer(),
                 ],
               ),
             ),
@@ -262,14 +268,15 @@ class HomePageState extends State<HomePage> {
               flex: 2,
               child: Column(
                 children: [
-                 const Spacer(), 
+                  const Spacer(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Padding(
                         padding: const EdgeInsets.only(left: 10),
                         child: Text(
-                          LocalDatabase.getBarById(barHistory.currentTappedBarId!)
+                          LocalDatabase.getBarById(
+                                      barHistory.currentTappedBarId!)
                                   ?.openhours ??
                               'No Hours Available',
                           style: const TextStyle(
@@ -354,7 +361,7 @@ class HomePageState extends State<HomePage> {
             ],
           ),
           content: const Text(
-           "Looks like you tried to scoll. Please click on a venues' image to view its menu.",
+            "Looks like you tried to scoll. Please click on a venues' image to view its menu.",
             style: TextStyle(
               color: Colors.black,
               fontSize: 16,

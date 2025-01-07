@@ -43,6 +43,7 @@ class BarHistory with ChangeNotifier {
       notifyListeners(); // Notify listeners after the build phase
       _updateRecommendations();
     });
+    notifyListeners();
   }
 
   // Method to clear the current tapped bar ID from memory and SharedPreferences
@@ -62,24 +63,25 @@ class BarHistory with ChangeNotifier {
   }
 
   void _ensureTappedBarIdExists() {
-  if (_currentTappedBarId == null || _currentTappedBarId!.isEmpty) {
-    final barIds = LocalDatabase().getAllBarIds();
-    
-    if (barIds.isNotEmpty) {
-      // Check if bar_id 95 exists
-      if (barIds.contains('95')) {
-        setTappedBarId('95'); // Set bar_id 95 as the tapped bar ID
-        debugPrint('Tapped bar ID set to: 95');
+    if (_currentTappedBarId == null || _currentTappedBarId!.isEmpty) {
+      final barIds = LocalDatabase().getAllBarIds();
+
+      if (barIds.isNotEmpty) {
+        // Check if bar_id 95 exists
+        if (barIds.contains('95')) {
+          setTappedBarId('95'); // Set bar_id 95 as the tapped bar ID
+          debugPrint('Tapped bar ID set to: 95');
+        } else {
+          // If bar_id 95 doesn't exist, fallback to the first available bar ID
+          setTappedBarId(barIds.first);
+          debugPrint('Tapped bar ID set to: ${barIds.first}');
+        }
       } else {
-        // If bar_id 95 doesn't exist, fallback to the first available bar ID
-        setTappedBarId(barIds.first);
-        debugPrint('Tapped bar ID set to: ${barIds.first}');
+        debugPrint(
+            'No bars available in the LocalDatabase to set as tapped bar.');
       }
-    } else {
-      debugPrint('No bars available in the LocalDatabase to set as tapped bar.');
     }
   }
-}
 
   void setContext(BuildContext context) {
     _context = context;
