@@ -3,6 +3,7 @@ import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:barzzy/Terminal/terminal.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
 class BartenderIDScreen extends StatefulWidget {
   const BartenderIDScreen({super.key});
@@ -13,19 +14,18 @@ class BartenderIDScreen extends StatefulWidget {
 
 class BartenderIDScreenState extends State<BartenderIDScreen> {
   final ValueNotifier<String?> selectedLetter = ValueNotifier<String?>(null);
- 
+  Set<String> activeBartenders = {};
 
   @override
   void initState() {
     super.initState();
+    _fetchActiveBartenders();
   }
 
-  
   Future<void> _handleSubmit(String bartenderID) async {
     final loginData = LoginCache();
     final negativeBarID = await loginData.getUID();
     final barId = -1 * negativeBarID;
-  
 
     Navigator.pushAndRemoveUntil(
       // ignore: use_build_context_synchronously
@@ -116,7 +116,10 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
                                 : Colors.white,
                             backgroundColor: selected == letter
                                 ? Colors.white
-                                : Colors.grey[800],
+                                : activeBartenders.contains(letter)
+                                    ? Colors.red[800] // Active bartender's button is green
+                                    : Colors.grey[
+                                        800], // Inactive bartender's button is grey
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15),
                             ),
@@ -167,5 +170,29 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _fetchActiveBartenders() async {
+    final loginData = LoginCache();
+    final negativeBarID = await loginData.getUID();
+    final barId = -1 * negativeBarID;
+
+    try {
+      final url = Uri.parse(
+          "https://www.barzzy.site/ws/http/checkTerminals?barID=$barId");
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        setState(() {
+          activeBartenders =
+              response.body.split('').toSet(); // Parse the response string
+        });
+      } else {
+        debugPrint(
+            "Failed to fetch active bartenders. Status: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Error fetching active bartenders: $e");
+    }
   }
 }
