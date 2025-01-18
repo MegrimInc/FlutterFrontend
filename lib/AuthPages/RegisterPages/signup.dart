@@ -180,7 +180,7 @@ class RegisterPageState extends State<RegisterPage>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 75),
+              const SizedBox(height: 21),
               Center(
                 child: Text(
                   'B A R Z Z Y',
@@ -191,7 +191,8 @@ class RegisterPageState extends State<RegisterPage>
                   ),
                 ),
               ),
-              const SizedBox(height: 75),
+
+              const SizedBox(height: 45),
               MyTextField(
                 labeltext: 'Enter First Name',
                 controller: firstName,
@@ -231,6 +232,7 @@ class RegisterPageState extends State<RegisterPage>
                 },
               ),
               const SizedBox(height: 55),
+               
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -252,7 +254,7 @@ class RegisterPageState extends State<RegisterPage>
                 ],
               ),
               const Padding(
-                padding: EdgeInsets.only(top: 5),
+                padding: EdgeInsets.only(top: 2.5),
                 child: Text(
                   'or',
                   style: TextStyle(
@@ -263,7 +265,7 @@ class RegisterPageState extends State<RegisterPage>
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(top: 5),
+                padding: const EdgeInsets.only(top: 2.5),
                 child: GestureDetector(
                   onTap: () {
                     // Navigate to HomePage when the button is tapped

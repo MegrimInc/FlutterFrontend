@@ -165,6 +165,8 @@ class _LoginPageState extends State<LoginPage> {
 
             const SizedBox(height: 125),
 
+            //Spacer(flex: 1),
+
             // USER/EMAIL TEXTFIELD
 
             MyTextField(
