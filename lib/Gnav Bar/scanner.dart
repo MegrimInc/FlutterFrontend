@@ -79,7 +79,8 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
     scanSubscription = FlutterBluePlus.onScanResults.listen((results) {
       for (final result in results) {
         final String advName = result.advertisementData.advName;
-        final RegExp namePattern = RegExp(r'~[A-Z]\|');
+      final RegExp namePattern = RegExp(r'^\d+~[A-Z]\|');
+        
 
         // Only include devices advertising with "Peripheral" in their name
         if (advName.isNotEmpty && namePattern.hasMatch(advName)) {
@@ -307,23 +308,17 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
                       ),
                     );
                   } else if (status == "Bluetooth is off") {
-                    return const Padding(
-                      padding: EdgeInsets.only(bottom: 100.0),
-                      child: Center(
-                        child: Text(
-                          "Bluetooth is off",
-                          style: TextStyle(color: Colors.white, fontSize: 16),
-                        ),
+                    return const Center(
+                      child: Text(
+                        "Bluetooth is off",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                     );
                   } else {
-                    return const Padding(
-                      padding: EdgeInsets.only(bottom: 100.0),
-                      child: Center(
-                        child: Text(
-                          "No Devices Found",
-                          style: TextStyle(color: Colors.white, fontSize: 16),
-                        ),
+                    return const Center(
+                      child: Text(
+                        "No Devices Found",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                     );
                   }

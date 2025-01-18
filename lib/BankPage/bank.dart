@@ -98,7 +98,7 @@ class _BankPageState extends State<BankPage> {
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 7.5),
                     child: _buildSearchBar(),
                   ),
                   const SizedBox(height: 25),

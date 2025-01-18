@@ -269,18 +269,38 @@ class DrinkFeedState extends State<DrinkFeed>
           onPanStart: (details) {
             _startPosition = details.globalPosition;
           },
+          // onPanEnd: (details) {
+          //   if (_startPosition == null) return;
+
+          //   final Offset endPosition = details.globalPosition;
+          //   final double dy = endPosition.dy - _startPosition!.dy;
+
+          //   if (dy.abs() > swipeThreshold) {
+          //     if (dy < 0) {
+          //       Navigator.of(context).pop();
+          //     }
+          //   }
+
+          //   if (dy.abs() < swipeThreshold) {
+          //     if (dy < 0) {
+          //       Navigator.of(context).pop();
+          //     }
+          //   }
+          // },
+
           onPanEnd: (details) {
-            if (_startPosition == null) return;
+  if (_startPosition == null) return;
 
-            final Offset endPosition = details.globalPosition;
-            final double dy = endPosition.dy - _startPosition!.dy;
+  final double dx = details.velocity.pixelsPerSecond.dx;
+  final double dy = details.velocity.pixelsPerSecond.dy;
 
-            if (dy.abs() > swipeThreshold) {
-              if (dy < 0) {
-                Navigator.of(context).pop();
-              }
-            }
-          },
+  // Check if swipe exceeds threshold in any direction
+  if (dx.abs() > 100 || dy.abs() > 100) {
+    Navigator.of(context).pop();
+  }
+
+  _startPosition = null; // Reset start position
+},
           child: Stack(
             children: [
               ValueListenableBuilder<Drink>(
@@ -992,7 +1012,9 @@ class DrinkFeedState extends State<DrinkFeed>
                 ),
               ],
             ),
-            const SizedBox(height: 50),
+            if (!isCartEmpty)
+            const SizedBox(height: 50)
+            else const SizedBox(height: 65),
             if (!isCartEmpty) _buildTipSelectionButtons(context),
             const SizedBox(height: 25),
           ],

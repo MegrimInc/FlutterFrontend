@@ -99,7 +99,6 @@ class HomePageState extends State<HomePage> {
                           final barHistory =
                               Provider.of<BarHistory>(context, listen: false);
                           barHistory.setTappedBarId(barId);
-                          debugPrint('are you updating');
                         },
                         onTap: () {
                           Navigator.push(context, MaterialPageRoute(
@@ -274,24 +273,44 @@ class HomePageState extends State<HomePage> {
                     children: [
                       Padding(
                         padding: const EdgeInsets.only(left: 10),
-                        child: Text(
-                          LocalDatabase.getBarById(
-                                      barHistory.currentTappedBarId!)
-                                  ?.openhours ??
-                              'No Hours Available',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            //fontWeight: FontWeight.bold,
+                        child: RichText(
+                          text: const TextSpan(
+                            children: [
+                              TextSpan(
+                                text: "Open",
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              TextSpan(
+                                text: " - ",
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              TextSpan(
+                                text: "Closed",
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      const Padding(
-                        padding: EdgeInsets.only(right: 10),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 10),
                         child: Text(
-                          'Floor: 1 / 1',
-                          style: TextStyle(
+                          LocalDatabase.getBarById(
+                                      barHistory.currentTappedBarId!)
+                                  ?.address ??
+                              'No Address Available',
+                          style: const TextStyle(
                             color: Colors.white,
-                            //fontWeight: FontWeight.bold
+                            //fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
