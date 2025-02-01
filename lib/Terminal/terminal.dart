@@ -87,6 +87,8 @@ class _OrdersPageState extends State<Terminal> {
     const String url = "https://www.barzzy.site/orders/getTips";
     final Map<String, dynamic> payload = {
       "bartenderID": widget.bartenderID,
+      "barID": widget.barID as String,
+
     };
 
     try {
