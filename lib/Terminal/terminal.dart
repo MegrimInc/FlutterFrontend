@@ -83,6 +83,33 @@ class _OrdersPageState extends State<Terminal> {
     }
   }
 
+    Future<double> fetchTipAmount() async {
+    const String url = "https://www.barzzy.site/orders/getTips";
+    final Map<String, dynamic> payload = {
+      "bartenderID": widget.bartenderID,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(payload),
+      );
+
+      if (response.statusCode == 200) {
+        // Since the endpoint returns a plain double,
+        // parse the response body to a double.
+        return double.parse(response.body);
+      } else {
+        debugPrint("Error fetching tip amount. Status code: ${response.statusCode}");
+        return 0.0;
+      }
+    } catch (error) {
+      debugPrint("Error fetching tip amount: $error");
+      return 0.0;
+    }
+  }
+
   void _heartbeat() async {
     final url = Uri.parse(
         'https://www.barzzy.site/newsignup/heartbeat?barId=${widget.barID}&bartenderId=${widget.bartenderID}');
@@ -868,8 +895,10 @@ class _OrdersPageState extends State<Terminal> {
     );
   }
 
-  void claimTips() {
+  void claimTips() async {
     bool isSubmitting = false; // Track button status within the dialog
+
+    double tipAmount = await fetchTipAmount();
 
     showDialog(
       context: context,
@@ -882,7 +911,7 @@ class _OrdersPageState extends State<Terminal> {
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
               title: Text(
-                '           Claim tips for ${widget.bartenderID}            ',
+              'Claim tips for ${widget.bartenderID} (\$${tipAmount.toStringAsFixed(2)})',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               content: Column(
