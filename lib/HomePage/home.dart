@@ -53,8 +53,7 @@ class HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final barHistory = Provider.of<BarHistory>(context);
-    // debugPrint('Master List in build: $masterList');
-    // debugPrint('Bar History IDs in build: ${barHistory.barIds}');
+    final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -190,10 +189,29 @@ class HomePageState extends State<HomePage> {
                             ),
                           ),
                         ),
-                        IconButton(
-                            icon: const Icon(Icons.more_horiz,
-                                size: 23.75, color: Colors.grey),
-                            onPressed: () {}),
+                       Padding(
+  padding: const EdgeInsets.only(right: 10),
+  child: ShaderMask(
+    shaderCallback: (Rect bounds) {
+      return const LinearGradient(
+        colors: [ 
+         Colors.white70,
+          Colors.white70
+        ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ).createShader(bounds);
+    },
+    child:  Text(
+      '${localDatabase.getPointsForBar(barHistory.currentTappedBarId!)?.points ?? 0} pts',
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w800,
+        color: Colors.white, // This is ignored when using ShaderMask
+      ),
+    ),
+  ),
+),
                       ]),
                   const Spacer(),
                 ],
@@ -280,25 +298,29 @@ class HomePageState extends State<HomePage> {
                                 text: "Open",
                                 style: TextStyle(
                                   color: Colors.green,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14
                                 ),
                               ),
                               TextSpan(
-                                text: " - ",
+                                text: " / ",
                                 style: TextStyle(
                                   color: Colors.grey,
-                                  fontWeight: FontWeight.bold,
+                                  //fontWeight: FontWeight.bold,
+                                   fontSize: 14
                                 ),
                               ),
                               TextSpan(
                                 text: "Closed",
                                 style: TextStyle(
                                   color: Colors.grey,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w800,
+                                   fontSize: 14
                                 ),
                               ),
                             ],
                           ),
+                          
                         ),
                       ),
                       Padding(

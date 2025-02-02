@@ -231,7 +231,8 @@ class RegisterPageState extends State<RegisterPage>
                   registerNames();
                 },
               ),
-              const SizedBox(height: 5),
+              
+              const SizedBox(height: 45),
                
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
