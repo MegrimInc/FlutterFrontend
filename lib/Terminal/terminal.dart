@@ -99,9 +99,10 @@ class _OrdersPageState extends State<Terminal> {
       );
 
       if (response.statusCode == 200) {
-        // Since the endpoint returns a plain double,
-        // parse the response body to a double.
-        return double.parse(response.body);
+    // Decode the JSON object from the backend
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      // Extract the tipTotal field and convert it to double if necessary
+      return (data['tipTotal'] as num).toDouble();
       } else {
         debugPrint("Error fetching tip amount. Status code: ${response.statusCode}");
         return 0.0;
