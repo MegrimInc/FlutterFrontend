@@ -160,7 +160,7 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
           // Device List or Status Message
          Expanded(
   child: Padding(
-    padding: const EdgeInsets.only(bottom: 75),
+    padding: const EdgeInsets.only(bottom: 75, top: 20),
     child: ValueListenableBuilder<bool>(
       valueListenable: isLoading,
       builder: (context, isLoadingValue, _) {
@@ -203,7 +203,7 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
                   return Container(
                     width: MediaQuery.of(context).size.width,
                     margin: const EdgeInsets.symmetric(
-                        vertical: 30, horizontal: 10),
+                        vertical: 13, horizontal: 10),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.white24,

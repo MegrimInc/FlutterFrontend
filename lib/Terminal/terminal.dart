@@ -59,11 +59,11 @@ class _OrdersPageState extends State<Terminal> {
     bartenderNumber = 0;
     bartenderCount = 1;
 
-    // Start a timer to send a heartbeat every 30 minutes
-    Timer.periodic(const Duration(minutes: 30), (timer) {
-      debugPrint("30-minute heartbeat triggered");
-      _heartbeat();
-    });
+    // // Start a timer to send a heartbeat every 30 minutes
+    // Timer.periodic(const Duration(minutes: 30), (timer) {
+    //   debugPrint("30-minute heartbeat triggered");
+    //   _heartbeat();
+    // });
 
     // Start a timer to update the list every 30 seconds
     _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
@@ -112,27 +112,27 @@ class _OrdersPageState extends State<Terminal> {
     }
   }
 
-  void _heartbeat() async {
-    final url = Uri.parse(
-        'https://www.barzzy.site/newsignup/heartbeat?barId=${widget.barID}&bartenderId=${widget.bartenderID}');
+  // void _heartbeat() async {
+  //   final url = Uri.parse(
+  //       'https://www.barzzy.site/newsignup/heartbeat?barId=${widget.barID}&bartenderId=${widget.bartenderID}');
 
-    debugPrint("Attempting heartbeat");
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        // Possibly an empty body, or some other JSON if needed, but 'barId' and 'bartenderId'
-        // must appear in the query string to match the @RequestParam usage.
-      );
-      debugPrint("Response: ${response.body}");
+  //   debugPrint("Attempting heartbeat");
+  //   try {
+  //     final response = await http.post(
+  //       url,
+  //       headers: {'Content-Type': 'application/json'},
+  //       // Possibly an empty body, or some other JSON if needed, but 'barId' and 'bartenderId'
+  //       // must appear in the query string to match the @RequestParam usage.
+  //     );
+  //     debugPrint("Response: ${response.body}");
 
-      if (response.statusCode == 200) {
-        debugPrint("Successful heartbeat");
-      }
-    } catch (e) {
-      debugPrint("Something went wrong with heartbeat");
-    }
-  }
+  //     if (response.statusCode == 200) {
+  //       debugPrint("Successful heartbeat");
+  //     }
+  //   } catch (e) {
+  //     debugPrint("Something went wrong with heartbeat");
+  //   }
+  // }
 
   void _updateLists() {
     debugPrint("Starting _updateLists...");
@@ -1303,7 +1303,7 @@ class _OrdersPageState extends State<Terminal> {
         'bartenderID': widget.bartenderID
       };
       debugPrint("bartender id login");
-      _heartbeat();
+      //_heartbeat();
       socket!.sink.add(jsonEncode(bartenderLogin));
 
       socket!.stream.listen(
