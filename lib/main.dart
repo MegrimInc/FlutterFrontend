@@ -36,6 +36,7 @@ Future<void> main() async {
 
   Stripe.publishableKey =
       'pk_live_51QIHPQALmk8hqurj9QQVsCMabyzQ3hCJrxk1PhLNJFXDHfbmQqkJzEdOIrXlGd27hBEJchOuLBjIrb6WKxKiUKoo00tOVyaRdA';
+
   Stripe.merchantIdentifier = 'merchant.com.barzzy';
 
   try {
@@ -94,18 +95,18 @@ Future<void> main() async {
     body: requestBody,
   );
 
-
   // Check the response
-if (response.statusCode == 200) {
-  debugPrint('Init Request successful');
-  final serverUID = int.parse(response.body); // Get the UID from server response
-  if (serverUID != 0) {
-    httpRequest = true;
-    await loginCache.setUID(serverUID); // Update the UID in LoginCache
+  if (response.statusCode == 200) {
+    debugPrint('Init Request successful');
+    final serverUID =
+        int.parse(response.body); // Get the UID from server response
+    if (serverUID != 0) {
+      httpRequest = true;
+      await loginCache.setUID(serverUID); // Update the UID in LoginCache
+    }
+  } else {
+    debugPrint('Init Request failed with status: ${response.statusCode}');
   }
-} else {
-  debugPrint('Init Request failed with status: ${response.statusCode}');
-}
 
   final uid = await loginCache.getUID();
   final isBar = uid < 0;
@@ -117,7 +118,6 @@ if (response.statusCode == 200) {
   if (uid != 0) {
     await checkPaymentMethod(localDatabase, uid);
   }
-
 
   // Create the MethodChannel
   const MethodChannel notificationChannel =
@@ -139,7 +139,7 @@ if (response.statusCode == 200) {
         ChangeNotifierProvider(create: (context) => localDatabase),
         ChangeNotifierProvider(create: (context) => BarHistory()),
         ChangeNotifierProvider(create: (context) => Recommended()),
-         ChangeNotifierProvider(create: (_) => Inventory()),
+        ChangeNotifierProvider(create: (_) => Inventory()),
         ChangeNotifierProvider(
             create: (context) => Hierarchy(context, navigatorKey)),
         ChangeNotifierProvider(create: (_) => LoginCache()),
@@ -193,8 +193,6 @@ Future<void> sendGetRequest() async {
     debugPrint('Error sending GET request: $e');
   }
 }
-
-
 
 Future<void> sendGetRequest2() async {
   try {
@@ -279,9 +277,6 @@ Future<void> checkPaymentMethod(LocalDatabase localDatabase, int userId) async {
   }
 }
 
-
-
-
 class Barzzy extends StatelessWidget {
   final bool loggedInAlready;
   final bool isBar;
@@ -313,14 +308,14 @@ class Barzzy extends StatelessWidget {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-    cupertinoOverrideTheme: const CupertinoThemeData(
-      primaryColor: Colors.grey, // For iOS selector pins
-    ),
-    textSelectionTheme: const TextSelectionThemeData(
-      selectionColor: Colors.grey, // Text selection highlight color
-      selectionHandleColor: Colors.grey, // Selection handle color (Android)
-    ),
-  ),
+        cupertinoOverrideTheme: const CupertinoThemeData(
+          primaryColor: Colors.grey, // For iOS selector pins
+        ),
+        textSelectionTheme: const TextSelectionThemeData(
+          selectionColor: Colors.grey, // Text selection highlight color
+          selectionHandleColor: Colors.grey, // Selection handle color (Android)
+        ),
+      ),
       initialRoute: initialRoute,
       routes: {
         '/auth': (context) => const AuthPage(),
@@ -328,30 +323,29 @@ class Barzzy extends StatelessWidget {
         '/login': (context) => const LoginOrRegisterPage(),
         '/orders': (context) => const AuthPage(selectedTab: 1),
         '/menu': (context) {
-    final args = ModalRoute.of(context)!.settings.arguments as Map;
-    final String barId = args['barId'];
-    final Cart cart = args['cart'];
-    final String? drinkId = args['drinkId']; // Optional parameter
-    final String? claimer = args['claimer'];
+          final args = ModalRoute.of(context)!.settings.arguments as Map;
+          final String barId = args['barId'];
+          final Cart cart = args['cart'];
+          final String? drinkId = args['drinkId']; // Optional parameter
+          final String? claimer = args['claimer'];
 
-    return MenuPage(
-      barId: barId,
-      cart: cart,
-      drinkId: drinkId, // Pass the optional drinkId
-      claimer: claimer,
-    );
-  },
-  '/drinkFeed': (context) {
-    final args = ModalRoute.of(context)!.settings.arguments as Map;
-    return DrinkFeed(
-      drink: args['drink'],
-      cart: args['cart'],
-      barId: args['barId'],
-      initialPage: args['initialPage'],
-       claimer: args['claimer'],
-
-    );
-  },
+          return MenuPage(
+            barId: barId,
+            cart: cart,
+            drinkId: drinkId, // Pass the optional drinkId
+            claimer: claimer,
+          );
+        },
+        '/drinkFeed': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map;
+          return DrinkFeed(
+            drink: args['drink'],
+            cart: args['cart'],
+            barId: args['barId'],
+            initialPage: args['initialPage'],
+            claimer: args['claimer'],
+          );
+        },
       },
     );
   }

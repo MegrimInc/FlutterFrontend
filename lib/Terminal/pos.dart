@@ -13,11 +13,8 @@ class POSPage extends StatefulWidget {
   final String bartenderId;
   final PageController pageController;
 
-  const POSPage({
-    super.key, 
-    required this.bartenderId,
-    required this.pageController
-    });
+  const POSPage(
+      {super.key, required this.bartenderId, required this.pageController});
 
   @override
   State<POSPage> createState() => _POSPageState();
@@ -103,7 +100,6 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
     _startAdvertising();
   }
 
-  
   Future<void> _onReadRequest(
       GATTCharacteristicReadRequestedEventArgs args) async {
     debugPrint("Read request received.");
@@ -116,6 +112,8 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
 
     try {
       final inv = Provider.of<Inventory>(context, listen: false);
+
+
       // Serialize the current inventory cart
       final serializedInventory =
           inv.serializeInventoryCart(inv.inventoryCart, widget.bartenderId);
@@ -132,11 +130,14 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
         value: responseValue,
       );
 
+       // **Check if inventory is empty before proceeding**
+      if (inv.inventoryCart.isNotEmpty) {
         widget.pageController.animateToPage(
-      1, // The target page index
-      duration: const Duration(milliseconds: 300), // Animation duration
-      curve: Curves.easeInOut, // Animation curve
-    );
+        1, // The target page index
+        duration: const Duration(milliseconds: 300), // Animation duration
+        curve: Curves.easeInOut, // Animation curve
+      );
+      }
 
       debugPrint("Read request responded with inventory data.");
     } catch (error, stackTrace) {
@@ -144,7 +145,6 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
       debugPrint("Stack trace: $stackTrace");
     }
   }
-
 
   Future<void> _startAdvertising() async {
     debugPrint("Attempting to start BLE advertising...");
@@ -266,12 +266,12 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
                       "Added ${drink.name} as single (different price).");
                 }
               },
-             onDoubleTap: drink.singlePrice != drink.doublePrice
-                ? () {
-                    inv.addDrink(drinkId.toString(), isDouble: true);
-                    debugPrint("Added ${drink.name} as double.");
-                  }
-                : null,
+              onDoubleTap: drink.singlePrice != drink.doublePrice
+                  ? () {
+                      inv.addDrink(drinkId.toString(), isDouble: true);
+                      debugPrint("Added ${drink.name} as double.");
+                    }
+                  : null,
               child: Container(
                 decoration: BoxDecoration(
                   color: drink.singlePrice == drink.doublePrice
@@ -300,102 +300,105 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
     );
   }
 
+  Widget buildSummaryList() {
+    return Consumer<Inventory>(
+      builder: (context, inv, child) {
+        if (inv.inventoryCart.isEmpty) {
+          return const Center(
+            child: SpinKitThreeBounce(
+              color: Colors.white,
+              size: 50.0,
+            ),
+          );
+        }
 
-Widget buildSummaryList() {
-  return Consumer<Inventory>(
-    builder: (context, inv, child) {
-      if (inv.inventoryCart.isEmpty) {
-        return const Center(
-          child: SpinKitThreeBounce(
-            color: Colors.white,
-            size: 50.0,
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: inv.inventoryOrder.map((entry) {
+              // Split the entry to extract drinkId and sizeType
+              final parts = entry.split('-');
+              final drinkId = parts[0];
+              final sizeType = parts[1];
+
+              final drink = inv.getDrinkById(drinkId);
+              if (drink == null) {
+                return const SizedBox.shrink();
+              }
+
+              final sizeLabel =
+                  (sizeType == "double" || sizeType == "single") &&
+                          drink.singlePrice != drink.doublePrice
+                      ? (sizeType == "double" ? " (dbl)" : " (sgl)")
+                      : "";
+
+              final quantity = inv.inventoryCart[drinkId]![sizeType] ?? 0;
+
+              return Container(
+                margin: const EdgeInsets.only(right: 10),
+                width: 175,
+                decoration: BoxDecoration(
+                  color: Colors.grey[800],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      "${drink.name}$sizeLabel",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const Spacer(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon:
+                              const Icon(Icons.add_circle, color: Colors.white),
+                          iconSize: 45,
+                          onPressed: () {
+                            inv.addDrink(drinkId,
+                                isDouble: sizeType == "double");
+                          },
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          "$quantity",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle,
+                              color: Colors.white),
+                          iconSize: 45,
+                          onPressed: () {
+                            inv.removeDrink(drinkId,
+                                isDouble: sizeType == "double");
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                  ],
+                ),
+              );
+            }).toList(),
           ),
         );
-      }
-
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: inv.inventoryOrder.map((entry) {
-            // Split the entry to extract drinkId and sizeType
-            final parts = entry.split('-');
-            final drinkId = parts[0];
-            final sizeType = parts[1];
-
-            final drink = inv.getDrinkById(drinkId);
-            if (drink == null) {
-              return const SizedBox.shrink();
-            }
-
-            final sizeLabel = (sizeType == "double" || sizeType == "single") &&
-                    drink.singlePrice != drink.doublePrice
-                ? (sizeType == "double" ? " (dbl)" : " (sgl)")
-                : "";
-
-            final quantity = inv.inventoryCart[drinkId]![sizeType] ?? 0;
-
-            return Container(
-              margin: const EdgeInsets.only(right: 10),
-              width: 175,
-              decoration: BoxDecoration(
-                color: Colors.grey[800],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    "${drink.name}$sizeLabel",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                 const Spacer(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                       IconButton(
-                        icon: const Icon(Icons.add_circle, color: Colors.white),
-                        iconSize: 45,
-                        onPressed: () {
-                          inv.addDrink(drinkId, isDouble: sizeType == "double");
-                        },
-                      ),
-                       const SizedBox(width: 10),
-                      Text(
-                        "$quantity",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                       const SizedBox(width: 10),
-                       IconButton(
-                        icon: const Icon(Icons.remove_circle, color: Colors.white),
-                         iconSize: 45,
-                        onPressed: () {
-                          inv.removeDrink(drinkId, isDouble: sizeType == "double");
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-      );
-    },
-  );
-}
-
+      },
+    );
+  }
 
   Widget buildCategoryList() {
     final categories = {
@@ -448,11 +451,10 @@ Widget buildSummaryList() {
           child: Text(
             label,
             style: TextStyle(
-                color: selectedCategory == tag ? Colors.black : Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                ),
-                
+              color: selectedCategory == tag ? Colors.black : Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
           ),
         ),
       ),
@@ -480,9 +482,21 @@ Widget buildSummaryList() {
       await _peripheralManager.stopAdvertising();
       debugPrint("BLE advertising stopped successfully.");
 
-      // Remove all services
-      await _peripheralManager.removeAllServices();
-      debugPrint("All BLE services removed successfully.");
+      // Create a temporary peripheral to force cache reset
+      final PeripheralManager tempPeripheralManager = PeripheralManager();
+      final String tempUUID = const Uuid().v4();
+
+      final Advertisement tempAdvertisement = Advertisement(
+        name: tempUUID, // Temporary name to overwrite cache
+        serviceUUIDs: [UUID(_stringToBytes(tempUUID))], // Dummy service UUID
+      );
+
+      debugPrint("🔄 Starting temporary advertisement...");
+      await tempPeripheralManager.startAdvertising(tempAdvertisement);
+      await Future.delayed(
+          const Duration(milliseconds: 500)); // Give it time to register
+      await tempPeripheralManager.stopAdvertising();
+      debugPrint("✅ Temporary advertisement stopped.");
 
       // Cancel characteristic read subscription
       if (_characteristicReadSubscription != null) {
@@ -491,6 +505,9 @@ Widget buildSummaryList() {
         debugPrint("Characteristic read subscription canceled successfully.");
       }
 
+      // Remove all services
+      await _peripheralManager.removeAllServices();
+      debugPrint("All BLE services removed successfully.");
     } catch (error, stackTrace) {
       debugPrint("Error clearing BLE resources: $error");
       debugPrint("Stack trace: $stackTrace");

@@ -53,7 +53,7 @@ class HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final barHistory = Provider.of<BarHistory>(context);
-    final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
+    //final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -178,7 +178,7 @@ class HomePageState extends State<HomePage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(left: 10),
+                          padding: const EdgeInsets.only(left: 11),
                           child: Text(
                             LocalDatabase.getBarById(
                                         barHistory.currentTappedBarId!)
@@ -189,29 +189,10 @@ class HomePageState extends State<HomePage> {
                             ),
                           ),
                         ),
-                       Padding(
-  padding: const EdgeInsets.only(right: 10),
-  child: ShaderMask(
-    shaderCallback: (Rect bounds) {
-      return const LinearGradient(
-        colors: [ 
-         Colors.white70,
-          Colors.white70
-        ],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(bounds);
-    },
-    child:  Text(
-      '${localDatabase.getPointsForBar(barHistory.currentTappedBarId!)?.points ?? 0} pts',
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w800,
-        color: Colors.white, // This is ignored when using ShaderMask
-      ),
-    ),
-  ),
-),
+                        IconButton(
+                            icon: const Icon(Icons.more_horiz,
+                                size: 24, color: Colors.grey),
+                            onPressed: () {}),
                       ]),
                   const Spacer(),
                 ],
@@ -290,41 +271,37 @@ class HomePageState extends State<HomePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 10),
+                        padding: const EdgeInsets.only(left: 11),
                         child: RichText(
                           text: const TextSpan(
                             children: [
                               TextSpan(
                                 text: "Open",
                                 style: TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 14
-                                ),
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14),
                               ),
                               TextSpan(
                                 text: " / ",
                                 style: TextStyle(
-                                  color: Colors.grey,
-                                  //fontWeight: FontWeight.bold,
-                                   fontSize: 14
-                                ),
+                                    color: Colors.grey,
+                                    //fontWeight: FontWeight.bold,
+                                    fontSize: 14),
                               ),
                               TextSpan(
                                 text: "Closed",
                                 style: TextStyle(
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w800,
-                                   fontSize: 14
-                                ),
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14),
                               ),
                             ],
                           ),
-                          
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.only(right: 10),
+                        padding: const EdgeInsets.only(right: 11),
                         child: Text(
                           LocalDatabase.getBarById(
                                       barHistory.currentTappedBarId!)

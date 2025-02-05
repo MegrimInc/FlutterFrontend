@@ -52,7 +52,7 @@ class _MyTopIconsState extends State<MyTopIcons> {
               width: 40,
               child: Iconify(
                 HeroiconsSolid.search,
-                size: 26,
+                size: 25,
                 color: Colors.grey,
               ),
             ),

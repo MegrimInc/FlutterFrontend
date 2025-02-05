@@ -15,34 +15,32 @@ class RegisterPage2 extends StatefulWidget {
 
 class _RegisterPageState2 extends State<RegisterPage2> {
   final ScrollController _scrollController = ScrollController();
-  bool _isAtEndOfPage = false;
+  //bool _isAtEndOfPage = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    //_scrollController.addListener(_onScroll);
   }
 
-  void _onScroll() {
-    if (_scrollController.hasClients) {
-      final maxScroll = _scrollController.position.maxScrollExtent;
-      final currentScroll = _scrollController.position.pixels;
+  // void _onScroll() {
+  //   if (_scrollController.hasClients) {
+  //     final maxScroll = _scrollController.position.maxScrollExtent;
+  //     final currentScroll = _scrollController.position.pixels;
 
-      // print('Current Scroll Position: $currentScroll');
-      // print('Max Scroll Extent: $maxScroll');
+  //     // print('Current Scroll Position: $currentScroll');
+  //     // print('Max Scroll Extent: $maxScroll');
 
-      if (currentScroll >= maxScroll) {
-        // print('Scrolled to the end of the page');
-        setState(() {
-          _isAtEndOfPage = true;
-        });
-      }
-    }
-  }
+  //     if (currentScroll >= maxScroll) {
+  //       // print('Scrolled to the end of the page');
+  //       setState(() {
+  //         _isAtEndOfPage = true;
+  //       });
+  //     }
+  //   }
+  // }
 
   void acceptTOS() async {
-    if (!_isAtEndOfPage) return;
-
     final url = Uri.parse('https://www.barzzy.site/newsignup/accept-tos');
     final loginCache8 = LoginCache();
     final tosEmail = await loginCache8.getEmail();
@@ -111,19 +109,19 @@ class _RegisterPageState2 extends State<RegisterPage2> {
       bottomNavigationBar: BottomAppBar(
         color: Colors.black,
         child: GestureDetector(
-          onTap: _isAtEndOfPage ? acceptTOS : null, // Tap only if at the end
+          onTap: acceptTOS,  // Tap only if at the end
           child: Container(
             decoration: BoxDecoration(
-              color: _isAtEndOfPage ? Colors.white : Colors.black,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(5),
               border: Border.all(
-                  color: _isAtEndOfPage ? Colors.transparent : Colors.white),
+                  color:  Colors.transparent,)
             ),
-            child: Center(
+            child: const Center(
               child: Text(
                 'I Accept the Terms of Service',
                 style: TextStyle(
-                  color: _isAtEndOfPage ? Colors.black : Colors.white,
+                  color: Colors.black,
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
@@ -296,7 +294,7 @@ class _RegisterPageState2 extends State<RegisterPage2> {
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
+   // _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }

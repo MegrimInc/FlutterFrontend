@@ -74,24 +74,42 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
     isScanning.value = true;
 
     final Map<String, ScanResult> currentResults = {}; // Key by device remoteId
+    final Map<String, DateTime> lastSeen = {};
 
     // Listen to scan results
     scanSubscription = FlutterBluePlus.onScanResults.listen((results) {
+      final now = DateTime.now();
+
       for (final result in results) {
         final String advName = result.advertisementData.advName;
       final RegExp namePattern = RegExp(r'^\d+~[A-Z]\|');
         
-
         // Only include devices advertising with "Peripheral" in their name
         if (advName.isNotEmpty && namePattern.hasMatch(advName)) {
-          currentResults[result.device.remoteId.toString()] = result;
+        final deviceId = result.device.remoteId.toString();
+        currentResults[deviceId] = result;
+        lastSeen[deviceId] = now;
         }
       }
+
+       // **🔥 Remove Outdated Devices (Not Seen in Last 10s)**
+    final List<String> toRemove = [];
+    lastSeen.forEach((deviceId, timestamp) {
+      if (now.difference(timestamp) > const Duration(seconds: 3)) {
+        toRemove.add(deviceId);
+      }
+    });
+
+    for (final deviceId in toRemove) {
+      currentResults.remove(deviceId);
+      lastSeen.remove(deviceId);
+    }
 
       // Update the scanResults ValueNotifier with the sorted list
       scanResults.value = currentResults.values.toList()
         ..sort((a, b) => b.rssi.compareTo(a.rssi)); // Sort by signal strength
     });
+
 
     // Start scanning without a timeout
     FlutterBluePlus.startScan().catchError((error) {

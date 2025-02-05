@@ -69,8 +69,7 @@ class DrinkFeedState extends State<DrinkFeed>
     _controller.forward();
   }
 
-  void _submitOrder(BuildContext context,
-      {required bool inAppPayments, required bool tips}) async {
+  void _submitOrder(BuildContext context, {required bool inAppPayments}) async {
     final loginCache = Provider.of<LoginCache>(context, listen: false);
     final userId = await loginCache.getUID();
     final cart = Provider.of<Cart>(context, listen: false);
@@ -100,14 +99,13 @@ class DrinkFeedState extends State<DrinkFeed>
     }
 
     // Determine the quantity limit based on payment method
-    final quantityLimit = inAppPayments ? 10 : 3;
+    const quantityLimit = 10;
     final totalQuantity = cart.getTotalDrinkCount();
 
     // Check if the cart's total quantity exceeds the limit
     if (totalQuantity > quantityLimit) {
-      final message = inAppPayments
-          ? 'You can only add up to 10 drinks for in-app payments.'
-          : 'You can only add up to 3 drinks for in-person payments.';
+      const message = 'You can only add up to 10 drinks per order';
+
       _showNotAllowedDialog(message);
       return; // Exit if limit is exceeded
     }
@@ -160,7 +158,7 @@ class DrinkFeedState extends State<DrinkFeed>
 
     // Calculate the total regular price for all items paid with money
 
-    final orderTip = tips ? cart.tipPercentage : 0.0;
+    final orderTip = inAppPayments ? cart.tipPercentage : 0.0;
 
     // Prepare the order object to send
     final order = {
@@ -269,38 +267,18 @@ class DrinkFeedState extends State<DrinkFeed>
           onPanStart: (details) {
             _startPosition = details.globalPosition;
           },
-          // onPanEnd: (details) {
-          //   if (_startPosition == null) return;
-
-          //   final Offset endPosition = details.globalPosition;
-          //   final double dy = endPosition.dy - _startPosition!.dy;
-
-          //   if (dy.abs() > swipeThreshold) {
-          //     if (dy < 0) {
-          //       Navigator.of(context).pop();
-          //     }
-          //   }
-
-          //   if (dy.abs() < swipeThreshold) {
-          //     if (dy < 0) {
-          //       Navigator.of(context).pop();
-          //     }
-          //   }
-          // },
-
           onPanEnd: (details) {
-  if (_startPosition == null) return;
+            if (_startPosition == null) return;
 
-  final double dx = details.velocity.pixelsPerSecond.dx;
-  final double dy = details.velocity.pixelsPerSecond.dy;
+            final double dy = details.velocity.pixelsPerSecond.dy;
 
-  // Check if swipe exceeds threshold in any direction
-  if (dx.abs() > 100 || dy.abs() > 100) {
-    Navigator.of(context).pop();
-  }
+            // Only trigger pop if swiping down (positive dy)
+            if (dy > 100) {
+              Navigator.of(context).pop();
+            }
 
-  _startPosition = null; // Reset start position
-},
+            _startPosition = null; // Reset start position
+          },
           child: Stack(
             children: [
               ValueListenableBuilder<Drink>(
@@ -362,48 +340,25 @@ class DrinkFeedState extends State<DrinkFeed>
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.only(top: 30.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Consumer<Cart>(
-            builder: (context, cart, child) {
-              return Row(
-                children: [
-                  Icon(
-                    cart.isHappyHour
-                        ? Icons.hourglass_bottom
-                        : Icons.hourglass_disabled_rounded,
-                    size: 27,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    cart.isHappyHour
-                        ? "Happy Hour is active"
-                        : "Happy Hour not active",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-          ValueListenableBuilder<int>(
-            valueListenable: _currentPageNotifier,
-            builder: (context, currentPage, child) {
-              return SizedBox(
-                child: Text(
-                  '${currentPage + 1} / 2 ', // Updates to show the current page out of total pages
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+          Consumer<LocalDatabase>(
+            builder: (context, localDatabase, _) {
+              final pointBalance =
+                  localDatabase.getPointsForBar(widget.barId)?.points ?? 0;
+              return Center(
+                child: SizedBox(
+                    height: 30,
+                    child: Text(
+                      'Available Balance: $pointBalance pts',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white54,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )),
               );
             },
           ),
@@ -417,41 +372,48 @@ class DrinkFeedState extends State<DrinkFeed>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
+        const SizedBox(height: 25),
         const Spacer(flex: 1),
+        _buildDrinkInfo(context),
+        const Spacer(flex: 2),
+        _buildQuantityControlButtons(context),
+        const Spacer(flex: 2),
         Center(
           child: SizedBox(
             height: 29,
             child: Consumer<Cart>(
               builder: (context, cart, _) {
                 // Show the animated text only if the cart is not empty
-                return
-                    //cart.getTotalDrinkCount() > 0 ?
-                    AnimatedTextKit(
+                return AnimatedTextKit(
                   animatedTexts: [
                     FadeAnimatedText(
                       'Swipe Left To View Cart',
                       textStyle: GoogleFonts.poppins(
-                        color: Colors.lightGreenAccent,
-                        fontSize: 21,
+                        color: Colors.white70,
+                        fontSize: 22,
                         fontWeight: FontWeight.w600,
+                        fontStyle: FontStyle.italic,
                       ),
-                      duration: const Duration(milliseconds: 1500),
+                      duration: const Duration(milliseconds: 2000),
+                    ),
+                    FadeAnimatedText(
+                      'Swipe Down to View Menu',
+                      textStyle: GoogleFonts.poppins(
+                        color: Colors.white70,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      duration: const Duration(milliseconds: 2000),
                     ),
                   ],
                   isRepeatingAnimation: true,
                   repeatForever: true,
                 );
-                //: const SizedBox(); // Keep the space if the cart is empty
               },
             ),
           ),
         ),
-        const Spacer(flex: 2),
-        _buildDrinkInfo(context),
-        const Spacer(flex: 2),
-        _buildQuantityControlButtons(context),
-        const Spacer(flex: 2),
-        _buildBottomBar(context),
         const Spacer(flex: 1),
       ],
     );
@@ -479,25 +441,6 @@ class DrinkFeedState extends State<DrinkFeed>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 25),
-        Consumer<LocalDatabase>(
-          builder: (context, localDatabase, _) {
-            final pointBalance =
-                localDatabase.getPointsForBar(widget.barId)?.points ?? 0;
-            return Center(
-              child: SizedBox(
-                  height: 30,
-                  child: Text(
-                    'Available Balance: $pointBalance pts',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 21,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  )),
-            );
-          },
-        ),
         const SizedBox(height: 50),
         Center(
           child: Text(
@@ -609,15 +552,18 @@ class DrinkFeedState extends State<DrinkFeed>
             ),
           )
         else
-          Center(
-            child: Text(
-              'Your cart is currently empty.',
-              style: GoogleFonts.poppins(
-                color: Colors.white70,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
+          Expanded(
+            flex: 20,
+            child: Center(
+              child: Text(
+                'Your cart is currently empty.',
+                style: GoogleFonts.poppins(
+                  color: Colors.white70,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
           ),
         const Spacer(),
@@ -639,8 +585,8 @@ class DrinkFeedState extends State<DrinkFeed>
           ),
         ),
         const Spacer(),
-        const SizedBox(height: 50),
-        _buildPriceOptionButtons(context),
+        const SizedBox(height: 45),
+        _buildPurchaseButton(context),
         const Spacer(),
       ],
     );
@@ -670,7 +616,7 @@ class DrinkFeedState extends State<DrinkFeed>
           Text(
             'ABV: ${currentDrink.value.alcohol}%',
             style: GoogleFonts.poppins(
-              color: Colors.white70,
+              color: Colors.white60,
               fontSize: 20,
             ),
           ),
@@ -902,123 +848,73 @@ class DrinkFeedState extends State<DrinkFeed>
     );
   }
 
-  Widget _buildPriceOptionButtons(BuildContext context) {
+  Widget _buildPurchaseButton(BuildContext context) {
     return Consumer<Cart>(
       builder: (context, cart, _) {
         final isCartEmpty = cart.getTotalDrinkCount() == 0;
         final totalMoneyPrice = cart.totalCartMoney;
-        final totalPointsPrice = cart.totalCartPoints;
+        final bool inAppPayments = totalMoneyPrice > 0;
 
-        // Only render the "Pay with pts" button if there's no regular price
-        if (totalMoneyPrice == 0 && totalPointsPrice > 0) {
-          return Column(
-            children: [
-              Center(
-                child: GestureDetector(
-                  onTap: isCartEmpty
-                      ? null
-                      : () {
-                          _submitOrder(context,
-                              inAppPayments: false, tips: false);
-                        },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 80, vertical: 19),
-                    decoration: BoxDecoration(
-                      color: isCartEmpty ? Colors.white24 : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Pay in app',
+        return Column(children: [
+          Center(
+            child: GestureDetector(
+              onTap: isCartEmpty
+                  ? null
+                  : () {
+                      _submitOrder(context, inAppPayments: inAppPayments);
+                    },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 80, vertical: 19),
+                decoration: BoxDecoration(
+                  color: isCartEmpty ? Colors.white24 : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Consumer<LocalDatabase>(
+                  builder: (context, localDatabase, _) {
+                    return Text(
+                      localDatabase.isPaymentPresent || !inAppPayments
+                          ? 'Purchase'
+                          : 'Set up card',
                       style: GoogleFonts.poppins(
-                        color: isCartEmpty ? Colors.white70 : Colors.black,
+                        color: isCartEmpty
+                            ? Colors.white70
+                            : localDatabase.isPaymentPresent || !inAppPayments
+                                ? Colors.black
+                                : Colors.red,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
-              const SizedBox(height: 150)
-            ],
-          );
-        }
-
-        // Otherwise, render the "Pay @ bar" and "Pay in app" buttons
-        return Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // Pay @ bar button
-                GestureDetector(
-                  onTap: isCartEmpty
-                      ? null
-                      : () {
-                          _submitOrder(context,
-                              inAppPayments: false, tips: false);
-                        },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 20),
-                    decoration: BoxDecoration(
-                      color: isCartEmpty ? Colors.white24 : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Pay @ bar',
-                      style: GoogleFonts.poppins(
-                        color: isCartEmpty ? Colors.white70 : Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-                // Pay in app button
-                GestureDetector(
-                  onTap: isCartEmpty
-                      ? null
-                      : () {
-                          _submitOrder(context,
-                              inAppPayments: true, tips: true);
-                        },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 20),
-                    decoration: BoxDecoration(
-                      color: isCartEmpty ? Colors.white24 : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Consumer<LocalDatabase>(
-                      builder: (context, localDatabase, _) {
-                        return Text(
-                          localDatabase.isPaymentPresent
-                              ? 'Pay in app'
-                              : 'Set up card',
-                          style: GoogleFonts.poppins(
-                            color: isCartEmpty
-                                ? Colors.white70
-                                : localDatabase.isPaymentPresent
-                                    ? Colors.black
-                                    : Colors.red,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ],
             ),
-            if (!isCartEmpty)
+          ),
+          if (inAppPayments)
             const SizedBox(height: 50)
-            else const SizedBox(height: 65),
-            if (!isCartEmpty) _buildTipSelectionButtons(context),
-            const SizedBox(height: 25),
-          ],
-        );
+          else
+            const SizedBox(height: 65),
+          if (inAppPayments) _buildTipSelectionButtons(context),
+          if (inAppPayments)
+            const SizedBox(height: 25)
+        else
+  const SizedBox(
+    height: 95,
+    child: Padding(
+      padding: EdgeInsets.only(top: 20),
+      child: Text(
+        '*Tips are unavailable for point-based orders',
+        style: TextStyle(
+          color: Colors.white70,
+          fontSize: 16,
+          fontStyle: FontStyle.italic,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    ),
+  ),
+        ]);
       },
     );
   }
@@ -1026,12 +922,9 @@ class DrinkFeedState extends State<DrinkFeed>
   Widget _buildTipSelectionButtons(BuildContext context) {
     return Consumer<Cart>(
       builder: (context, cart, _) {
-        const tipPercentages = [
-          0.0,
-          0.18,
-          0.20,
-          0.22
-        ]; // Added 0% to the predefined percentages
+        final totalMoneyPrice = cart.totalCartMoney;
+        final bool inAppPayments = totalMoneyPrice > 0;
+        const tipPercentages = [0.0, 0.18, 0.20, 0.22];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -1043,65 +936,48 @@ class DrinkFeedState extends State<DrinkFeed>
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ...tipPercentages.map((tip) {
-                  final isSelected = cart.tipPercentage == tip;
-                  return GestureDetector(
-                    onTap: () {
-                      cart.setTipPercentage(
-                          tip); // Update the selected tip percentage
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: isSelected ? Colors.white : Colors.transparent,
-                        border: Border.all(
-                          color: isSelected ? Colors.white : Colors.grey,
-                          width: 1.5,
+            const SizedBox(height: 15),
+            if (inAppPayments)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ...tipPercentages.map((tip) {
+                    final isSelected = cart.tipPercentage == tip;
+                    return GestureDetector(
+                      onTap: inAppPayments
+                          ? () {
+                              cart.setTipPercentage(tip);
+                            }
+                          : null, // Disable tap if inAppPayments is false
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected ? Colors.white : Colors.transparent,
+                          border: Border.all(
+                            color: isSelected ? Colors.white : Colors.grey,
+                            width: 1.5,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${(tip * 100).toInt()}%', // Convert the decimal to a percentage
-                        style: TextStyle(
-                          color: isSelected ? Colors.black : Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                        child: Text(
+                          '${(tip * 100).toInt()}%', // Convert the decimal to a percentage
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.black
+                                : Colors.white, // Normal color
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }),
-              ],
-            ),
+                    );
+                  }),
+                ],
+              ),
           ],
         );
       },
-    );
-  }
-
-  Widget _buildBottomBar(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: GestureDetector(
-        onTap: () {
-          Navigator.of(context).pop();
-        },
-        child: Center(
-          child: Text(
-            'Order More',
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
     );
   }
 

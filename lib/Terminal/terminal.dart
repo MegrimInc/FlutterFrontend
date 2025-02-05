@@ -41,7 +41,7 @@ class _OrdersPageState extends State<Terminal> {
   bool happyHour = false;
   WebSocketChannel? socket;
   bool terminalStatus = true;
-  int heartbeat = 0;
+  //int heartbeat = 0;
   Timer? _timer;
   WebSocket? websocket;
 
@@ -58,12 +58,6 @@ class _OrdersPageState extends State<Terminal> {
     filterUnique = true;
     bartenderNumber = 0;
     bartenderCount = 1;
-
-    // // Start a timer to send a heartbeat every 30 minutes
-    // Timer.periodic(const Duration(minutes: 30), (timer) {
-    //   debugPrint("30-minute heartbeat triggered");
-    //   _heartbeat();
-    // });
 
     // Start a timer to update the list every 30 seconds
     _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
@@ -83,28 +77,24 @@ class _OrdersPageState extends State<Terminal> {
     }
   }
 
-    Future<double> fetchTipAmount() async {
-    const String url = "https://www.barzzy.site/orders/getTips";
-    final Map<String, dynamic> payload = {
-      "bartenderID": widget.bartenderID,
-      "barID": widget.barID as String,
-
-    };
-
+  Future<double> fetchTipAmount() async {
+     String url =
+        "https://www.barzzy.site/orders/gettips?bartenderID=${widget.bartenderID}&barID=${widget.barID}";
     try {
-      final response = await http.post(
+      final response = await http.get(
         Uri.parse(url),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode(payload),
+        //body: jsonEncode(payload),
       );
 
       if (response.statusCode == 200) {
-    // Decode the JSON object from the backend
-      final Map<String, dynamic> data = jsonDecode(response.body);
-      // Extract the tipTotal field and convert it to double if necessary
-      return (data['tipTotal'] as num).toDouble();
+        // Decode the JSON object from the backend
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        // Extract the tipTotal field and convert it to double if necessary
+        return (data['tipTotal'] as num).toDouble();
       } else {
-        debugPrint("Error fetching tip amount. Status code: ${response.statusCode}");
+        debugPrint(
+            "Error fetching tip amount. Status code: ${response.statusCode}");
         return 0.0;
       }
     } catch (error) {
@@ -112,28 +102,6 @@ class _OrdersPageState extends State<Terminal> {
       return 0.0;
     }
   }
-
-  // void _heartbeat() async {
-  //   final url = Uri.parse(
-  //       'https://www.barzzy.site/newsignup/heartbeat?barId=${widget.barID}&bartenderId=${widget.bartenderID}');
-
-  //   debugPrint("Attempting heartbeat");
-  //   try {
-  //     final response = await http.post(
-  //       url,
-  //       headers: {'Content-Type': 'application/json'},
-  //       // Possibly an empty body, or some other JSON if needed, but 'barId' and 'bartenderId'
-  //       // must appear in the query string to match the @RequestParam usage.
-  //     );
-  //     debugPrint("Response: ${response.body}");
-
-  //     if (response.statusCode == 200) {
-  //       debugPrint("Successful heartbeat");
-  //     }
-  //   } catch (e) {
-  //     debugPrint("Something went wrong with heartbeat");
-  //   }
-  // }
 
   void _updateLists() {
     debugPrint("Starting _updateLists...");
@@ -599,7 +567,7 @@ class _OrdersPageState extends State<Terminal> {
                   const Icon(Icons.person, color: Colors.grey),
                   const SizedBox(width: 2.5),
                   Text(
-                    '${bartenderCount - 1}',
+                    '$bartenderCount',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -627,7 +595,10 @@ class _OrdersPageState extends State<Terminal> {
                   ),
                   const SizedBox(width: 20),
                   ElevatedButton(
-                    onPressed: claimTips,
+                    onPressed: () {
+                      claimTips();
+                      debugPrint('hello world');
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.black,
@@ -781,98 +752,99 @@ class _OrdersPageState extends State<Terminal> {
                                       color: Colors.white,
                                     ),
                                   ),
-                                 
                             Expanded(
                               child: Row(
                                 children: [
-                                   if (unpaidDrinks.isNotEmpty) 
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        const Text(
-                                          'UNPAID:',
-                                          style: TextStyle(
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                            shadows: [
-                                              Shadow(
-                                                color: Colors.black,
-                                                offset: Offset(1.0, 1.0),
-                                                blurRadius: 1.0,
-                                              ),
-                                            ],
+                                  if (unpaidDrinks.isNotEmpty)
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          const Text(
+                                            'UNPAID:',
+                                            style: TextStyle(
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                              shadows: [
+                                                Shadow(
+                                                  color: Colors.black,
+                                                  offset: Offset(1.0, 1.0),
+                                                  blurRadius: 1.0,
+                                                ),
+                                              ],
+                                            ),
+                                            textAlign: TextAlign.center,
                                           ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        if (unpaidDrinks.isNotEmpty && paidDrinks.isNotEmpty)
-                                        const Divider(
-        color: Colors.white54,
-        thickness: 1, 
-        indent:  30, 
-        endIndent:  0 
-      ),
-      const SizedBox(height: 5),
-                                        ...unpaidDrinks.map((drink) => Text(
-                                              formatDrink(drink),
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold),
-                                              textAlign: TextAlign.center,
-                                            )),
-                                      ],
+                                          if (unpaidDrinks.isNotEmpty &&
+                                              paidDrinks.isNotEmpty)
+                                            const Divider(
+                                                color: Colors.white54,
+                                                thickness: 1,
+                                                indent: 30,
+                                                endIndent: 0),
+                                          const SizedBox(height: 5),
+                                          ...unpaidDrinks.map((drink) => Text(
+                                                formatDrink(drink),
+                                                style: const TextStyle(
+                                                    fontSize: 16,
+                                                    color: Colors.white,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                                textAlign: TextAlign.center,
+                                              )),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  if (unpaidDrinks.isNotEmpty && paidDrinks.isNotEmpty)
-                                  Container(
-                                    width: 1,
-                                    color: Colors.white54,
-                                  ),
-                                  if (paidDrinks.isNotEmpty) 
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                         
-                                        const Text(
-                                          'PAID:',
-                                          style: TextStyle(
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                            shadows: [
-                                              Shadow(
-                                                color: Colors.black,
-                                                offset: Offset(1.0, 1.0),
-                                                blurRadius: 1.0,
-                                              ),
-                                            ],
+                                  if (unpaidDrinks.isNotEmpty &&
+                                      paidDrinks.isNotEmpty)
+                                    Container(
+                                      width: 1,
+                                      color: Colors.white54,
+                                    ),
+                                  if (paidDrinks.isNotEmpty)
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          const Text(
+                                            'PAID:',
+                                            style: TextStyle(
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                              shadows: [
+                                                Shadow(
+                                                  color: Colors.black,
+                                                  offset: Offset(1.0, 1.0),
+                                                  blurRadius: 1.0,
+                                                ),
+                                              ],
+                                            ),
+                                            textAlign: TextAlign.center,
                                           ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                         if (unpaidDrinks.isNotEmpty && paidDrinks.isNotEmpty)
-                                        const Divider(
-        color: Colors.white54,
-        thickness: 1, 
-        indent:  0, 
-        endIndent:  30 
-      ),
-      const SizedBox(height: 5),
-                                        ...paidDrinks.map((drink) => Text(
-                                              formatDrink(drink),
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold),
-                                              textAlign: TextAlign.center,
-                                            )),
-                                      ],
+                                          if (unpaidDrinks.isNotEmpty &&
+                                              paidDrinks.isNotEmpty)
+                                            const Divider(
+                                                color: Colors.white54,
+                                                thickness: 1,
+                                                indent: 0,
+                                                endIndent: 30),
+                                          const SizedBox(height: 5),
+                                          ...paidDrinks.map((drink) => Text(
+                                                formatDrink(drink),
+                                                style: const TextStyle(
+                                                    fontSize: 16,
+                                                    color: Colors.white,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                                textAlign: TextAlign.center,
+                                              )),
+                                        ],
+                                      ),
                                     ),
-                                  ),
                                 ],
                               ),
                             ),
@@ -914,7 +886,7 @@ class _OrdersPageState extends State<Terminal> {
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
               title: Text(
-              'Claim tips for ${widget.bartenderID} (\$${tipAmount.toStringAsFixed(2)})',
+                'Claim tips for ${widget.bartenderID} (\$${tipAmount.toStringAsFixed(2)})',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               content: Column(
@@ -1511,9 +1483,13 @@ class _OrdersPageState extends State<Terminal> {
   }
 
   String formatElapsedTime(int seconds) {
-    int minutes = (seconds / 60).floor(); // Convert seconds to minutes
-    return "${minutes}m";
-  }
+    if (seconds < 0) {
+        return "0m"; // Prevent negative minutes
+    }
+    
+    int minutes = (seconds / 60).floor();
+    return "$minutes m";
+}
 
   @override
   void dispose() {
