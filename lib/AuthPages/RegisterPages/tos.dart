@@ -23,23 +23,6 @@ class _RegisterPageState2 extends State<RegisterPage2> {
     //_scrollController.addListener(_onScroll);
   }
 
-  // void _onScroll() {
-  //   if (_scrollController.hasClients) {
-  //     final maxScroll = _scrollController.position.maxScrollExtent;
-  //     final currentScroll = _scrollController.position.pixels;
-
-  //     // print('Current Scroll Position: $currentScroll');
-  //     // print('Max Scroll Extent: $maxScroll');
-
-  //     if (currentScroll >= maxScroll) {
-  //       // print('Scrolled to the end of the page');
-  //       setState(() {
-  //         _isAtEndOfPage = true;
-  //       });
-  //     }
-  //   }
-  // }
-
   void acceptTOS() async {
     final url = Uri.parse('https://www.barzzy.site/newsignup/accept-tos');
     final loginCache8 = LoginCache();
@@ -109,14 +92,14 @@ class _RegisterPageState2 extends State<RegisterPage2> {
       bottomNavigationBar: BottomAppBar(
         color: Colors.black,
         child: GestureDetector(
-          onTap: acceptTOS,  // Tap only if at the end
+          onTap: acceptTOS, // Tap only if at the end
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(5),
-              border: Border.all(
-                  color:  Colors.transparent,)
-            ),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(
+                  color: Colors.transparent,
+                )),
             child: const Center(
               child: Text(
                 'I Accept the Terms of Service',
@@ -269,9 +252,23 @@ class _RegisterPageState2 extends State<RegisterPage2> {
                     style: TextStyle(color: Colors.white, fontSize: 14),
                   ),
                   SizedBox(height: 20),
+                  Text(
+                    '9. Automatic Gratuity and Pricing Acknowledgment',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 18,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'By using the Barzzy platform, you acknowledge and consent that all in-app payments are subject to an automatic gratuity of 20% added to every order. The prices displayed within the application have been adjusted to reflect this gratuity, ensuring full transparency of the final charge before checkout. This automatic service charge is non-negotiable and applies to all purchases made through the platform.',
+                    style: TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                  SizedBox(height: 20),
                   // Acceptance of Terms
                   Text(
-                    '9. Acceptance of Terms',
+                    '10. Acceptance of Terms',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -294,7 +291,7 @@ class _RegisterPageState2 extends State<RegisterPage2> {
 
   @override
   void dispose() {
-   // _scrollController.removeListener(_onScroll);
+    // _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }

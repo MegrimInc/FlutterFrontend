@@ -13,7 +13,7 @@ class Cart extends ChangeNotifier {
   double totalCartMoney = 0.0;
   int totalCartPoints = 0;
   bool isHappyHour = false;
-  double tipPercentage = 0.18;
+  double tipPercentage = 0.20;
   
 
   // Set the current bar ID and clear the cart when switching bars

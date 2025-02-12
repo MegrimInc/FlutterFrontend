@@ -489,12 +489,8 @@ class DrinkFeedState extends State<DrinkFeed>
                           final isHappyHour = cart.isHappyHour;
 
                           final price = entry.key.contains("single")
-                              ? (isHappyHour
-                                  ? drink.singleHappyPrice
-                                  : drink.singlePrice)
-                              : (isHappyHour
-                                  ? drink.doubleHappyPrice
-                                  : drink.doublePrice);
+    ? (isHappyHour ? drink.singleHappyPrice : drink.singlePrice) * 1.20
+    : (isHappyHour ? drink.doubleHappyPrice : drink.doublePrice) * 1.20;
 
                           final priceOrPoints = entry.key.contains("points")
                               ? "${(entry.value * drink.points).toInt()} pts"
@@ -584,10 +580,12 @@ class DrinkFeedState extends State<DrinkFeed>
             ),
           ),
         ),
-        const Spacer(),
-        const SizedBox(height: 45),
+        const Spacer(flex: 1),
+        const SizedBox(height: 30),
         _buildPurchaseButton(context),
-        const Spacer(),
+        const Spacer(flex: 5),
+        _buildCheckoutBalance(context, widget.barId),
+        const Spacer(flex: 3),
       ],
     );
   }
@@ -774,9 +772,8 @@ class DrinkFeedState extends State<DrinkFeed>
     final isHappyHour = cart.isHappyHour;
     final drink = LocalDatabase().getDrinkById(drinkId);
     final price = isDouble
-        ? (isHappyHour ? drink.doubleHappyPrice : drink.doublePrice)
-        : (isHappyHour ? drink.singleHappyPrice : drink.singlePrice);
-
+    ? (isHappyHour ? drink.doubleHappyPrice : drink.doublePrice) * 1.20
+    : (isHappyHour ? drink.singleHappyPrice : drink.singlePrice) * 1.20;
     // Update label with the dynamic price
     final updatedLabel = usePoints
         ? "$label:  ${drink.points.toInt()} pts"
@@ -891,95 +888,36 @@ class DrinkFeedState extends State<DrinkFeed>
               ),
             ),
           ),
-          if (inAppPayments)
-            const SizedBox(height: 50)
-          else
-            const SizedBox(height: 65),
-          if (inAppPayments) _buildTipSelectionButtons(context),
-          if (inAppPayments)
-            const SizedBox(height: 25)
-        else
-  const SizedBox(
-    height: 95,
-    child: Padding(
-      padding: EdgeInsets.only(top: 20),
-      child: Text(
-        '*Tips are unavailable for point-based orders',
-        style: TextStyle(
-          color: Colors.white70,
-          fontSize: 16,
-          fontStyle: FontStyle.italic,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    ),
-  ),
         ]);
       },
     );
   }
 
-  Widget _buildTipSelectionButtons(BuildContext context) {
-    return Consumer<Cart>(
-      builder: (context, cart, _) {
-        final totalMoneyPrice = cart.totalCartMoney;
-        final bool inAppPayments = totalMoneyPrice > 0;
-        const tipPercentages = [0.0, 0.18, 0.20, 0.22];
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Text(
-              "Select Tip Percentage",
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 15),
-            if (inAppPayments)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ...tipPercentages.map((tip) {
-                    final isSelected = cart.tipPercentage == tip;
-                    return GestureDetector(
-                      onTap: inAppPayments
-                          ? () {
-                              cart.setTipPercentage(tip);
-                            }
-                          : null, // Disable tap if inAppPayments is false
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected ? Colors.white : Colors.transparent,
-                          border: Border.all(
-                            color: isSelected ? Colors.white : Colors.grey,
-                            width: 1.5,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${(tip * 100).toInt()}%', // Convert the decimal to a percentage
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.black
-                                : Colors.white, // Normal color
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-              ),
-          ],
-        );
-      },
-    );
-  }
+
+  Widget _buildCheckoutBalance(BuildContext context, String barId) {
+  final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
+  final cart = Provider.of<Cart>(context, listen: false);
+
+  final availablePoints = localDatabase.getPointsForBar(barId)?.points ?? 0;
+  final remainingBalance = availablePoints - cart.totalCartPoints;
+
+  return SizedBox(
+    height: 60,
+    child: Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Text(
+        'Checkout Balance: ${remainingBalance >= 0 ? remainingBalance : 0} pts',
+        style: const TextStyle(
+          color: Colors.white70,
+          fontSize: 21.5,
+          fontStyle: FontStyle.italic,
+          //fontWeight: FontWeight.w600
+        ),
+        textAlign: TextAlign.center,
+      ),
+    ),
+  );
+}
 
   void _showLoginAlertDialog(BuildContext context) {
     final safeContext = navigatorKey.currentContext;
