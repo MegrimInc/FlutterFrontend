@@ -115,9 +115,6 @@ Future<void> main() async {
   LocalDatabase localDatabase = LocalDatabase();
   await sendGetRequest();
   await sendGetRequest2();
-  if (uid != 0) {
-    await checkPaymentMethod(localDatabase, uid);
-  }
 
   // Create the MethodChannel
   const MethodChannel notificationChannel =
@@ -256,26 +253,6 @@ Future<void> sendGetRequest2() async {
   }
 }
 
-Future<void> checkPaymentMethod(LocalDatabase localDatabase, int userId) async {
-  try {
-    final response = await http.get(
-      Uri.parse('https://www.barzzy.site/customer/checkPaymentMethod/$userId'),
-    );
-
-    if (response.statusCode == 200) {
-      final paymentPresent = jsonDecode(response.body); // true or false
-      debugPrint('Payment method check result: $paymentPresent');
-      localDatabase.updatePaymentStatus(paymentPresent);
-    } else {
-      debugPrint(
-          'Failed to check payment method. Status code: ${response.statusCode}');
-      localDatabase.updatePaymentStatus(false);
-    }
-  } catch (e) {
-    debugPrint('Error checking payment method: $e');
-    localDatabase.updatePaymentStatus(false);
-  }
-}
 
 class Barzzy extends StatelessWidget {
   final bool loggedInAlready;

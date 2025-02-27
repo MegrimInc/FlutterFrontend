@@ -424,12 +424,16 @@ class DrinkFeedState extends State<DrinkFeed>
     final hasItems = cart.getTotalDrinkCount() > 0;
     final totalPrice = cart.totalCartMoney;
     final totalPoints = cart.totalCartPoints;
-    final double totalPriceWithTip = totalPrice * (1 + cart.tipPercentage);
+    final double totalPriceWithTip = totalPrice * (1 + cart.tipPercentage) * 1.04 + .40;
+    final double serviceFee = totalPrice > 0 
+    ? totalPrice * (1 + cart.tipPercentage) * 0.04 + 0.40 
+    : 0;
+    final double subtotalPriceWithTip = totalPrice * (1 + cart.tipPercentage);
 
     String totalText;
     if (totalPrice > 0 && totalPoints > 0) {
       totalText =
-          'Total: \$${totalPriceWithTip.toStringAsFixed(2)} and ${totalPoints.toInt()} pts';
+          'Total: \$${totalPriceWithTip.toStringAsFixed(2)} & ${totalPoints.toInt()} pts';
     } else if (totalPrice > 0) {
       totalText = 'Total: \$${totalPriceWithTip.toStringAsFixed(2)}';
     } else if (totalPoints > 0) {
@@ -516,7 +520,7 @@ class DrinkFeedState extends State<DrinkFeed>
                               child: Text.rich(
                                 TextSpan(
                                   text:
-                                      '${entry.value} $drinkName$sizeText - $priceOrPoints',
+                                      '  ${entry.value} $drinkName$sizeText - $priceOrPoints',
                                   style: GoogleFonts.poppins(
                                     color: Colors.white,
                                     fontSize: 18,
@@ -569,7 +573,19 @@ class DrinkFeedState extends State<DrinkFeed>
             color: Colors.white54,
             thickness: 0.5,
           ),
-        ),
+        ), 
+        if (hasItems)
+         Center(
+          child: Text(
+           'Subtotal & Fees: \$${subtotalPriceWithTip.toStringAsFixed(2)} + \$${serviceFee.toStringAsFixed(2)}',
+            style: GoogleFonts.poppins(
+            color: Colors.white70,
+             fontWeight: FontWeight.w500,
+          fontSize: 18,
+            ),
+          )),
+          const SizedBox(height: 10),
+      
         Center(
           child: Text(
             totalText,
@@ -580,11 +596,21 @@ class DrinkFeedState extends State<DrinkFeed>
             ),
           ),
         ),
+      
         const Spacer(flex: 1),
         const SizedBox(height: 30),
         _buildPurchaseButton(context),
         const Spacer(flex: 5),
-        _buildCheckoutBalance(context, widget.barId),
+      const Text(
+         '*Gratuity included in menu prices.',
+        style: TextStyle(           
+          color: Colors.white70,
+          fontSize: 18,
+         fontStyle: FontStyle.italic,
+        //fontWeight: FontWeight.w600
+       ),
+        textAlign: TextAlign.center,
+      ),
         const Spacer(flex: 3),
       ],
     );
@@ -892,32 +918,6 @@ class DrinkFeedState extends State<DrinkFeed>
       },
     );
   }
-
-
-  Widget _buildCheckoutBalance(BuildContext context, String barId) {
-  final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
-  final cart = Provider.of<Cart>(context, listen: false);
-
-  final availablePoints = localDatabase.getPointsForBar(barId)?.points ?? 0;
-  final remainingBalance = availablePoints - cart.totalCartPoints;
-
-  return SizedBox(
-    height: 60,
-    child: Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Text(
-        'Checkout Balance: ${remainingBalance >= 0 ? remainingBalance : 0} pts',
-        style: const TextStyle(
-          color: Colors.white70,
-          fontSize: 21.5,
-          fontStyle: FontStyle.italic,
-          //fontWeight: FontWeight.w600
-        ),
-        textAlign: TextAlign.center,
-      ),
-    ),
-  );
-}
 
   void _showLoginAlertDialog(BuildContext context) {
     final safeContext = navigatorKey.currentContext;

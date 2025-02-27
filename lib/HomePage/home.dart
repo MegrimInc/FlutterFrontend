@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/HomePage/hometopicons.dart';
 import 'package:barzzy/MenuPage/cart.dart';
@@ -12,6 +14,7 @@ import 'package:barzzy/Backend/barhistory.dart';
 import 'package:barzzy/Backend/recommended.dart';
 import 'package:barzzy/MenuPage/menu.dart';
 import '../Backend/localdatabase.dart';
+import 'package:http/http.dart' as http;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -31,7 +34,10 @@ class HomePageState extends State<HomePage> {
     super.initState();
     _connect();
     _updateMasterList();
+    checkPaymentMethod();
   }
+
+
 
   Future<void> _connect() async {
     final hierarchy = Provider.of<Hierarchy>(context, listen: false);
@@ -49,6 +55,38 @@ class HomePageState extends State<HomePage> {
       masterList = [...tappedIds, ...recommendedIds];
     });
   }
+
+  Future<void> checkPaymentMethod() async {
+
+  LocalDatabase localDatabase = LocalDatabase();
+  LoginCache loginCache = LoginCache();
+  final userId = await loginCache.getUID();
+
+    if (userId == 0) {
+      debugPrint('User ID is 0, skipping GET request for payment method.');
+      return;
+    }
+
+  try {
+    final response = await http.get(
+      Uri.parse('https://www.barzzy.site/customer/checkPaymentMethod/$userId'),
+    );
+
+    if (response.statusCode == 200) {
+      final paymentPresent = jsonDecode(response.body); // true or false
+      debugPrint('Payment method check result: $paymentPresent');
+      localDatabase.updatePaymentStatus(paymentPresent);
+    } else {
+      debugPrint(
+          'Failed to check payment method. Status code: ${response.statusCode}');
+      localDatabase.updatePaymentStatus(false);
+    }
+  } catch (e) {
+    debugPrint('Error checking payment method: $e');
+    localDatabase.updatePaymentStatus(false);
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
