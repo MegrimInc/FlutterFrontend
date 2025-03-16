@@ -66,7 +66,7 @@ class Hierarchy extends ChangeNotifier {
                   // Handle the refresh response if needed
                   // You can also extract the 'data' from the message and use it as needed
                   final data = decodedMessage['data'];
-                  _createOrderResponse(data);
+                  _handleUpdateResponse(data);
                   await handleCache(data);
                   break;
 
@@ -81,7 +81,7 @@ class Hierarchy extends ChangeNotifier {
                   debugPrint('error response received.');
                   final String errorMessage = decodedMessage['message'];
                   _handleError(context, errorMessage);
-                   setLoading(false);
+                  setLoading(false);
                   break;
 
                 case 'update':
@@ -92,7 +92,7 @@ class Hierarchy extends ChangeNotifier {
 
                 default:
                   debugPrint('Unknown message type: $messageType');
-                   setLoading(false);
+                  setLoading(false);
                   // Handle any other message types or log an error
                   break;
               }
@@ -189,31 +189,32 @@ class Hierarchy extends ChangeNotifier {
   }
 
   void sendArriveMessage(int barId) async {
-  try {
-    // Fetch userId from LoginCache
-    final loginCache = Provider.of<LoginCache>(navigatorKey.currentContext!, listen: false);
-    final userId = await loginCache.getUID();
+    try {
+      // Fetch userId from LoginCache
+      final loginCache =
+          Provider.of<LoginCache>(navigatorKey.currentContext!, listen: false);
+      final userId = await loginCache.getUID();
 
-    // Ensure WebSocket connection is active
-    if (_channel != null) {
-      // Create the message
-      final message = {
-        "action": "arrive",
-        "userId": userId,
-        "barId": barId,
-      };
+      // Ensure WebSocket connection is active
+      if (_channel != null) {
+        // Create the message
+        final message = {
+          "action": "arrive",
+          "userId": userId,
+          "barId": barId,
+        };
 
-      // Convert message to JSON and send
-      final jsonMessage = jsonEncode(message);
-      debugPrint('Sending arrive message: $jsonMessage');
-      _channel!.sink.add(jsonMessage);
-    } else {
-      debugPrint('Failed to send arrive message: WebSocket is not connected');
+        // Convert message to JSON and send
+        final jsonMessage = jsonEncode(message);
+        debugPrint('Sending arrive message: $jsonMessage');
+        _channel!.sink.add(jsonMessage);
+      } else {
+        debugPrint('Failed to send arrive message: WebSocket is not connected');
+      }
+    } catch (e) {
+      debugPrint('Error while sending arrive message: $e');
     }
-  } catch (e) {
-    debugPrint('Error while sending arrive message: $e');
   }
-}
 
   // Method to handle create order responses
   void _createOrderResponse(Map<String, dynamic> data) async {
@@ -227,8 +228,10 @@ class Hierarchy extends ChangeNotifier {
       _createdOrderBarIds[customerOrder.barId] = customerOrder.timestamp;
 
       // Print statement to confirm addition
-      debugPrint('CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
-      debugPrint('hierarchy localDatabase instance ID: ${localDatabase.hashCode}');
+      debugPrint(
+          'CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
+      debugPrint(
+          'hierarchy localDatabase instance ID: ${localDatabase.hashCode}');
       setLoading(false);
       notifyListeners();
     } catch (e) {
@@ -236,24 +239,23 @@ class Hierarchy extends ChangeNotifier {
     }
   }
 
-
   // Method to handle update responses and send notifications
-void _handleUpdateResponse(Map<String, dynamic> data) async {
-  // Call createOrderResponse to handle the data processing
-  _createOrderResponse(data);
+  void _handleUpdateResponse(Map<String, dynamic> data) async {
+    // Call createOrderResponse to handle the data processing
+    _createOrderResponse(data);
 
-  try {
-    // Check if the status in the data is "delivered" or "canceled"
-    if (data['status'] == 'delivered' || data['status'] == 'canceled') {
-      debugPrint('Status is delivered or canceled. Triggering sendGetRequest2...');
-      await sendGetRequest2();
-      debugPrint('sendGetRequest2 triggered successfully.');
+    try {
+      // Check if the status in the data is "delivered" or "canceled"
+      if (data['status'] == 'delivered' || data['status'] == 'canceled') {
+        debugPrint(
+            'Status is delivered or canceled. Triggering sendGetRequest2...');
+        await sendGetRequest2();
+        debugPrint('sendGetRequest2 triggered successfully.');
+      }
+    } catch (e) {
+      debugPrint('Error while handling update response: $e');
     }
-  } catch (e) {
-    debugPrint('Error while handling update response: $e');
   }
-}
-
 
   void disconnect() {
     if (_channel != null) {

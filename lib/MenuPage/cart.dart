@@ -221,6 +221,51 @@ int getDrinkQuantity(String drinkId,
   notifyListeners(); // Notify listeners to update UI or recalculate totals
 }
 
+// void reorder(CustomerOrder order) {
+//   // Clear the current cart
+//   barCart.clear();
+//   typeTotals.clear();
+//   lastAddedTypes.clear();
+//   totalCartMoney = 0.0;
+//   totalCartPoints = 0;
+
+//   // Add each drink from the order back to the cart
+//   for (var drinkOrder in order.drinks) {
+//     final drinkId = drinkOrder.drinkId.toString();
+//     final quantity = drinkOrder.quantity;
+
+//     // Extract sizeType and paymentType from the order
+//     final sizeType = drinkOrder.sizeType.isNotEmpty ? drinkOrder.sizeType : "";
+//     final paymentType = drinkOrder.paymentType == "points" ? "points" : "dollars";
+
+//     // Determine the typeKey based on sizeType and paymentType
+//     final typeKey = '${sizeType}_$paymentType';
+
+//     // Add the drink to the cart with the specified quantity
+//     barCart.putIfAbsent(drinkId, () => {});
+//     barCart[drinkId]!.update(typeKey, (currentQuantity) => currentQuantity + quantity, ifAbsent: () => quantity);
+
+//     // Track the type key for the drink
+//     lastAddedTypes.putIfAbsent(drinkId, () => []).add(typeKey);
+
+//     // Retrieve the drink details
+//     final drink = LocalDatabase().getDrinkById(drinkId);
+
+//     // Determine the price for the typeKey
+//     double price = paymentType == "points"
+//         ? drink.points.toDouble()
+//         : (sizeType == "double" ? drink.doublePrice : drink.singlePrice);
+
+//     // Update the type totals
+//     typeTotals.update(typeKey, (total) => total + (price * quantity), ifAbsent: () => price * quantity);
+//   }
+
+//   // Recalculate the cart totals
+//   recalculateCartTotals();
+//   notifyListeners();
+// }
+
+
 void reorder(CustomerOrder order) {
   // Clear the current cart
   barCart.clear();
@@ -229,35 +274,69 @@ void reorder(CustomerOrder order) {
   totalCartMoney = 0.0;
   totalCartPoints = 0;
 
+  // Fetch the user's available points balance
+  final localDatabase = LocalDatabase();
+  final pointsData = localDatabase.getPointsForBar(barId!);
+  int availablePoints = pointsData?.points ?? 0;
+
+  debugPrint("User's available points: $availablePoints");
+
+  // Sort drinks by point price in descending order (expensive drinks first)
+  List<DrinkOrder> sortedDrinks = List.from(order.drinks)
+    ..sort((a, b) {
+      final drinkA = localDatabase.getDrinkById(a.drinkId.toString());
+      final drinkB = localDatabase.getDrinkById(b.drinkId.toString());
+      return (drinkB.points).compareTo(drinkA.points);
+    });
+
   // Add each drink from the order back to the cart
-  for (var drinkOrder in order.drinks) {
+  for (var drinkOrder in sortedDrinks) {
     final drinkId = drinkOrder.drinkId.toString();
     final quantity = drinkOrder.quantity;
-
-    // Extract sizeType and paymentType from the order
+    final originalPaymentType = drinkOrder.paymentType; // "regular" or "points"
     final sizeType = drinkOrder.sizeType.isNotEmpty ? drinkOrder.sizeType : "";
-    final paymentType = drinkOrder.paymentType == "points" ? "points" : "dollars";
-
-    // Determine the typeKey based on sizeType and paymentType
-    final typeKey = '${sizeType}_$paymentType';
-
-    // Add the drink to the cart with the specified quantity
-    barCart.putIfAbsent(drinkId, () => {});
-    barCart[drinkId]!.update(typeKey, (currentQuantity) => currentQuantity + quantity, ifAbsent: () => quantity);
-
-    // Track the type key for the drink
-    lastAddedTypes.putIfAbsent(drinkId, () => []).add(typeKey);
 
     // Retrieve the drink details
-    final drink = LocalDatabase().getDrinkById(drinkId);
+    final drink = localDatabase.getDrinkById(drinkId);
 
-    // Determine the price for the typeKey
-    double price = paymentType == "points"
-        ? drink.points.toDouble()
-        : (sizeType == "double" ? drink.doublePrice : drink.singlePrice);
+    // Determine prices
+    double regularPrice = sizeType == "double" ? drink.doublePrice : drink.singlePrice;
+    int pointPrice = drink.points; // Assume single-point price
 
-    // Update the type totals
-    typeTotals.update(typeKey, (total) => total + (price * quantity), ifAbsent: () => price * quantity);
+    debugPrint(
+        "Processing drink $drinkId | Size: $sizeType | Original Payment: $originalPaymentType | Quantity: $quantity");
+
+    int remainingQuantity = quantity;
+
+    // First, try to assign as many as possible to points
+    int pointsUsedQuantity = 0;
+    while (remainingQuantity > 0 && availablePoints >= pointPrice) {
+      pointsUsedQuantity++;
+      availablePoints -= pointPrice;
+      remainingQuantity--;
+    }
+
+   if (pointsUsedQuantity > 0) {
+  String typeKey = '${sizeType}_points';
+  barCart.putIfAbsent(drinkId, () => {});
+  barCart[drinkId]!.update(typeKey, (currentQuantity) => currentQuantity + pointsUsedQuantity,
+      ifAbsent: () => pointsUsedQuantity);
+  lastAddedTypes.putIfAbsent(drinkId, () => []).add(typeKey);
+  typeTotals.update(typeKey, (total) => total + (pointPrice * pointsUsedQuantity).toDouble(),
+      ifAbsent: () => (pointPrice * pointsUsedQuantity).toDouble());
+  debugPrint("Added $pointsUsedQuantity of $drinkId as points.");
+}
+
+if (remainingQuantity > 0) {
+  String typeKey = '${sizeType}_dollars';
+  barCart.putIfAbsent(drinkId, () => {});
+  barCart[drinkId]!.update(typeKey, (currentQuantity) => currentQuantity + remainingQuantity,
+      ifAbsent: () => remainingQuantity);
+  lastAddedTypes.putIfAbsent(drinkId, () => []).add(typeKey);
+  typeTotals.update(typeKey, (total) => total + (regularPrice * remainingQuantity),
+      ifAbsent: () => regularPrice * remainingQuantity);
+  debugPrint("Added $remainingQuantity of $drinkId as dollars.");
+}
   }
 
   // Recalculate the cart totals

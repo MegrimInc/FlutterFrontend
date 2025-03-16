@@ -113,7 +113,6 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
     try {
       final inv = Provider.of<Inventory>(context, listen: false);
 
-
       // Serialize the current inventory cart
       final serializedInventory =
           inv.serializeInventoryCart(inv.inventoryCart, widget.bartenderId);
@@ -130,13 +129,14 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
         value: responseValue,
       );
 
-       // **Check if inventory is empty before proceeding**
+      // **Check if inventory is empty before proceeding**
       if (inv.inventoryCart.isNotEmpty) {
+        inv.clearInventory();
         widget.pageController.animateToPage(
-        1, // The target page index
-        duration: const Duration(milliseconds: 300), // Animation duration
-        curve: Curves.easeInOut, // Animation curve
-      );
+          1, // The target page index
+          duration: const Duration(milliseconds: 300), // Animation duration
+          curve: Curves.easeInOut, // Animation curve
+        );
       }
 
       debugPrint("Read request responded with inventory data.");

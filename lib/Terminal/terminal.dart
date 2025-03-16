@@ -26,8 +26,7 @@ class Terminal extends StatefulWidget {
 
 class _OrdersPageState extends State<Terminal> {
   List<BartenderOrder> allOrders = [];
-  List<BartenderOrder> readyOrders = [];
-  List<BartenderOrder> otherOrders = [];
+  List<BartenderOrder> sortedOrders = [];
   final PageController _pageController = PageController(initialPage: 1);
   int index = 1;
   bool testing = false;
@@ -78,7 +77,7 @@ class _OrdersPageState extends State<Terminal> {
   }
 
   Future<double> fetchTipAmount() async {
-     String url =
+    String url =
         "https://www.barzzy.site/orders/gettips?bartenderID=${widget.bartenderID}&barID=${widget.barID}";
     try {
       final response = await http.get(
@@ -109,18 +108,22 @@ class _OrdersPageState extends State<Terminal> {
     setState(() {
       // Separate "arrived" orders
       List<BartenderOrder> arrivedOrders =
-          allOrders.where((order) => order.status == 'arrived').toList();
+        allOrders.where((order) => order.status == 'arrived').toList();
 
-      // Separate claimed and unclaimed orders, excluding "arrived" orders
-      List<BartenderOrder> claimedOrders = allOrders
-          .where((order) =>
-              order.claimer == widget.bartenderID && order.status != 'arrived')
-          .toList();
+    // Separate claimed and unclaimed orders, excluding "arrived" orders
+    List<BartenderOrder> claimedOrders = allOrders
+        .where((order) =>
+            order.claimer == widget.bartenderID && order.status != 'arrived' && order.status != 'ready')
+        .toList();
 
-      List<BartenderOrder> unclaimedOrders = allOrders
-          .where((order) =>
-              order.claimer != widget.bartenderID && order.status != 'arrived')
-          .toList();
+    List<BartenderOrder> unclaimedOrders = allOrders
+        .where((order) =>
+            order.claimer != widget.bartenderID && order.status != 'arrived' && order.status != 'ready')
+        .toList();
+
+    // Separate "ready" orders (so they appear at the bottom)
+    List<BartenderOrder> readyOrders =
+        allOrders.where((order) => order.status == 'ready').toList();
 
       // Sort each category by timestamp (older first)
       arrivedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
@@ -128,33 +131,15 @@ class _OrdersPageState extends State<Terminal> {
       unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
       // Combine sorted lists
-      List<BartenderOrder> sortedOrders = [
+      sortedOrders = [
         ...arrivedOrders,
         ...claimedOrders,
         ...unclaimedOrders,
+        ...readyOrders, 
       ];
 
-      // Precompute lists for "ready" and "other" orders
-      readyOrders = sortedOrders
-          .where(
-              (order) => order.status == 'ready' || order.status == 'arrived')
-          .toList();
-
-      otherOrders = sortedOrders
-          .where(
-              (order) => order.status != 'ready' || order.status == 'arrived')
-          .toList();
-
-      // Apply the "Your Orders Only" filter to both lists if filterUnique is true
       if (filterUnique) {
-        readyOrders = readyOrders
-            .where((order) =>
-                order.claimer == widget.bartenderID ||
-                (order.claimer.isEmpty &&
-                    (order.userId % bartenderCount) == bartenderNumber))
-            .toList();
-
-        otherOrders = otherOrders
+        sortedOrders = sortedOrders
             .where((order) =>
                 order.claimer == widget.bartenderID ||
                 (order.claimer.isEmpty &&
@@ -274,8 +259,7 @@ class _OrdersPageState extends State<Terminal> {
 
   void _refresh() {
     allOrders.clear();
-    readyOrders.clear();
-    otherOrders.clear();
+    sortedOrders.clear();
 
     // Send a 'refresh' action to the server via WebSocket
     debugPrint("refresh sent");
@@ -581,7 +565,7 @@ class _OrdersPageState extends State<Terminal> {
                 children: [
                   Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: List.generate(3, (pageIndex) {
+                    children: List.generate(2, (pageIndex) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4.0),
                         child: Icon(
@@ -597,7 +581,6 @@ class _OrdersPageState extends State<Terminal> {
                   ElevatedButton(
                     onPressed: () {
                       claimTips();
-                      debugPrint('hello world');
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
@@ -623,7 +606,7 @@ class _OrdersPageState extends State<Terminal> {
         body: PageView.builder(
           controller: _pageController,
           scrollDirection: Axis.horizontal,
-          itemCount: 3,
+          itemCount: 2,
           onPageChanged: (pageIndex) {
             setState(() {
               index = pageIndex;
@@ -638,10 +621,10 @@ class _OrdersPageState extends State<Terminal> {
                 pageController: _pageController,
               );
             } else if (pageIndex == 1) {
-              return _buildOrderList(otherOrders);
-            } else {
-              return _buildOrderList(readyOrders);
+              return _buildOrderList(sortedOrders);
             }
+            // Default case to handle unexpected values
+            return const SizedBox();
           },
         ),
       ),
@@ -660,16 +643,7 @@ class _OrdersPageState extends State<Terminal> {
           itemBuilder: (context, index) {
             final order = displayList[index];
             final tintColor = _getOrderTintColor(order);
-
-            final unpaidDrinks = order.drinks.where((drink) {
-              return drink.paymentType.toLowerCase() == "regular" &&
-                  !order.inAppPayments;
-            }).toList();
-
-            final paidDrinks = order.drinks.where((drink) {
-              return !(drink.paymentType.toLowerCase() == "regular" &&
-                  !order.inAppPayments);
-            }).toList();
+            final paidDrinks = order.drinks;
 
             String formatDrink(DrinkOrder drink) {
               return drink.sizeType.isNotEmpty
@@ -688,11 +662,11 @@ class _OrdersPageState extends State<Terminal> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 10),
-                    Row(children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10),
-                        child: Text(
+                    const SizedBox(height: 2),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(children: [
+                        Text(
                           '*${order.name}',
                           style: const TextStyle(
                             fontSize: 21,
@@ -709,11 +683,8 @@ class _OrdersPageState extends State<Terminal> {
                           textAlign: TextAlign.start,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const Spacer(),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: Text(
+                        const Spacer(),
+                        Text(
                           'Tip: \$${order.tip}',
                           style: const TextStyle(
                             fontSize: 21,
@@ -730,136 +701,73 @@ class _OrdersPageState extends State<Terminal> {
                           textAlign: TextAlign.start,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ]),
+                      ]),
+                    ),
                     IntrinsicHeight(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: <Widget>[
-                            order.claimer.isEmpty
-                                ? const SpinKitThreeBounce(
+                      child: Center(
+                        child: Column(
+                          children: [
+                            ...paidDrinks.map((drink) => Text(
+                                  formatDrink(drink),
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
                                     color: Colors.white,
-                                    size: 30.0,
-                                  )
-                                : Text(
-                                    '@${order.claimer}',
-                                    style: const TextStyle(
-                                      fontSize: 30,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black,
+                                        offset: Offset(1.0, 1.0),
+                                        blurRadius: 1.0,
+                                      ),
+                                    ],
                                   ),
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  if (unpaidDrinks.isNotEmpty)
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          const Text(
-                                            'UNPAID:',
-                                            style: TextStyle(
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                              shadows: [
-                                                Shadow(
-                                                  color: Colors.black,
-                                                  offset: Offset(1.0, 1.0),
-                                                  blurRadius: 1.0,
-                                                ),
-                                              ],
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          if (unpaidDrinks.isNotEmpty &&
-                                              paidDrinks.isNotEmpty)
-                                            const Divider(
-                                                color: Colors.white54,
-                                                thickness: 1,
-                                                indent: 30,
-                                                endIndent: 0),
-                                          const SizedBox(height: 5),
-                                          ...unpaidDrinks.map((drink) => Text(
-                                                formatDrink(drink),
-                                                style: const TextStyle(
-                                                    fontSize: 16,
-                                                    color: Colors.white,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                                textAlign: TextAlign.center,
-                                              )),
-                                        ],
-                                      ),
-                                    ),
-                                  if (unpaidDrinks.isNotEmpty &&
-                                      paidDrinks.isNotEmpty)
-                                    Container(
-                                      width: 1,
-                                      color: Colors.white54,
-                                    ),
-                                  if (paidDrinks.isNotEmpty)
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          const Text(
-                                            'PAID:',
-                                            style: TextStyle(
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                              shadows: [
-                                                Shadow(
-                                                  color: Colors.black,
-                                                  offset: Offset(1.0, 1.0),
-                                                  blurRadius: 1.0,
-                                                ),
-                                              ],
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          if (unpaidDrinks.isNotEmpty &&
-                                              paidDrinks.isNotEmpty)
-                                            const Divider(
-                                                color: Colors.white54,
-                                                thickness: 1,
-                                                indent: 0,
-                                                endIndent: 30),
-                                          const SizedBox(height: 5),
-                                          ...paidDrinks.map((drink) => Text(
-                                                formatDrink(drink),
-                                                style: const TextStyle(
-                                                    fontSize: 16,
-                                                    color: Colors.white,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                                textAlign: TextAlign.center,
-                                              )),
-                                        ],
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            Text(
-                              formatElapsedTime(order.getAge()),
-                              style: const TextStyle(
-                                fontSize: 30,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
+                                  textAlign: TextAlign.center,
+                                )),
                           ],
                         ),
                       ),
                     ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          order.claimer.isEmpty
+                              ? const SpinKitThreeBounce(
+                                  color: Colors.white,
+                                  size: 25.0,
+                                )
+                              : Text(
+                                  '@${order.claimer}',
+                                  style: const TextStyle(
+                                      fontSize: 25,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black,
+                                          offset: Offset(1.0, 1.0),
+                                          blurRadius: 1.0,
+                                        ),
+                                      ]),
+                                ),
+                          Text(
+                            formatElapsedTime(order.getAge()),
+                            style: const TextStyle(
+                                fontSize: 25,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black,
+                                    offset: Offset(1.0, 1.0),
+                                    blurRadius: 1.0,
+                                  ),
+                                ]),
+                          ),
+                        ],
+                      ),
+                    )
                   ],
                 ),
               ),
@@ -1314,7 +1222,7 @@ class _OrdersPageState extends State<Terminal> {
           switch (response.keys.first) {
             case 'error':
               // Use _showErrorSnackbar to display the error message
-              _showErrorSnackbar(response['error']);
+              //_showErrorSnackbar(response['error']);
               break;
 
             case 'terminate':
@@ -1484,12 +1392,12 @@ class _OrdersPageState extends State<Terminal> {
 
   String formatElapsedTime(int seconds) {
     if (seconds < 0) {
-        return "0m"; // Prevent negative minutes
+      return "0m"; // Prevent negative minutes
     }
-    
+
     int minutes = (seconds / 60).floor();
     return "$minutes m";
-}
+  }
 
   @override
   void dispose() {

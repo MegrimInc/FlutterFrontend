@@ -38,7 +38,7 @@ class _LoginPageState extends State<LoginPage> {
     final cacher = LoginCache();
     final url = Uri.parse('https://www.barzzy.site/newsignup/login');
     final requestBody = jsonEncode({
-      'email': emailController.value.text,
+      'email': emailController.value.text.toLowerCase(),
       'password': passwordController.value.text
     });
 
@@ -60,7 +60,7 @@ class _LoginPageState extends State<LoginPage> {
 
         // Added this: Proper integer comparison
         if (responseValue > 0) {
-          cacher.setEmail(emailController.value.text);
+          cacher.setEmail(emailController.value.text.toLowerCase());
           cacher.setPW(passwordController.value.text);
           cacher.setSignedIn(true);
           cacher.setUID(responseValue);
@@ -72,7 +72,7 @@ class _LoginPageState extends State<LoginPage> {
         } else {
           debugPrint("BarLogin");
 
-          cacher.setEmail(emailController.value.text);
+          cacher.setEmail(emailController.value.text.toLowerCase());
           cacher.setPW(passwordController.value.text);
           cacher.setSignedIn(true);
           cacher.setUID(responseValue);

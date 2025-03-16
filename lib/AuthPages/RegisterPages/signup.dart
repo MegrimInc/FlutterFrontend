@@ -73,7 +73,7 @@ class RegisterPageState extends State<RegisterPage>
     final url = Uri.parse('https://www.barzzy.site/newsignup/register2');
     
     final requestBody = jsonEncode({
-      'email': email.value.text.trim(),
+      'email': email.value.text.trim().toLowerCase(),
       'firstName': firstName.value.text.trim(),
       'lastName': lastName.value.text.trim(),
       'password': password.value.text,
@@ -93,7 +93,7 @@ class RegisterPageState extends State<RegisterPage>
 
       // Store the user ID in the login cache
       final loginCache2 = LoginCache();
-      loginCache2.setEmail(email.value.text.trim());
+      loginCache2.setEmail(email.value.text.trim().toLowerCase());
       loginCache2.setFN(firstName.value.text.trim());
       loginCache2.setPW(password.value.text);
       loginCache2.setLN(lastName.value.text.trim());

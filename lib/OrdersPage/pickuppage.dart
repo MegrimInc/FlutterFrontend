@@ -15,7 +15,7 @@ class PickupPage extends StatefulWidget {
   State<PickupPage> createState() => PickupPageState();
 }
 
-class PickupPageState extends State<PickupPage> {
+class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
   late PageController _pageController; // Define a PageController
   int currentPage = 0;
   late double screenHeight;
@@ -24,14 +24,22 @@ class PickupPageState extends State<PickupPage> {
   void initState() {
     super.initState();
     _pageController = PageController(); // Initialize the controller
+    WidgetsBinding.instance.addObserver(this);
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+    if (mounted) {
+      final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+      hierarchy.sendRefreshMessage(context); // Trigger refresh
+       debugPrint('heyoooo');
+    }
+  });
+
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Dynamically calculate the available screen height
-    screenHeight = MediaQuery.of(context).size.height -
-        (4 * kToolbarHeight); // Subtract twice the AppBar height
+    screenHeight = MediaQuery.of(context).size.height - (4 * kToolbarHeight);
   }
 
   @override
@@ -68,7 +76,7 @@ class PickupPageState extends State<PickupPage> {
                   style: GoogleFonts.poppins(
                     color: Colors.grey,
                     fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -391,8 +399,22 @@ class PickupPageState extends State<PickupPage> {
 
   Widget _buildDrinksGrid(List<DrinkOrder> drinks) {
     const drinksPerPage = 6; // Maximum drinks per page
-    final totalPages =
-        (drinks.length / drinksPerPage).ceil(); // Calculate total pages
+
+    // Step 1: Merge drinks by drinkId and sizeType (ignore payment method)
+    final Map<String, MapEntry<String, int>> mergedDrinks = {};
+    for (var drink in drinks) {
+      final String key = '${drink.drinkId}_${drink.sizeType}';
+      mergedDrinks.update(
+        key,
+        (existingEntry) =>
+            MapEntry(drink.drinkName, existingEntry.value + drink.quantity),
+        ifAbsent: () => MapEntry(drink.drinkName, drink.quantity),
+      );
+    }
+
+    final List<MapEntry<String, MapEntry<String, int>>> drinkList =
+        mergedDrinks.entries.toList();
+    final totalPages = (drinkList.length / drinksPerPage).ceil();
 
     return StatefulBuilder(
       builder: (context, setState) {
@@ -429,8 +451,8 @@ class PickupPageState extends State<PickupPage> {
                   // Get the drinks for the current page
                   final startIndex = pageIndex * drinksPerPage;
                   final endIndex =
-                      (startIndex + drinksPerPage).clamp(0, drinks.length);
-                  final pageDrinks = drinks.sublist(startIndex, endIndex);
+                      (startIndex + drinksPerPage).clamp(0, drinkList.length);
+                  final pageDrinks = drinkList.sublist(startIndex, endIndex);
 
                   // If there's 1 or 2 drinks, center them manually
                   if (pageDrinks.length <= 2) {
@@ -439,7 +461,13 @@ class PickupPageState extends State<PickupPage> {
                         spacing: 16,
                         runSpacing: 16,
                         alignment: WrapAlignment.center,
-                        children: pageDrinks.map((drink) {
+                        children: pageDrinks.map((entry) {
+                          final drinkKey = entry.key;
+                          final drinkData = entry.value;
+                          final drinkName = drinkData.key;
+                          final quantity = drinkData.value;
+                          final parts = drinkKey.split('_');
+                          final sizeType = parts.length > 1 ? parts[1] : "";
                           return Container(
                             width: 110,
                             height: 60,
@@ -453,7 +481,7 @@ class PickupPageState extends State<PickupPage> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  drink.drinkName,
+                                  drinkName,
                                   style: const TextStyle(
                                     color: Colors.white70,
                                     fontSize: 14,
@@ -465,7 +493,8 @@ class PickupPageState extends State<PickupPage> {
                                 ),
                                 const SizedBox(height: 1),
                                 Text(
-                                  'x${drink.quantity}${drink.sizeType.isNotEmpty ? ' (${drink.sizeType})' : ''}',
+                                  //'x${drink.quantity}${drink.sizeType.isNotEmpty ? ' (${drink.sizeType})' : ''}',
+                                  'x$quantity${sizeType.isNotEmpty ? ' ($sizeType)' : ''}',
                                   style: const TextStyle(
                                     color: Colors.white54,
                                     fontSize: 12,
@@ -492,7 +521,14 @@ class PickupPageState extends State<PickupPage> {
                     ),
                     itemCount: pageDrinks.length,
                     itemBuilder: (context, index) {
-                      final drink = pageDrinks[index];
+                      final entry = pageDrinks[index];
+                      final drinkKey = entry.key;
+                      final drinkData = entry.value;
+                      final drinkName = drinkData.key;
+                      final quantity = drinkData.value;
+                      final parts = drinkKey.split('_');
+                      final sizeType = parts.length > 1 ? parts[1] : "";
+
                       return Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -504,7 +540,7 @@ class PickupPageState extends State<PickupPage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              drink.drinkName,
+                              drinkName,
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 14,
@@ -516,7 +552,8 @@ class PickupPageState extends State<PickupPage> {
                             ),
                             const SizedBox(height: 1),
                             Text(
-                              'x${drink.quantity}${drink.sizeType.isNotEmpty ? ' (${drink.sizeType})' : ''}',
+                              //'x${drink.quantity}${drink.sizeType.isNotEmpty ? ' (${drink.sizeType})' : ''}',
+                              'x$quantity${sizeType.isNotEmpty ? ' ($sizeType)' : ''}',
                               style: const TextStyle(
                                 color: Colors.white54,
                                 fontSize: 12,
@@ -688,5 +725,19 @@ class PickupPageState extends State<PickupPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshOrders(context);
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // ✅ Remove observer
+    _pageController.dispose();
+    super.dispose();
   }
 }

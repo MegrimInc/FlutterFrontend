@@ -272,8 +272,6 @@ class Inventory extends ChangeNotifier {
       "order": cartItems,
     };
 
-    clearInventory();
-
     return jsonEncode(result);
   }
 
