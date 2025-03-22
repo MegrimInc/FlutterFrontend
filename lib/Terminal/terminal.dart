@@ -26,7 +26,8 @@ class Terminal extends StatefulWidget {
 
 class _OrdersPageState extends State<Terminal> {
   List<BartenderOrder> allOrders = [];
-  List<BartenderOrder> sortedOrders = [];
+  List<BartenderOrder> readyOrders = [];
+  List<BartenderOrder> otherOrders = [];
   final PageController _pageController = PageController(initialPage: 1);
   int index = 1;
   bool testing = false;
@@ -102,28 +103,95 @@ class _OrdersPageState extends State<Terminal> {
     }
   }
 
+  // void _updateLists() {
+  //   debugPrint("Starting _updateLists...");
+
+  //   setState(() {
+  //     // Separate "arrived" orders
+  //     List<BartenderOrder> arrivedOrders =
+  //       allOrders.where((order) => order.status == 'arrived').toList();
+
+  //   // Separate claimed and unclaimed orders, excluding "arrived" orders
+  //   List<BartenderOrder> claimedOrders = allOrders
+  //       .where((order) =>
+  //           order.claimer == widget.bartenderID && order.status != 'arrived' && order.status != 'ready')
+  //       .toList();
+
+  //   List<BartenderOrder> unclaimedOrders = allOrders
+  //       .where((order) =>
+  //           order.claimer != widget.bartenderID && order.status != 'arrived' && order.status != 'ready')
+  //       .toList();
+
+  //   // Separate "ready" orders (so they appear at the bottom)
+  //   List<BartenderOrder> readyOrders =
+  //       allOrders.where((order) => order.status == 'ready').toList();
+
+  //     // Sort each category by timestamp (older first)
+  //     arrivedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+  //     claimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+  //     unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+  //     // Combine sorted lists
+  //     sortedOrders = [
+  //       ...arrivedOrders,
+  //       ...claimedOrders,
+  //       ...unclaimedOrders,
+  //       ...readyOrders,
+  //     ];
+
+  //     if (filterUnique) {
+  //       sortedOrders = sortedOrders
+  //           .where((order) =>
+  //               order.claimer == widget.bartenderID ||
+  //               (order.claimer.isEmpty &&
+  //                   (order.userId % bartenderCount) == bartenderNumber))
+  //           .toList();
+  //     }
+
+  //     // Handle terminal disablement logic
+  //     if (disabledTerminal &&
+  //         !allOrders.any((order) => order.claimer == widget.bartenderID)) {
+  //       socket!.sink.add(
+  //         json.encode({
+  //           'action': 'disable',
+  //           'barID': widget.barID,
+  //         }),
+  //       );
+
+  //       if (socket != null) {
+  //         socket!.sink.close();
+  //         socket = null;
+  //       }
+
+  //       Navigator.pushAndRemoveUntil(
+  //         context,
+  //         MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
+  //         (Route<dynamic> route) => false,
+  //       );
+  //     }
+  //   });
+
+  //   debugPrint("Finished _updateLists.");
+  // }
+
   void _updateLists() {
     debugPrint("Starting _updateLists...");
 
     setState(() {
       // Separate "arrived" orders
       List<BartenderOrder> arrivedOrders =
-        allOrders.where((order) => order.status == 'arrived').toList();
+          allOrders.where((order) => order.status == 'arrived').toList();
 
-    // Separate claimed and unclaimed orders, excluding "arrived" orders
-    List<BartenderOrder> claimedOrders = allOrders
-        .where((order) =>
-            order.claimer == widget.bartenderID && order.status != 'arrived' && order.status != 'ready')
-        .toList();
+      // Separate claimed and unclaimed orders, excluding "arrived" orders
+      List<BartenderOrder> claimedOrders = allOrders
+          .where((order) =>
+              order.claimer == widget.bartenderID && order.status != 'arrived')
+          .toList();
 
-    List<BartenderOrder> unclaimedOrders = allOrders
-        .where((order) =>
-            order.claimer != widget.bartenderID && order.status != 'arrived' && order.status != 'ready')
-        .toList();
-
-    // Separate "ready" orders (so they appear at the bottom)
-    List<BartenderOrder> readyOrders =
-        allOrders.where((order) => order.status == 'ready').toList();
+      List<BartenderOrder> unclaimedOrders = allOrders
+          .where((order) =>
+              order.claimer != widget.bartenderID && order.status != 'arrived')
+          .toList();
 
       // Sort each category by timestamp (older first)
       arrivedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
@@ -131,15 +199,33 @@ class _OrdersPageState extends State<Terminal> {
       unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
       // Combine sorted lists
-      sortedOrders = [
+      List<BartenderOrder> sortedOrders = [
         ...arrivedOrders,
         ...claimedOrders,
         ...unclaimedOrders,
-        ...readyOrders, 
       ];
 
+      // Precompute lists for "ready" and "other" orders
+      readyOrders = sortedOrders
+          .where(
+              (order) => order.status == 'ready' || order.status == 'arrived')
+          .toList();
+
+      otherOrders = sortedOrders
+          .where(
+              (order) => order.status != 'ready' || order.status == 'arrived')
+          .toList();
+
+      // Apply the "Your Orders Only" filter to both lists if filterUnique is true
       if (filterUnique) {
-        sortedOrders = sortedOrders
+        readyOrders = readyOrders
+            .where((order) =>
+                order.claimer == widget.bartenderID ||
+                (order.claimer.isEmpty &&
+                    (order.userId % bartenderCount) == bartenderNumber))
+            .toList();
+
+        otherOrders = otherOrders
             .where((order) =>
                 order.claimer == widget.bartenderID ||
                 (order.claimer.isEmpty &&
@@ -259,7 +345,8 @@ class _OrdersPageState extends State<Terminal> {
 
   void _refresh() {
     allOrders.clear();
-    sortedOrders.clear();
+    readyOrders.clear();
+    otherOrders.clear();
 
     // Send a 'refresh' action to the server via WebSocket
     debugPrint("refresh sent");
@@ -565,7 +652,7 @@ class _OrdersPageState extends State<Terminal> {
                 children: [
                   Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: List.generate(2, (pageIndex) {
+                    children: List.generate(3, (pageIndex) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4.0),
                         child: Icon(
@@ -606,7 +693,7 @@ class _OrdersPageState extends State<Terminal> {
         body: PageView.builder(
           controller: _pageController,
           scrollDirection: Axis.horizontal,
-          itemCount: 2,
+          itemCount: 3,
           onPageChanged: (pageIndex) {
             setState(() {
               index = pageIndex;
@@ -621,10 +708,10 @@ class _OrdersPageState extends State<Terminal> {
                 pageController: _pageController,
               );
             } else if (pageIndex == 1) {
-              return _buildOrderList(sortedOrders);
+              return _buildOrderList(otherOrders);
+            } else {
+              return _buildOrderList(readyOrders);
             }
-            // Default case to handle unexpected values
-            return const SizedBox();
           },
         ),
       ),

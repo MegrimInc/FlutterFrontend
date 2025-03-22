@@ -84,6 +84,14 @@ class DrinkFeedState extends State<DrinkFeed>
       return;
     }
 
+     // If inAppPayments is false, show a dialog and exit early.
+  if (!inAppPayments) {
+    _showNotAllowedDialog(
+      "Your cart only contains point-based items. Please add at least one item with a regular price to proceed."
+    );
+    return;
+  }
+
     if (inAppPayments) {
       final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
 
