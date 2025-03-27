@@ -74,6 +74,7 @@ class DrinkFeedState extends State<DrinkFeed>
     final userId = await loginCache.getUID();
     final cart = Provider.of<Cart>(context, listen: false);
     final hierarchy = Provider.of<Hierarchy>(context, listen: false);
+     final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
 
     if (userId == 0) {
       Navigator.of(context).pushAndRemoveUntil(
@@ -84,18 +85,14 @@ class DrinkFeedState extends State<DrinkFeed>
       return;
     }
 
-     // If inAppPayments is false, show a dialog and exit early.
-  if (!inAppPayments) {
-    _showNotAllowedDialog(
-      "Your cart only contains point-based items. Please add at least one item with a regular price to proceed."
-    );
-    return;
-  }
+    // If inAppPayments is false, show a dialog and exit early.
+    if (!inAppPayments && localDatabase.paymentStatus == PaymentStatus.notPresent) {
+      _showNotAllowedDialog(
+          "Your cart only contains point-based items. Please add at least one item with a regular price to proceed.");
+      return;
+    }
 
-    if (inAppPayments) {
-      final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
-
-      if (!localDatabase.isPaymentPresent) {
+    if (inAppPayments && localDatabase.paymentStatus == PaymentStatus.notPresent) {
         try {
           _showStripeSetupSheet(context, userId);
           return;
@@ -103,7 +100,6 @@ class DrinkFeedState extends State<DrinkFeed>
           debugPrint('Error presenting Stripe setup sheet: $e');
           return;
         }
-      }
     }
 
     // Determine the quantity limit based on payment method
@@ -118,8 +114,6 @@ class DrinkFeedState extends State<DrinkFeed>
       return; // Exit if limit is exceeded
     }
 
-    // New Check: Ensure the user has enough points locally
-    final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
     final availablePoints =
         localDatabase.getPointsForBar(widget.barId)?.points ?? 0;
     if (cart.totalCartPoints > availablePoints) {
@@ -189,6 +183,8 @@ class DrinkFeedState extends State<DrinkFeed>
   }
 
   Future<void> _showStripeSetupSheet(BuildContext context, int userId) async {
+    final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
+
     try {
       // Call your backend to create a SetupIntent and retrieve the client secret
       final response = await http.get(
@@ -216,25 +212,18 @@ class DrinkFeedState extends State<DrinkFeed>
           ),
         );
 
-        final localDatabase =
-            Provider.of<LocalDatabase>(context, listen: false);
-        localDatabase.updatePaymentStatus(true);
-
-        // Present the Stripe payment sheet to collect and save payment info
+        localDatabase.updatePaymentStatus(PaymentStatus.loading);
         await Stripe.instance.presentPaymentSheet();
         await _savePaymentMethodToDatabase(userId, customerId, setupIntentId);
+        localDatabase.updatePaymentStatus(PaymentStatus.present);
       } else {
-        final localDatabase =
-            Provider.of<LocalDatabase>(context, listen: false);
-        localDatabase.updatePaymentStatus(false);
-
+        localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
         debugPrint(
             "Failed to load setup intent data. Status code: ${response.statusCode}");
         debugPrint("Error Response Body: ${response.body}");
       }
     } catch (e) {
-      final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
-      localDatabase.updatePaymentStatus(false);
+      localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
       debugPrint('Error presenting Stripe setup sheet: $e');
     }
   }
@@ -432,10 +421,11 @@ class DrinkFeedState extends State<DrinkFeed>
     final hasItems = cart.getTotalDrinkCount() > 0;
     final totalPrice = cart.totalCartMoney;
     final totalPoints = cart.totalCartPoints;
-    final double totalPriceWithTip = totalPrice * (1 + cart.tipPercentage) * 1.04 + .40;
-    final double serviceFee = totalPrice > 0 
-    ? totalPrice * (1 + cart.tipPercentage) * 0.04 + 0.40 
-    : 0;
+    final double totalPriceWithTip =
+        totalPrice * (1 + cart.tipPercentage) * 1.04 + .40;
+    final double serviceFee = totalPrice > 0
+        ? totalPrice * (1 + cart.tipPercentage) * 0.04 + 0.40
+        : 0;
     final double subtotalPriceWithTip = totalPrice * (1 + cart.tipPercentage);
 
     String totalText;
@@ -501,8 +491,14 @@ class DrinkFeedState extends State<DrinkFeed>
                           final isHappyHour = cart.isHappyHour;
 
                           final price = entry.key.contains("single")
-    ? (isHappyHour ? drink.singleHappyPrice : drink.singlePrice) * 1.20
-    : (isHappyHour ? drink.doubleHappyPrice : drink.doublePrice) * 1.20;
+                              ? (isHappyHour
+                                      ? drink.singleHappyPrice
+                                      : drink.singlePrice) *
+                                  1.20
+                              : (isHappyHour
+                                      ? drink.doubleHappyPrice
+                                      : drink.doublePrice) *
+                                  1.20;
 
                           final priceOrPoints = entry.key.contains("points")
                               ? "${(entry.value * drink.points).toInt()} pts"
@@ -581,19 +577,18 @@ class DrinkFeedState extends State<DrinkFeed>
             color: Colors.white54,
             thickness: 0.5,
           ),
-        ), 
+        ),
         if (hasItems)
-         Center(
-          child: Text(
-           'Subtotal & Fees: \$${subtotalPriceWithTip.toStringAsFixed(2)} + \$${serviceFee.toStringAsFixed(2)}',
+          Center(
+              child: Text(
+            'Subtotal & Fees: \$${subtotalPriceWithTip.toStringAsFixed(2)} + \$${serviceFee.toStringAsFixed(2)}',
             style: GoogleFonts.poppins(
-            color: Colors.white70,
-             fontWeight: FontWeight.w500,
-          fontSize: 18,
+              color: Colors.white70,
+              fontWeight: FontWeight.w500,
+              fontSize: 18,
             ),
           )),
-          const SizedBox(height: 10),
-      
+        const SizedBox(height: 10),
         Center(
           child: Text(
             totalText,
@@ -604,21 +599,20 @@ class DrinkFeedState extends State<DrinkFeed>
             ),
           ),
         ),
-      
         const Spacer(flex: 1),
         const SizedBox(height: 30),
         _buildPurchaseButton(context),
         const Spacer(flex: 5),
-      const Text(
-         '*Gratuity included in menu prices.',
-        style: TextStyle(           
-          color: Colors.white70,
-          fontSize: 18,
-         fontStyle: FontStyle.italic,
-        //fontWeight: FontWeight.w600
-       ),
-        textAlign: TextAlign.center,
-      ),
+        const Text(
+          '*Gratuity included in menu prices.',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 18,
+            fontStyle: FontStyle.italic,
+            //fontWeight: FontWeight.w600
+          ),
+          textAlign: TextAlign.center,
+        ),
         const Spacer(flex: 3),
       ],
     );
@@ -806,8 +800,8 @@ class DrinkFeedState extends State<DrinkFeed>
     final isHappyHour = cart.isHappyHour;
     final drink = LocalDatabase().getDrinkById(drinkId);
     final price = isDouble
-    ? (isHappyHour ? drink.doubleHappyPrice : drink.doublePrice) * 1.20
-    : (isHappyHour ? drink.singleHappyPrice : drink.singlePrice) * 1.20;
+        ? (isHappyHour ? drink.doubleHappyPrice : drink.doublePrice) * 1.20
+        : (isHappyHour ? drink.singleHappyPrice : drink.singlePrice) * 1.20;
     // Update label with the dynamic price
     final updatedLabel = usePoints
         ? "$label:  ${drink.points.toInt()} pts"
@@ -885,39 +879,62 @@ class DrinkFeedState extends State<DrinkFeed>
         final isCartEmpty = cart.getTotalDrinkCount() == 0;
         final totalMoneyPrice = cart.totalCartMoney;
         final bool inAppPayments = totalMoneyPrice > 0;
+        final localDatabase = Provider.of<LocalDatabase>(context);
+        final bool disableButton = isCartEmpty || localDatabase.paymentStatus == PaymentStatus.loading;
 
         return Column(children: [
           Center(
             child: GestureDetector(
-              onTap: isCartEmpty
+              onTap: disableButton 
                   ? null
                   : () {
                       _submitOrder(context, inAppPayments: inAppPayments);
                     },
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 80, vertical: 19),
+                width: 275,
+                height: 50,
                 decoration: BoxDecoration(
                   color: isCartEmpty ? Colors.white24 : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Consumer<LocalDatabase>(
-                  builder: (context, localDatabase, _) {
-                    return Text(
-                      localDatabase.isPaymentPresent || !inAppPayments
-                          ? 'Purchase'
-                          : 'Set up card',
-                      style: GoogleFonts.poppins(
-                        color: isCartEmpty
-                            ? Colors.white70
-                            : localDatabase.isPaymentPresent || !inAppPayments
-                                ? Colors.black
-                                : Colors.red,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    );
-                  },
+                child: Center(
+                  child: Consumer<LocalDatabase>(
+                    builder: (context, localDatabase, _) {
+                      if (localDatabase.paymentStatus == PaymentStatus.loading) {
+                        // When loading, show an animated loading indicator inside the button.
+                        return const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.black),
+                            strokeWidth: 2,
+                          ),
+                        );
+                      } else {
+                        // Otherwise, display text based on whether a payment method is present.
+                        final buttonText = (localDatabase.paymentStatus ==
+                                    PaymentStatus.present ||
+                                !inAppPayments)
+                            ? 'Purchase'
+                            : 'Set up card';
+                        return Text(
+                          buttonText,
+                          style: GoogleFonts.poppins(
+                            color: isCartEmpty
+                                ? Colors.white70
+                                : (localDatabase.paymentStatus ==
+                                            PaymentStatus.present ||
+                                        !inAppPayments)
+                                    ? Colors.black
+                                    : Colors.red,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      }
+                    },
+                  ),
                 ),
               ),
             ),
@@ -1042,3 +1059,4 @@ class DrinkFeedState extends State<DrinkFeed>
     super.dispose();
   }
 }
+

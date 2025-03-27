@@ -132,6 +132,7 @@ class _ProfilePageState extends State<ProfilePage> {
 // Private method to save the payment method to the database
   Future<void> _savePaymentMethodToDatabase(
       int userId, String customerId, String setupIntentId) async {
+    final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
     try {
       final response = await http.post(
         Uri.parse('https://www.barzzy.site/customer/addPaymentIdToDatabase'),
@@ -144,14 +145,23 @@ class _ProfilePageState extends State<ProfilePage> {
       );
 
       if (response.statusCode == 200) {
-        debugPrint("Payment method successfully saved to database.");
+        final paymentPresent = jsonDecode(response.body); // true or false
+        debugPrint('Payment method check result: $paymentPresent');
+
+        if (paymentPresent == true) {
+          localDatabase.updatePaymentStatus(PaymentStatus.present);
+        } else {
+          localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
+        }
       } else {
+        localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
         debugPrint(
             "Failed to save payment method. Status code: ${response.statusCode}");
         debugPrint("Error Response Body: ${response.body}");
         throw Exception("Failed to save payment method to database.");
       }
     } catch (e) {
+      localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
       debugPrint('Error saving payment method to database: $e');
     }
   }
@@ -243,14 +253,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     TextButton(
                       onPressed: () {
                         if (isEditing) {
                           _updateUserName();
                           setState(() {
-                           isTextFieldActive = false;
+                            isTextFieldActive = false;
                           });
                         } else {
                           setState(() {
@@ -284,22 +293,22 @@ class _ProfilePageState extends State<ProfilePage> {
             const Spacer(flex: 2),
 
             // Sectioned Tiles
-              SizedBox(
-                height: isTextFieldActive ? 100 : 300,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    children: [
-                      _buildTile(
-                        title: 'Payment Method',
-                        subtitle: 'Update your payment method',
-                        icon: Icons.credit_card,
-                        onTap: () {
-                          // Navigate to payment update
-                          _showStripeSetupSheet(context, userId);
-                        },
-                      ),
-                      if (!isTextFieldActive)
+            SizedBox(
+              height: isTextFieldActive ? 100 : 300,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  children: [
+                    _buildTile(
+                      title: 'Payment Method',
+                      subtitle: 'Update your payment method',
+                      icon: Icons.credit_card,
+                      onTap: () {
+                        // Navigate to payment update
+                        _showStripeSetupSheet(context, userId);
+                      },
+                    ),
+                    if (!isTextFieldActive)
                       _buildTile(
                         title: 'Log Out',
                         subtitle: 'End your current session',
@@ -320,7 +329,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           );
                         },
                       ),
-                      if (!isTextFieldActive)
+                    if (!isTextFieldActive)
                       _buildTile(
                         title: 'Delete Account',
                         subtitle: 'Permanently delete your account',
@@ -336,10 +345,10 @@ class _ProfilePageState extends State<ProfilePage> {
                         tileColor: Colors.redAccent.withOpacity(0.2),
                         iconColor: Colors.redAccent,
                       ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
+            ),
 
             const Spacer(flex: 2),
           ],

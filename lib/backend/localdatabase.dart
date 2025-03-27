@@ -10,6 +10,13 @@ import 'package:flutter/material.dart';
 import 'package:ntp/ntp.dart';
 import 'bar.dart';
 
+
+enum PaymentStatus {
+  loading,   
+  notPresent, 
+  present,    
+}
+
 class LocalDatabase with ChangeNotifier {
   static final LocalDatabase _singleton = LocalDatabase._internal();
 
@@ -32,11 +39,13 @@ class LocalDatabase with ChangeNotifier {
    bool isPaymentPresent = false;
    
 
-    void updatePaymentStatus(bool status) {
-    isPaymentPresent = status;
-    notifyListeners();
-  }
+  PaymentStatus paymentStatus = PaymentStatus.notPresent;
 
+  void updatePaymentStatus(PaymentStatus status) {
+    paymentStatus = status;
+    notifyListeners();
+    debugPrint('Payment status updated to: $status');
+  }
 
   void addOrUpdateOrderForBar(CustomerOrder order) {
     _barOrders[order.barId] = order;

@@ -85,15 +85,21 @@ class HomePageState extends State<HomePage> {
       if (response.statusCode == 200) {
         final paymentPresent = jsonDecode(response.body); // true or false
         debugPrint('Payment method check result: $paymentPresent');
-        localDatabase.updatePaymentStatus(paymentPresent);
+        
+        if (paymentPresent == true) {
+        localDatabase.updatePaymentStatus(PaymentStatus.present);
+      } else {
+        localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
+      }
+
       } else {
         debugPrint(
             'Failed to check payment method. Status code: ${response.statusCode}');
-        localDatabase.updatePaymentStatus(false);
+        localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
       }
     } catch (e) {
       debugPrint('Error checking payment method: $e');
-      localDatabase.updatePaymentStatus(false);
+     localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
     }
   }
 

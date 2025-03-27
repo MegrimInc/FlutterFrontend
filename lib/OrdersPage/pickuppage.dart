@@ -29,8 +29,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
     Future.delayed(const Duration(milliseconds: 500), () {
     if (mounted) {
       final hierarchy = Provider.of<Hierarchy>(context, listen: false);
-      hierarchy.sendRefreshMessage(context); // Trigger refresh
-       debugPrint('heyoooo');
+      hierarchy.sendRefreshMessage(context); 
     }
   });
 
