@@ -768,7 +768,7 @@ class DrinkFeedState extends State<DrinkFeed>
         Expanded(
           child: _buildButtonGroup(
             context,
-            label: "Regular",
+            label: "Points",
             drinkId: currentDrink.value.id,
             isDouble: false,
             usePoints: true,
