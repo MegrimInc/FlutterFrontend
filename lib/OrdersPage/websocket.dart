@@ -247,10 +247,10 @@ class Hierarchy extends ChangeNotifier {
     try {
       // Check if the status in the data is "delivered" or "canceled"
       if (data['status'] == 'delivered' || data['status'] == 'canceled') {
-        debugPrint(
-            'Status is delivered or canceled. Triggering sendGetRequest2...');
+        debugPrint('Status is delivered or canceled. Triggering sendGetRequest2 and updating happy hour status...');
         await sendGetRequest2();
-        debugPrint('sendGetRequest2 triggered successfully.');
+        localDatabase.updateAndCheckHappyHourStatus();
+        debugPrint('sendGetRequest2 and _updateAndCheckHappyHourStatus triggered successfully.');
       }
     } catch (e) {
       debugPrint('Error while handling update response: $e');

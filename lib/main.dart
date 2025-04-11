@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:barzzy/Backend/bar.dart';
+import 'package:barzzy/Backend/customer.dart';
 import 'package:barzzy/Backend/searchengine.dart';
 import 'package:barzzy/Backend/recommended.dart';
 import 'package:barzzy/Backend/preferences.dart';
@@ -115,6 +116,7 @@ Future<void> main() async {
   LocalDatabase localDatabase = LocalDatabase();
   await sendGetRequest();
   await sendGetRequest2();
+  
 
   // Create the MethodChannel
   const MethodChannel notificationChannel =
@@ -250,6 +252,38 @@ Future<void> sendGetRequest2() async {
     }
   } catch (e) {
     debugPrint('Error sending GET request for points: $e');
+  }
+}
+
+Future<void> sendGetRequest3() async {
+   final loginCache = LoginCache();
+    LocalDatabase localDatabase = LocalDatabase();
+  final userId = await loginCache.getUID();
+  
+  // Construct the URL to your backend endpoint – adjust the URL as necessary.
+  final url = Uri.parse('https://www.barzzy.site/customer/cardDetails/$userId');
+  
+  try {
+    final response = await http.get(
+      url,
+      headers: {'Content-Type': 'application/json'},
+    );
+    
+    if (response.statusCode == 200) {
+      // Parse the JSON response
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+
+      
+      // Create a Customer instance from the JSON data
+      Customer customer = Customer.fromJson(jsonResponse);
+      localDatabase.setCustomer(customer);
+      
+      debugPrint("Saved customer: $customer in LocalDatabase");
+    } else {
+      debugPrint("Failed to retrieve card details, status: ${response.statusCode}");
+    }
+  } catch (e) {
+    debugPrint("Error in sendGetRequest3: $e");
   }
 }
 

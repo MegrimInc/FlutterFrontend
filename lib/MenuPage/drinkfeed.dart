@@ -67,6 +67,7 @@ class DrinkFeedState extends State<DrinkFeed>
     );
 
     _controller.forward();
+     sendGetRequest3();
   }
 
   void _submitOrder(BuildContext context, {required bool inAppPayments}) async {
@@ -217,13 +218,21 @@ class DrinkFeedState extends State<DrinkFeed>
         await _savePaymentMethodToDatabase(userId, customerId, setupIntentId);
         localDatabase.updatePaymentStatus(PaymentStatus.present);
       } else {
+        if (localDatabase.customer != null) {
+        localDatabase.updatePaymentStatus(PaymentStatus.present);
+      } else {
         localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
+      }
         debugPrint(
             "Failed to load setup intent data. Status code: ${response.statusCode}");
         debugPrint("Error Response Body: ${response.body}");
       }
     } catch (e) {
-      localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
+      if (localDatabase.customer != null) {
+        localDatabase.updatePaymentStatus(PaymentStatus.present);
+      } else {
+        localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
+      }
       debugPrint('Error presenting Stripe setup sheet: $e');
     }
   }
@@ -244,6 +253,7 @@ class DrinkFeedState extends State<DrinkFeed>
 
       if (response.statusCode == 200) {
         debugPrint("Payment method successfully saved to database.");
+        await sendGetRequest3();
       } else {
         debugPrint(
             "Failed to save payment method. Status code: ${response.statusCode}");
@@ -534,7 +544,7 @@ class DrinkFeedState extends State<DrinkFeed>
                                     TextSpan(
                                       text: '  edit',
                                       style: GoogleFonts.poppins(
-                                        color: Colors.white54, // Set to white70
+                                        color: Colors.white70, // Set to white70
                                         fontSize: 18,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -588,7 +598,8 @@ class DrinkFeedState extends State<DrinkFeed>
               fontSize: 18,
             ),
           )),
-        const SizedBox(height: 10),
+
+        const SizedBox(height: 15),
         Center(
           child: Text(
             totalText,
@@ -599,20 +610,73 @@ class DrinkFeedState extends State<DrinkFeed>
             ),
           ),
         ),
+
+        const SizedBox(height: 5),
+
+        if (hasItems)
+           Text(
+         totalPrice > 0 ? "*Gratuity: Included" : "*Gratuity: Excluded",
+          style: GoogleFonts.poppins(
+           color: Colors.white70,
+           fontSize: 17,
+          fontStyle: FontStyle.italic,
+         fontWeight: FontWeight.w500,
+
+         ),
+          textAlign: TextAlign.center,
+        ),
         const Spacer(flex: 1),
-        const SizedBox(height: 30),
+        const SizedBox(height: 20),
         _buildPurchaseButton(context),
+        
         const Spacer(flex: 5),
-        const Text(
-          '*Gratuity included in menu prices.',
+
+GestureDetector(
+  onTap: () async {
+    final loginCache = Provider.of<LoginCache>(context, listen: false);
+    final userId = await loginCache.getUID();
+    await _showStripeSetupSheet(context, userId);
+  },
+  child: Consumer<LocalDatabase>(
+    builder: (context, localDatabase, _) {
+      if (localDatabase.customer != null && totalPrice > 0) {
+        final card = localDatabase.customer!;
+        return Text.rich(
+          TextSpan(
+            text: "${card.brand.toUpperCase()} **** ${card.last4},  EXP. ${card.expMonth}/${card.expYear}  ",
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+            ),
+            children: [
+              TextSpan(
+                text: "edit",
+                style: GoogleFonts.poppins(
+                  color: Colors.white70,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          textAlign: TextAlign.center,
+        );
+      } else {
+        return const Text(
+          '...',
           style: TextStyle(
             color: Colors.white70,
             fontSize: 18,
             fontStyle: FontStyle.italic,
-            //fontWeight: FontWeight.w600
           ),
           textAlign: TextAlign.center,
-        ),
+        );
+      }
+    },
+  ),
+),
+        
         const Spacer(flex: 3),
       ],
     );
@@ -639,14 +703,7 @@ class DrinkFeedState extends State<DrinkFeed>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          Text(
-            'ABV: ${currentDrink.value.alcohol}%',
-            style: GoogleFonts.poppins(
-              color: Colors.white60,
-              fontSize: 20,
-            ),
-          ),
-          const SizedBox(height: 16),
+        
           Consumer<Cart>(
             builder: (context, cart, _) {
               final totalQuantity =
@@ -889,6 +946,7 @@ class DrinkFeedState extends State<DrinkFeed>
                   ? null
                   : () {
                       _submitOrder(context, inAppPayments: inAppPayments);
+                       HapticFeedback.heavyImpact();
                     },
               child: Container(
                 width: 275,

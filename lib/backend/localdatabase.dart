@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:barzzy/Backend/customer.dart';
 import 'package:barzzy/Backend/customer_order.dart';
 import 'package:barzzy/Backend/tags.dart';
 
@@ -10,11 +11,10 @@ import 'package:flutter/material.dart';
 import 'package:ntp/ntp.dart';
 import 'bar.dart';
 
-
 enum PaymentStatus {
-  loading,   
-  notPresent, 
-  present,    
+  loading,
+  notPresent,
+  present,
 }
 
 class LocalDatabase with ChangeNotifier {
@@ -25,9 +25,10 @@ class LocalDatabase with ChangeNotifier {
   }
 
   LocalDatabase._internal() {
-    Timer.periodic(const Duration(minutes: 10, seconds: 0), (Timer timer) {
-      _updateAndCheckHappyHourStatus();
+    Timer.periodic(const Duration(minutes: 30, seconds: 0), (Timer timer) {
+      updateAndCheckHappyHourStatus();
     });
+    debugPrint('when do u trigger');
   }
 
   final Map<String, Bar> _bars = {};
@@ -36,8 +37,7 @@ class LocalDatabase with ChangeNotifier {
   final Map<String, CustomerOrder> _barOrders = {};
   final Map<String, Point> _userPoints = {};
   final Map<String, bool> _happyHourStatusMap = {};
-   bool isPaymentPresent = false;
-   
+  bool isPaymentPresent = false;
 
   PaymentStatus paymentStatus = PaymentStatus.notPresent;
 
@@ -88,7 +88,7 @@ class LocalDatabase with ChangeNotifier {
   }
 
   // In LocalDatabase class
-Map<String, Bar> get bars => _bars;
+  Map<String, Bar> get bars => _bars;
 
   //Method to get all bar IDs
   List<String> getAllBarIds() {
@@ -134,7 +134,7 @@ Map<String, Bar> get bars => _bars;
     debugPrint('All points have been cleared.');
   }
 
-  void _updateAndCheckHappyHourStatus() async {
+  void updateAndCheckHappyHourStatus() async {
     try {
       // Fetch the current UTC time from an NTP server
       DateTime now = (await NTP.now()).toUtc();
@@ -287,6 +287,14 @@ Map<String, Bar> get bars => _bars;
     return _happyHourStatusMap[barId] ?? false;
   }
 
-  
+   Customer? _customer;
+
+  Customer? get customer => _customer;
+
+  void setCustomer(Customer customer) {
+    _customer = customer;
+    notifyListeners();
+    debugPrint("Customer data updated in LocalDatabase: $customer");
+  }
 
 }
