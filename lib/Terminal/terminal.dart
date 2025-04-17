@@ -26,8 +26,7 @@ class Terminal extends StatefulWidget {
 
 class _OrdersPageState extends State<Terminal> {
   List<BartenderOrder> allOrders = [];
-  List<BartenderOrder> readyOrders = [];
-  List<BartenderOrder> otherOrders = [];
+  List<BartenderOrder> sortedOrders = [];
   final PageController _pageController = PageController(initialPage: 1);
   int index = 1;
   bool testing = false;
@@ -41,8 +40,8 @@ class _OrdersPageState extends State<Terminal> {
   bool happyHour = false;
   WebSocketChannel? socket;
   bool terminalStatus = true;
-  //int heartbeat = 0;
   Timer? _timer;
+  Timer? _heartbeatTimer;
   WebSocket? websocket;
 
   @override
@@ -59,7 +58,7 @@ class _OrdersPageState extends State<Terminal> {
     bartenderNumber = 0;
     bartenderCount = 1;
 
-    // Start a timer to update the list every 30 seconds
+    // Start a timer to update the list and send heartbeat every 30 seconds
     _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
       _updateLists();
     });
@@ -103,6 +102,91 @@ class _OrdersPageState extends State<Terminal> {
     }
   }
 
+  // void _updateLists() {
+  //   debugPrint("Starting _updateLists...");
+
+  //   setState(() {
+  //     // Separate "arrived" orders
+  //     List<BartenderOrder> arrivedOrders =
+  //         allOrders.where((order) => order.status == 'arrived').toList();
+
+  //     // Separate claimed and unclaimed orders, excluding "arrived" orders
+  //     List<BartenderOrder> claimedOrders = allOrders
+  //         .where((order) =>
+  //             order.claimer == widget.bartenderID && order.status != 'arrived')
+  //         .toList();
+
+  //     List<BartenderOrder> unclaimedOrders = allOrders
+  //         .where((order) =>
+  //             order.claimer != widget.bartenderID && order.status != 'arrived')
+  //         .toList();
+
+  //     // Sort each category by timestamp (older first)
+  //     arrivedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+  //     claimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+  //     unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+  //     // Combine sorted lists
+  //     List<BartenderOrder> sortedOrders = [
+  //       ...arrivedOrders,
+  //       ...claimedOrders,
+  //       ...unclaimedOrders,
+  //     ];
+
+  //     // Precompute lists for "ready" and "other" orders
+  //     readyOrders = sortedOrders
+  //         .where(
+  //             (order) => order.status == 'ready' || order.status == 'arrived')
+  //         .toList();
+
+  //     otherOrders = sortedOrders
+  //         .where(
+  //             (order) => order.status != 'ready' || order.status == 'arrived')
+  //         .toList();
+
+  //     // Apply the "Your Orders Only" filter to both lists if filterUnique is true
+  //     if (filterUnique) {
+  //       readyOrders = readyOrders
+  //           .where((order) =>
+  //               order.claimer == widget.bartenderID ||
+  //               (order.claimer.isEmpty &&
+  //                   (order.userId % bartenderCount) == bartenderNumber))
+  //           .toList();
+
+  //       otherOrders = otherOrders
+  //           .where((order) =>
+  //               order.claimer == widget.bartenderID ||
+  //               (order.claimer.isEmpty &&
+  //                   (order.userId % bartenderCount) == bartenderNumber))
+  //           .toList();
+  //     }
+
+  //     // Handle terminal disablement logic
+  //     if (disabledTerminal &&
+  //         !allOrders.any((order) => order.claimer == widget.bartenderID)) {
+  //       socket!.sink.add(
+  //         json.encode({
+  //           'action': 'disable',
+  //           'barID': widget.barID,
+  //         }),
+  //       );
+
+  //       if (socket != null) {
+  //         socket!.sink.close();
+  //         socket = null;
+  //       }
+
+  //       Navigator.pushAndRemoveUntil(
+  //         context,
+  //         MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
+  //         (Route<dynamic> route) => false,
+  //       );
+  //     }
+  //   });
+
+  //   debugPrint("Finished _updateLists.");
+  // }
+
   void _updateLists() {
     debugPrint("Starting _updateLists...");
 
@@ -114,47 +198,30 @@ class _OrdersPageState extends State<Terminal> {
       // Separate claimed and unclaimed orders, excluding "arrived" orders
       List<BartenderOrder> claimedOrders = allOrders
           .where((order) =>
-              order.claimer == widget.bartenderID && order.status != 'arrived')
+              order.claimer == widget.bartenderID &&
+              order.status != 'arrived') //&& order.status != 'ready')
           .toList();
 
       List<BartenderOrder> unclaimedOrders = allOrders
           .where((order) =>
-              order.claimer != widget.bartenderID && order.status != 'arrived')
+              order.claimer != widget.bartenderID &&
+              order.status != 'arrived') //&& order.status != 'ready')
           .toList();
 
       // Sort each category by timestamp (older first)
-      arrivedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      claimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      arrivedOrders.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      claimedOrders.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      unclaimedOrders.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
       // Combine sorted lists
-      List<BartenderOrder> sortedOrders = [
+      sortedOrders = [
         ...arrivedOrders,
         ...claimedOrders,
         ...unclaimedOrders,
       ];
 
-      // Precompute lists for "ready" and "other" orders
-      readyOrders = sortedOrders
-          .where(
-              (order) => order.status == 'ready' || order.status == 'arrived')
-          .toList();
-
-      otherOrders = sortedOrders
-          .where(
-              (order) => order.status != 'ready' || order.status == 'arrived')
-          .toList();
-
-      // Apply the "Your Orders Only" filter to both lists if filterUnique is true
       if (filterUnique) {
-        readyOrders = readyOrders
-            .where((order) =>
-                order.claimer == widget.bartenderID ||
-                (order.claimer.isEmpty &&
-                    (order.userId % bartenderCount) == bartenderNumber))
-            .toList();
-
-        otherOrders = otherOrders
+        sortedOrders = sortedOrders
             .where((order) =>
                 order.claimer == widget.bartenderID ||
                 (order.claimer.isEmpty &&
@@ -184,6 +251,8 @@ class _OrdersPageState extends State<Terminal> {
         );
       }
     });
+
+    _heartbeat();
 
     debugPrint("Finished _updateLists.");
   }
@@ -272,28 +341,18 @@ class _OrdersPageState extends State<Terminal> {
     );
   }
 
-  // void _refresh() {
-  //   allOrders.clear();
-  //   readyOrders.clear();
-  //   otherOrders.clear();
-
-  //   // Send a 'refresh' action to the server via WebSocket
-  //   debugPrint("refresh sent");
-  //   socket!.sink.add(
-  //     jsonEncode({
-  //       'action': 'refresh',
-  //       'barID': widget.barID,
-  //     }),
-  //   );
-  //   setState(() {});
-  // }
+  void _heartbeat() {
+  debugPrint('Heartbeat ping sent at ${DateTime.now()}');
+  socket?.sink.add(jsonEncode({
+    'action': 'ping',
+  }));
+}
 
   void _refresh() {
-  debugPrint("Manual refresh triggered");
+    debugPrint("Manual refresh triggered");
 
-  allOrders.clear();
-  readyOrders.clear();
-  otherOrders.clear();
+    allOrders.clear();
+    sortedOrders.clear();
 
     try {
       socket!.sink.close(); // Gracefully close old connection
@@ -301,7 +360,7 @@ class _OrdersPageState extends State<Terminal> {
     } catch (e) {
       debugPrint("Error closing socket: $e");
     }
-}
+  }
 
   void _executeFunctionForUnclaimed(BartenderOrder order) {
     // Construct the message
@@ -536,9 +595,9 @@ class _OrdersPageState extends State<Terminal> {
       return order.pointOfSale ? Colors.purple : Colors.blueAccent;
     }
     if (ageInSeconds <= 180) return Colors.orange[200]!; // 0-3 minutes old
-    if (ageInSeconds <= 300) return Colors.orange[400]!; // 3-5 minutes old
-    if (ageInSeconds <= 600) return Colors.orange[600]!; // 5-10 minutes old
-    return Colors.red[700]!; // Over 10 minutes old
+    if (ageInSeconds <= 300) return Colors.orange[200]!; // 3-5 minutes old
+    if (ageInSeconds <= 600) return Colors.orange[200]!; // 5-10 minutes old
+    return Colors.orange[200]!; // Over 10 minutes old
   }
 
   @override
@@ -588,7 +647,7 @@ class _OrdersPageState extends State<Terminal> {
                 children: [
                   Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: List.generate(3, (pageIndex) {
+                    children: List.generate(2, (pageIndex) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4.0),
                         child: Icon(
@@ -627,35 +686,36 @@ class _OrdersPageState extends State<Terminal> {
           ),
         ),
         body: connected
-    ? PageView.builder(
-        controller: _pageController,
-        scrollDirection: Axis.horizontal,
-        itemCount: 3,
-        onPageChanged: (pageIndex) {
-          setState(() {
-            index = pageIndex;
-            debugPrint("Page changed to: $index");
-          });
-        },
-        itemBuilder: (context, pageIndex) {
-          if (pageIndex == 0) {
-            return POSPage(
-              bartenderId: widget.bartenderID,
-              pageController: _pageController,
-            );
-          } else if (pageIndex == 1) {
-            return _buildOrderList(otherOrders);
-          } else {
-            return _buildOrderList(readyOrders);
-          }
-        },
-      )
-    : const Center(
-        child: SizedBox(
-          width: 60,  // set width
-    height: 60, // set height
-          child: CircularProgressIndicator(color: Colors.white, )),
-      ),
+            ? PageView.builder(
+                controller: _pageController,
+                scrollDirection: Axis.horizontal,
+                itemCount: 2,
+                onPageChanged: (pageIndex) {
+                  setState(() {
+                    index = pageIndex;
+                    debugPrint("Page changed to: $index");
+                  });
+                },
+                itemBuilder: (context, pageIndex) {
+                  if (pageIndex == 0) {
+                    return POSPage(
+                      bartenderId: widget.bartenderID,
+                      pageController: _pageController,
+                    );
+                  } else if (pageIndex == 1) {
+                    return _buildOrderList(sortedOrders);
+                  }
+                  return null;
+                },
+              )
+            : const Center(
+                child: SizedBox(
+                    width: 60, // set width
+                    height: 60, // set height
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                    )),
+              ),
       ),
     );
   }
@@ -1112,19 +1172,19 @@ class _OrdersPageState extends State<Terminal> {
   }
 
   void _showErrorSnackbar(String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Center(
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Center(
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+          ),
         ),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating, // Optional: lifts the snackbar
       ),
-      duration: const Duration(seconds: 3),
-      behavior: SnackBarBehavior.floating, // Optional: lifts the snackbar
-    ),
-  );
-}
+    );
+  }
 
   void _handleWebSocketError(error) {
     _showErrorSnackbar(error.toString());
@@ -1257,7 +1317,7 @@ class _OrdersPageState extends State<Terminal> {
           switch (response.keys.first) {
             case 'error':
               // Use _showErrorSnackbar to display the error message
-              //_showErrorSnackbar(response['error']);
+              _showErrorSnackbar(response['error']);
               break;
 
             case 'terminate':
@@ -1274,7 +1334,6 @@ class _OrdersPageState extends State<Terminal> {
                 socket!.sink.close(); // Close the WebSocket connection
                 socket = null; // Set the WebSocket reference to null
               }
-
               break;
 
             case 'orders':
@@ -1325,7 +1384,6 @@ class _OrdersPageState extends State<Terminal> {
                 }
               }
               _updateLists();
-
               break;
 
             case 'update':
@@ -1355,7 +1413,6 @@ class _OrdersPageState extends State<Terminal> {
                 }
               }
               _updateLists();
-
               break;
 
             case 'barStatus':
@@ -1368,6 +1425,10 @@ class _OrdersPageState extends State<Terminal> {
 
             case 'disable':
               _disableTerminal();
+              break;
+
+            case 'heartbeat':
+              debugPrint('Still Alive');
               break;
 
             case 'updateTerminal':
@@ -1438,6 +1499,8 @@ class _OrdersPageState extends State<Terminal> {
   void dispose() {
     _pageController.dispose();
     _timer?.cancel(); // Cancel the timer when the widget is disposed
+    socket?.sink.close();
+    _heartbeatTimer?.cancel();
     super.dispose();
   }
 }

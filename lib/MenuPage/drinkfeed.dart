@@ -404,7 +404,7 @@ class DrinkFeedState extends State<DrinkFeed>
                       duration: const Duration(milliseconds: 2000),
                     ),
                     FadeAnimatedText(
-                      'Swipe Down to View Menu',
+                      'Swipe Down to Add More',
                       textStyle: GoogleFonts.poppins(
                         color: Colors.white70,
                         fontSize: 22,
@@ -974,7 +974,7 @@ GestureDetector(
                         final buttonText = (localDatabase.paymentStatus ==
                                     PaymentStatus.present ||
                                 !inAppPayments)
-                            ? 'Purchase'
+                            ? 'Pay'
                             : 'Set up card';
                         return Text(
                           buttonText,
