@@ -5,20 +5,20 @@ class SearchService {
 
   SearchService(this.localDatabase);
 
-  Map<String, Map<String, String>> searchBars(String searchText) {
-    var bars =
-        localDatabase.getSearchableBarInfo(); // Get minimal data for search
+  Map<String, Map<String, String>> searchMerchants(String searchText) {
+    var merchants =
+        localDatabase.getSearchableMerchantInfo(); // Get minimal data for search
     if (searchText.isEmpty) {
       return {};
     }
 
     // Use a map literal instead of the Map constructor
-    var filteredBars = <String, Map<String, String>>{}; // Using map literal
-    bars.forEach((id, data) {
+    var filteredMerchants = <String, Map<String, String>>{}; // Using map literal
+    merchants.forEach((id, data) {
       if (data['name']!.toLowerCase().contains(searchText.toLowerCase())) {
-        filteredBars[id] = data;
+        filteredMerchants[id] = data;
       }
     });
-    return filteredBars;
+    return filteredMerchants;
   }
 }

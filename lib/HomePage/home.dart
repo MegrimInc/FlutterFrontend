@@ -12,7 +12,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/heroicons_solid.dart';
 import 'package:provider/provider.dart';
-import 'package:barzzy/Backend/barhistory.dart';
+import 'package:barzzy/Backend/merchanthistory.dart';
 import 'package:barzzy/Backend/recommended.dart';
 import 'package:barzzy/MenuPage/menu.dart';
 import '../Backend/localdatabase.dart';
@@ -45,7 +45,7 @@ class HomePageState extends State<HomePage> {
     super.didChangeDependencies();
     // Dynamically calculate the available screen height
     screenHeight = MediaQuery.of(context).size.height -
-        (3.8 * kToolbarHeight); // Subtract twice the AppBar height
+        (3.8 * kToolmerchantHeight); // Subtract twice the AppMerchant height
     bottomHeight = (MediaQuery.of(context).size.height - screenHeight) * .5;
     paddingHeight = bottomHeight * .18;
   }
@@ -58,9 +58,9 @@ class HomePageState extends State<HomePage> {
   void _updateMasterList() async {
     final recommended = Provider.of<Recommended>(context, listen: false);
 
-    await recommended.fetchRecommendedBars(context);
+    await recommended.fetchRecommendedMerchants(context);
 
-    final recommendedIds = recommended.barIds;
+    final recommendedIds = recommended.merchantIds;
 
     setState(() {
       masterList = [...tappedIds, ...recommendedIds];
@@ -73,7 +73,7 @@ class HomePageState extends State<HomePage> {
     final userId = await loginCache.getUID();
 
     if (userId == 0) {
-      debugPrint('User ID is 0, skipping GET request for payment method.');
+      debugPrint('User Id is 0, skipping GET request for payment method.');
       return;
     }
 
@@ -110,12 +110,12 @@ class HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final barHistory = Provider.of<BarHistory>(context);
+    final merchantHistory = Provider.of<MerchantHistory>(context);
 
     return Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: Colors.black,
-        appBar: AppBar(
+        appMerchant: AppMerchant(
             backgroundColor: Colors.black,
             surfaceTintColor: Colors.transparent,
             centerTitle: true,
@@ -174,7 +174,7 @@ class HomePageState extends State<HomePage> {
 
                       Consumer<Recommended>(
                         builder: (context, recommended, _) {
-                          final recommendedIds = recommended.barIds;
+                          final recommendedIds = recommended.merchantIds;
                           masterList = [...recommendedIds].take(4).toList();
 
                           return Container(
@@ -192,28 +192,28 @@ class HomePageState extends State<HomePage> {
                               scrollDirection: Axis.horizontal,
                               itemCount: masterList.length,
                               itemBuilder: (context, index) {
-                                final barId = masterList[index];
-                                //final isTapped = barHistory.barIds.contains(barId);
+                                final merchantId = masterList[index];
+                                //final isTapped = merchantHistory.merchantIds.contains(merchantId);
                                 final isRecommended =
-                                    recommendedIds.contains(barId);
-                                final bar = LocalDatabase.getBarById(barId);
+                                    recommendedIds.contains(merchantId);
+                                final merchant = LocalDatabase.getMerchantById(merchantId);
                                 return GestureDetector(
                                     behavior: HitTestBehavior.translucent,
                                     onLongPress: () {
                                       HapticFeedback.heavyImpact();
-                                      final barHistory =
-                                          Provider.of<BarHistory>(context,
+                                      final merchantHistory =
+                                          Provider.of<MerchantHistory>(context,
                                               listen: false);
-                                      barHistory.setTappedBarId(barId);
+                                      merchantHistory.setTappedMerchantId(merchantId);
                                     },
                                     onTap: () {
                                       Navigator.push(context, MaterialPageRoute(
                                         builder: (context) {
                                           Cart cart = Cart();
-                                          cart.setBar(
-                                              barId); // Set the bar ID for the cart
+                                          cart.setMerchant(
+                                              merchantId); // Set the merchant Id for the cart
                                           return MenuPage(
-                                            barId: barId,
+                                            merchantId: merchantId,
                                             cart: cart,
                                           );
                                         },
@@ -242,7 +242,7 @@ class HomePageState extends State<HomePage> {
                                                 children: [
                                                   // Always display the image
                                                   CachedNetworkImage(
-                                                    imageUrl: bar?.tagimg ??
+                                                    imageUrl: merchant?.tagimg ??
                                                         'https://www.barzzy.site/images/default.png',
                                                     fit: BoxFit.cover,
                                                   ),
@@ -267,7 +267,7 @@ class HomePageState extends State<HomePage> {
                                             ),
                                           ),
                                           const SizedBox(height: 2),
-                                          Text(bar?.tag ?? 'No Tag',
+                                          Text(merchant?.tag ?? 'No Tag',
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 12,
@@ -283,7 +283,7 @@ class HomePageState extends State<HomePage> {
 
                       // TOP ROW WITH BAR NAME AND WAIT TIME
 
-                      if (barHistory.currentTappedBarId != null)
+                      if (merchantHistory.currentTappedMerchantId != null)
                         Flexible(
                           flex: 2,
                           child: Column(
@@ -296,8 +296,8 @@ class HomePageState extends State<HomePage> {
                                     Padding(
                                       padding: const EdgeInsets.only(left: 11),
                                       child: Text(
-                                        LocalDatabase.getBarById(barHistory
-                                                    .currentTappedBarId!)
+                                        LocalDatabase.getMerchantById(merchantHistory
+                                                    .currentTappedMerchantId!)
                                                 ?.name ??
                                             'No Name',
                                         style: const TextStyle(
@@ -317,7 +317,7 @@ class HomePageState extends State<HomePage> {
 
                       // MAIN MOST RECENT BAR
 
-                      if (barHistory.currentTappedBarId != null)
+                      if (merchantHistory.currentTappedMerchantId != null)
                         Expanded(
                           flex: 15,
                           child: GestureDetector(
@@ -328,12 +328,12 @@ class HomePageState extends State<HomePage> {
                                   builder: (context) {
                                     // Create a new Cart instance and initialize it
                                     Cart cart = Cart();
-                                    cart.setBar(barHistory
-                                        .currentTappedBarId!); // Set the bar ID for the cart
+                                    cart.setMerchant(merchantHistory
+                                        .currentTappedMerchantId!); // Set the merchant Id for the cart
 
                                     // Pass the newly created Cart instance to the MenuPage
                                     return MenuPage(
-                                      barId: barHistory.currentTappedBarId!,
+                                      merchantId: merchantHistory.currentTappedMerchantId!,
                                       cart: cart,
                                     );
                                   },
@@ -345,9 +345,9 @@ class HomePageState extends State<HomePage> {
                                 color: Colors.black,
                               ),
                               child: CachedNetworkImage(
-                                imageUrl: LocalDatabase.getBarById(
-                                      barHistory.currentTappedBarId!,
-                                    )?.barimg ??
+                                imageUrl: LocalDatabase.getMerchantById(
+                                      merchantHistory.currentTappedMerchantId!,
+                                    )?.merchantimg ??
                                     'https://www.barzzy.site/images/champs/6.png',
                                 fit: BoxFit.cover,
                               ),
@@ -357,7 +357,7 @@ class HomePageState extends State<HomePage> {
 
                       //BOTTOM ROW WITH RECENT DRINKS AND WAIT TIME
 
-                      if (barHistory.currentTappedBarId != null)
+                      if (merchantHistory.currentTappedMerchantId != null)
                         Flexible(
                           flex: 2,
                           child: Column(
@@ -400,8 +400,8 @@ class HomePageState extends State<HomePage> {
                                   Padding(
                                     padding: const EdgeInsets.only(right: 11),
                                     child: Text(
-                                      LocalDatabase.getBarById(barHistory
-                                                  .currentTappedBarId!)
+                                      LocalDatabase.getMerchantById(merchantHistory
+                                                  .currentTappedMerchantId!)
                                               ?.address ??
                                           'No Address Available',
                                       style: const TextStyle(
@@ -423,7 +423,7 @@ class HomePageState extends State<HomePage> {
             );
           },
         ),
-        bottomNavigationBar: FutureBuilder<int>(
+        bottomNavigationMerchant: FutureBuilder<int>(
           future: Provider.of<LoginCache>(context, listen: false).getUID(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {

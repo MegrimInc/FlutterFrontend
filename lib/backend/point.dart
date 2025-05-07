@@ -1,13 +1,13 @@
 class Point {
-  final String barId; // Bar ID as a string
+  final String merchantId; // Merchant Id as a string
   final int points;
 
-  Point({required this.barId, required this.points});
+  Point({required this.merchantId, required this.points});
 
   // Method to convert Point object to JSON
   Map<String, dynamic> toJson() {
     return {
-      'barId': barId,
+      'merchantId': merchantId,
       'points': points,
     };
   }
@@ -15,7 +15,7 @@ class Point {
   // Method to create a Point object from JSON
   factory Point.fromJson(Map<String, dynamic> json) {
     return Point(
-      barId: json['barId'],
+      merchantId: json['merchantId'],
       points: json['points'],
     );
   }

@@ -15,16 +15,16 @@ class SearchPage extends StatefulWidget {
 }
 
 class SearchPageState extends State<SearchPage> {
-  Map<String, Map<String, String>> _filteredBars = {};
+  Map<String, Map<String, String>> _filteredMerchants = {};
   final FocusNode _focusNode = FocusNode();
 
   void _handleSearchChanged(String searchText) {
     final searchService = Provider.of<SearchService>(context, listen: false);
-    Map<String, Map<String, String>> filteredBars =
-        searchService.searchBars(searchText);
+    Map<String, Map<String, String>> filteredMerchants =
+        searchService.searchMerchants(searchText);
 
     setState(() {
-      _filteredBars = filteredBars;
+      _filteredMerchants = filteredMerchants;
     });
   }
 
@@ -42,12 +42,12 @@ class SearchPageState extends State<SearchPage> {
             ),
             Expanded(
               child: ListView.builder(
-                itemCount: _filteredBars.length,
+                itemCount: _filteredMerchants.length,
                 itemBuilder: (context, index) {
-                  String barId = _filteredBars.keys.elementAt(index);
-                  Map<String, String> barInfo = _filteredBars[barId]!;
+                  String merchantId = _filteredMerchants.keys.elementAt(index);
+                  Map<String, String> merchantInfo = _filteredMerchants[merchantId]!;
                   String displayText =
-                      "${barInfo['name']} - ${barInfo['address']}";
+                      "${merchantInfo['name']} - ${merchantInfo['address']}";
                   return ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     tileColor: Colors.transparent,
@@ -64,11 +64,11 @@ class SearchPageState extends State<SearchPage> {
   builder: (context) {
     // Create a new Cart instance and initialize it
     Cart cart = Cart();
-    cart.setBar(barId); // Set the bar ID for the cart
+    cart.setMerchant(merchantId); // Set the merchant Id for the cart
 
     // Pass the newly created Cart instance to the MenuPage
     return MenuPage(
-      barId: barId,
+      merchantId: merchantId,
       cart: cart,
     );
   },

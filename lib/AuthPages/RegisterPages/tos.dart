@@ -160,7 +160,7 @@ class _RegisterPageState2 extends State<RegisterPage2> {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    'You must be at least 21 years old to use the Service. By using the Service, you represent and warrant that you are of legal drinking age in your jurisdiction and that you have the right, authority, and capacity to enter into these Terms. If you are under the legal drinking age in your jurisdiction or do not agree to these Terms, you must not use the Service.',
+                    'You must be at least 21 years old to use the Service. By using the Service, you represent and warrant that you are of legal iteming age in your jurisdiction and that you have the right, authority, and capacity to enter into these Terms. If you are under the legal iteming age in your jurisdiction or do not agree to these Terms, you must not use the Service.',
                     style: TextStyle(color: Colors.white, fontSize: 14),
                   ),
                   SizedBox(height: 20),
@@ -175,7 +175,7 @@ class _RegisterPageState2 extends State<RegisterPage2> {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    'Barzzy is a platform that facilitates the ordering of beverages, including alcoholic beverages, at participating establishments such as bars, pubs, and nightclubs (the "Establishments"). Barzzy does not own, operate, or control the Establishments, and is not responsible for the actions or inactions of any Establishment, including the quality, safety, legality, or availability of the items listed on the Service.',
+                    'Barzzy is a platform that facilitates the ordering of beverages, including alcoholic beverages, at participating establishments such as merchants, pubs, and nightclubs (the "Establishments"). Barzzy does not own, operate, or control the Establishments, and is not responsible for the actions or inactions of any Establishment, including the quality, safety, legality, or availability of the items listed on the Service.',
                     style: TextStyle(color: Colors.white, fontSize: 14),
                   ),
                   SizedBox(height: 20),
@@ -205,7 +205,7 @@ class _RegisterPageState2 extends State<RegisterPage2> {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    'You agree to use the Service only for lawful purposes and in accordance with these Terms. You agree not to use the Service to engage in any conduct that is illegal, harmful, or otherwise objectionable, including but not limited to: \n\n- Misrepresenting your age or identity.\n- Ordering alcohol for consumption by individuals under the legal drinking age in your jurisdiction.\n- Attempting to defraud or deceive Barzzy or any Establishment.\n- Engaging in any activity that could harm the reputation of Barzzy or any Establishment.',
+                    'You agree to use the Service only for lawful purposes and in accordance with these Terms. You agree not to use the Service to engage in any conduct that is illegal, harmful, or otherwise objectionable, including but not limited to: \n\n- Misrepresenting your age or identity.\n- Ordering alcohol for consumption by individuals under the legal iteming age in your jurisdiction.\n- Attempting to defraud or deceive Barzzy or any Establishment.\n- Engaging in any activity that could harm the reputation of Barzzy or any Establishment.',
                     style: TextStyle(color: Colors.white, fontSize: 14),
                   ),
                   SizedBox(height: 20),

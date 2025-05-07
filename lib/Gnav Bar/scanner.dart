@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io'; // For platform checks
-import 'package:barzzy/Backend/bar.dart';
+import 'package:barzzy/Backend/merchant.dart';
 import 'package:barzzy/Backend/customer_order.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:barzzy/Backend/preferences.dart';
@@ -128,7 +128,7 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
       height: screenHeight * .70,
       child: Column(
         children: [
-          // Drag Bar
+          // Drag Merchant
           Container(
               height: 5,
               width: 50,
@@ -201,22 +201,22 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
                   final result = scanResultsValue[index];
                   final String advName = result.advertisementData.advName;
     
-                  // Extract the barId and alpha character from the advertisement name
-                  final String barId = advName.split('~').first;
+                  // Extract the merchantId and alpha character from the advertisement name
+                  final String merchantId = advName.split('~').first;
                   final String alphaCharacter =
                       advName.split('~')[1].split('|').first;
     
-                  // Access the LocalDatabase to fetch the Bar object
+                  // Access the LocalDatabase to fetch the Merchant object
                   final localDatabase =
                       Provider.of<LocalDatabase>(context, listen: false);
-                  final Bar? bar = localDatabase.bars[barId];
+                  final Merchant? merchant = localDatabase.merchants[merchantId];
     
                   // Define display values
-                  final String displayTitle = bar != null
-                      ? "${bar.tag ?? 'Unknown Tag'} - $alphaCharacter"
-                      : "Unknown Bar";
+                  final String displayTitle = merchant != null
+                      ? "${merchant.tag ?? 'Unknown Tag'} - $alphaCharacter"
+                      : "Unknown Merchant";
                   final String displaySubtitle =
-                      bar?.name ?? "No name available";
+                      merchant?.name ?? "No name available";
     
                   return Container(
                     width: MediaQuery.of(context).size.width,
@@ -228,9 +228,9 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: ListTile(
-                      leading: bar?.tagimg != null
+                      leading: merchant?.tagimg != null
                           ? CircleAvatar(
-                              backgroundImage: NetworkImage(bar!.tagimg!),
+                              backgroundImage: NetworkImage(merchant!.tagimg!),
                               radius: 25, // Adjust the size as needed
                             )
                           : const CircleAvatar(
@@ -263,21 +263,21 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
                           final String advName =
                               result.advertisementData.advName;
     
-                          // Extract the bar ID (string before the `~`) from the advertisement name
-                          final String barId = advName.split('~').first;
+                          // Extract the merchant Id (string before the `~`) from the advertisement name
+                          final String merchantId = advName.split('~').first;
     
-                          if (barId.isNotEmpty) {
-                            debugPrint('Extracted bar ID: $barId');
+                          if (merchantId.isNotEmpty) {
+                            debugPrint('Extracted merchant Id: $merchantId');
     
                             // Use the Provider to access the User class
                             final user =
                                 Provider.of<User>(context, listen: false);
     
-                            // Trigger fetchTagsAndDrinks with the bar ID
-                            await user.fetchTagsAndDrinks(barId);
+                            // Trigger fetchTagsAndItems with the merchant Id
+                            await user.fetchTagsAndItems(merchantId);
                           } else {
                             debugPrint(
-                                'No valid bar ID found in advertisement name: $advName');
+                                'No valid merchant Id found in advertisement name: $advName');
                           }
     
                           // Proceed with pairing logic
@@ -398,32 +398,32 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
       // Parse the JSON response into a Map<String, dynamic>
       final Map<String, dynamic> parsedResponse = jsonDecode(responseString);
 
-      // Extract the barId
+      // Extract the merchantId
       final String id = parsedResponse['id'].toString();
 
-      // Separate the barId and bartenderId
-      final String barId =
-          id.replaceAll(RegExp(r'[^\d]'), ''); // Keep only digits for barId
-      final String bartenderId = id.replaceAll(
-          RegExp(r'[\d]'), ''); // Keep only non-digits for bartenderId
+      // Separate the merchantId and terminalId
+      final String merchantId =
+          id.replaceAll(RegExp(r'[^\d]'), ''); // Keep only digits for merchantId
+      final String terminalId = id.replaceAll(
+          RegExp(r'[\d]'), ''); // Keep only non-digits for terminalId
 
       // Log the results
-      debugPrint('Extracted barId: $barId');
-      debugPrint('Extracted bartenderId: $bartenderId');
+      debugPrint('Extracted merchantId: $merchantId');
+      debugPrint('Extracted terminalId: $terminalId');
 
       // Extract the cartItems
       final List<dynamic> cartItems = parsedResponse['order'] ?? [];
 
-      // Construct the list of DrinkOrder objects
-      final List<DrinkOrder> drinkOrders = cartItems.map((item) {
-        final int drinkId = item['drinkId'] ?? 0;
+      // Construct the list of ItemOrder objects
+      final List<ItemOrder> itemOrders = cartItems.map((item) {
+        final int itemId = item['itemId'] ?? 0;
         final int quantity = item['quantity'] ?? 0;
         const String paymentType = "regular"; // Default value for paymentType
 
-        // Return a DrinkOrder object
-        return DrinkOrder(
-          drinkId, // drinkId
-          '', // drinkName (placeholder)
+        // Return a ItemOrder object
+        return ItemOrder(
+          itemId, // itemId
+          '', // itemName (placeholder)
           paymentType, // paymentType
           quantity, // quantity
         );
@@ -432,12 +432,12 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
       // Create the CustomerOrder object
       final CustomerOrder order = CustomerOrder(
         '', // name
-        '', // barId
+        '', // merchantId
         0, // userId
         0.0, // totalRegularPrice
         0.0, // tip
         false, // inAppPayments
-        drinkOrders, // drinks
+        itemOrders, // items
         '', // status
         '', // claimer
         0, // timestamp
@@ -447,16 +447,16 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
       debugPrint('Created CustomerOrder: $order');
 
       final cart = Cart();
-      cart.setBar(barId);
+      cart.setMerchant(merchantId);
       cart.reorder(order);
 
       await Navigator.of(context).pushNamed(
         '/menu',
         arguments: {
-          'barId': barId,
+          'merchantId': merchantId,
           'cart': cart,
-          'drinkId': order.drinks.first.drinkId.toString(), // Optional drinkId.
-          'claimer' : bartenderId
+          'itemId': order.items.first.itemId.toString(), // Optional itemId.
+          'claimer' : terminalId
         },
       );
     } catch (e, stackTrace) {
@@ -517,7 +517,7 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    debugPrint("Disposing BarBottomSheet...");
+    debugPrint("Disposing MerchantBottomSheet...");
     clearBLE();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();

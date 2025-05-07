@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/AuthPages/components/toggle.dart';
-import 'package:barzzy/Backend/bar.dart';
+import 'package:barzzy/Backend/merchant.dart';
 import 'package:barzzy/Backend/customer.dart';
 import 'package:barzzy/Backend/searchengine.dart';
 import 'package:barzzy/Backend/recommended.dart';
 import 'package:barzzy/Backend/preferences.dart';
 import 'package:barzzy/Gnav%20Bar/bottombar.dart';
 import 'package:barzzy/MenuPage/cart.dart';
-import 'package:barzzy/MenuPage/drinkfeed.dart';
+import 'package:barzzy/MenuPage/itemfeed.dart';
 import 'package:barzzy/MenuPage/menu.dart';
 import 'package:barzzy/OrdersPage/websocket.dart';
 import 'package:barzzy/Terminal/inventory.dart';
@@ -23,7 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:http/http.dart' as http;
-import 'package:barzzy/Backend/barhistory.dart';
+import 'package:barzzy/Backend/merchanthistory.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart'; // Crashlytics
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
@@ -45,7 +45,7 @@ Future<void> main() async {
   AppConfig.environment = Environment.test;
   
 
-  Stripe.merchantIdentifier = 'merchant.com.barzzy';
+  Stripe.merchantIdentifier = 'merchant.com.barzzy'; //TODO CHECK THIS CHIDE
 
   try {
     debugPrint("Starting Firebase Initialization");
@@ -117,7 +117,7 @@ Future<void> main() async {
   }
 
   final uid = await loginCache.getUID();
-  final isBar = uid < 0;
+  final isMerchant = uid < 0;
   loggedInAlready = loggedInAlready && httpRequest;
   await loginCache.setDeviceToken(deviceToken);
   LocalDatabase localDatabase = LocalDatabase();
@@ -142,7 +142,7 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => localDatabase),
-        ChangeNotifierProvider(create: (context) => BarHistory()),
+        ChangeNotifierProvider(create: (context) => MerchantHistory()),
         ChangeNotifierProvider(create: (context) => Recommended()),
         ChangeNotifierProvider(create: (_) => Inventory()),
         ChangeNotifierProvider(
@@ -155,7 +155,7 @@ Future<void> main() async {
       ],
       child: Barzzy(
         loggedInAlready: loggedInAlready,
-        isBar: isBar,
+        isMerchant: isMerchant,
         navigatorKey: navigatorKey,
       ),
     ),
@@ -172,20 +172,20 @@ Future<void> sendGetRequest() async {
 
       final List<dynamic> jsonResponse = jsonDecode(response.body);
       LocalDatabase localDatabase = LocalDatabase();
-      for (var barJson in jsonResponse) {
-         debugPrint('Bar JSON data: ${jsonEncode(barJson)}');
-        Bar bar = Bar.fromJson(barJson);
-        localDatabase.addBar(bar);
+      for (var merchantJson in jsonResponse) {
+         debugPrint('Merchant JSON data: ${jsonEncode(merchantJson)}');
+        Merchant merchant = Merchant.fromJson(merchantJson);
+        localDatabase.addMerchant(merchant);
 
-        if (bar.barimg != null && bar.barimg!.isNotEmpty) {
-          final cachedImage = CachedNetworkImageProvider(bar.barimg!);
+        if (merchant.merchantimg != null && merchant.merchantimg!.isNotEmpty) {
+          final cachedImage = CachedNetworkImageProvider(merchant.merchantimg!);
           cachedImage.resolve(const ImageConfiguration()).addListener(
                 ImageStreamListener(
                   (ImageInfo image, bool synchronousCall) {
-                    //debugPrint('Bar image successfully cached: ${bar.barimg}');
+                    //debugPrint('Merchant image successfully cached: ${merchant.merchantimg}');
                   },
                   onError: (dynamic exception, StackTrace? stackTrace) {
-                    //debugPrint('Failed to cache bar image: $exception');
+                    //debugPrint('Failed to cache merchant image: $exception');
                   },
                 ),
               );
@@ -201,14 +201,14 @@ Future<void> sendGetRequest() async {
 
 Future<void> sendGetRequest2() async {
   try {
-    // Add or update points in the LocalDatabase for each bar
+    // Add or update points in the LocalDatabase for each merchant
     LocalDatabase localDatabase = LocalDatabase();
 
     final loginCache = LoginCache();
     final userId = await loginCache.getUID();
 
     if (userId == 0) {
-      debugPrint('User ID is 0, skipping GET request for points.');
+      debugPrint('User Id is 0, skipping GET request for points.');
       return;
     }
 
@@ -229,25 +229,25 @@ Future<void> sendGetRequest2() async {
         return;
       }
 
-      // Check if the user ID from the response matches the one in LoginCache
+      // Check if the user Id from the response matches the one in LoginCache
       final String userIdString = userId.toString();
       if (!jsonResponse.containsKey(userIdString)) {
-        debugPrint('User ID from response does not match the logged-in user.');
+        debugPrint('User Id from response does not match the logged-in user.');
         return;
       }
 
-      // Get the points map for the user (barId -> points)
+      // Get the points map for the user (merchantId -> points)
       final Map<String, dynamic> userPointsMap = jsonResponse[userIdString];
 
-      // Iterate over the user points map (barId -> points)
-      userPointsMap.forEach((barId, points) {
+      // Iterate over the user points map (merchantId -> points)
+      userPointsMap.forEach((merchantId, points) {
         try {
-          final Point point = Point(barId: barId.toString(), points: points);
+          final Point point = Point(merchantId: merchantId.toString(), points: points);
           debugPrint(
-              'Successfully serialized Point: Bar ID: ${point.barId}, Points: ${point.points}');
+              'Successfully serialized Point: Merchant Id: ${point.merchantId}, Points: ${point.points}');
 
           // Add or update the points in the LocalDatabase
-          localDatabase.addOrUpdatePoints(point.barId, point.points);
+          localDatabase.addOrUpdatePoints(point.merchantId, point.points);
         } catch (e) {
           debugPrint('Error serializing Point object from JSON: $e');
         }
@@ -295,27 +295,27 @@ Future<void> sendGetRequest3() async {
 
 class Barzzy extends StatelessWidget {
   final bool loggedInAlready;
-  final bool isBar;
+  final bool isMerchant;
   final GlobalKey<NavigatorState> navigatorKey;
 
   const Barzzy({
     super.key,
     required this.loggedInAlready,
-    required this.isBar,
+    required this.isMerchant,
     required this.navigatorKey,
   });
 
   @override
   Widget build(BuildContext context) {
-    Provider.of<BarHistory>(context, listen: false).setContext(context);
+    Provider.of<MerchantHistory>(context, listen: false).setContext(context);
     Provider.of<Recommended>(context, listen: false)
-        .fetchRecommendedBars(context);
+        .fetchRecommendedMerchants(context);
 
     final String initialRoute;
     if (!loggedInAlready) {
       initialRoute = '/login';
-    } else if (isBar) {
-      initialRoute = '/bar';
+    } else if (isMerchant) {
+      initialRoute = '/merchant';
     } else {
       initialRoute = '/auth';
     }
@@ -335,29 +335,29 @@ class Barzzy extends StatelessWidget {
       initialRoute: initialRoute,
       routes: {
         '/auth': (context) => const AuthPage(),
-        '/bar': (context) => const BartenderIDScreen(),
+        '/merchant': (context) => const TerminalIdScreen(),
         '/login': (context) => const LoginOrRegisterPage(),
         '/orders': (context) => const AuthPage(selectedTab: 1),
         '/menu': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map;
-          final String barId = args['barId'];
+          final String merchantId = args['merchantId'];
           final Cart cart = args['cart'];
-          final String? drinkId = args['drinkId']; // Optional parameter
+          final String? itemId = args['itemId']; // Optional parameter
           final String? claimer = args['claimer'];
 
           return MenuPage(
-            barId: barId,
+            merchantId: merchantId,
             cart: cart,
-            drinkId: drinkId, // Pass the optional drinkId
+            itemId: itemId, // Pass the optional itemId
             claimer: claimer,
           );
         },
-        '/drinkFeed': (context) {
+        '/itemFeed': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map;
-          return DrinkFeed(
-            drink: args['drink'],
+          return ItemFeed(
+            item: args['item'],
             cart: args['cart'],
-            barId: args['barId'],
+            merchantId: args['merchantId'],
             initialPage: args['initialPage'],
             claimer: args['claimer'],
           );

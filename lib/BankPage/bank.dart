@@ -40,12 +40,12 @@ class _BankPageState extends State<BankPage> {
 
     // Calculate the total points
     final totalPoints = localDatabase
-        .getSearchableBarInfo()
+        .getSearchableMerchantInfo()
         .keys
-        .map((barId) => localDatabase.getPointsForBar(barId)?.points ?? 0)
+        .map((merchantId) => localDatabase.getPointsForMerchant(merchantId)?.points ?? 0)
         .fold(0, (sum, points) => sum + points);
 
-    final filteredBars = localDatabase.getSearchableBarInfo().entries.where(
+    final filteredMerchants = localDatabase.getSearchableMerchantInfo().entries.where(
       (entry) {
         final name = entry.value['name'] ?? '';
         return name.toLowerCase().contains(_searchText.toLowerCase());
@@ -85,7 +85,7 @@ class _BankPageState extends State<BankPage> {
             ),
 
             const SizedBox(height: 50),
-            // Search Bar
+            // Search Merchant
             Container(
               decoration: const BoxDecoration(
                 border: Border(
@@ -108,22 +108,22 @@ class _BankPageState extends State<BankPage> {
 
             const SizedBox(height: 25),
 
-            // List of Bars
+            // List of Merchants
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _refreshData,
                 color: Colors.black,
                 child: ListView.separated(
-                  itemCount: filteredBars.length,
+                  itemCount: filteredMerchants.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(height: 10),
                   itemBuilder: (context, index) {
-                    final barId = filteredBars[index].key;
-                    final barName =
-                        filteredBars[index].value['name'] ?? 'Unknown';
+                    final merchantId = filteredMerchants[index].key;
+                    final merchantName =
+                        filteredMerchants[index].value['name'] ?? 'Unknown';
                     final points =
-                        localDatabase.getPointsForBar(barId)?.points ?? 0;
-                    final tagImage = LocalDatabase.getBarById(barId)?.tagimg ??
+                        localDatabase.getPointsForMerchant(merchantId)?.points ?? 0;
+                    final tagImage = LocalDatabase.getMerchantById(merchantId)?.tagimg ??
                         'https://www.barzzy.site/images/default.png';
 
                     return GestureDetector(
@@ -131,10 +131,10 @@ class _BankPageState extends State<BankPage> {
                         Navigator.push(context, MaterialPageRoute(
                           builder: (context) {
                             Cart cart = Cart();
-                            cart.setBar(barId);
+                            cart.setMerchant(merchantId);
 
                             return MenuPage(
-                              barId: barId,
+                              merchantId: merchantId,
                               cart: cart,
                             );
                           },
@@ -148,7 +148,7 @@ class _BankPageState extends State<BankPage> {
                               CachedNetworkImageProvider(tagImage),
                         ),
                         title: Text(
-                          '$barName - $points pts',
+                          '$merchantName - $points pts',
                           style: const TextStyle(
                               color: Colors.white, fontSize: 18),
                         ),

@@ -1,5 +1,5 @@
 class Categories {
-  final int barId;
+  final int merchantId;
   final List<int> tag172;
   final List<int> tag173;
   final List<int> tag174;
@@ -15,7 +15,7 @@ class Categories {
   final List<int> tagSpecial;
 
   Categories({
-    required this.barId,
+    required this.merchantId,
     required this.tag172,
     required this.tag173,
     required this.tag174,

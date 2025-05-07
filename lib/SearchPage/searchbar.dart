@@ -65,7 +65,7 @@ class SearchState extends State<Search> {
                 cursorColor: Colors.white,
                 decoration: InputDecoration(
                   filled: true,
-                  hintText: 'Find your bar...',
+                  hintText: 'Find your merchant...',
                   contentPadding: const EdgeInsets.fromLTRB(10, -5, 20, 12),
                   hintStyle: GoogleFonts.sourceSans3(color: Colors.grey),
                   border: InputBorder.none,

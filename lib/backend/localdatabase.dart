@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:barzzy/Backend/customer.dart';
 import 'package:barzzy/Backend/customer_order.dart';
-import 'package:barzzy/Backend/drink.dart';
+import 'package:barzzy/Backend/item.dart';
 import 'package:barzzy/Backend/point.dart';
 import 'package:flutter/material.dart';
 import 'package:ntp/ntp.dart';
-import 'bar.dart';
+import 'merchant.dart';
 
 enum PaymentStatus {
   loading,
@@ -28,9 +28,9 @@ class LocalDatabase with ChangeNotifier {
     debugPrint('when do u trigger');
   }
 
-  final Map<String, Bar> _bars = {};
-  final Map<String, Drink> _drinks = {};
-  final Map<String, CustomerOrder> _barOrders = {};
+  final Map<String, Merchant> _merchants = {};
+  final Map<String, Item> _items = {};
+  final Map<String, CustomerOrder> _merchantOrders = {};
   final Map<String, Point> _userPoints = {};
   final Map<String, bool> _happyHourStatusMap = {};
   bool isPaymentPresent = false;
@@ -43,76 +43,76 @@ class LocalDatabase with ChangeNotifier {
     debugPrint('Payment status updated to: $status');
   }
 
-  void addOrUpdateOrderForBar(CustomerOrder order) {
-    _barOrders[order.barId] = order;
+  void addOrUpdateOrderForMerchant(CustomerOrder order) {
+    _merchantOrders[order.merchantId] = order;
     notifyListeners();
   }
 
-  CustomerOrder? getOrderForBar(String barId) {
-    return _barOrders[barId];
+  CustomerOrder? getOrderForMerchant(String merchantId) {
+    return _merchantOrders[merchantId];
   }
 
-  // Method to add a new bar, generating an ID for it
-  void addBar(Bar bar) {
-    if (bar.id != null) {
-      _bars[bar.id!] = bar;
-      _checkHappyHourForBar(bar.id!);
+  // Method to add a new merchant, generating an Id for it
+  void addMerchant(Merchant merchant) {
+    if (merchant.id != null) {
+      _merchants[merchant.id!] = merchant;
+      _checkHappyHourForMerchant(merchant.id!);
       notifyListeners();
       debugPrint(
-          'Bar with ID: ${bar.id} added by LocalDatabase instance: $hashCode.');
+          'Merchant with Id: ${merchant.id} added by LocalDatabase instance: $hashCode.');
     } else {
-      debugPrint('Bar ID is null, cannot add to database.');
+      debugPrint('Merchant Id is null, cannot add to database.');
     }
   }
 
-  void addDrink(Drink drink) {
-    _drinks[drink.itemId] = drink;
+  void addItem(Item item) {
+    _items[item.itemId] = item;
     notifyListeners();
     debugPrint(
-        'Drink with ID: ${drink.itemId} added to LocalDatabase instance: $hashCode. Total drinks: ${_drinks.length}');
+        'Item with Id: ${item.itemId} added to LocalDatabase instance: $hashCode. Total items: ${_items.length}');
   }
 
 
   // Method to get minimal information necessary for search
-  Map<String, Map<String, String>> getSearchableBarInfo() {
-    return _bars.map((id, bar) =>
-        MapEntry(id, {'name': bar.name ?? '', 'address': bar.address ?? ''}));
+  Map<String, Map<String, String>> getSearchableMerchantInfo() {
+    return _merchants.map((id, merchant) =>
+        MapEntry(id, {'name': merchant.name ?? '', 'address': merchant.address ?? ''}));
   }
 
   // In LocalDatabase class
-  Map<String, Bar> get bars => _bars;
+  Map<String, Merchant> get merchants => _merchants;
 
-  //Method to get all bar IDs
-  List<String> getAllBarIds() {
-    return _bars.keys.toList();
+  //Method to get all merchant Ids
+  List<String> getAllMerchantIds() {
+    return _merchants.keys.toList();
   }
 
-  static Bar? getBarById(String id) {
-    return _singleton._bars[id];
+  static Merchant? getMerchantById(String id) {
+    return _singleton._merchants[id];
   }
 
-  Drink getDrinkById(String id) {
-    debugPrint('Drink found for ID: $id in LocalDatabase instance: $hashCode');
-    return _drinks[id]!;
+  Item getItemById(String id) {
+    debugPrint('Item found for Id: $id in LocalDatabase instance: $hashCode');
+    return _items[id]!;
   }
 
   void clearOrders() {
-    _barOrders.clear();
+    _merchantOrders.clear();
     notifyListeners();
     debugPrint("All orders have been cleared.");
     _userPoints.clear();
     debugPrint("All points have been cleared.");
   }
 
-  void addOrUpdatePoints(String barId, int points) {
-    _userPoints[barId] = Point(barId: barId, points: points);
+  void addOrUpdatePoints(String merchantId, int points) {
+    _userPoints[merchantId] = Point(merchantId: merchantId, points: points);
     notifyListeners();
-    debugPrint('Points updated for bar $barId: $points points');
+    debugPrint('Points updated for merchant $merchantId: $points points');
   }
 
-  // Method to get points for a specific bar
-  Point? getPointsForBar(String barId) {
-    return _userPoints[barId];
+  // Method to get points for a specific merchant
+  Point? getPointsForMerchant(String merchantId) {
+    return _userPoints[merchantId];
   }
 
   // Method to get all points for the user
@@ -134,8 +134,8 @@ class LocalDatabase with ChangeNotifier {
 
       bool anyChanges = false;
 
-      _bars.forEach((barId, bar) {
-        if (bar.happyHours != null) {
+      _merchants.forEach((merchantId, merchant) {
+        if (merchant.happyHours != null) {
           String dayOfWeek = [
             'Sunday',
             'Monday',
@@ -146,12 +146,12 @@ class LocalDatabase with ChangeNotifier {
             'Saturday'
           ][now.weekday % 7];
 
-          String? todayHappyHours = bar.happyHours![dayOfWeek];
+          String? todayHappyHours = merchant.happyHours![dayOfWeek];
           bool isHappyHourNow = false;
 
           if (todayHappyHours != null) {
             debugPrint(
-                "Today's ($dayOfWeek) happy hours for bar ID $barId: $todayHappyHours");
+                "Today's ($dayOfWeek) happy hours for merchant Id $merchantId: $todayHappyHours");
             List<String> timeRanges = todayHappyHours.split(" | ");
 
             for (var range in timeRanges) {
@@ -178,49 +178,49 @@ class LocalDatabase with ChangeNotifier {
               );
 
               debugPrint(
-                  "Checking range - Bar ID: $barId - Happy hour UTC start: $start, end: $end");
+                  "Checking range - Merchant Id: $merchantId - Happy hour UTC start: $start, end: $end");
 
               if ((now.isAfter(start) || now.isAtSameMomentAs(start)) &&
                   (now.isBefore(end) || now.isAtSameMomentAs(end))) {
                 isHappyHourNow = true;
-                debugPrint("Bar $barId is within happy hour range.");
+                debugPrint("Merchant $merchantId is within happy hour range.");
                 break;
               }
             }
           }
 
           if (!isHappyHourNow) {
-            debugPrint("Bar ID: $barId is NOT within any happy hour range.");
+            debugPrint("Merchant Id: $merchantId is NOT within any happy hour range.");
           }
 
           // Update happy hour status if it has changed
-          if (_happyHourStatusMap[barId] != isHappyHourNow) {
-            _happyHourStatusMap[barId] = isHappyHourNow;
+          if (_happyHourStatusMap[merchantId] != isHappyHourNow) {
+            _happyHourStatusMap[merchantId] = isHappyHourNow;
             anyChanges = true;
             debugPrint(
-                "Happy hour status updated for Bar $barId to: $isHappyHourNow");
+                "Happy hour status updated for Merchant $merchantId to: $isHappyHourNow");
           }
         }
       });
 
       if (anyChanges) {
         notifyListeners();
-        debugPrint("Happy hour status updated for one or more bars.");
+        debugPrint("Happy hour status updated for one or more merchants.");
       }
     } catch (e) {
       debugPrint("Failed to fetch NTP time: $e");
     }
   }
 
-  // New function to check happy hour status for a specific bar
-  Future<void> _checkHappyHourForBar(String barId) async {
+  // New function to check happy hour status for a specific merchant
+  Future<void> _checkHappyHourForMerchant(String merchantId) async {
     DateTime now = (await NTP.now()).toUtc();
-    debugPrint("Checking happy hour status for bar $barId at time $now");
+    debugPrint("Checking happy hour status for merchant $merchantId at time $now");
 
     bool isHappyHourNow = false;
-    final bar = _bars[barId];
+    final merchant = _merchants[merchantId];
 
-    if (bar?.happyHours != null) {
+    if (merchant?.happyHours != null) {
       String dayOfWeek = [
         'Sunday',
         'Monday',
@@ -231,7 +231,7 @@ class LocalDatabase with ChangeNotifier {
         'Saturday'
       ][now.weekday % 7];
 
-      String? todayHappyHours = bar!.happyHours![dayOfWeek];
+      String? todayHappyHours = merchant!.happyHours![dayOfWeek];
       if (todayHappyHours != null) {
         List<String> timeRanges = todayHappyHours.split(" | ");
 
@@ -259,7 +259,7 @@ class LocalDatabase with ChangeNotifier {
           if ((now.isAfter(start) || now.isAtSameMomentAs(start)) &&
               (now.isBefore(end) || now.isAtSameMomentAs(end))) {
             isHappyHourNow = true;
-            debugPrint("Bar $barId is within happy hour range.");
+            debugPrint("Merchant $merchantId is within happy hour range.");
             break;
           }
         }
@@ -267,16 +267,16 @@ class LocalDatabase with ChangeNotifier {
     }
 
     // Update the happy hour status map and notify if there was a change
-    if (_happyHourStatusMap[barId] != isHappyHourNow) {
-      _happyHourStatusMap[barId] = isHappyHourNow;
+    if (_happyHourStatusMap[merchantId] != isHappyHourNow) {
+      _happyHourStatusMap[merchantId] = isHappyHourNow;
       notifyListeners();
       debugPrint(
-          "Happy hour status updated for bar $barId to: $isHappyHourNow");
+          "Happy hour status updated for merchant $merchantId to: $isHappyHourNow");
     }
   }
 
-  bool isBarInHappyHour(String barId) {
-    return _happyHourStatusMap[barId] ?? false;
+  bool isMerchantInHappyHour(String merchantId) {
+    return _happyHourStatusMap[merchantId] ?? false;
   }
 
    Customer? _customer;

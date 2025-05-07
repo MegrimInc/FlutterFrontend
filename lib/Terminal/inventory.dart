@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:barzzy/Backend/bar.dart';
+import 'package:barzzy/Backend/merchant.dart';
 import 'package:barzzy/Backend/categories.dart';
-import 'package:barzzy/Backend/drink.dart';
+import 'package:barzzy/Backend/item.dart';
 import 'package:barzzy/config.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -18,40 +18,40 @@ class Inventory extends ChangeNotifier {
     return _instance;
   }
 
-  late Bar bar;
-  final Map<String, Drink> _drinks = {};
+  late Merchant merchant;
+  final Map<String, Item> _items = {};
   late Categories categories;
   final Map<String, int> _inventoryCart = {};
   final List<String> _inventoryOrder = [];
   String _selectedCategory = 'tag172';
 
-  Future<void> fetchBarDetails(int barId) async {
+  Future<void> fetchMerchantDetails(int merchantId) async {
     
     try {
-      //TODO:  final response = await http.get(Uri.parse("https://www.barzzy.site/bars/$barId"));
+      //TODO:  final response = await http.get(Uri.parse("https://www.barzzy.site/merchants/$merchantId"));
 
-      final response = await http.get(Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/$barId'));
+      final response = await http.get(Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/$merchantId'));
       //debugPrint("Received response with status code: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         debugPrint("Response data: $data");
 
-        setBar(Bar.fromJson(data));
-        //debugPrint("Parsed bar object: $bar");
+        setMerchant(Merchant.fromJson(data));
+        //debugPrint("Parsed merchant object: $merchant");
 
-        await fetchTagsAndDrinks(barId);
+        await fetchTagsAndItems(merchantId);
       } else {
         throw Exception(
-            "Failed to fetch bar details. Status: ${response.statusCode}");
+            "Failed to fetch merchant details. Status: ${response.statusCode}");
       }
     } catch (error) {
-      debugPrint("Error fetching bar details: $error");
+      debugPrint("Error fetching merchant details: $error");
     }
   }
 
-  Future<void> fetchTagsAndDrinks(int barId) async {
-    debugPrint('Fetching drinks for bar ID: $barId');
+  Future<void> fetchTagsAndItems(int merchantId) async {
+    debugPrint('Fetching items for merchant Id: $merchantId');
 
     // KEEP PLEASE
     // ignore: unused_local_variable
@@ -71,7 +71,7 @@ class Inventory extends ChangeNotifier {
     ];
 
     categories = Categories(
-      barId: barId,
+      merchantId: merchantId,
       tag172: [],
       tag173: [],
       tag174: [],
@@ -87,135 +87,135 @@ class Inventory extends ChangeNotifier {
       tagSpecial: [],
     );
 
-    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/getAllItemsByMerchant/$barId');
+    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/getAllItemsByMerchant/$merchantId');
 
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
       final List<dynamic> jsonResponse = jsonDecode(response.body);
-      //debugPrint('Drinks JSON response for bar $barId: $jsonResponse');
+      //debugPrint('Items JSON response for merchant $merchantId: $jsonResponse');
 
-      for (var drinkJson in jsonResponse) {
-        String? drinkId = drinkJson['itemId']?.toString();
-        //debugPrint('Processing drink: $drinkJson');
+      for (var itemJson in jsonResponse) {
+        String? itemId = itemJson['itemId']?.toString();
+        //debugPrint('Processing item: $itemJson');
 
-        if (drinkId != null) {
-          Drink drink = Drink.fromJson(drinkJson);
+        if (itemId != null) {
+          Item item = Item.fromJson(itemJson);
 
-          setDrinks(drink);
+          setItems(item);
 
-          debugPrint('Drink with ID: ${drink.itemId} added to Inventory.');
+          debugPrint('Item with Id: ${item.itemId} added to Inventory.');
 
-          if (drink.categories.length > 1) {
-            // If the drink has multiple tags, add it to the Special category
-            categories.tagSpecial.add(int.parse(drinkId));
+          if (item.categories.length > 1) {
+            // If the item has multiple tags, add it to the Special category
+            categories.tagSpecial.add(int.parse(itemId));
           } else {
-            for (String tagId in drink.categories) {
-              //debugPrint('Processing tagId: $tagId for drinkId: $drinkId');
+            for (String tagId in item.categories) {
+              //debugPrint('Processing tagId: $tagId for itemId: $itemId');
               switch (int.parse(tagId)) {
                 case 172:
-                  categories.tag172.add(int.parse(drinkId));
+                  categories.tag172.add(int.parse(itemId));
                   break;
                 case 173:
-                  categories.tag173.add(int.parse(drinkId));
+                  categories.tag173.add(int.parse(itemId));
                   break;
                 case 174:
-                  categories.tag174.add(int.parse(drinkId));
+                  categories.tag174.add(int.parse(itemId));
                   break;
                 case 175:
-                  categories.tag175.add(int.parse(drinkId));
+                  categories.tag175.add(int.parse(itemId));
                   break;
                 case 176:
-                  categories.tag176.add(int.parse(drinkId));
+                  categories.tag176.add(int.parse(itemId));
                   break;
                 case 177:
-                  categories.tag177.add(int.parse(drinkId));
+                  categories.tag177.add(int.parse(itemId));
                   break;
                 case 178:
-                  categories.tag178.add(int.parse(drinkId));
+                  categories.tag178.add(int.parse(itemId));
                   break;
                 case 179:
-                  categories.tag179.add(int.parse(drinkId));
+                  categories.tag179.add(int.parse(itemId));
                   break;
                 case 181:
-                  categories.tag181.add(int.parse(drinkId));
+                  categories.tag181.add(int.parse(itemId));
                   break;
                 case 183:
-                  categories.tag183.add(int.parse(drinkId));
+                  categories.tag183.add(int.parse(itemId));
                   break;
                 case 184:
-                  categories.tag184.add(int.parse(drinkId));
+                  categories.tag184.add(int.parse(itemId));
                   break;
                 case 186:
-                  categories.tag186.add(int.parse(drinkId));
+                  categories.tag186.add(int.parse(itemId));
                   break;
                 default:
-                //debugPrint('Unknown tagId: $tagId for drinkId: $drinkId');
+                //debugPrint('Unknown tagId: $tagId for itemId: $itemId');
               }
             }
           }
         } else {
-          debugPrint('Warning: Drink ID is null for drink: $drinkJson');
+          debugPrint('Warning: Item Id is null for item: $itemJson');
         }
       }
       setCategories(categories);
       debugPrint(
-          'Drinks for bar $barId have been categorized and added to the Inventory object.');
+          'Items for merchant $merchantId have been categorized and added to the Inventory object.');
     } else {
       debugPrint(
-          'Failed to load drinks for bar $barId. Status code: ${response.statusCode}');
+          'Failed to load items for merchant $merchantId. Status code: ${response.statusCode}');
     }
 
-    debugPrint('Finished processing drinks for barId: $barId');
+    debugPrint('Finished processing items for merchantId: $merchantId');
   }
 
-  void addDrink(String drinkId) {
+  void addItem(String itemId) {
   
-    // Initialize the drink's map if it doesn't exist
-    _inventoryCart.putIfAbsent(drinkId, () => 0);
-   _inventoryCart.update(drinkId, (quantity) => quantity + 1, ifAbsent: () => 1);
+    // Initialize the item's map if it doesn't exist
+    _inventoryCart.putIfAbsent(itemId, () => 0);
+   _inventoryCart.update(itemId, (quantity) => quantity + 1, ifAbsent: () => 1);
 
 
-    debugPrint("Instance ID: $hashCode");
+    debugPrint("Instance Id: $hashCode");
     debugPrint('Updated inventory cart: $_inventoryCart');
 
-    if (!_inventoryOrder.contains(drinkId)) {
-      _inventoryOrder.add(drinkId);
+    if (!_inventoryOrder.contains(itemId)) {
+      _inventoryOrder.add(itemId);
     }
 
     notifyListeners();
   }
 
 
-  void removeDrink(String drinkId) {
-  if (_inventoryCart.containsKey(drinkId)) {
-    _inventoryCart[drinkId] = _inventoryCart[drinkId]! - 1;
+  void removeItem(String itemId) {
+  if (_inventoryCart.containsKey(itemId)) {
+    _inventoryCart[itemId] = _inventoryCart[itemId]! - 1;
 
-    if (_inventoryCart[drinkId]! <= 0) {
-      _inventoryCart.remove(drinkId);
-      _inventoryOrder.remove(drinkId);
+    if (_inventoryCart[itemId]! <= 0) {
+      _inventoryCart.remove(itemId);
+      _inventoryOrder.remove(itemId);
     }
 
     notifyListeners();
   } else {
-    debugPrint('Drink with ID $drinkId not found in cart.');
+    debugPrint('Item with Id $itemId not found in cart.');
   }
 }
 
 
-  String serializeInventoryCart(Map<String, int> inventoryCart, String bartenderId) {
-  final barId = bar.id;
+  String serializeInventoryCart(Map<String, int> inventoryCart, String terminalId) {
+  final merchantId = merchant.id;
   final List<Map<String, dynamic>> cartItems = inventoryCart.entries.map((entry) {
     return {
-      "drinkId": int.parse(entry.key),
+      "itemId": int.parse(entry.key),
       "quantity": entry.value,
     };
   }).toList();
 
-  final String barIdWithBartender = "$barId$bartenderId";
+  final String merchantIdWithTerminal = "$merchantId$terminalId";
 
   final Map<String, dynamic> result = {
-    "id": barIdWithBartender,
+    "id": merchantIdWithTerminal,
     "order": cartItems,
   };
 
@@ -223,15 +223,15 @@ class Inventory extends ChangeNotifier {
 }
 
 
-  // Setters for the bar object
-  void setBar(Bar newBar) {
-    bar = newBar;
+  // Setters for the merchant object
+  void setMerchant(Merchant newMerchant) {
+    merchant = newMerchant;
     notifyListeners(); // Notify listeners of the change
   }
 
-  // Add a drink to the map
-  void setDrinks(Drink drink) {
-    _drinks[drink.itemId] = drink;
+  // Add a item to the map
+  void setItems(Item item) {
+    _items[item.itemId] = item;
     notifyListeners(); // Notify listeners of the change
   }
 
@@ -241,11 +241,11 @@ class Inventory extends ChangeNotifier {
     notifyListeners(); // Notify listeners of the change
   }
 
-  Drink? getDrinkById(String drinkId) {
-    return _drinks[drinkId];
+  Item? getItemById(String itemId) {
+    return _items[itemId];
   }
 
-  List<int> getCategoryDrinks(String categoryTag) {
+  List<int> getCategoryItems(String categoryTag) {
     switch (categoryTag) {
       case 'tag172':
         return categories.tag172;

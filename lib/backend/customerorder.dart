@@ -3,12 +3,12 @@
 
 class CustomerOrder {
   String name;
-  String barId; // Stored as a String on the frontend, converted to int for JSON
+  String merchantId; // Stored as a String on the frontend, converted to int for JSON
   int userId;
   double totalRegularPrice;
   double tip;
   bool inAppPayments;
-  List<DrinkOrder> drinks;
+  List<ItemOrder> items;
   String status;
   String claimer;
   int timestamp; // Stored as an int on the frontend, converted to String for JSON
@@ -16,12 +16,12 @@ class CustomerOrder {
 
   CustomerOrder(
     this.name,
-    this.barId,
+    this.merchantId,
     this.userId,
     this.totalRegularPrice,
     this.tip,
     this.inAppPayments,
-    this.drinks,
+    this.items,
     this.status,
     this.claimer,
     this.timestamp,
@@ -32,22 +32,22 @@ class CustomerOrder {
   factory CustomerOrder.fromJson(Map<String, dynamic> json) {
     //debugPrint('Parsing JSON data: $json');
 
-    List<DrinkOrder> drinks = [];
-    if (json['drinks'] != null) {
-      //debugPrint('Parsing drinks...');
-      drinks = (json['drinks'] as List)
-          .map((drinkJson) => DrinkOrder.fromJson(drinkJson))
+    List<ItemOrder> items = [];
+    if (json['items'] != null) {
+      //debugPrint('Parsing items...');
+      items = (json['items'] as List)
+          .map((itemJson) => ItemOrder.fromJson(itemJson))
           .toList();
     }
 
     return CustomerOrder(
       json['name'] as String,
-      json['barId'].toString(), // Convert barId to String for frontend storage
+      json['merchantId'].toString(), // Convert merchantId to String for frontend storage
       json['userId'] as int,
       (json['totalRegularPrice'] as num).toDouble(),
       (json['tip'] as num).toDouble(),
       json['inAppPayments'] as bool,
-      drinks,
+      items,
       json['status'] as String,
       json['claimer'] as String,
       int.parse(
@@ -60,12 +60,12 @@ class CustomerOrder {
   Map<String, dynamic> toJson() {
     return {
       'name': name,
-      'barId': int.parse(barId), // Convert barId back to int for JSON
+      'merchantId': int.parse(merchantId), // Convert merchantId back to int for JSON
       'userId': userId,
       'totalRegularPrice': totalRegularPrice,
       'tip': tip,
       'inAppPayments': inAppPayments,
-      'drinks': drinks.map((drink) => drink.toJson()).toList(),
+      'items': items.map((item) => item.toJson()).toList(),
       'status': status,
       'claimer': claimer,
       'timestamp': timestamp.toString(), // Convert timestamp to String for JSON
@@ -76,7 +76,7 @@ class CustomerOrder {
   // Getter methods
   double getTotalRegularPrice() => totalRegularPrice;
   int getUserId() => userId;
-  List<DrinkOrder> getDrinks() => drinks;
+  List<ItemOrder> getItems() => items;
   String getStatus() => status;
   String getClaimer() => claimer;
   int getTimestamp() => timestamp;
@@ -85,12 +85,12 @@ class CustomerOrder {
   String getSessionId() => sessionId;
 
   // Setter methods
-  void setBarId(String value) => barId = value;
+  void setMerchantId(String value) => merchantId = value;
   void setUserId(int value) => userId = value;
   void setTotalRegularPrice(double value) => totalRegularPrice = value;
   void setTip(double value) => tip = value;
   void setInAppPayments(bool value) => inAppPayments = value;
-  void setDrinks(List<DrinkOrder> value) => drinks = value;
+  void setItems(List<ItemOrder> value) => items = value;
   void setStatus(String value) => status = value;
   void setClaimer(String value) => claimer = value;
   void setTimestamp(int value) => timestamp = value;
@@ -105,41 +105,41 @@ class CustomerOrder {
   }
 }
 
-class DrinkOrder {
-  int drinkId;
-  String drinkName;
+class ItemOrder {
+  int itemId;
+  String itemName;
   String paymentType;
   int quantity;
 
-  DrinkOrder(
-    this.drinkId,
-    this.drinkName,
+  ItemOrder(
+    this.itemId,
+    this.itemName,
     this.paymentType,
     this.quantity,
   );
 
-  // Factory constructor to create a DrinkOrder from JSON
-  factory DrinkOrder.fromJson(Map<String, dynamic> json) {
-    return DrinkOrder(
-      json['drinkId'] as int,
-      json['drinkName'] as String,
+  // Factory constructor to create a ItemOrder from JSON
+  factory ItemOrder.fromJson(Map<String, dynamic> json) {
+    return ItemOrder(
+      json['itemId'] as int,
+      json['itemName'] as String,
       json['paymentType'] as String,
       json['quantity'] as int,
     );
   }
 
-  // Method to convert a DrinkOrder instance to JSON
+  // Method to convert a ItemOrder instance to JSON
   Map<String, dynamic> toJson() {
     return {
-      'drinkId': drinkId,
-      'drinkName': drinkName,
+      'itemId': itemId,
+      'itemName': itemName,
       'paymentType': paymentType,
       'quantity': quantity,
     };
   }
 
-  int getDrinkId() => drinkId;
-  String getDrinkName() => drinkName;
+  int getItemId() => itemId;
+  String getItemName() => itemName;
   String getPaymentType() => paymentType;
   int getQuantity() => quantity;
 }

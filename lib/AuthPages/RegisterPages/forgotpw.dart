@@ -57,7 +57,7 @@ Future<void> notifyServerEmailNeedsReset() async {
       isSubmitButtonEnabled = true; // Re-enable submit button for the next step
     });
 
-    // Show success snackbar
+    // Show success SnackBar
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         backgroundColor: Colors.white,
@@ -194,7 +194,7 @@ Future<void> newPassword() async {
       (Route<dynamic> route) => false,
     );
 
-    // Show success snackbar
+    // Show success SnackBar
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Successfully reset password'),

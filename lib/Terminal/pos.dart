@@ -10,11 +10,11 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 class POSPage extends StatefulWidget {
-  final String bartenderId;
+  final String terminalId;
   final PageController pageController;
 
   const POSPage(
-      {super.key, required this.bartenderId, required this.pageController});
+      {super.key, required this.terminalId, required this.pageController});
 
   @override
   State<POSPage> createState() => _POSPageState();
@@ -115,7 +115,7 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
 
       // Serialize the current inventory cart
       final serializedInventory =
-          inv.serializeInventoryCart(inv.inventoryCart, widget.bartenderId);
+          inv.serializeInventoryCart(inv.inventoryCart, widget.terminalId);
 
       debugPrint("Serialized inventory cart: $serializedInventory");
 
@@ -150,11 +150,11 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
     debugPrint("Attempting to start BLE advertising...");
 
     final inv = Provider.of<Inventory>(context, listen: false);
-    final barId = inv.bar.id ?? "UnknownTag";
-    final bartenderId = widget.bartenderId;
+    final merchantId = inv.merchant.id ?? "UnknownTag";
+    final terminalId = widget.terminalId;
 
     final advertisement = Advertisement(
-      name: "$barId~$bartenderId|${const Uuid().v4()}",
+      name: "$merchantId~$terminalId|${const Uuid().v4()}",
       serviceUUIDs: [
         UUID(_stringToBytes(serviceUuid)) // Add service UUID if needed
       ],
@@ -178,7 +178,7 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
             flex: 5,
             child: Row(
               children: [
-                // Left Side: Drinks List (50%)
+                // Left Side: Items List (50%)
 
                 Expanded(
                   flex: 6,
@@ -190,7 +190,7 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
                             color: Colors.white, width: .25), // Right border
                       ),
                     ),
-                    child: buildDrinkList(),
+                    child: buildItemList(),
                   ),
                 ),
 
@@ -232,11 +232,11 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget buildDrinkList() {
+  Widget buildItemList() {
     return Consumer<Inventory>(
       builder: (context, inv, child) {
         final selectedCategory = inv.selectedCategory; // Default to Vodka
-        final drinks = inv.getCategoryDrinks(selectedCategory);
+        final items = inv.getCategoryItems(selectedCategory);
 
         return GridView.builder(
           padding: const EdgeInsets.all(10),
@@ -246,18 +246,18 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
             crossAxisSpacing: 10, // Spacing between columns
             childAspectRatio: 2.5, // Adjust as needed for better layout
           ),
-          itemCount: drinks.length,
+          itemCount: items.length,
           itemBuilder: (context, index) {
-            final drinkId = drinks[index];
-            final drink = inv.getDrinkById(drinkId.toString());
-            if (drink == null) {
-              return const SizedBox(); // Placeholder for invalid drinks
+            final itemId = items[index];
+            final item = inv.getItemById(itemId.toString());
+            if (item == null) {
+              return const SizedBox(); // Placeholder for invalid items
             }
 
             return GestureDetector(
               onTap: () {
-                  inv.addDrink(drinkId.toString());
-                  debugPrint("Added ${drink.name}");
+                  inv.addItem(itemId.toString());
+                  debugPrint("Added ${item.name}");
               },
   
               child: Container(
@@ -268,7 +268,7 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
                 padding: const EdgeInsets.all(8),
                 child: Center(
                   child: Text(
-                    drink.name,
+                    item.name,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -303,17 +303,17 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: inv.inventoryOrder.map((entry) {
-              // Split the entry to extract drinkId and sizeType
+              // Split the entry to extract itemId and sizeType
               final parts = entry.split('-');
-              final drinkId = parts[0];
+              final itemId = parts[0];
 
-              final drink = inv.getDrinkById(drinkId);
-              if (drink == null) {
+              final item = inv.getItemById(itemId);
+              if (item == null) {
                 return const SizedBox.shrink();
               }
 
 
-              final quantity = inv.inventoryCart[drinkId]!;
+              final quantity = inv.inventoryCart[itemId]!;
 
               return Container(
                 margin: const EdgeInsets.only(right: 10),
@@ -327,7 +327,7 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      drink.name,
+                      item.name,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -344,7 +344,7 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
                               const Icon(Icons.add_circle, color: Colors.white),
                           iconSize: 45,
                           onPressed: () {
-                            inv.addDrink(drinkId);
+                            inv.addItem(itemId);
                           },
                         ),
                         const SizedBox(width: 10),
@@ -362,7 +362,7 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
                               color: Colors.white),
                           iconSize: 45,
                           onPressed: () {
-                            inv.removeDrink(drinkId);
+                            inv.removeItem(itemId);
                           },
                         ),
                       ],
@@ -398,7 +398,7 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
     return Consumer<Inventory>(
       builder: (context, inv, child) {
         final filteredCategories = categories.entries
-            .where((entry) => inv.getCategoryDrinks(entry.value).isNotEmpty)
+            .where((entry) => inv.getCategoryItems(entry.value).isNotEmpty)
             .toList();
 
         return ListView(

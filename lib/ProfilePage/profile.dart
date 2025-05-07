@@ -139,9 +139,9 @@ class _ProfilePageState extends State<ProfilePage> {
         Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/addPaymentIdToDatabase'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "customerId": userId, // userId is the customer ID for your app
-          "stripeId": customerId, // Stripe customer ID returned by Stripe
-          "setupIntentId": setupIntentId // SetupIntent ID from Stripe
+          "customerId": userId, // userId is the customer Id for your app
+          "stripeId": customerId, // Stripe customer Id returned by Stripe
+          "setupIntentId": setupIntentId // SetupIntent Id from Stripe
         }),
       );
 
