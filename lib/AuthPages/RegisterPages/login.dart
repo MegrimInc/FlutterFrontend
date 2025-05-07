@@ -71,7 +71,7 @@ class _LoginPageState extends State<LoginPage> {
           Navigator.pushReplacement(context,
               MaterialPageRoute(builder: (context) => const AuthPage()));
         } else {
-          debugPrint("BarLogin");
+          debugPrint("MerchantLogin");
 
           cacher.setEmail(emailController.value.text.toLowerCase());
           cacher.setPW(passwordController.value.text);
@@ -82,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
           Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                  builder: (context) => const BartenderIDScreen()));
+                  builder: (context) => const TerminalIdScreen()));
         }
       } catch (e) {
         // Handle any parsing or other errors
@@ -112,7 +112,7 @@ class _LoginPageState extends State<LoginPage> {
         });
   }
 
-  //INVALID CREDENTIALS POP UP
+  //INVALId CREDENTIALS POP UP
 
   void invalidCredentialsMessage() {
     showDialog(

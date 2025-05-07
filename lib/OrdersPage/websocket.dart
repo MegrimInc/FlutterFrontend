@@ -17,7 +17,7 @@ class Hierarchy extends ChangeNotifier {
   WebSocketChannel? _channel;
   int _reconnectAttempts = 0;
   final LocalDatabase localDatabase;
-  final Map<String, int> _createdOrderBarIds = {};
+  final Map<String, int> _createdOrderMerchantIds = {};
   bool _isConnected = false;
   final GlobalKey<NavigatorState> navigatorKey;
   bool isLoading = false;
@@ -188,7 +188,7 @@ class Hierarchy extends ChangeNotifier {
     }
   }
 
-  void sendArriveMessage(int barId) async {
+  void sendArriveMessage(int merchantId) async {
     try {
       // Fetch userId from LoginCache
       final loginCache =
@@ -201,7 +201,7 @@ class Hierarchy extends ChangeNotifier {
         final message = {
           "action": "arrive",
           "userId": userId,
-          "barId": barId,
+          "merchantId": merchantId,
         };
 
         // Convert message to JSON and send
@@ -223,15 +223,15 @@ class Hierarchy extends ChangeNotifier {
       final customerOrder = CustomerOrder.fromJson(data);
       debugPrint('CustomerOrder created: $customerOrder');
 
-      localDatabase.addOrUpdateOrderForBar(customerOrder);
-      // Directly update the map with the new timestamp for the barId
-      _createdOrderBarIds[customerOrder.barId] = customerOrder.timestamp;
+      localDatabase.addOrUpdateOrderForMerchant(customerOrder);
+      // Directly update the map with the new timestamp for the merchantId
+      _createdOrderMerchantIds[customerOrder.merchantId] = customerOrder.timestamp;
 
       // Print statement to confirm addition
       debugPrint(
-          'CustomerOrder added to LocalDatabase: ${customerOrder.barId}');
+          'CustomerOrder added to LocalDatabase: ${customerOrder.merchantId}');
       debugPrint(
-          'hierarchy localDatabase instance ID: ${localDatabase.hashCode}');
+          'hierarchy localDatabase instance Id: ${localDatabase.hashCode}');
       setLoading(false);
       notifyListeners();
     } catch (e) {
@@ -267,12 +267,12 @@ class Hierarchy extends ChangeNotifier {
     }
   }
 
-  // Method to retrieve the list of barIds for created orders
+  // Method to retrieve the list of merchantIds for created orders
   List<String> getOrders() {
-    // Return the list of bar IDs sorted by timestamp in descending order
-    return _createdOrderBarIds.keys.toList()
+    // Return the list of merchant Ids sorted by timestamp in descending order
+    return _createdOrderMerchantIds.keys.toList()
       ..sort(
-          (a, b) => _createdOrderBarIds[b]!.compareTo(_createdOrderBarIds[a]!));
+          (a, b) => _createdOrderMerchantIds[b]!.compareTo(_createdOrderMerchantIds[a]!));
   }
 
   void _handleError(BuildContext context, String errorMessage) {
@@ -332,10 +332,10 @@ class Hierarchy extends ChangeNotifier {
         : [ordersData]; // Wrap single object in a list
 
     for (var order in orders) {
-      final barId = order['barId']?.toString(); // Extract barId as a string
-      if (barId != null && barId.isNotEmpty) {
-        debugPrint('Fetching tags and drinks for barId: $barId');
-        await user.fetchTagsAndDrinks(barId); // Trigger the fetch
+      final merchantId = order['merchantId']?.toString(); // Extract merchantId as a string
+      if (merchantId != null && merchantId.isNotEmpty) {
+        debugPrint('Fetching tags and items for merchantId: $merchantId');
+        await user.fetchTagsAndItems(merchantId); // Trigger the fetch
       }
     }
   }

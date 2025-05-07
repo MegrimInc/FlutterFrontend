@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:barzzy/Backend/bar.dart';
+import 'package:barzzy/Backend/merchant.dart';
 import 'package:barzzy/Backend/categories.dart';
-import 'package:barzzy/Backend/drink.dart';
+import 'package:barzzy/Backend/item.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:barzzy/config.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -18,22 +18,22 @@ class User extends ChangeNotifier {
 
   User._internal();
 
-  // Map to store Categories objects with barId as the key
+  // Map to store Categories objects with merchantId as the key
   Map<String, Categories> categoriesMap = {};
 
-  void addCategories(String barId, Categories categories) {
-    categoriesMap[barId] = categories;
+  void addCategories(String merchantId, Categories categories) {
+    categoriesMap[merchantId] = categories;
     notifyListeners();
   }
 
-  // Check if Categories already exist for a barId
-  bool categoriesExistForBar(String barId) {
-    return categoriesMap.containsKey(barId);
+  // Check if Categories already exist for a merchantId
+  bool categoriesExistForMerchant(String merchantId) {
+    return categoriesMap.containsKey(merchantId);
   }
 
-  // Method to get full list of drink IDs for a bar by categories
-  Map<String, List<int>> getFullDrinkListByBarId(String barId) {
-    final categories = categoriesMap[barId];
+  // Method to get full list of item Ids for a merchant by categories
+  Map<String, List<int>> getFullItemListByMerchantId(String merchantId) {
+    final categories = categoriesMap[merchantId];
     return {
       'tag172': categories?.tag172 ?? [],
       'tag173': categories?.tag173 ?? [],
@@ -50,49 +50,49 @@ class User extends ChangeNotifier {
     };
   }
 
-  Future<void> checkForBar(String barId) async {
+  Future<void> checkForMerchant(String merchantId) async {
     LocalDatabase localDatabase = LocalDatabase();
 
     try {
-      // Check if the bar exists in the local database
-      if (!localDatabase.bars.containsKey(barId)) {
+      // Check if the merchant exists in the local database
+      if (!localDatabase.merchants.containsKey(merchantId)) {
         debugPrint(
-            "Bar with ID $barId not found in local database. Fetching details...");
+            "Merchant with Id $merchantId not found in local database. Fetching details...");
 
         final response = await http
-            .get(Uri.parse("${AppConfig.postgresApiBaseUrl}/customer/$barId"));
+            .get(Uri.parse("${AppConfig.postgresApiBaseUrl}/customer/$merchantId"));
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
-          debugPrint("Bar details fetched: $data");
+          debugPrint("Merchant details fetched: $data");
 
-          // Parse the bar and add it to the local database
-          final Bar bar = Bar.fromJson(data);
-          localDatabase.addBar(bar);
-          debugPrint("Bar with ID $barId added to the local database.");
+          // Parse the merchant and add it to the local database
+          final Merchant merchant = Merchant.fromJson(data);
+          localDatabase.addMerchant(merchant);
+          debugPrint("Merchant with Id $merchantId added to the local database.");
         } else {
           throw Exception(
-              "Failed to fetch bar details. Status code: ${response.statusCode}");
+              "Failed to fetch merchant details. Status code: ${response.statusCode}");
         }
       } else {
-        debugPrint("Bar with ID $barId found in local database.");
+        debugPrint("Merchant with Id $merchantId found in local database.");
       }
 
-      debugPrint("Tags and drinks fetched for bar ID $barId.");
+      debugPrint("Tags and items fetched for merchant Id $merchantId.");
     } catch (error) {
-      debugPrint("Error in checkForBar for barId $barId: $error");
+      debugPrint("Error in checkForMerchant for merchantId $merchantId: $error");
     }
   }
 
-  Future<void> fetchTagsAndDrinks(String barId) async {
-    debugPrint('Fetching drinks for bar ID: $barId');
+  Future<void> fetchTagsAndItems(String merchantId) async {
+    debugPrint('Fetching items for merchant Id: $merchantId');
 
     LocalDatabase localDatabase = LocalDatabase();
 
-    checkForBar(barId);
+    checkForMerchant(merchantId);
 
-    if (categoriesExistForBar(barId)) {
-      debugPrint('Categories already exist for bar $barId, skipping fetch.');
+    if (categoriesExistForMerchant(merchantId)) {
+      debugPrint('Categories already exist for merchant $merchantId, skipping fetch.');
       return; // Exit early if categories already exist
     }
 
@@ -114,7 +114,7 @@ class User extends ChangeNotifier {
     ];
 
     Categories categories = Categories(
-      barId: int.parse(barId),
+      merchantId: int.parse(merchantId),
       tag172: [],
       tag173: [],
       tag174: [],
@@ -131,95 +131,95 @@ class User extends ChangeNotifier {
 
 
     final url = Uri.parse(
-        '${AppConfig.postgresApiBaseUrl}/customer/getAllItemsByMerchant/$barId');
+        '${AppConfig.postgresApiBaseUrl}/customer/getAllItemsByMerchant/$merchantId');
     final response = await http.get(url);
 
 
     if (response.statusCode == 200) {
       final List<dynamic> jsonResponse = jsonDecode(response.body);
-      debugPrint('Drinks JSON response for bar $barId: $jsonResponse');
+      debugPrint('Items JSON response for merchant $merchantId: $jsonResponse');
 
-      for (var drinkJson in jsonResponse) {
-        String? drinkId = drinkJson['itemId']?.toString();
-        //debugPrint('Processing drink: $drinkJson');
+      for (var itemJson in jsonResponse) {
+        String? itemId = itemJson['itemId']?.toString();
+        //debugPrint('Processing item: $itemJson');
 
-        if (drinkId != null) {
-          Drink drink = Drink.fromJson(drinkJson);
-          localDatabase.addDrink(drink);
+        if (itemId != null) {
+          Item item = Item.fromJson(itemJson);
+          localDatabase.addItem(item);
 
-          debugPrint('Drink with ID: ${drink.itemId} added to LocalDatabase.');
+          debugPrint('Item with Id: ${item.itemId} added to LocalDatabase.');
 
-          if (drink.image.isNotEmpty) {
-            final cachedImage = CachedNetworkImageProvider(drink.image);
+          if (item.image.isNotEmpty) {
+            final cachedImage = CachedNetworkImageProvider(item.image);
             cachedImage.resolve(const ImageConfiguration()).addListener(
                   ImageStreamListener(
                     (ImageInfo image, bool synchronousCall) {
                       debugPrint(
-                          'Drink image successfully cached: ${drink.image}');
+                          'Item image successfully cached: ${item.image}');
                     },
                     onError: (dynamic exception, StackTrace? stackTrace) {
-                      debugPrint('Failed to cache drink image: $exception');
+                      debugPrint('Failed to cache item image: $exception');
                     },
                   ),
                 );
           }
 
-          for (String tagId in drink.categories) {
-            //debugPrint('Processing tagId: $tagId for drinkId: $drinkId');
+          for (String tagId in item.categories) {
+            //debugPrint('Processing tagId: $tagId for itemId: $itemId');
             switch (int.parse(tagId)) {
               case 172:
-                categories.tag172.add(int.parse(drinkId));
+                categories.tag172.add(int.parse(itemId));
                 break;
               case 173:
-                categories.tag173.add(int.parse(drinkId));
+                categories.tag173.add(int.parse(itemId));
                 break;
               case 174:
-                categories.tag174.add(int.parse(drinkId));
+                categories.tag174.add(int.parse(itemId));
                 break;
               case 175:
-                categories.tag175.add(int.parse(drinkId));
+                categories.tag175.add(int.parse(itemId));
                 break;
               case 176:
-                categories.tag176.add(int.parse(drinkId));
+                categories.tag176.add(int.parse(itemId));
                 break;
               case 177:
-                categories.tag177.add(int.parse(drinkId));
+                categories.tag177.add(int.parse(itemId));
                 break;
               case 178:
-                categories.tag178.add(int.parse(drinkId));
+                categories.tag178.add(int.parse(itemId));
                 break;
               case 179:
-                categories.tag179.add(int.parse(drinkId));
+                categories.tag179.add(int.parse(itemId));
                 break;
               case 181:
-                categories.tag181.add(int.parse(drinkId));
+                categories.tag181.add(int.parse(itemId));
                 break;
               case 183:
-                categories.tag183.add(int.parse(drinkId));
+                categories.tag183.add(int.parse(itemId));
                 break;
               case 184:
-                categories.tag184.add(int.parse(drinkId));
+                categories.tag184.add(int.parse(itemId));
                 break;
               case 186:
-                categories.tag186.add(int.parse(drinkId));
+                categories.tag186.add(int.parse(itemId));
                 break;
               default:
-              //debugPrint('Unknown tagId: $tagId for drinkId: $drinkId');
+              //debugPrint('Unknown tagId: $tagId for itemId: $itemId');
             }
           }
         } else {
-          debugPrint('Warning: Drink ID is null for drink: $drinkJson');
+          debugPrint('Warning: Item Id is null for item: $itemJson');
         }
       }
 
-      addCategories(barId, categories);
+      addCategories(merchantId, categories);
       debugPrint(
-          'Drinks for bar $barId have been categorized and added to the User object.');
+          'Items for merchant $merchantId have been categorized and added to the User object.');
     } else {
       debugPrint(
-          'Failed to load drinks for bar $barId. Status code: ${response.statusCode}');
+          'Failed to load items for merchant $merchantId. Status code: ${response.statusCode}');
     }
 
-    debugPrint('Finished processing drinks for barId: $barId');
+    debugPrint('Finished processing items for merchantId: $merchantId');
   }
 }

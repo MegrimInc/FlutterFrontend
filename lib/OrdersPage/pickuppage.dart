@@ -38,7 +38,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    screenHeight = MediaQuery.of(context).size.height - (4 * kToolbarHeight);
+    screenHeight = MediaQuery.of(context).size.height - (4 * kToolmerchantHeight);
   }
 
   @override
@@ -121,8 +121,8 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
                             });
                           },
                           itemBuilder: (context, verticalIndex) {
-                            final barId = orders[verticalIndex];
-                            final order = localDatabase.getOrderForBar(barId);
+                            final merchantId = orders[verticalIndex];
+                            final order = localDatabase.getOrderForMerchant(merchantId);
 
                             if (order == null) {
                               return const Center(
@@ -146,10 +146,10 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
                                   screenHeight, // Use the class variable here
                               child: orders.isNotEmpty &&
                                       localDatabase
-                                              .getOrderForBar(orders.first) !=
+                                              .getOrderForMerchant(orders.first) !=
                                           null
                                   ? _buildOrderCard(localDatabase
-                                      .getOrderForBar(orders.first)!)
+                                      .getOrderForMerchant(orders.first)!)
                                   : const Center(
                                       child: Text(
                                         'No orders found.',
@@ -174,7 +174,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
   }
 
   Widget _buildOrderCard(CustomerOrder order) {
-    final bar = LocalDatabase.getBarById(order.barId);
+    final merchant = LocalDatabase.getMerchantById(order.merchantId);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
@@ -188,7 +188,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
             children: [
               ClipOval(
                 child: CachedNetworkImage(
-                  imageUrl: bar?.tagimg ??
+                  imageUrl: merchant?.tagimg ??
                       'https://www.barzzy.site/images/default.png',
                   fit: BoxFit.cover,
                   width: 100,
@@ -197,7 +197,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 30),
               Text(
-                bar?.name ?? 'No Tag',
+                merchant?.name ?? 'No Tag',
                 style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontSize: 20,
@@ -237,7 +237,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
             ],
           ),
           const Spacer(flex: 1),
-          _buildDrinksGrid(order.drinks),
+          _buildItemsGrid(order.items),
           const Spacer(flex: 2),
           _buildBottomButton(order),
           const Spacer(flex: 1),
@@ -396,22 +396,22 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildDrinksGrid(List<DrinkOrder> drinks) {
-    const drinksPerPage = 6; // Maximum drinks per page
-    final Map<String, MapEntry<String, int>> mergedDrinks = {};
-    for (var drink in drinks) {
-      final String key = '${drink.drinkId}';
-      mergedDrinks.update(
+  Widget _buildItemsGrid(List<ItemOrder> items) {
+    const itemsPerPage = 6; // Maximum items per page
+    final Map<String, MapEntry<String, int>> mergedItems = {};
+    for (var item in items) {
+      final String key = '${item.itemId}';
+      mergedItems.update(
         key,
         (existingEntry) =>
-            MapEntry(drink.drinkName, existingEntry.value + drink.quantity),
-        ifAbsent: () => MapEntry(drink.drinkName, drink.quantity),
+            MapEntry(item.itemName, existingEntry.value + item.quantity),
+        ifAbsent: () => MapEntry(item.itemName, item.quantity),
       );
     }
 
-    final List<MapEntry<String, MapEntry<String, int>>> drinkList =
-        mergedDrinks.entries.toList();
-    final totalPages = (drinkList.length / drinksPerPage).ceil();
+    final List<MapEntry<String, MapEntry<String, int>>> itemList =
+        mergedItems.entries.toList();
+    final totalPages = (itemList.length / itemsPerPage).ceil();
 
     return StatefulBuilder(
       builder: (context, setState) {
@@ -436,7 +436,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
               ),
             const SizedBox(height: 25),
             SizedBox(
-              height: drinks.length <= 3 ? 62 : 125,
+              height: items.length <= 3 ? 62 : 125,
               child: PageView.builder(
                 itemCount: totalPages,
                 onPageChanged: (index) {
@@ -445,23 +445,23 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
                   });
                 },
                 itemBuilder: (context, pageIndex) {
-                  // Get the drinks for the current page
-                  final startIndex = pageIndex * drinksPerPage;
+                  // Get the items for the current page
+                  final startIndex = pageIndex * itemsPerPage;
                   final endIndex =
-                      (startIndex + drinksPerPage).clamp(0, drinkList.length);
-                  final pageDrinks = drinkList.sublist(startIndex, endIndex);
+                      (startIndex + itemsPerPage).clamp(0, itemList.length);
+                  final pageItems = itemList.sublist(startIndex, endIndex);
 
-                  // If there's 1 or 2 drinks, center them manually
-                  if (pageDrinks.length <= 2) {
+                  // If there's 1 or 2 items, center them manually
+                  if (pageItems.length <= 2) {
                     return Center(
                       child: Wrap(
                         spacing: 16,
                         runSpacing: 16,
                         alignment: WrapAlignment.center,
-                        children: pageDrinks.map((entry) {
-                          final drinkData = entry.value;
-                          final drinkName = drinkData.key;
-                          final quantity = drinkData.value;
+                        children: pageItems.map((entry) {
+                          final itemData = entry.value;
+                          final itemName = itemData.key;
+                          final quantity = itemData.value;
                           return Container(
                             width: 110,
                             height: 60,
@@ -475,7 +475,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  drinkName,
+                                  itemName,
                                   style: const TextStyle(
                                     color: Colors.white70,
                                     fontSize: 14,
@@ -502,22 +502,22 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
                     );
                   }
 
-                  // Default grid view for more than 2 drinks
+                  // Default grid view for more than 2 items
                   return GridView.builder(
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3, // 3 drinks per row
+                      crossAxisCount: 3, // 3 items per row
                       crossAxisSpacing: 8.0,
                       mainAxisSpacing: 8.0,
                       childAspectRatio: 2.0,
                     ),
-                    itemCount: pageDrinks.length,
+                    itemCount: pageItems.length,
                     itemBuilder: (context, index) {
-                      final entry = pageDrinks[index];
-                      final drinkData = entry.value;
-                      final drinkName = drinkData.key;
-                      final quantity = drinkData.value;
+                      final entry = pageItems[index];
+                      final itemData = entry.value;
+                      final itemName = itemData.key;
+                      final quantity = itemData.value;
 
                       return Container(
                         padding: const EdgeInsets.all(8),
@@ -530,7 +530,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              drinkName,
+                              itemName,
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 14,
@@ -635,9 +635,9 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
   Widget _buildReorderButton(CustomerOrder order) {
     return GestureDetector(
       onTap: () async {
-        final barId = order.barId;
+        final merchantId = order.merchantId;
         final cart = Cart();
-        cart.setBar(barId);
+        cart.setMerchant(merchantId);
 
         // Use the reorder method to reset the cart based on the order
         cart.reorder(order);
@@ -646,10 +646,10 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
         await Navigator.of(context).pushNamed(
           '/menu',
           arguments: {
-            'barId': barId,
+            'merchantId': merchantId,
             'cart': cart,
-            'drinkId':
-                order.drinks.first.drinkId.toString(), // Optional drinkId.
+            'itemId':
+                order.items.first.itemId.toString(), // Optional itemId.
           },
         );
       },
@@ -678,20 +678,20 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
   Widget _buildArriveButton(CustomerOrder order) {
     return GestureDetector(
       onTap: () {
-        final barIdString = order.barId;
+        final merchantIdString = order.merchantId;
 
-        // Convert barId to int
-        final int barId =
-            int.tryParse(barIdString) ?? -1; // Fallback to -1 if parsing fails
+        // Convert merchantId to int
+        final int merchantId =
+            int.tryParse(merchantIdString) ?? -1; // Fallback to -1 if parsing fails
 
-        if (barId != -1) {
+        if (merchantId != -1) {
           // Send the arrive message
           final hierarchy = Provider.of<Hierarchy>(context, listen: false);
-          hierarchy.sendArriveMessage(barId);
+          hierarchy.sendArriveMessage(merchantId);
 
-          debugPrint('Arrive message sent for barId: $barId');
+          debugPrint('Arrive message sent for merchantId: $merchantId');
         } else {
-          debugPrint('Failed to parse barId: $barIdString');
+          debugPrint('Failed to parse merchantId: $merchantIdString');
         }
       },
       child: Container(

@@ -1,31 +1,31 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:another_flushbar/flushbar.dart';
-import 'package:barzzy/Backend/barhistory.dart';
-import 'package:barzzy/Backend/drink.dart';
+import 'package:barzzy/Backend/merchanthistory.dart';
+import 'package:barzzy/Backend/item.dart';
 import 'package:barzzy/Backend/preferences.dart';
 import 'package:barzzy/MenuPage/cart.dart';
-import 'package:barzzy/MenuPage/drinkfeed.dart';
+import 'package:barzzy/MenuPage/itemfeed.dart';
 import 'package:barzzy/main.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../Backend/bar.dart';
+import '../Backend/merchant.dart';
 import '../Backend/localdatabase.dart';
 
 class MenuPage extends StatefulWidget {
-  final String barId;
+  final String merchantId;
   final Cart cart;
-  final String? drinkId;
+  final String? itemId;
   final String? claimer;
 
   const MenuPage({
     super.key,
-    required this.barId,
+    required this.merchantId,
     required this.cart,
-    this.drinkId,
+    this.itemId,
     this.claimer,
   });
 
@@ -37,7 +37,7 @@ class MenuPageState extends State<MenuPage>
     with SingleTickerProviderStateMixin {
   String appBarTitle = '';
   bool isLoading = true;
-  Bar? currentBar;
+  Merchant? currentMerchant;
   final TextEditingController _searchController = TextEditingController();
   bool hasText = false;
   final ScrollController _scrollController = ScrollController();
@@ -50,15 +50,15 @@ class MenuPageState extends State<MenuPage>
   void initState() {
     super.initState();
 
-    _fetchBarData();
+    _fetchMerchantData();
 
-    if (widget.drinkId != null) {
+    if (widget.itemId != null) {
       final localDatabase =
           LocalDatabase(); // This retrieves the singleton instance.
-      final drink = localDatabase.getDrinkById(widget.drinkId!);
+      final item = localDatabase.getItemById(widget.itemId!);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).push(
-          _createRoute(drink, widget.cart, targetPage: 1,),
+          _createRoute(item, widget.cart, targetPage: 1,),
         );
       });
     }
@@ -79,19 +79,19 @@ class MenuPageState extends State<MenuPage>
   }
 
   //LOADS DRINK IN
-  Future<void> _fetchBarData() async {
-    debugPrint('Fetching bar data for barId: ${widget.barId}');
+  Future<void> _fetchMerchantData() async {
+    debugPrint('Fetching merchant data for merchantId: ${widget.merchantId}');
 
-    currentBar = LocalDatabase.getBarById(widget.barId);
+    currentMerchant = LocalDatabase.getMerchantById(widget.merchantId);
     debugPrint(
         'LocalDatabase instance in MenuPage: ${LocalDatabase().hashCode}');
-    if (currentBar != null) {
-      appBarTitle = (currentBar!.tag ?? 'Menu Page').replaceAll(' ', '');
+    if (currentMerchant != null) {
+      appMerchantTitle = (currentMerchant!.tag ?? 'Menu Page').replaceAll(' ', '');
     }
 
     await Provider.of<User>(context, listen: false)
-        .fetchTagsAndDrinks(widget.barId);
-    debugPrint('Finished fetching drinks for barId: ${widget.barId}');
+        .fetchTagsAndItems(widget.merchantId);
+    debugPrint('Finished fetching items for merchantId: ${widget.merchantId}');
     debugPrint(
         'LocalDatabase instance in MenuPage: ${LocalDatabase().hashCode}');
 
@@ -100,8 +100,8 @@ class MenuPageState extends State<MenuPage>
     setState(() {
       isLoading = false;
     });
-    final barHistory = Provider.of<BarHistory>(context, listen: false);
-    barHistory.setTappedBarId(widget.barId);
+    final merchantHistory = Provider.of<MerchantHistory>(context, listen: false);
+    merchantHistory.setTappedMerchantId(widget.merchantId);
   }
 
   @override
@@ -131,69 +131,69 @@ class MenuPageState extends State<MenuPage>
             controller: _scrollController,
             child: Consumer<User>(
               builder: (context, user, _) {
-                final randomDrinks = user.getFullDrinkListByBarId(widget.barId);
+                final randomItems = user.getFullItemListByMerchantId(widget.merchantId);
                 // Inside your _buildMainContent method or wherever you're using it
                 return Column(
                   children: [
                     const SizedBox(height: 25),
-                    if (randomDrinks['tag179']?.isNotEmpty ?? false) ...[
-                      _buildDrinkSection(
-                          context, 'Lager', randomDrinks['tag179']!),
+                    if (randomItems['tag179']?.isNotEmpty ?? false) ...[
+                      _buildItemSection(
+                          context, 'Lager', randomItems['tag179']!),
                       const SizedBox(height: 50),
                     ],
-                    if (randomDrinks['tag172']?.isNotEmpty ?? false) ...[
-                      _buildDrinkSection(
-                          context, 'Vodka', randomDrinks['tag172']!),
+                    if (randomItems['tag172']?.isNotEmpty ?? false) ...[
+                      _buildItemSection(
+                          context, 'Vodka', randomItems['tag172']!),
                       const SizedBox(height: 50),
                     ],
-                    if (randomDrinks['tag175']?.isNotEmpty ?? false) ...[
-                      _buildDrinkSection(
-                          context, 'Tequila', randomDrinks['tag175']!),
+                    if (randomItems['tag175']?.isNotEmpty ?? false) ...[
+                      _buildItemSection(
+                          context, 'Tequila', randomItems['tag175']!),
                       const SizedBox(height: 50),
                     ],
-                    if (randomDrinks['tag174']?.isNotEmpty ?? false) ...[
-                      _buildDrinkSection(
-                          context, 'Whiskey', randomDrinks['tag174']!),
+                    if (randomItems['tag174']?.isNotEmpty ?? false) ...[
+                      _buildItemSection(
+                          context, 'Whiskey', randomItems['tag174']!),
                       const SizedBox(height: 50),
                     ],
-                    if (randomDrinks['tag173']?.isNotEmpty ?? false) ...[
-                      _buildDrinkSection(
-                          context, 'Gin', randomDrinks['tag173']!),
+                    if (randomItems['tag173']?.isNotEmpty ?? false) ...[
+                      _buildItemSection(
+                          context, 'Gin', randomItems['tag173']!),
                       const SizedBox(height: 50),
                     ],
-                    if (randomDrinks['tag176']?.isNotEmpty ?? false) ...[
-                      _buildDrinkSection(
-                          context, 'Brandy', randomDrinks['tag176']!),
+                    if (randomItems['tag176']?.isNotEmpty ?? false) ...[
+                      _buildItemSection(
+                          context, 'Brandy', randomItems['tag176']!),
                       const SizedBox(height: 50),
                     ],
-                    if (randomDrinks['tag177']?.isNotEmpty ?? false) ...[
-                      _buildDrinkSection(
-                          context, 'Rum', randomDrinks['tag177']!),
+                    if (randomItems['tag177']?.isNotEmpty ?? false) ...[
+                      _buildItemSection(
+                          context, 'Rum', randomItems['tag177']!),
                       const SizedBox(height: 50),
                     ],
-                    if (randomDrinks['tag186']?.isNotEmpty ?? false) ...[
-                      _buildDrinkSection(
-                          context, 'Seltzer', randomDrinks['tag186']!),
+                    if (randomItems['tag186']?.isNotEmpty ?? false) ...[
+                      _buildItemSection(
+                          context, 'Seltzer', randomItems['tag186']!),
                       const SizedBox(height: 50),
                     ],
-                    if (randomDrinks['tag178']?.isNotEmpty ?? false) ...[
-                      _buildDrinkSection(
-                          context, 'Ale', randomDrinks['tag178']!),
+                    if (randomItems['tag178']?.isNotEmpty ?? false) ...[
+                      _buildItemSection(
+                          context, 'Ale', randomItems['tag178']!),
                       const SizedBox(height: 50),
                     ],
-                    if (randomDrinks['tag183']?.isNotEmpty ?? false) ...[
-                      _buildDrinkSection(
-                          context, 'Red Wine', randomDrinks['tag183']!),
+                    if (randomItems['tag183']?.isNotEmpty ?? false) ...[
+                      _buildItemSection(
+                          context, 'Red Wine', randomItems['tag183']!),
                       const SizedBox(height: 50),
                     ],
-                    if (randomDrinks['tag184']?.isNotEmpty ?? false) ...[
-                      _buildDrinkSection(
-                          context, 'White Wine', randomDrinks['tag184']!),
+                    if (randomItems['tag184']?.isNotEmpty ?? false) ...[
+                      _buildItemSection(
+                          context, 'White Wine', randomItems['tag184']!),
                       const SizedBox(height: 50),
                     ],
-                    if (randomDrinks['tag181']?.isNotEmpty ?? false) ...[
-                      _buildDrinkSection(
-                          context, 'Virgin', randomDrinks['tag181']!),
+                    if (randomItems['tag181']?.isNotEmpty ?? false) ...[
+                      _buildItemSection(
+                          context, 'Virgin', randomItems['tag181']!),
                       const SizedBox(height: 50),
                     ],
                   ],
@@ -255,7 +255,7 @@ class MenuPageState extends State<MenuPage>
                         const Icon(Icons.star, color: Colors.white),
                         const SizedBox(width: 7),
                         Text(
-                          "You have ${cart.barPoints} points!",
+                          "You have ${cart.merchantPoints} points!",
                           style: const TextStyle(
                             color: Colors.white, // Customize the message color
                             fontSize: 16,
@@ -268,7 +268,7 @@ class MenuPageState extends State<MenuPage>
                     ),
                     backgroundColor: Colors.black,
                     duration: const Duration(seconds: 1),
-                    flushbarPosition: FlushbarPosition.TOP,
+                    flushmerchantPosition: FlushmerchantPosition.TOP,
                     borderRadius: BorderRadius.circular(8),
                     margin: const EdgeInsets.all(10),
                   ).show(context);
@@ -281,19 +281,19 @@ class MenuPageState extends State<MenuPage>
     );
   }
 
-  Widget _buildDrinkSection(
-      BuildContext context, String tagName, List<int> drinkIds) {
-    const int itemsPerPage = 9; // Display 9 drinks per page in a 3x3 grid
-    final int pageCount = (drinkIds.length / itemsPerPage).ceil();
+  Widget _buildItemSection(
+      BuildContext context, String tagName, List<int> itemIds) {
+    const int itemsPerPage = 9; // Display 9 items per page in a 3x3 grid
+    final int pageCount = (itemIds.length / itemsPerPage).ceil();
     final screenHeight = MediaQuery.of(context).size.height;
 
 
     double boxHeight;
 
-    if (drinkIds.length <= 3) {
+    if (itemIds.length <= 3) {
       //boxHeight = 150; // Height for 1 row
        boxHeight = screenHeight * 0.19;
-    } else if (drinkIds.length <= 6) {
+    } else if (itemIds.length <= 6) {
       //boxHeight = 300.0; // Height for 2 rows
       boxHeight = screenHeight * 0.37; 
     } else {
@@ -334,7 +334,7 @@ class MenuPageState extends State<MenuPage>
           ),
         ),
 
-        // Display the drink grid
+        // Display the item grid
         SizedBox(
           height: boxHeight,
           child: PageView.builder(
@@ -349,7 +349,7 @@ class MenuPageState extends State<MenuPage>
             itemBuilder: (context, pageIndex) {
               final startIndex = pageIndex * itemsPerPage;
               final endIndex =
-                  (startIndex + itemsPerPage).clamp(0, drinkIds.length);
+                  (startIndex + itemsPerPage).clamp(0, itemIds.length);
 
               return GridView.builder(
                  shrinkWrap: true,
@@ -363,15 +363,15 @@ class MenuPageState extends State<MenuPage>
                 ),
                 itemCount: endIndex - startIndex,
                 itemBuilder: (context, index) {
-                  final drinkId = drinkIds[startIndex + index];
-                  final drink =
+                  final itemId = itemIds[startIndex + index];
+                  final item =
                       Provider.of<LocalDatabase>(context, listen: false)
-                          .getDrinkById(drinkId.toString());
+                          .getItemById(itemId.toString());
 
                   return GestureDetector(
                     onTap: () {
                       final cart = Provider.of<Cart>(context, listen: false);
-                      Navigator.of(context).push(_createRoute(drink, cart));
+                      Navigator.of(context).push(_createRoute(item, cart));
                       cart.recalculateCartTotals();
                     },
                     child: Column(
@@ -384,17 +384,17 @@ class MenuPageState extends State<MenuPage>
                               children: [
                                 Positioned.fill(
                                   child: CachedNetworkImage(
-                                    imageUrl: drink.image,
+                                    imageUrl: item.image,
                                     fit: BoxFit.cover,
                                   ),
                                 ),
                                 Positioned.fill(
                                   child: Consumer<Cart>(
                                     builder: (context, cart, _) {
-                                      int drinkQuantities = cart
-                                          .getTotalQuantityForDrink(drink.itemId);
+                                      int itemQuantities = cart
+                                          .getTotalQuantityForItem(item.itemId);
                     
-                                      if (drinkQuantities > 0) {
+                                      if (itemQuantities > 0) {
                                         return Container(
                                           decoration: BoxDecoration(
                                             color:
@@ -404,7 +404,7 @@ class MenuPageState extends State<MenuPage>
                                           ),
                                           child: Center(
                                             child: Text(
-                                              'x$drinkQuantities',
+                                              'x$itemQuantities',
                                               style: GoogleFonts.poppins(
                                                 color: Colors.white,
                                                 fontSize: 30,
@@ -427,7 +427,7 @@ class MenuPageState extends State<MenuPage>
                         Flexible(
                           flex: 2,
                           child: Text(
-                            drink.name,
+                            item.name,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
@@ -451,13 +451,13 @@ class MenuPageState extends State<MenuPage>
     );
   }
 
-  Route _createRoute(Drink drink, Cart cart, {int targetPage = 0}) {
+  Route _createRoute(Item item, Cart cart, {int targetPage = 0}) {
     debugPrint("MenuPage: Passing claimer = ${widget.claimer}"); 
     return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => DrinkFeed(
-        drink: drink,
+      pageBuilder: (context, animation, secondaryAnimation) => ItemFeed(
+        item: item,
         cart: cart,
-        barId: widget.barId,
+        merchantId: widget.merchantId,
         initialPage: targetPage,
         claimer: widget.claimer,
       ),

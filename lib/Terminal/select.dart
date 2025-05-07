@@ -6,35 +6,35 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
-class BartenderIDScreen extends StatefulWidget {
-  const BartenderIDScreen({super.key});
+class TerminalIdScreen extends StatefulWidget {
+  const TerminalIdScreen({super.key});
 
   @override
-  BartenderIDScreenState createState() => BartenderIDScreenState();
+  TerminalIdScreenState createState() => TerminalIdScreenState();
 }
 
-class BartenderIDScreenState extends State<BartenderIDScreen> {
+class TerminalIdScreenState extends State<TerminalIdScreen> {
   final ValueNotifier<String?> selectedLetter = ValueNotifier<String?>(null);
-  Set<String> activeBartenders = {};
+  Set<String> activeTerminals = {};
 
   @override
   void initState() {
     super.initState();
-    _fetchActiveBartenders();
+    _fetchActiveTerminals();
   }
 
-  Future<void> _handleSubmit(String bartenderID) async {
+  Future<void> _handleSubmit(String terminalId) async {
     final loginData = LoginCache();
-    final negativeBarID = await loginData.getUID();
-    final barId = -1 * negativeBarID;
+    final negativeMerchantId = await loginData.getUID();
+    final merchantId = -1 * negativeMerchantId;
 
     Navigator.pushAndRemoveUntil(
       // ignore: use_build_context_synchronously
       context,
       MaterialPageRoute(
         builder: (context) => Terminal(
-          bartenderID: bartenderID.toUpperCase(),
-          barID: barId,
+          terminalId: terminalId.toUpperCase(),
+          merchantId: merchantId,
         ),
       ),
       (Route<dynamic> route) => false, // Remove all previous routes
@@ -83,7 +83,7 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                '        Select Station ID',
+                '        Select Terminal Id',
                 style: TextStyle(
                   fontSize: 17.5,
                   color: Colors.white,
@@ -117,10 +117,10 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
                                 : Colors.white,
                             backgroundColor: selected == letter
                                 ? Colors.white
-                                : activeBartenders.contains(letter)
-                                    ? Colors.red[800] // Active bartender's button is green
+                                : activeTerminals.contains(letter)
+                                    ? Colors.red[800] // Active terminal's button is green
                                     : Colors.grey[
-                                        800], // Inactive bartender's button is grey
+                                        800], // Inactive terminal's button is grey
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15),
                             ),
@@ -173,31 +173,31 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
     );
   }
 
-  Future<void> _fetchActiveBartenders() async {
+  Future<void> _fetchActiveTerminals() async {
     final loginData = LoginCache();
-    final negativeBarID = await loginData.getUID();
-    final barId = -1 * negativeBarID;
+    final negativeMerchantId = await loginData.getUID();
+    final merchantId = -1 * negativeMerchantId;
 
 
     try {
       final url = Uri.parse(
-          "${AppConfig.redisApiBaseUrl}/checkTerminals?merchantId=$barId");
+          "${AppConfig.redisApiBaseUrl}/checkTerminals?merchantId=$merchantId");
 
           // final url = Uri.parse(
-          // "${AppConfig.postgresApiBaseUrl}/ws/http/checkTerminals?barID=$barId");
+          // "${AppConfig.postgresApiBaseUrl}/ws/http/checkTerminals?merchantId=$merchantId");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
         setState(() {
-          activeBartenders =
+          activeTerminals =
               response.body.split('').toSet(); // Parse the response string
         });
       } else {
         debugPrint(
-            "Failed to fetch active bartenders. Status: ${response.statusCode}");
+            "Failed to fetch active terminals. Status: ${response.statusCode}");
       }
     } catch (e) {
-      debugPrint("Error fetching active bartenders: $e");
+      debugPrint("Error fetching active terminals: $e");
     }
   }
 }

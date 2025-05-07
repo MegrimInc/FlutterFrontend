@@ -7,7 +7,7 @@ import 'package:barzzy/Terminal/inventory.dart';
 import 'package:barzzy/Terminal/pos.dart';
 import 'package:barzzy/config.dart';
 import 'package:http/http.dart' as http;
-import 'package:barzzy/Backend/bartenderorder.dart';
+import 'package:barzzy/Backend/terminalorder.dart';
 import 'package:barzzy/Terminal/select.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,28 +16,28 @@ import 'package:provider/provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class Terminal extends StatefulWidget {
-  final String bartenderID; // Bartender ID parameter
-  final int barID;
+  final String terminalId; // Terminal Id parameter
+  final int merchantId;
 
-  const Terminal({super.key, required this.bartenderID, required this.barID});
+  const Terminal({super.key, required this.terminalId, required this.merchantId});
 
   @override
   State<Terminal> createState() => _OrdersPageState();
 }
 
 class _OrdersPageState extends State<Terminal> {
-  List<BartenderOrder> allOrders = [];
-  List<BartenderOrder> sortedOrders = [];
+  List<TerminalOrder> allOrders = [];
+  List<TerminalOrder> sortedOrders = [];
   final PageController _pageController = PageController(initialPage: 1);
   int index = 1;
   bool testing = false;
   bool connected = false;
   int _reconnectAttempts = 0;
   bool filterUnique = true;
-  int bartenderCount = 1; // Number of bartenders
-  int bartenderNumber = 2; // Set to bartenderCount + 1
+  int terminalCount = 1; // Number of terminals
+  int terminalNumber = 2; // Set to terminalCount + 1
   bool disabledTerminal = false; // Tracks if terminal is disabled
-  bool barOpenStatus = true; // Track if bar is open or closed
+  bool merchantOpenStatus = true; // Track if merchant is open or closed
   bool happyHour = false;
   WebSocketChannel? socket;
   bool terminalStatus = true;
@@ -54,10 +54,10 @@ class _OrdersPageState extends State<Terminal> {
 
     _setUpInventory();
 
-    // Initialize filters and bartender number
+    // Initialize filters and terminal number
     filterUnique = true;
-    bartenderNumber = 0;
-    bartenderCount = 1;
+    terminalNumber = 0;
+    terminalCount = 1;
 
     // Start a timer to update the list and send heartbeat every 30 seconds
     _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
@@ -70,7 +70,7 @@ class _OrdersPageState extends State<Terminal> {
       debugPrint("Setting up inventory...");
       final inv = Provider.of<Inventory>(context, listen: false);
       await inv
-          .fetchBarDetails(widget.barID); // Call fetchBarDetails with the barID
+          .fetchMerchantDetails(widget.merchantId); // Call fetchMerchantDetails with the merchantId
       debugPrint("Inventory setup completed successfully.");
     } catch (e) {
       debugPrint("Error setting up inventory: $e");
@@ -79,7 +79,7 @@ class _OrdersPageState extends State<Terminal> {
 
   Future<double> fetchTipAmount() async {
     String url =
-        "${AppConfig.postgresApiBaseUrl}/orders/gettips?terminalId=${widget.bartenderID}&merchantId=${widget.barID}";
+        "${AppConfig.postgresApiBaseUrl}/orders/gettips?terminalId=${widget.terminalId}&merchantId=${widget.merchantId}";
     try {
       final response = await http.get(
         Uri.parse(url),
@@ -108,19 +108,19 @@ class _OrdersPageState extends State<Terminal> {
 
     setState(() {
       // Separate "arrived" orders
-      List<BartenderOrder> arrivedOrders =
+      List<TerminalOrder> arrivedOrders =
           allOrders.where((order) => order.status == 'arrived').toList();
 
       // Separate claimed and unclaimed orders, excluding "arrived" orders
-      List<BartenderOrder> claimedOrders = allOrders
+      List<TerminalOrder> claimedOrders = allOrders
           .where((order) =>
-              order.claimer == widget.bartenderID &&
+              order.claimer == widget.terminalId &&
               order.status != 'arrived') //&& order.status != 'ready')
           .toList();
 
-      List<BartenderOrder> unclaimedOrders = allOrders
+      List<TerminalOrder> unclaimedOrders = allOrders
           .where((order) =>
-              order.claimer != widget.bartenderID &&
+              order.claimer != widget.terminalId &&
               order.status != 'arrived') //&& order.status != 'ready')
           .toList();
 
@@ -139,19 +139,19 @@ class _OrdersPageState extends State<Terminal> {
       if (filterUnique) {
         sortedOrders = sortedOrders
             .where((order) =>
-                order.claimer == widget.bartenderID ||
+                order.claimer == widget.terminalId ||
                 (order.claimer.isEmpty &&
-                    (order.userId % bartenderCount) == bartenderNumber))
+                    (order.userId % terminalCount) == terminalNumber))
             .toList();
       }
 
       // Handle terminal disablement logic
       if (disabledTerminal &&
-          !allOrders.any((order) => order.claimer == widget.bartenderID)) {
+          !allOrders.any((order) => order.claimer == widget.terminalId)) {
         socket!.sink.add(
           json.encode({
             'action': 'disable',
-            'barID': widget.barID,
+            'merchantId': widget.merchantId,
           }),
         );
 
@@ -162,7 +162,7 @@ class _OrdersPageState extends State<Terminal> {
 
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
+          MaterialPageRoute(builder: (context) => const TerminalIdScreen()),
           (Route<dynamic> route) => false,
         );
       }
@@ -180,13 +180,13 @@ class _OrdersPageState extends State<Terminal> {
 
     // Only show alert dialog if there are pending orders
     if (hasPendingOrders) {
-      _showAlertDialog(context, 'This station is now disabled.',
+      _showAlertDialog(context, 'This terminal is now disabled.',
           'Please complete the remaining orders to finalize the logout.');
     }
 
     setState(() {
       terminalStatus = false;
-      bartenderNumber = bartenderCount;
+      terminalNumber = terminalCount;
       filterUnique = true;
       disabledTerminal = true;
     });
@@ -200,7 +200,7 @@ class _OrdersPageState extends State<Terminal> {
       context: context,
       position: RelativeRect.fromLTRB(
         MediaQuery.of(context).size.width - 150,
-        kToolbarHeight + 21,
+        kToolmerchantHeight + 21,
         0.0,
         0.0,
       ),
@@ -237,13 +237,13 @@ class _OrdersPageState extends State<Terminal> {
                 children: [
                   const Text('            Open'),
                   Switch(
-                    value: barOpenStatus,
+                    value: merchantOpenStatus,
                     onChanged: (bool value) {
                       setState(() {
-                        barOpenStatus = value;
+                        merchantOpenStatus = value;
                       });
                       this.setState(() {
-                        _toggleBarStatus(); // Trigger Bar status toggle
+                        _toggleMerchantStatus(); // Trigger Merchant status toggle
                       });
                     },
                     activeColor: Colors.black,
@@ -278,13 +278,13 @@ class _OrdersPageState extends State<Terminal> {
     }
   }
 
-  void _executeFunctionForUnclaimed(BartenderOrder order) {
+  void _executeFunctionForUnclaimed(TerminalOrder order) {
     // Construct the message
     final claimRequest = {
       'action': 'claim',
-      'bartenderID': widget.bartenderID.toString(),
-      'userID': order.userId,
-      'barID': widget.barID,
+      'terminalId': widget.terminalId.toString(),
+      'userId': order.userId,
+      'merchantId': widget.merchantId,
     };
 
     // Send the message via WebSocket
@@ -293,7 +293,7 @@ class _OrdersPageState extends State<Terminal> {
     debugPrint("attempting claim");
   }
 
-  void _executeFunctionForClaimed(BartenderOrder order) {
+  void _executeFunctionForClaimed(TerminalOrder order) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -323,9 +323,9 @@ class _OrdersPageState extends State<Terminal> {
                         socket!.sink.add(
                           json.encode({
                             'action': 'unclaim',
-                            'bartenderID': widget.bartenderID.toString(),
-                            'userID': order.userId,
-                            'barID': widget.barID,
+                            'terminalId': widget.terminalId.toString(),
+                            'userId': order.userId,
+                            'merchantId': widget.merchantId,
                           }),
                         );
                         Navigator.of(context).pop();
@@ -350,9 +350,9 @@ class _OrdersPageState extends State<Terminal> {
                         socket!.sink.add(
                           json.encode({
                             'action': 'ready',
-                            'bartenderID': widget.bartenderID.toString(),
-                            'userID': order.userId,
-                            'barID': widget.barID,
+                            'terminalId': widget.terminalId.toString(),
+                            'userId': order.userId,
+                            'merchantId': widget.merchantId,
                           }),
                         );
                         Navigator.of(context).pop();
@@ -380,7 +380,7 @@ class _OrdersPageState extends State<Terminal> {
     );
   }
 
-  void _executeFunctionForClaimedAndReady(BartenderOrder order) {
+  void _executeFunctionForClaimedAndReady(TerminalOrder order) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -410,9 +410,9 @@ class _OrdersPageState extends State<Terminal> {
                         socket!.sink.add(
                           json.encode({
                             'action': 'cancel',
-                            'bartenderID': widget.bartenderID.toString(),
-                            'userID': order.userId,
-                            'barID': widget.barID,
+                            'terminalId': widget.terminalId.toString(),
+                            'userId': order.userId,
+                            'merchantId': widget.merchantId,
                           }),
                         );
                         Navigator.of(context).pop();
@@ -446,9 +446,9 @@ class _OrdersPageState extends State<Terminal> {
                         socket!.sink.add(
                           json.encode({
                             'action': 'deliver',
-                            'bartenderID': widget.bartenderID.toString(),
-                            'userID': order.userId,
-                            'barID': widget.barID,
+                            'terminalId': widget.terminalId.toString(),
+                            'userId': order.userId,
+                            'merchantId': widget.merchantId,
                           }),
                         );
 
@@ -486,10 +486,10 @@ class _OrdersPageState extends State<Terminal> {
     );
   }
 
-  void _onOrderTap(BartenderOrder order) {
+  void _onOrderTap(TerminalOrder order) {
     if (order.claimer.isEmpty) {
       _executeFunctionForUnclaimed(order);
-    } else if (order.claimer == widget.bartenderID) {
+    } else if (order.claimer == widget.terminalId) {
       if (order.status == 'ready' || order.status == 'arrived') {
         _executeFunctionForClaimedAndReady(order);
       } else {
@@ -498,11 +498,11 @@ class _OrdersPageState extends State<Terminal> {
     }
   }
 
-  Color _getOrderTintColor(BartenderOrder order) {
+  Color _getOrderTintColor(TerminalOrder order) {
     final ageInSeconds = order.getAge();
 
-    // Debug print to show age and userID
-    if (order.claimer != '' && order.claimer != widget.bartenderID) {
+    // Debug print to show age and userId
+    if (order.claimer != '' && order.claimer != widget.terminalId) {
       return Colors.grey[700]!;
     }
 
@@ -538,8 +538,8 @@ class _OrdersPageState extends State<Terminal> {
                         socket!.sink.add(
                           json.encode({
                             'action': 'disable',
-                            'bartenderID': widget.bartenderID.toString(),
-                            'barID': widget.barID,
+                            'terminalId': widget.terminalId.toString(),
+                            'merchantId': widget.merchantId,
                           }),
                         );
                       }
@@ -549,7 +549,7 @@ class _OrdersPageState extends State<Terminal> {
                   const Icon(Icons.person, color: Colors.grey),
                   const SizedBox(width: 2.5),
                   Text(
-                    '$bartenderCount',
+                    '$terminalCount',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -615,7 +615,7 @@ class _OrdersPageState extends State<Terminal> {
                 itemBuilder: (context, pageIndex) {
                   if (pageIndex == 0) {
                     return POSPage(
-                      bartenderId: widget.bartenderID,
+                      terminalId: widget.terminalId,
                       pageController: _pageController,
                     );
                   } else if (pageIndex == 1) {
@@ -636,7 +636,7 @@ class _OrdersPageState extends State<Terminal> {
     );
   }
 
-  Widget _buildOrderList(List<BartenderOrder> displayList) {
+  Widget _buildOrderList(List<TerminalOrder> displayList) {
     return RefreshIndicator(
       onRefresh: () async {
         _refresh();
@@ -648,12 +648,12 @@ class _OrdersPageState extends State<Terminal> {
           itemBuilder: (context, index) {
             final order = displayList[index];
             final tintColor = _getOrderTintColor(order);
-            final paidDrinks = order.drinks;
+            final paidItems = order.items;
 
-            String formatDrink(DrinkOrder drink) {
-              return drink.sizeType.isNotEmpty
-                  ? '${drink.drinkName} (${drink.sizeType}) x ${drink.quantity}'
-                  : '${drink.drinkName} x ${drink.quantity}';
+            String formatItem(ItemOrder item) {
+              return item.sizeType.isNotEmpty
+                  ? '${item.itemName} (${item.sizeType}) x ${item.quantity}'
+                  : '${item.itemName} x ${item.quantity}';
             }
 
             return GestureDetector(
@@ -712,8 +712,8 @@ class _OrdersPageState extends State<Terminal> {
                       child: Center(
                         child: Column(
                           children: [
-                            ...paidDrinks.map((drink) => Text(
-                                  formatDrink(drink),
+                            ...paidItems.map((item) => Text(
+                                  formatItem(item),
                                   style: const TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
@@ -799,7 +799,7 @@ class _OrdersPageState extends State<Terminal> {
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
               title: Text(
-                'Claim tips for ${widget.bartenderID} (\$${tipAmount.toStringAsFixed(2)})',
+                'Claim tips for ${widget.terminalId} (\$${tipAmount.toStringAsFixed(2)})',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               content: Column(
@@ -866,10 +866,10 @@ class _OrdersPageState extends State<Terminal> {
                                       "Attempting to submit request for claimTips");
 
                                   final Map<String, dynamic> request = {
-                                    'bartenderName': nameController.text,
-                                    'bartenderEmail': emailController.text,
-                                    'station': widget.bartenderID,
-                                    'barId': widget.barID,
+                                    'terminalName': nameController.text,
+                                    'terminalEmail': emailController.text,
+                                    'terminal': widget.terminalId,
+                                    'merchantId': widget.merchantId,
                                   };
 
                                   setState(() {
@@ -1188,15 +1188,15 @@ class _OrdersPageState extends State<Terminal> {
 
       debugPrint('Connected to WebSocket at $url');
 
-      // Send a message to initialize the bartender session
-      final Map<String, dynamic> bartenderLogin = {
+      // Send a message to initialize the terminal session
+      final Map<String, dynamic> terminalLogin = {
         'action': 'initialize',
-        'barID': widget.barID,
-        'bartenderID': widget.bartenderID
+        'merchantId': widget.merchantId,
+        'terminalId': widget.terminalId
       };
-      debugPrint("bartender id login");
+      debugPrint("terminal id login");
       
-      socket!.sink.add(jsonEncode(bartenderLogin));
+      socket!.sink.add(jsonEncode(terminalLogin));
 
       socket!.stream.listen(
         (event) {
@@ -1220,7 +1220,7 @@ class _OrdersPageState extends State<Terminal> {
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
-                  builder: (context) => const BartenderIDScreen()),
+                  builder: (context) => const TerminalIdScreen()),
               (Route<dynamic> route) => false, // Remove all previous routes
             );
             return;
@@ -1232,7 +1232,7 @@ class _OrdersPageState extends State<Terminal> {
           // Check which key is present in the response and handle accordingly
           switch (response.keys.first) {
             case 'error':
-              // Use _showErrorSnackbar to display the error message
+              // Use _showErrorSnackmerchant to display the error message
               _showErrorSnackbar(response['error']);
               break;
 
@@ -1243,7 +1243,7 @@ class _OrdersPageState extends State<Terminal> {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const BartenderIDScreen()),
+                    builder: (context) => const TerminalIdScreen()),
                 (Route<dynamic> route) => false, // Remove all previous routes
               );
               if (socket != null) {
@@ -1257,9 +1257,9 @@ class _OrdersPageState extends State<Terminal> {
 
               // Convert JSON to Order objects and update allOrders
               final incomingOrders = ordersJson
-                  .map((json) => BartenderOrder.fromJson(json))
+                  .map((json) => TerminalOrder.fromJson(json))
                   .toList();
-              for (BartenderOrder incomingOrder in incomingOrders) {
+              for (TerminalOrder incomingOrder in incomingOrders) {
                 // Check if the order exists in allOrders
                 int index = allOrders.indexWhere(
                     (order) => order.userId == incomingOrder.userId);
@@ -1280,22 +1280,22 @@ class _OrdersPageState extends State<Terminal> {
 
                 // Auto-claim the order if eligible
                 if (incomingOrder.claimer.isEmpty &&
-                    (incomingOrder.userId % bartenderCount) ==
-                        bartenderNumber) {
+                    (incomingOrder.userId % terminalCount) ==
+                        terminalNumber) {
                   final claimRequest = {
                     'action': 'claim',
-                    'bartenderID': widget.bartenderID,
-                    'userID': incomingOrder.userId,
-                    'barID': widget.barID,
+                    'terminalId': widget.terminalId,
+                    'userId': incomingOrder.userId,
+                    'merchantId': widget.merchantId,
                   };
 
                   try {
                     socket!.sink.add(jsonEncode(claimRequest));
                     debugPrint(
-                        "Auto-claimed order for user ID: ${incomingOrder.userId}");
+                        "Auto-claimed order for user Id: ${incomingOrder.userId}");
                   } catch (e) {
                     debugPrint(
-                        "Error auto-claiming order for user ID: ${incomingOrder.userId}: $e");
+                        "Error auto-claiming order for user Id: ${incomingOrder.userId}: $e");
                   }
                 }
               }
@@ -1307,9 +1307,9 @@ class _OrdersPageState extends State<Terminal> {
 
               // Convert JSON to Order objects and update allOrders
               final incomingOrders = ordersJson
-                  .map((json) => BartenderOrder.fromJson(json))
+                  .map((json) => TerminalOrder.fromJson(json))
                   .toList();
-              for (BartenderOrder incomingOrder in incomingOrders) {
+              for (TerminalOrder incomingOrder in incomingOrders) {
                 // Check if the order exists in allOrders
                 int index = allOrders.indexWhere(
                     (order) => order.userId == incomingOrder.userId);
@@ -1331,11 +1331,11 @@ class _OrdersPageState extends State<Terminal> {
               _updateLists();
               break;
 
-            case 'barStatus':
-              // Update barOpenStatus and refresh UI
+            case 'merchantStatus':
+              // Update merchantOpenStatus and refresh UI
               setState(() {
-                barOpenStatus = response['barStatus'];
-                debugPrint("BarState set to $barOpenStatus");
+                merchantOpenStatus = response['merchantStatus'];
+                debugPrint("MerchantState set to $merchantOpenStatus");
               });
               break;
 
@@ -1349,9 +1349,9 @@ class _OrdersPageState extends State<Terminal> {
 
             case 'updateTerminal':
               debugPrint(
-                  'updateTerminal received: ${response['bartenderCount']}, ${response['bartenderNumber']}');
-              bartenderCount = int.parse(response['bartenderCount']);
-              bartenderNumber = int.parse(response['bartenderNumber']);
+                  'updateTerminal received: ${response['terminalCount']}, ${response['terminalNumber']}');
+              terminalCount = int.parse(response['terminalCount']);
+              terminalNumber = int.parse(response['terminalNumber']);
               _updateLists();
               debugPrint('Set state triggered for updateTerminal');
               break;
@@ -1385,21 +1385,21 @@ class _OrdersPageState extends State<Terminal> {
     }
   }
 
-  void _toggleBarStatus() {
+  void _toggleMerchantStatus() {
     // Log the action
-    debugPrint(barOpenStatus ? 'open' : 'close' ' sent');
+    debugPrint(merchantOpenStatus ? 'open' : 'close' ' sent');
 
     // Send the open/close action to the server
     socket!.sink.add(
       json.encode({
-        'action': barOpenStatus ? 'open' : 'close',
-        'barID': widget.barID,
+        'action': merchantOpenStatus ? 'open' : 'close',
+        'merchantId': widget.merchantId,
       }),
     );
 
-    // Log the new bar status
+    // Log the new merchant status
     debugPrint(
-        'Bar status toggled. New status: ${barOpenStatus ? "Open" : "Closed"}');
+        'Merchant status toggled. New status: ${merchantOpenStatus ? "Open" : "Closed"}');
   }
 
   String formatElapsedTime(int seconds) {
