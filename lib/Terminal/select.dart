@@ -178,7 +178,6 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
     final negativeBarID = await loginData.getUID();
     final barId = -1 * negativeBarID;
 
-    //TODO: need to fix this and make api calls work properly for redis
 
     try {
       final url = Uri.parse(

@@ -7,7 +7,7 @@ import 'package:barzzy/Terminal/inventory.dart';
 import 'package:barzzy/Terminal/pos.dart';
 import 'package:barzzy/config.dart';
 import 'package:http/http.dart' as http;
-import 'package:barzzy/Backend/bartender_order.dart';
+import 'package:barzzy/Backend/bartenderorder.dart';
 import 'package:barzzy/Terminal/select.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
