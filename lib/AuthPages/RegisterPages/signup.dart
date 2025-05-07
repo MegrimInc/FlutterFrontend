@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:barzzy/AuthPages/RegisterPages/tos.dart';
 import 'package:barzzy/AuthPages/RegisterPages/verification.dart';
 import 'package:barzzy/HomePage/home.dart';
+import 'package:barzzy/config.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
@@ -70,7 +71,7 @@ class RegisterPageState extends State<RegisterPage>
       lastName.value.text.length < 25 &&
       validCharacters.hasMatch(firstName.value.text + lastName.value.text)) {
 
-    final url = Uri.parse('https://www.barzzy.site/newsignup/register2');
+    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/register-customer');
     
     final requestBody = jsonEncode({
       'email': email.value.text.trim().toLowerCase(),
@@ -183,7 +184,7 @@ class RegisterPageState extends State<RegisterPage>
               const SizedBox(height: 21),
               Center(
                 child: Text(
-                  'B A R Z Z Y',
+                  'Megrim',
                   style: GoogleFonts.megrim(
                     fontWeight: FontWeight.w900,
                     color: Colors.white,

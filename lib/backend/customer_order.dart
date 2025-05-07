@@ -1,10 +1,8 @@
-import 'package:flutter/material.dart';
-
 // Same as https://github.com/BarzzyLLC/RedisMicroService/blob/0.0.0/src/main/java/edu/help/dto/Order.java.
 //This version is the future version, supposed to replace activeorder.dart.
 
 class CustomerOrder {
-  String name; 
+  String name;
   String barId; // Stored as a String on the frontend, converted to int for JSON
   int userId;
   double totalRegularPrice;
@@ -15,7 +13,6 @@ class CustomerOrder {
   String claimer;
   int timestamp; // Stored as an int on the frontend, converted to String for JSON
   String sessionId;
-
 
   CustomerOrder(
     this.name,
@@ -29,16 +26,15 @@ class CustomerOrder {
     this.claimer,
     this.timestamp,
     this.sessionId,
-
   );
 
   // Factory constructor for creating a CustomerOrder from JSON data
   factory CustomerOrder.fromJson(Map<String, dynamic> json) {
-    debugPrint('Parsing JSON data: $json');
+    //debugPrint('Parsing JSON data: $json');
 
     List<DrinkOrder> drinks = [];
     if (json['drinks'] != null) {
-      debugPrint('Parsing drinks...');
+      //debugPrint('Parsing drinks...');
       drinks = (json['drinks'] as List)
           .map((drinkJson) => DrinkOrder.fromJson(drinkJson))
           .toList();
@@ -113,14 +109,12 @@ class DrinkOrder {
   int drinkId;
   String drinkName;
   String paymentType;
-  String sizeType;
   int quantity;
 
   DrinkOrder(
     this.drinkId,
     this.drinkName,
     this.paymentType,
-    this.sizeType,
     this.quantity,
   );
 
@@ -130,7 +124,6 @@ class DrinkOrder {
       json['drinkId'] as int,
       json['drinkName'] as String,
       json['paymentType'] as String,
-      json['sizeType'] as String,
       json['quantity'] as int,
     );
   }
@@ -141,7 +134,6 @@ class DrinkOrder {
       'drinkId': drinkId,
       'drinkName': drinkName,
       'paymentType': paymentType,
-      'sizeType': sizeType,
       'quantity': quantity,
     };
   }
@@ -149,8 +141,5 @@ class DrinkOrder {
   int getDrinkId() => drinkId;
   String getDrinkName() => drinkName;
   String getPaymentType() => paymentType;
-  String getSizeType() => sizeType;
   int getQuantity() => quantity;
-
-  List<String> get types => [sizeType, paymentType];
 }

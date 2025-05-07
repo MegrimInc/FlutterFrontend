@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 
 // Same as https://github.com/BarzzyLLC/RedisMicroService/blob/0.0.0/src/main/java/edu/help/dto/Order.java.
 //This version is the future version, supposed to replace activeorder.dart.
@@ -34,11 +33,11 @@ class BartenderOrder {
 
   // Factory constructor for creating a CustomerOrder from JSON data
   factory BartenderOrder.fromJson(Map<String, dynamic> json) {
-    debugPrint('Parsing JSON data: $json');
+    //debugPrint('Parsing JSON data: $json');
 
     List<DrinkOrder> drinks = [];
     if (json['drinks'] != null) {
-      debugPrint('Parsing drinks...');
+     // debugPrint('Parsing drinks...');
       drinks = (json['drinks'] as List)
           .map((drinkJson) => DrinkOrder.fromJson(drinkJson))
           .toList();

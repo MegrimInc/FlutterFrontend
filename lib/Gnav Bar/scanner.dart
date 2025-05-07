@@ -418,8 +418,6 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
       final List<DrinkOrder> drinkOrders = cartItems.map((item) {
         final int drinkId = item['drinkId'] ?? 0;
         final int quantity = item['quantity'] ?? 0;
-        final String sizeType =
-            item['sizeType'] ?? ""; // Default to empty string
         const String paymentType = "regular"; // Default value for paymentType
 
         // Return a DrinkOrder object
@@ -427,7 +425,6 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
           drinkId, // drinkId
           '', // drinkName (placeholder)
           paymentType, // paymentType
-          sizeType, // sizeType
           quantity, // quantity
         );
       }).toList();

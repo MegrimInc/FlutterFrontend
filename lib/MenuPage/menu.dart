@@ -392,7 +392,7 @@ class MenuPageState extends State<MenuPage>
                                   child: Consumer<Cart>(
                                     builder: (context, cart, _) {
                                       int drinkQuantities = cart
-                                          .getTotalQuantityForDrink(drink.id);
+                                          .getTotalQuantityForDrink(drink.itemId);
                     
                                       if (drinkQuantities > 0) {
                                         return Container(

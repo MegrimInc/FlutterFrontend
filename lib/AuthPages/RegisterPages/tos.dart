@@ -3,6 +3,7 @@
 import 'dart:convert';
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/Gnav%20Bar/bottombar.dart';
+import 'package:barzzy/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
@@ -24,7 +25,7 @@ class _RegisterPageState2 extends State<RegisterPage2> {
   }
 
   void acceptTOS() async {
-    final url = Uri.parse('https://www.barzzy.site/newsignup/accept-tos');
+    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/accept-tos');
     final loginCache8 = LoginCache();
     final tosEmail = await loginCache8.getEmail();
 

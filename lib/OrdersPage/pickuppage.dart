@@ -398,11 +398,9 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
 
   Widget _buildDrinksGrid(List<DrinkOrder> drinks) {
     const drinksPerPage = 6; // Maximum drinks per page
-
-    // Step 1: Merge drinks by drinkId and sizeType (ignore payment method)
     final Map<String, MapEntry<String, int>> mergedDrinks = {};
     for (var drink in drinks) {
-      final String key = '${drink.drinkId}_${drink.sizeType}';
+      final String key = '${drink.drinkId}';
       mergedDrinks.update(
         key,
         (existingEntry) =>
@@ -461,12 +459,9 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
                         runSpacing: 16,
                         alignment: WrapAlignment.center,
                         children: pageDrinks.map((entry) {
-                          final drinkKey = entry.key;
                           final drinkData = entry.value;
                           final drinkName = drinkData.key;
                           final quantity = drinkData.value;
-                          final parts = drinkKey.split('_');
-                          final sizeType = parts.length > 1 ? parts[1] : "";
                           return Container(
                             width: 110,
                             height: 60,
@@ -492,8 +487,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
                                 ),
                                 const SizedBox(height: 1),
                                 Text(
-                                  //'x${drink.quantity}${drink.sizeType.isNotEmpty ? ' (${drink.sizeType})' : ''}',
-                                  'x$quantity${sizeType.isNotEmpty ? ' ($sizeType)' : ''}',
+                                  'x$quantity',
                                   style: const TextStyle(
                                     color: Colors.white54,
                                     fontSize: 12,
@@ -521,12 +515,9 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
                     itemCount: pageDrinks.length,
                     itemBuilder: (context, index) {
                       final entry = pageDrinks[index];
-                      final drinkKey = entry.key;
                       final drinkData = entry.value;
                       final drinkName = drinkData.key;
                       final quantity = drinkData.value;
-                      final parts = drinkKey.split('_');
-                      final sizeType = parts.length > 1 ? parts[1] : "";
 
                       return Container(
                         padding: const EdgeInsets.all(8),
@@ -551,8 +542,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
                             ),
                             const SizedBox(height: 1),
                             Text(
-                              //'x${drink.quantity}${drink.sizeType.isNotEmpty ? ' (${drink.sizeType})' : ''}',
-                              'x$quantity${sizeType.isNotEmpty ? ' ($sizeType)' : ''}',
+                              'x$quantity',
                               style: const TextStyle(
                                 color: Colors.white54,
                                 fontSize: 12,
@@ -664,22 +654,22 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
         );
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        height: 50,
+        width: 300,
+        //padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Column(
-          children: [
-            Text(
-              "       Reorder        ",
-              style: GoogleFonts.poppins(
-                color: Colors.black,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+        child: Center(
+          child: Text(
+            "Reorder",
+            style: GoogleFonts.poppins(
+              color: Colors.black,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -705,22 +695,21 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
         }
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+       height: 50,
+       width: 300,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Column(
-          children: [
-            Text(
-              "        I'm Here        ",
-              style: GoogleFonts.poppins(
-                color: Colors.black,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+        child: Center(
+          child: Text(
+            "I'm Here",
+            style: GoogleFonts.poppins(
+              color: Colors.black,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
-          ],
+          ),
         ),
       ),
     );

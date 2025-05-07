@@ -256,27 +256,13 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
 
             return GestureDetector(
               onTap: () {
-                // Add drink as single if single and double prices are the same
-                if (drink.singlePrice == drink.doublePrice) {
-                  inv.addDrink(drinkId.toString(), isDouble: false);
-                  debugPrint("Added ${drink.name} as single (same price).");
-                } else {
-                  inv.addDrink(drinkId.toString(), isDouble: false);
-                  debugPrint(
-                      "Added ${drink.name} as single (different price).");
-                }
+                  inv.addDrink(drinkId.toString());
+                  debugPrint("Added ${drink.name}");
               },
-              onDoubleTap: drink.singlePrice != drink.doublePrice
-                  ? () {
-                      inv.addDrink(drinkId.toString(), isDouble: true);
-                      debugPrint("Added ${drink.name} as double.");
-                    }
-                  : null,
+  
               child: Container(
                 decoration: BoxDecoration(
-                  color: drink.singlePrice == drink.doublePrice
-                      ? Colors.grey[900]
-                      : Colors.green,
+                  color: Colors.grey[900], 
                   borderRadius: BorderRadius.circular(10),
                 ),
                 padding: const EdgeInsets.all(8),
@@ -320,20 +306,14 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
               // Split the entry to extract drinkId and sizeType
               final parts = entry.split('-');
               final drinkId = parts[0];
-              final sizeType = parts[1];
 
               final drink = inv.getDrinkById(drinkId);
               if (drink == null) {
                 return const SizedBox.shrink();
               }
 
-              final sizeLabel =
-                  (sizeType == "double" || sizeType == "single") &&
-                          drink.singlePrice != drink.doublePrice
-                      ? (sizeType == "double" ? " (dbl)" : " (sgl)")
-                      : "";
 
-              final quantity = inv.inventoryCart[drinkId]![sizeType] ?? 0;
+              final quantity = inv.inventoryCart[drinkId]!;
 
               return Container(
                 margin: const EdgeInsets.only(right: 10),
@@ -347,7 +327,7 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      "${drink.name}$sizeLabel",
+                      drink.name,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -364,8 +344,7 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
                               const Icon(Icons.add_circle, color: Colors.white),
                           iconSize: 45,
                           onPressed: () {
-                            inv.addDrink(drinkId,
-                                isDouble: sizeType == "double");
+                            inv.addDrink(drinkId);
                           },
                         ),
                         const SizedBox(width: 10),
@@ -383,8 +362,7 @@ class _POSPageState extends State<POSPage> with WidgetsBindingObserver {
                               color: Colors.white),
                           iconSize: 45,
                           onPressed: () {
-                            inv.removeDrink(drinkId,
-                                isDouble: sizeType == "double");
+                            inv.removeDrink(drinkId);
                           },
                         ),
                       ],

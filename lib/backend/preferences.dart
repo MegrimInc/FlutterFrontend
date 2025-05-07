@@ -4,13 +4,13 @@ import 'package:barzzy/Backend/bar.dart';
 import 'package:barzzy/Backend/categories.dart';
 import 'package:barzzy/Backend/drink.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
+import 'package:barzzy/config.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class User extends ChangeNotifier {
   static final User _singleton = User._internal();
-   
 
   factory User() {
     return _singleton;
@@ -50,41 +50,39 @@ class User extends ChangeNotifier {
     };
   }
 
-Future<void> checkForBar(String barId) async {
+  Future<void> checkForBar(String barId) async {
+    LocalDatabase localDatabase = LocalDatabase();
 
-   LocalDatabase localDatabase = LocalDatabase();
-  
-  try {
-    // Check if the bar exists in the local database
-    if (!localDatabase.bars.containsKey(barId)) {
-      debugPrint("Bar with ID $barId not found in local database. Fetching details...");
+    try {
+      // Check if the bar exists in the local database
+      if (!localDatabase.bars.containsKey(barId)) {
+        debugPrint(
+            "Bar with ID $barId not found in local database. Fetching details...");
 
-      // Fetch bar details from the API
-      const String baseUrl = "https://www.barzzy.site";
-      final response = await http.get(Uri.parse("$baseUrl/bars/$barId"));
+        final response = await http
+            .get(Uri.parse("${AppConfig.postgresApiBaseUrl}/customer/$barId"));
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        debugPrint("Bar details fetched: $data");
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          debugPrint("Bar details fetched: $data");
 
-        // Parse the bar and add it to the local database
-        final Bar bar = Bar.fromJson(data);
-       localDatabase.addBar(bar);
-        debugPrint("Bar with ID $barId added to the local database.");
+          // Parse the bar and add it to the local database
+          final Bar bar = Bar.fromJson(data);
+          localDatabase.addBar(bar);
+          debugPrint("Bar with ID $barId added to the local database.");
+        } else {
+          throw Exception(
+              "Failed to fetch bar details. Status code: ${response.statusCode}");
+        }
       } else {
-        throw Exception(
-            "Failed to fetch bar details. Status code: ${response.statusCode}");
+        debugPrint("Bar with ID $barId found in local database.");
       }
-    } else {
-      debugPrint("Bar with ID $barId found in local database.");
+
+      debugPrint("Tags and drinks fetched for bar ID $barId.");
+    } catch (error) {
+      debugPrint("Error in checkForBar for barId $barId: $error");
     }
-
-    debugPrint("Tags and drinks fetched for bar ID $barId.");
-  } catch (error) {
-    debugPrint("Error in checkForBar for barId $barId: $error");
   }
-}
-
 
   Future<void> fetchTagsAndDrinks(String barId) async {
     debugPrint('Fetching drinks for bar ID: $barId');
@@ -98,7 +96,7 @@ Future<void> checkForBar(String barId) async {
       return; // Exit early if categories already exist
     }
 
-    // KEEP PLEASE 
+    // KEEP PLEASE
     // ignore: unused_local_variable
     List<MapEntry<int, String>> tagList = [
       const MapEntry(179, 'lager'),
@@ -131,23 +129,25 @@ Future<void> checkForBar(String barId) async {
       tag186: [],
     );
 
-    final url =
-        Uri.parse('https://www.barzzy.site/bars/getAllDrinksByBar/$barId');
+
+    final url = Uri.parse(
+        '${AppConfig.postgresApiBaseUrl}/customer/getAllItemsByMerchant/$barId');
     final response = await http.get(url);
+
 
     if (response.statusCode == 200) {
       final List<dynamic> jsonResponse = jsonDecode(response.body);
-      //debugPrint('Drinks JSON response for bar $barId: $jsonResponse');
+      debugPrint('Drinks JSON response for bar $barId: $jsonResponse');
 
       for (var drinkJson in jsonResponse) {
-        String? drinkId = drinkJson['drinkId']?.toString();
+        String? drinkId = drinkJson['itemId']?.toString();
         //debugPrint('Processing drink: $drinkJson');
 
         if (drinkId != null) {
           Drink drink = Drink.fromJson(drinkJson);
           localDatabase.addDrink(drink);
-         
-          debugPrint('Drink with ID: ${drink.id} added to LocalDatabase.');
+
+          debugPrint('Drink with ID: ${drink.itemId} added to LocalDatabase.');
 
           if (drink.image.isNotEmpty) {
             final cachedImage = CachedNetworkImageProvider(drink.image);
@@ -164,7 +164,7 @@ Future<void> checkForBar(String barId) async {
                 );
           }
 
-          for (String tagId in drink.tagId) {
+          for (String tagId in drink.categories) {
             //debugPrint('Processing tagId: $tagId for drinkId: $drinkId');
             switch (int.parse(tagId)) {
               case 172:

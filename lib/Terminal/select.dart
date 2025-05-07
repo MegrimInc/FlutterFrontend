@@ -1,6 +1,7 @@
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:barzzy/Terminal/terminal.dart';
+import 'package:barzzy/config.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -177,9 +178,14 @@ class BartenderIDScreenState extends State<BartenderIDScreen> {
     final negativeBarID = await loginData.getUID();
     final barId = -1 * negativeBarID;
 
+    //TODO: need to fix this and make api calls work properly for redis
+
     try {
       final url = Uri.parse(
-          "https://www.barzzy.site/ws/http/checkTerminals?barID=$barId");
+          "${AppConfig.redisApiBaseUrl}/checkTerminals?merchantId=$barId");
+
+          // final url = Uri.parse(
+          // "${AppConfig.postgresApiBaseUrl}/ws/http/checkTerminals?barID=$barId");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {

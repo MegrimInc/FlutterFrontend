@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:barzzy/Terminal/inventory.dart';
 import 'package:barzzy/Terminal/pos.dart';
+import 'package:barzzy/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy/Backend/bartender_order.dart';
 import 'package:barzzy/Terminal/select.dart';
@@ -78,7 +79,7 @@ class _OrdersPageState extends State<Terminal> {
 
   Future<double> fetchTipAmount() async {
     String url =
-        "https://www.barzzy.site/orders/gettips?bartenderID=${widget.bartenderID}&barID=${widget.barID}";
+        "${AppConfig.postgresApiBaseUrl}/orders/gettips?terminalId=${widget.bartenderID}&merchantId=${widget.barID}";
     try {
       final response = await http.get(
         Uri.parse(url),
@@ -101,91 +102,6 @@ class _OrdersPageState extends State<Terminal> {
       return 0.0;
     }
   }
-
-  // void _updateLists() {
-  //   debugPrint("Starting _updateLists...");
-
-  //   setState(() {
-  //     // Separate "arrived" orders
-  //     List<BartenderOrder> arrivedOrders =
-  //         allOrders.where((order) => order.status == 'arrived').toList();
-
-  //     // Separate claimed and unclaimed orders, excluding "arrived" orders
-  //     List<BartenderOrder> claimedOrders = allOrders
-  //         .where((order) =>
-  //             order.claimer == widget.bartenderID && order.status != 'arrived')
-  //         .toList();
-
-  //     List<BartenderOrder> unclaimedOrders = allOrders
-  //         .where((order) =>
-  //             order.claimer != widget.bartenderID && order.status != 'arrived')
-  //         .toList();
-
-  //     // Sort each category by timestamp (older first)
-  //     arrivedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-  //     claimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-  //     unclaimedOrders.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-  //     // Combine sorted lists
-  //     List<BartenderOrder> sortedOrders = [
-  //       ...arrivedOrders,
-  //       ...claimedOrders,
-  //       ...unclaimedOrders,
-  //     ];
-
-  //     // Precompute lists for "ready" and "other" orders
-  //     readyOrders = sortedOrders
-  //         .where(
-  //             (order) => order.status == 'ready' || order.status == 'arrived')
-  //         .toList();
-
-  //     otherOrders = sortedOrders
-  //         .where(
-  //             (order) => order.status != 'ready' || order.status == 'arrived')
-  //         .toList();
-
-  //     // Apply the "Your Orders Only" filter to both lists if filterUnique is true
-  //     if (filterUnique) {
-  //       readyOrders = readyOrders
-  //           .where((order) =>
-  //               order.claimer == widget.bartenderID ||
-  //               (order.claimer.isEmpty &&
-  //                   (order.userId % bartenderCount) == bartenderNumber))
-  //           .toList();
-
-  //       otherOrders = otherOrders
-  //           .where((order) =>
-  //               order.claimer == widget.bartenderID ||
-  //               (order.claimer.isEmpty &&
-  //                   (order.userId % bartenderCount) == bartenderNumber))
-  //           .toList();
-  //     }
-
-  //     // Handle terminal disablement logic
-  //     if (disabledTerminal &&
-  //         !allOrders.any((order) => order.claimer == widget.bartenderID)) {
-  //       socket!.sink.add(
-  //         json.encode({
-  //           'action': 'disable',
-  //           'barID': widget.barID,
-  //         }),
-  //       );
-
-  //       if (socket != null) {
-  //         socket!.sink.close();
-  //         socket = null;
-  //       }
-
-  //       Navigator.pushAndRemoveUntil(
-  //         context,
-  //         MaterialPageRoute(builder: (context) => const BartenderIDScreen()),
-  //         (Route<dynamic> route) => false,
-  //       );
-  //     }
-  //   });
-
-  //   debugPrint("Finished _updateLists.");
-  // }
 
   void _updateLists() {
     debugPrint("Starting _updateLists...");
@@ -961,8 +877,8 @@ class _OrdersPageState extends State<Terminal> {
                                         true; // Temporarily disable button
                                   });
 
-                                  const String url =
-                                      "https://www.barzzy.site/orders/claim";
+                                   String url =
+                                      "${AppConfig.postgresApiBaseUrl}/orders/claim";
 
                                   try {
                                     final response = await http.post(
@@ -1266,7 +1182,7 @@ class _OrdersPageState extends State<Terminal> {
     debugPrint("initial connection");
     try {
       // Attempt to open a WebSocket connection
-      const url = 'wss://www.barzzy.site/ws/bartenders';
+      final url = '${AppConfig.redisWsBaseUrl}/terminals';
 
       socket = WebSocketChannel.connect(Uri.parse(url));
 
@@ -1279,7 +1195,7 @@ class _OrdersPageState extends State<Terminal> {
         'bartenderID': widget.bartenderID
       };
       debugPrint("bartender id login");
-      //_heartbeat();
+      
       socket!.sink.add(jsonEncode(bartenderLogin));
 
       socket!.stream.listen(
@@ -1293,7 +1209,7 @@ class _OrdersPageState extends State<Terminal> {
             connected = true;
           });
 
-          debugPrint('Received: $event at ${DateTime.now()}');
+          //debugPrint('Received: $event at ${DateTime.now()}');
 
           // Handle the response from the server
           if (event.contains("Initialization successful")) {

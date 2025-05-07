@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:barzzy/Backend/bar.dart';
 import 'package:barzzy/Backend/categories.dart';
 import 'package:barzzy/Backend/drink.dart';
+import 'package:barzzy/config.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -20,22 +21,24 @@ class Inventory extends ChangeNotifier {
   late Bar bar;
   final Map<String, Drink> _drinks = {};
   late Categories categories;
-  final Map<String, Map<String, int>> _inventoryCart = {};
+  final Map<String, int> _inventoryCart = {};
   final List<String> _inventoryOrder = [];
   String _selectedCategory = 'tag172';
 
   Future<void> fetchBarDetails(int barId) async {
-    const String baseUrl = "https://www.barzzy.site"; // Define URL locally
+    
     try {
-      final response = await http.get(Uri.parse("$baseUrl/bars/$barId"));
-      debugPrint("Received response with status code: ${response.statusCode}");
+      //TODO:  final response = await http.get(Uri.parse("https://www.barzzy.site/bars/$barId"));
+
+      final response = await http.get(Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/$barId'));
+      //debugPrint("Received response with status code: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         debugPrint("Response data: $data");
 
         setBar(Bar.fromJson(data));
-        debugPrint("Parsed bar object: $bar");
+        //debugPrint("Parsed bar object: $bar");
 
         await fetchTagsAndDrinks(barId);
       } else {
@@ -84,8 +87,8 @@ class Inventory extends ChangeNotifier {
       tagSpecial: [],
     );
 
-    final url =
-        Uri.parse('https://www.barzzy.site/bars/getAllDrinksByBar/$barId');
+    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/getAllItemsByMerchant/$barId');
+
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -93,7 +96,7 @@ class Inventory extends ChangeNotifier {
       //debugPrint('Drinks JSON response for bar $barId: $jsonResponse');
 
       for (var drinkJson in jsonResponse) {
-        String? drinkId = drinkJson['drinkId']?.toString();
+        String? drinkId = drinkJson['itemId']?.toString();
         //debugPrint('Processing drink: $drinkJson');
 
         if (drinkId != null) {
@@ -101,13 +104,13 @@ class Inventory extends ChangeNotifier {
 
           setDrinks(drink);
 
-          debugPrint('Drink with ID: ${drink.id} added to Inventory.');
+          debugPrint('Drink with ID: ${drink.itemId} added to Inventory.');
 
-          if (drink.tagId.length > 1) {
+          if (drink.categories.length > 1) {
             // If the drink has multiple tags, add it to the Special category
             categories.tagSpecial.add(int.parse(drinkId));
           } else {
-            for (String tagId in drink.tagId) {
+            for (String tagId in drink.categories) {
               //debugPrint('Processing tagId: $tagId for drinkId: $drinkId');
               switch (int.parse(tagId)) {
                 case 172:
@@ -166,114 +169,59 @@ class Inventory extends ChangeNotifier {
     debugPrint('Finished processing drinks for barId: $barId');
   }
 
-  void addDrink(String drinkId, {required bool isDouble}) {
-    // Retrieve the drink details
-    final drink = getDrinkById(drinkId);
-
-    // Determine the `sizeType` based on the drink's pricing
-    String sizeType = "";
-    if (drink?.singlePrice != drink?.doublePrice) {
-      sizeType = isDouble ? "double" : "single";
-    }
-
+  void addDrink(String drinkId) {
+  
     // Initialize the drink's map if it doesn't exist
-    _inventoryCart.putIfAbsent(drinkId, () => {});
-    _inventoryCart[drinkId]!
-        .update(sizeType, (quantity) => quantity + 1, ifAbsent: () => 1);
+    _inventoryCart.putIfAbsent(drinkId, () => 0);
+   _inventoryCart.update(drinkId, (quantity) => quantity + 1, ifAbsent: () => 1);
+
 
     debugPrint("Instance ID: $hashCode");
     debugPrint('Updated inventory cart: $_inventoryCart');
 
-    if (!_inventoryOrder.contains('$drinkId-$sizeType')) {
-      _inventoryOrder.add('$drinkId-$sizeType');
+    if (!_inventoryOrder.contains(drinkId)) {
+      _inventoryOrder.add(drinkId);
     }
 
     notifyListeners();
   }
 
-  void removeDrink(String drinkId, {required bool isDouble}) {
-    // Retrieve the drink details
-    final drink = getDrinkById(drinkId);
 
-    // Determine the `sizeType` based on the drink's pricing
-    String sizeType = "";
-    if (drink!.singlePrice != drink.doublePrice) {
-      sizeType = isDouble ? "double" : "single";
+  void removeDrink(String drinkId) {
+  if (_inventoryCart.containsKey(drinkId)) {
+    _inventoryCart[drinkId] = _inventoryCart[drinkId]! - 1;
+
+    if (_inventoryCart[drinkId]! <= 0) {
+      _inventoryCart.remove(drinkId);
+      _inventoryOrder.remove(drinkId);
     }
 
-    // Check if the drink and sizeType exist in the inventory cart
-    if (inventoryCart.containsKey(drinkId) &&
-        inventoryCart[drinkId]!.containsKey(sizeType)) {
-      // Decrement the quantity for the specified type
-      inventoryCart[drinkId]![sizeType] =
-          inventoryCart[drinkId]![sizeType]! - 1;
-
-      // If the quantity becomes zero, remove the type entry
-      if (inventoryCart[drinkId]![sizeType]! <= 0) {
-        inventoryCart[drinkId]!.remove(sizeType);
-
-        // If no other types exist for the drink, remove the drink entry
-        if (inventoryCart[drinkId]!.isEmpty) {
-          inventoryCart.remove(drinkId);
-        }
-
-        _inventoryOrder.remove('$drinkId-$sizeType');
-      }
-
-      notifyListeners();
-    } else {
-      debugPrint(
-          'Drink with ID $drinkId and type $sizeType not found in cart.');
-    }
+    notifyListeners();
+  } else {
+    debugPrint('Drink with ID $drinkId not found in cart.');
   }
+}
 
-  String serializeInventoryCart(
-      Map<String, Map<String, int>> inventoryCart, String bartenderId) {
-    // Ensure the barId is included
-    final barId = bar.id; // Assuming `bar` is already set and has a valid ID
 
-    debugPrint("barId is: $barId");
-    debugPrint("bartenderId is: $bartenderId");
-
-    // Transform the inventoryCart into a list of maps
-    final List<Map<String, dynamic>> cartItems =
-        inventoryCart.entries.expand((entry) {
-      final drinkId = entry.key;
-
-      // Process each type entry for the drink
-      return entry.value.entries.map((typeEntry) {
-        final typeKey = typeEntry.key; // Example: "single", "double"
-        final quantity = typeEntry.value;
-
-        // Determine the sizeType based on the typeKey
-        String sizeType = "";
-        if (typeKey.contains("double")) {
-          sizeType = "double";
-        } else if (typeKey.contains("single")) {
-          sizeType = "single";
-        } else {
-          sizeType = ""; // No specific size type
-        }
-
-        // Construct the serialized map for each item
-        return {
-          "drinkId": int.parse(drinkId),
-          "quantity": quantity,
-          "sizeType": sizeType,
-        };
-      }).toList();
-    }).toList();
-
-    final String barIdWithBartender = "$barId$bartenderId";
-
-    // Return the final map with barIdWithBartender as the key and cartItems as the value
-    final Map<String, dynamic> result = {
-      "id": barIdWithBartender,
-      "order": cartItems,
+  String serializeInventoryCart(Map<String, int> inventoryCart, String bartenderId) {
+  final barId = bar.id;
+  final List<Map<String, dynamic>> cartItems = inventoryCart.entries.map((entry) {
+    return {
+      "drinkId": int.parse(entry.key),
+      "quantity": entry.value,
     };
+  }).toList();
 
-    return jsonEncode(result);
-  }
+  final String barIdWithBartender = "$barId$bartenderId";
+
+  final Map<String, dynamic> result = {
+    "id": barIdWithBartender,
+    "order": cartItems,
+  };
+
+  return jsonEncode(result);
+}
+
 
   // Setters for the bar object
   void setBar(Bar newBar) {
@@ -283,7 +231,7 @@ class Inventory extends ChangeNotifier {
 
   // Add a drink to the map
   void setDrinks(Drink drink) {
-    _drinks[drink.id] = drink;
+    _drinks[drink.itemId] = drink;
     notifyListeners(); // Notify listeners of the change
   }
 
@@ -330,7 +278,7 @@ class Inventory extends ChangeNotifier {
     }
   }
 
-  Map<String, Map<String, int>> get inventoryCart => _inventoryCart;
+  Map<String, int> get inventoryCart => _inventoryCart;
 
   String get selectedCategory => _selectedCategory;
 

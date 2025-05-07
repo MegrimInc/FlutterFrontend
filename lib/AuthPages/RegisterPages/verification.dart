@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/AuthPages/RegisterPages/tos.dart';
 import 'package:barzzy/AuthPages/components/keypad.dart';
+import 'package:barzzy/config.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -48,7 +49,7 @@ class _RegisterPageState11 extends State<RegisterPage11>
 
 
   void attemptVerification() async {
-    final url = Uri.parse('https://www.barzzy.site/newsignup/verify');
+    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/verify');
     final requestBody = jsonEncode({
       'email': await loginCache4.getEmail(),
       'verificationCode': verificationCode.value.text,

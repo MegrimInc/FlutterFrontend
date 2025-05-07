@@ -2,11 +2,8 @@ import 'dart:async';
 
 import 'package:barzzy/Backend/customer.dart';
 import 'package:barzzy/Backend/customer_order.dart';
-import 'package:barzzy/Backend/tags.dart';
-
 import 'package:barzzy/Backend/drink.dart';
 import 'package:barzzy/Backend/point.dart';
-
 import 'package:flutter/material.dart';
 import 'package:ntp/ntp.dart';
 import 'bar.dart';
@@ -32,7 +29,6 @@ class LocalDatabase with ChangeNotifier {
   }
 
   final Map<String, Bar> _bars = {};
-  final Map<String, Tag> tags = {};
   final Map<String, Drink> _drinks = {};
   final Map<String, CustomerOrder> _barOrders = {};
   final Map<String, Point> _userPoints = {};
@@ -70,16 +66,12 @@ class LocalDatabase with ChangeNotifier {
   }
 
   void addDrink(Drink drink) {
-    _drinks[drink.id] = drink;
+    _drinks[drink.itemId] = drink;
     notifyListeners();
     debugPrint(
-        'Drink with ID: ${drink.id} added to LocalDatabase instance: $hashCode. Total drinks: ${_drinks.length}');
+        'Drink with ID: ${drink.itemId} added to LocalDatabase instance: $hashCode. Total drinks: ${_drinks.length}');
   }
 
-  void addTag(Tag tag) {
-    tags[tag.id] = tag;
-    notifyListeners();
-  }
 
   // Method to get minimal information necessary for search
   Map<String, Map<String, String>> getSearchableBarInfo() {

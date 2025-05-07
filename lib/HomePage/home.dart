@@ -4,6 +4,7 @@ import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/OrdersPage/websocket.dart';
 import 'package:barzzy/SearchPage/searchpage.dart';
+import 'package:barzzy/config.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -79,7 +80,7 @@ class HomePageState extends State<HomePage> {
     try {
       final response = await http.get(
         Uri.parse(
-            'https://www.barzzy.site/customer/checkPaymentMethod/$userId'),
+            '${AppConfig.postgresApiBaseUrl}/customer/checkPaymentMethod/$userId'),
       );
 
       if (response.statusCode == 200) {
@@ -125,7 +126,7 @@ class HomePageState extends State<HomePage> {
                 //BARZZY TAG
 
                 Text(
-                  'B A R Z Z Y',
+                  'M E G R I M',
                   style: GoogleFonts.megrim(
                     fontWeight: FontWeight.w900,
                     color: Colors.white,

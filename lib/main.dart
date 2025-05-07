@@ -14,7 +14,6 @@ import 'package:barzzy/OrdersPage/websocket.dart';
 import 'package:barzzy/Terminal/inventory.dart';
 import 'package:barzzy/Terminal/select.dart';
 import 'package:barzzy/Backend/point.dart';
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -28,6 +27,8 @@ import 'package:barzzy/Backend/barhistory.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart'; // Crashlytics
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'config.dart';
+
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -35,8 +36,14 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint("current date: ${DateTime.now()}");
 
+  // Stripe.publishableKey =
+  //     'pk_live_51QIHPQALmk8hqurj9QQVsCMabyzQ3hCJrxk1PhLNJFXDHfbmQqkJzEdOIrXlGd27hBEJchOuLBjIrb6WKxKiUKoo00tOVyaRdA';
+
   Stripe.publishableKey =
-      'pk_live_51QIHPQALmk8hqurj9QQVsCMabyzQ3hCJrxk1PhLNJFXDHfbmQqkJzEdOIrXlGd27hBEJchOuLBjIrb6WKxKiUKoo00tOVyaRdA';
+      'sk_test_51QIHPQALmk8hqurj69ipiDbnAGd0ELb4l1Nt8fF359rSzFmY7bUHAXClqNytoqv7cpATWNuvymfEEUICGY7bPfd700tIvIIkIY';
+
+  AppConfig.environment = Environment.test;
+  
 
   Stripe.merchantIdentifier = 'merchant.com.barzzy';
 
@@ -79,7 +86,7 @@ Future<void> main() async {
   await loginCache.getSignedIn();
 
   // Make HTTP request and initialize your application logic
-  final url = Uri.parse('https://www.barzzy.site/newsignup/login');
+  final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/login-customer');
   final initPW = await loginCache.getPW();
   final initEmail = await loginCache.getEmail();
 
@@ -116,7 +123,6 @@ Future<void> main() async {
   LocalDatabase localDatabase = LocalDatabase();
   await sendGetRequest();
   await sendGetRequest2();
-  
 
   // Create the MethodChannel
   const MethodChannel notificationChannel =
@@ -158,7 +164,7 @@ Future<void> main() async {
 
 Future<void> sendGetRequest() async {
   try {
-    final url = Uri.parse('https://www.barzzy.site/bars/seeAllBars');
+    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/seeAllMerchants');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -167,8 +173,8 @@ Future<void> sendGetRequest() async {
       final List<dynamic> jsonResponse = jsonDecode(response.body);
       LocalDatabase localDatabase = LocalDatabase();
       for (var barJson in jsonResponse) {
+         debugPrint('Bar JSON data: ${jsonEncode(barJson)}');
         Bar bar = Bar.fromJson(barJson);
-        debugPrint('Bar JSON data: ${jsonEncode(barJson)}');
         localDatabase.addBar(bar);
 
         if (bar.barimg != null && bar.barimg!.isNotEmpty) {
@@ -206,7 +212,7 @@ Future<void> sendGetRequest2() async {
       return;
     }
 
-    final url = Uri.parse('https://www.barzzy.site/customer/points/$userId');
+    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/points/$userId');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -256,37 +262,36 @@ Future<void> sendGetRequest2() async {
 }
 
 Future<void> sendGetRequest3() async {
-   final loginCache = LoginCache();
-    LocalDatabase localDatabase = LocalDatabase();
+  final loginCache = LoginCache();
+  LocalDatabase localDatabase = LocalDatabase();
   final userId = await loginCache.getUID();
-  
+
   // Construct the URL to your backend endpoint – adjust the URL as necessary.
-  final url = Uri.parse('https://www.barzzy.site/customer/cardDetails/$userId');
-  
+  final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/cardDetails/$userId');
+
   try {
     final response = await http.get(
       url,
       headers: {'Content-Type': 'application/json'},
     );
-    
+
     if (response.statusCode == 200) {
       // Parse the JSON response
       final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
 
-      
       // Create a Customer instance from the JSON data
       Customer customer = Customer.fromJson(jsonResponse);
       localDatabase.setCustomer(customer);
-      
+
       debugPrint("Saved customer: $customer in LocalDatabase");
     } else {
-      debugPrint("Failed to retrieve card details, status: ${response.statusCode}");
+      debugPrint(
+          "Failed to retrieve card details, status: ${response.statusCode}");
     }
   } catch (e) {
     debugPrint("Error in sendGetRequest3: $e");
   }
 }
-
 
 class Barzzy extends StatelessWidget {
   final bool loggedInAlready;

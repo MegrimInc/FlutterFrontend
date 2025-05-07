@@ -2,12 +2,11 @@
 
 import 'dart:convert';
 import 'dart:ui';
-
-import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
 import 'package:barzzy/AuthPages/components/toggle.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:barzzy/OrdersPage/websocket.dart';
+import 'package:barzzy/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:barzzy/main.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -18,6 +17,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:barzzy/Backend/drink.dart';
 import 'package:barzzy/MenuPage/cart.dart';
+import 'package:shimmer/shimmer.dart';
 
 class DrinkFeed extends StatefulWidget {
   final Drink drink;
@@ -67,7 +67,7 @@ class DrinkFeedState extends State<DrinkFeed>
     );
 
     _controller.forward();
-     sendGetRequest3();
+    sendGetRequest3();
   }
 
   void _submitOrder(BuildContext context, {required bool inAppPayments}) async {
@@ -75,7 +75,7 @@ class DrinkFeedState extends State<DrinkFeed>
     final userId = await loginCache.getUID();
     final cart = Provider.of<Cart>(context, listen: false);
     final hierarchy = Provider.of<Hierarchy>(context, listen: false);
-     final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
+    final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
 
     if (userId == 0) {
       Navigator.of(context).pushAndRemoveUntil(
@@ -87,20 +87,22 @@ class DrinkFeedState extends State<DrinkFeed>
     }
 
     // If inAppPayments is false, show a dialog and exit early.
-    if (!inAppPayments && localDatabase.paymentStatus == PaymentStatus.notPresent) {
+    if (!inAppPayments &&
+        localDatabase.paymentStatus == PaymentStatus.notPresent) {
       _showNotAllowedDialog(
           "Your cart only contains point-based items. Please add at least one item with a regular price to proceed.");
       return;
     }
 
-    if (inAppPayments && localDatabase.paymentStatus == PaymentStatus.notPresent) {
-        try {
-          _showStripeSetupSheet(context, userId);
-          return;
-        } catch (e) {
-          debugPrint('Error presenting Stripe setup sheet: $e');
-          return;
-        }
+    if (inAppPayments &&
+        localDatabase.paymentStatus == PaymentStatus.notPresent) {
+      try {
+        _showStripeSetupSheet(context, userId);
+        return;
+      } catch (e) {
+        debugPrint('Error presenting Stripe setup sheet: $e');
+        return;
+      }
     }
 
     // Determine the quantity limit based on payment method
@@ -133,18 +135,8 @@ class DrinkFeedState extends State<DrinkFeed>
       // Process each type entry for the drink
       return entry.value.entries.map((typeEntry) {
         final typeKey =
-            typeEntry.key; // Example: "single_points", "double_dollars"
+            typeEntry.key; 
         final quantity = typeEntry.value;
-
-        // Determine the sizeType based on the typeKey
-        String sizeType = "";
-        if (typeKey.contains("double")) {
-          sizeType = "double";
-        } else if (typeKey.contains("single")) {
-          sizeType = "single";
-        } else {
-          sizeType = ""; // No specific size type
-        }
 
         // Determine payment type
         final isPoints = typeKey.contains("points");
@@ -154,7 +146,6 @@ class DrinkFeedState extends State<DrinkFeed>
           "drinkId": int.parse(drinkId),
           "quantity": quantity,
           "paymentType": isPoints ? "points" : "regular",
-          "sizeType": sizeType,
         };
       }).toList();
     }).toList();
@@ -189,7 +180,7 @@ class DrinkFeedState extends State<DrinkFeed>
     try {
       // Call your backend to create a SetupIntent and retrieve the client secret
       final response = await http.get(
-        Uri.parse('https://www.barzzy.site/customer/createSetupIntent/$userId'),
+        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/createSetupIntent/$userId'),
       );
 
       if (response.statusCode == 200) {
@@ -219,10 +210,10 @@ class DrinkFeedState extends State<DrinkFeed>
         localDatabase.updatePaymentStatus(PaymentStatus.present);
       } else {
         if (localDatabase.customer != null) {
-        localDatabase.updatePaymentStatus(PaymentStatus.present);
-      } else {
-        localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
-      }
+          localDatabase.updatePaymentStatus(PaymentStatus.present);
+        } else {
+          localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
+        }
         debugPrint(
             "Failed to load setup intent data. Status code: ${response.statusCode}");
         debugPrint("Error Response Body: ${response.body}");
@@ -242,7 +233,7 @@ class DrinkFeedState extends State<DrinkFeed>
       int userId, String customerId, String setupIntentId) async {
     try {
       final response = await http.post(
-        Uri.parse('https://www.barzzy.site/customer/addPaymentIdToDatabase'),
+        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/addPaymentIdToDatabase'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "customerId": userId, // userId is the customer ID for your app
@@ -272,20 +263,24 @@ class DrinkFeedState extends State<DrinkFeed>
       child: Scaffold(
         body: GestureDetector(
           onPanStart: (details) {
-            _startPosition = details.globalPosition;
-          },
-          onPanEnd: (details) {
-            if (_startPosition == null) return;
+    _startPosition = details.globalPosition;
+  },
+  onPanUpdate: (details) {
+    if (_startPosition != null) {
+      final currentPosition = details.globalPosition;
+      final dy = currentPosition.dy - _startPosition!.dy;
+      final dx = currentPosition.dx - _startPosition!.dx;
 
-            final double dy = details.velocity.pixelsPerSecond.dy;
-
-            // Only trigger pop if swiping down (positive dy)
-            if (dy > 100) {
-              Navigator.of(context).pop();
-            }
-
-            _startPosition = null; // Reset start position
-          },
+      // If vertical drag is greater than horizontal and has passed threshold
+      if (dy > 50 && dy.abs() > dx.abs()) { 
+        Navigator.of(context).pop();
+        _startPosition = null; // Prevent multiple pops
+      }
+    }
+  },
+  onPanEnd: (details) {
+    _startPosition = null; // Always reset after swipe
+  },
           child: Stack(
             children: [
               ValueListenableBuilder<Drink>(
@@ -313,26 +308,35 @@ class DrinkFeedState extends State<DrinkFeed>
                   children: [
                     _buildHeader(context),
                     Expanded(
-                      child: PageView(
-                        controller: _pageController,
-                        onPageChanged: (int page) {
-                          _currentPageNotifier.value = page;
-                        },
-                        children: [
-                          ValueListenableBuilder<Drink>(
-                            valueListenable: currentDrink,
-                            builder: (context, drink, _) {
-                              return _buildDrinkPage(
-                                  context); // Drink page rebuilds when currentDrink changes
+                      child: Consumer<Cart>(
+                        builder: (context, cart, _) {
+                          final isCartEmpty = cart.getTotalDrinkCount() == 0;
+                          return PageView(
+                            controller: _pageController,
+                            onPageChanged: (int page) {
+                              _currentPageNotifier.value = page;
                             },
-                          ),
-                          ValueListenableBuilder<Drink>(
-                              valueListenable: currentDrink,
-                              builder: (context, drink, _) {
-                                return _buildSummaryPage(
-                                    context); // Summary page rebuilds when currentDrink changes
-                              })
-                        ],
+                            physics: isCartEmpty
+                                ? const NeverScrollableScrollPhysics()
+                                : const BouncingScrollPhysics(),
+                            children: [
+                              ValueListenableBuilder<Drink>(
+                                valueListenable: currentDrink,
+                                builder: (context, drink, _) {
+                                  return _buildDrinkPage(
+                                      context); // Drink page rebuilds when currentDrink changes
+                                },
+                              ),
+                              ValueListenableBuilder<Drink>(
+                                valueListenable: currentDrink,
+                                builder: (context, drink, _) {
+                                  return _buildSummaryPage(
+                                      context); // Summary page rebuilds when currentDrink changes
+                                },
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -379,48 +383,29 @@ class DrinkFeedState extends State<DrinkFeed>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        const SizedBox(height: 25),
         const Spacer(flex: 1),
         _buildDrinkInfo(context),
         const Spacer(flex: 2),
-        _buildQuantityControlButtons(context),
-        const Spacer(flex: 2),
+        _buildTwoButtonRow(context),
+        const Spacer(flex: 1),
         Center(
-          child: SizedBox(
-            height: 29,
-            child: Consumer<Cart>(
-              builder: (context, cart, _) {
-                // Show the animated text only if the cart is not empty
-                return AnimatedTextKit(
-                  animatedTexts: [
-                    FadeAnimatedText(
-                      'Swipe Left To View Cart',
-                      textStyle: GoogleFonts.poppins(
-                        color: Colors.white70,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        fontStyle: FontStyle.italic,
-                      ),
-                      duration: const Duration(milliseconds: 2000),
-                    ),
-                    FadeAnimatedText(
-                      'Swipe Down to Add More',
-                      textStyle: GoogleFonts.poppins(
-                        color: Colors.white70,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        fontStyle: FontStyle.italic,
-                      ),
-                      duration: const Duration(milliseconds: 2000),
-                    ),
-                  ],
-                  isRepeatingAnimation: true,
-                  repeatForever: true,
-                );
-              },
+          child: Shimmer.fromColors(
+            baseColor: Colors.white54,
+            highlightColor: Colors.white,
+            period: const Duration(milliseconds: 1500),
+            child: Text(
+              'Swipe Down to Add More',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ),
         ),
+        const Spacer(flex: 1),
+        _buildNavigateToSummaryButton(context),
         const Spacer(flex: 1),
       ],
     );
@@ -483,15 +468,8 @@ class DrinkFeedState extends State<DrinkFeed>
                         children: cart.barCart[drinkId]!.entries.map((entry) {
                           final drink = LocalDatabase().getDrinkById(drinkId);
 
-                          final sizeText = entry.key.contains("double")
-                              ? " (dbl)"
-                              : entry.key.contains("single")
-                                  ? " (sgl)"
-                                  : "";
+                          const maxLength = 40;
 
-                          final maxLength = 21 -
-                              sizeText
-                                  .length; // Remaining characters allowed for the name
                           final adjustedDrinkName =
                               _truncateWithEllipsis(drink.name, maxLength);
 
@@ -500,23 +478,18 @@ class DrinkFeedState extends State<DrinkFeed>
 
                           final isHappyHour = cart.isHappyHour;
 
-                          final price = entry.key.contains("single")
-                              ? (isHappyHour
-                                      ? drink.singleHappyPrice
-                                      : drink.singlePrice) *
-                                  1.20
-                              : (isHappyHour
-                                      ? drink.doubleHappyPrice
-                                      : drink.doublePrice) *
-                                  1.20;
+                          final price = (isHappyHour
+                                  ? drink.discountPrice
+                                  : drink.regularPrice) *
+                              1.20;
 
                           final priceOrPoints = entry.key.contains("points")
-                              ? "${(entry.value * drink.points).toInt()} pts"
+                              ? "${(entry.value * drink.pointPrice).toInt()} pts"
                               : "\$${(entry.value * price).toStringAsFixed(2)}";
 
                           return GestureDetector(
                             onTap: () {
-                              String newDrinkId = drink.id;
+                              String newDrinkId = drink.itemId;
                               currentDrink.value =
                                   LocalDatabase().getDrinkById(newDrinkId);
                               _pageController.animateToPage(
@@ -534,7 +507,7 @@ class DrinkFeedState extends State<DrinkFeed>
                               child: Text.rich(
                                 TextSpan(
                                   text:
-                                      '  ${entry.value} $drinkName$sizeText - $priceOrPoints',
+                                      '  ${entry.value} $drinkName - $priceOrPoints',
                                   style: GoogleFonts.poppins(
                                     color: Colors.white,
                                     fontSize: 18,
@@ -598,7 +571,6 @@ class DrinkFeedState extends State<DrinkFeed>
               fontSize: 18,
             ),
           )),
-
         const SizedBox(height: 15),
         Center(
           child: Text(
@@ -610,73 +582,68 @@ class DrinkFeedState extends State<DrinkFeed>
             ),
           ),
         ),
-
         const SizedBox(height: 5),
-
         if (hasItems)
-           Text(
-         totalPrice > 0 ? "*Gratuity: Included" : "*Gratuity: Excluded",
-          style: GoogleFonts.poppins(
-           color: Colors.white70,
-           fontSize: 17,
-          fontStyle: FontStyle.italic,
-         fontWeight: FontWeight.w500,
-
-         ),
-          textAlign: TextAlign.center,
-        ),
+          Text(
+            totalPrice > 0 ? "*Gratuity: Included" : "*Gratuity: Excluded",
+            style: GoogleFonts.poppins(
+              color: Colors.white70,
+              fontSize: 17,
+              fontStyle: FontStyle.italic,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
         const Spacer(flex: 1),
         const SizedBox(height: 20),
         _buildPurchaseButton(context),
-        
         const Spacer(flex: 5),
-
-GestureDetector(
-  onTap: () async {
-    final loginCache = Provider.of<LoginCache>(context, listen: false);
-    final userId = await loginCache.getUID();
-    await _showStripeSetupSheet(context, userId);
-  },
-  child: Consumer<LocalDatabase>(
-    builder: (context, localDatabase, _) {
-      if (localDatabase.customer != null && totalPrice > 0) {
-        final card = localDatabase.customer!;
-        return Text.rich(
-          TextSpan(
-            text: "${card.brand.toUpperCase()} **** ${card.last4},  EXP. ${card.expMonth}/${card.expYear}  ",
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
-            children: [
-              TextSpan(
-                text: "edit",
-                style: GoogleFonts.poppins(
-                  color: Colors.white70,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+        GestureDetector(
+          onTap: () async {
+            final loginCache = Provider.of<LoginCache>(context, listen: false);
+            final userId = await loginCache.getUID();
+            await _showStripeSetupSheet(context, userId);
+          },
+          child: Consumer<LocalDatabase>(
+            builder: (context, localDatabase, _) {
+              if (localDatabase.customer != null && totalPrice > 0) {
+                final card = localDatabase.customer!;
+                return Text.rich(
+                  TextSpan(
+                    text:
+                        "${card.brand.toUpperCase()} **** ${card.last4},  EXP. ${card.expMonth}/${card.expYear}  ",
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: "edit",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white70,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                );
+              } else {
+                return const Text(
+                  '...',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 18,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                );
+              }
+            },
           ),
-          textAlign: TextAlign.center,
-        );
-      } else {
-        return const Text(
-          '...',
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: 18,
-            fontStyle: FontStyle.italic,
-          ),
-          textAlign: TextAlign.center,
-        );
-      }
-    },
-  ),
-),
-        
+        ),
         const Spacer(flex: 3),
       ],
     );
@@ -703,11 +670,10 @@ GestureDetector(
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-        
           Consumer<Cart>(
             builder: (context, cart, _) {
               final totalQuantity =
-                  cart.getTotalQuantityForDrink(currentDrink.value.id);
+                  cart.getTotalQuantityForDrink(currentDrink.value.itemId);
 
               return Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -745,80 +711,9 @@ GestureDetector(
     );
   }
 
-  Widget _buildQuantityControlButtons(BuildContext context) {
-    final isDifferentPrices =
-        currentDrink.value.singlePrice != currentDrink.value.doublePrice;
-
-    // Use the passed cart instance
+  Widget _buildTwoButtonRow(BuildContext context) {
     final cart = widget.cart;
 
-    return isDifferentPrices
-        ? _buildFourButtonGrid(context, cart) // Grid layout for 4 buttons
-        : _buildTwoButtonRow(context, cart); // Row layout for 2 buttons
-  }
-
-  Widget _buildFourButtonGrid(BuildContext context, Cart cart) {
-    return Column(
-      children: [
-        // Top Row: Double Prices
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              child: _buildButtonGroup(
-                context,
-                label: "Double",
-                drinkId: currentDrink.value.id,
-                isDouble: true,
-                usePoints: true,
-                cart: cart,
-              ),
-            ),
-            Expanded(
-              child: _buildButtonGroup(
-                context,
-                label: "Double",
-                drinkId: currentDrink.value.id,
-                isDouble: true,
-                usePoints: false,
-                cart: cart,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20), // Add spacing between rows
-
-        // Bottom Row: Single Prices
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              child: _buildButtonGroup(
-                context,
-                label: "Single",
-                drinkId: currentDrink.value.id,
-                isDouble: false,
-                usePoints: true,
-                cart: cart,
-              ),
-            ),
-            Expanded(
-              child: _buildButtonGroup(
-                context,
-                label: "Single",
-                drinkId: currentDrink.value.id,
-                isDouble: false,
-                usePoints: false,
-                cart: cart,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTwoButtonRow(BuildContext context, Cart cart) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -826,8 +721,7 @@ GestureDetector(
           child: _buildButtonGroup(
             context,
             label: "Points",
-            drinkId: currentDrink.value.id,
-            isDouble: false,
+            drinkId: currentDrink.value.itemId,
             usePoints: true,
             cart: cart,
           ),
@@ -836,8 +730,7 @@ GestureDetector(
           child: _buildButtonGroup(
             context,
             label: "Regular",
-            drinkId: currentDrink.value.id,
-            isDouble: false,
+            drinkId: currentDrink.value.itemId,
             usePoints: false,
             cart: cart,
           ),
@@ -850,18 +743,16 @@ GestureDetector(
     BuildContext context, {
     required String label,
     required String drinkId,
-    required bool isDouble,
     required bool usePoints,
     required Cart cart,
   }) {
     final isHappyHour = cart.isHappyHour;
     final drink = LocalDatabase().getDrinkById(drinkId);
-    final price = isDouble
-        ? (isHappyHour ? drink.doubleHappyPrice : drink.doublePrice) * 1.20
-        : (isHappyHour ? drink.singleHappyPrice : drink.singlePrice) * 1.20;
+    final price =
+        (isHappyHour ? drink.discountPrice : drink.regularPrice) * 1.20;
     // Update label with the dynamic price
     final updatedLabel = usePoints
-        ? "$label:  ${drink.points.toInt()} pts"
+        ? "$label:  ${drink.pointPrice.toInt()} pts"
         : "$label:  \$${price.toStringAsFixed(2)}";
 
     return Column(
@@ -887,7 +778,6 @@ GestureDetector(
               onPressed: () {
                 cart.removeDrink(
                   drinkId,
-                  isDouble: isDouble,
                   usePoints: usePoints,
                 );
               },
@@ -899,7 +789,6 @@ GestureDetector(
                   cart
                       .getDrinkQuantity(
                         drinkId,
-                        isDouble: isDouble,
                         usePoints: usePoints,
                       )
                       .toString(),
@@ -919,7 +808,6 @@ GestureDetector(
               onPressed: () {
                 cart.addDrink(
                   drinkId,
-                  isDouble: isDouble,
                   usePoints: usePoints,
                 );
               },
@@ -930,6 +818,48 @@ GestureDetector(
     );
   }
 
+  /// Button to navigate to the summary page (page 1)
+  Widget _buildNavigateToSummaryButton(BuildContext context) {
+    return Consumer<Cart>(
+      builder: (context, cart, _) {
+        final isCartEmpty = cart.getTotalDrinkCount() == 0;
+
+        return Center(
+          child: GestureDetector(
+            onTap: isCartEmpty
+                ? null
+                : () {
+                    _pageController.animateToPage(
+                      1,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                    );
+                    HapticFeedback.heavyImpact();
+                  },
+            child: Container(
+              width: 300,
+              height: 50,
+              decoration: BoxDecoration(
+                color: isCartEmpty ? Colors.white24 : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  'Checkout',
+                  style: GoogleFonts.poppins(
+                    color: isCartEmpty ? Colors.white70 : Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildPurchaseButton(BuildContext context) {
     return Consumer<Cart>(
       builder: (context, cart, _) {
@@ -937,19 +867,20 @@ GestureDetector(
         final totalMoneyPrice = cart.totalCartMoney;
         final bool inAppPayments = totalMoneyPrice > 0;
         final localDatabase = Provider.of<LocalDatabase>(context);
-        final bool disableButton = isCartEmpty || localDatabase.paymentStatus == PaymentStatus.loading;
+        final bool disableButton =
+            isCartEmpty || localDatabase.paymentStatus == PaymentStatus.loading;
 
         return Column(children: [
           Center(
             child: GestureDetector(
-              onTap: disableButton 
+              onTap: disableButton
                   ? null
                   : () {
+                      HapticFeedback.heavyImpact();
                       _submitOrder(context, inAppPayments: inAppPayments);
-                       HapticFeedback.heavyImpact();
                     },
               child: Container(
-                width: 275,
+                width: 300,
                 height: 50,
                 decoration: BoxDecoration(
                   color: isCartEmpty ? Colors.white24 : Colors.white,
@@ -958,7 +889,8 @@ GestureDetector(
                 child: Center(
                   child: Consumer<LocalDatabase>(
                     builder: (context, localDatabase, _) {
-                      if (localDatabase.paymentStatus == PaymentStatus.loading) {
+                      if (localDatabase.paymentStatus ==
+                          PaymentStatus.loading) {
                         // When loading, show an animated loading indicator inside the button.
                         return const SizedBox(
                           height: 20,
@@ -1117,4 +1049,3 @@ GestureDetector(
     super.dispose();
   }
 }
-

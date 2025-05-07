@@ -1,28 +1,22 @@
 class Drink {
-  String id;
+  String itemId;
   String name;
-  String alcohol;
   String image;
-  double singlePrice;
-  double singleHappyPrice;
-  double doublePrice;
-  double doubleHappyPrice;
-  final List<String> tagId;
-  int points;
+  double regularPrice;
+  double discountPrice;
+  final List<String> categories;
+  int pointPrice;
   String description;
 
   Drink(
-    this.id,
+    this.itemId,
     this.name,
-    this.alcohol,
     this.image,
-    this.singlePrice,
-    this.singleHappyPrice,
-    this.doublePrice,
-    this.doubleHappyPrice,
-    this.tagId,
+    this.regularPrice,
+    this.discountPrice,
+    this.categories,
     this.description,
-    this.points,
+    this.pointPrice,
   );
 
   // Getter methods
@@ -30,36 +24,24 @@ class Drink {
     return name;
   }
 
-  String? getAlcohol() {
-    return alcohol;
-  }
-
   String? getImage() {
     return image;
   }
 
-  double? getSinglePrice() {
-    return singlePrice;
+  double? getRegularPrice() {
+    return regularPrice;
   }
 
-  double? getSingleHappyPrice() {
-    return singleHappyPrice;
+  double? getDiscountPrice() {
+    return discountPrice;
   }
 
-  double? getDoublePrice() {
-    return doublePrice;
+  List<String> getCategories() {
+    return categories;
   }
 
-  double? getDoubleHappyPrice() {
-    return doubleHappyPrice;
-  }
-
-  List<String> getTagId() {
-    return tagId;
-  }
-
-  int getPoints() {
-    return points;
+  int getPointPrice() {
+    return pointPrice;
   }
 
   String? getDescription() {
@@ -71,32 +53,21 @@ class Drink {
     name = value;
   }
 
-  void setAlcohol(String value) {
-    alcohol = value;
-  }
 
   void setImage(String value) {
     image = value;
   }
 
-  void setSinglePrice(double value) {
-    singlePrice = value;
+  void setRegularPricePrice(double value) {
+    regularPrice = value;
   }
 
-  void setSingleHappyPrice(double value) {
-    singleHappyPrice = value;
+  void setDiscountPrice(double value) {
+    discountPrice = value;
   }
 
-  void setDoublePrice(double value) {
-    doublePrice = value;
-  }
-
-  void setDoubleHappyPrice(double value) {
-    doubleHappyPrice = value;
-  }
-
-  void setPoints(int value) {
-    points = value;
+  void setPointPrice(int value) {
+    pointPrice = value;
   }
 
   void setDescription(String value) {
@@ -106,34 +77,28 @@ class Drink {
   // JSON serialization
   Map<String, dynamic> toJson() {
     return {
-      'drinkId': id,
-      'drinkName': name,
-      'alcoholContent': alcohol,
-      'drinkImage': image,
-      'singlePrice': singlePrice,
-      'singleHappyPrice': singleHappyPrice,
-      'doublePrice': doublePrice,
-      'doubleHappyPrice': doubleHappyPrice,
-      'drinkTags': tagId,
+      'itemId': itemId,
+      'name': name,
+      'image': image,
+      'regularPrice': regularPrice,
+      'discountPrice': discountPrice,
+      'categories': categories,
       'description': description,
-      'point': points,
+      'point': pointPrice
     };
   }
 
   // JSON deserialization
   factory Drink.fromJson(Map<String, dynamic> json) {
     return Drink(
-      json['drinkId'].toString(),
-      json['drinkName'] as String,
-      json['alcoholContent'] as String,
-      json['drinkImage'] as String,
-      json['singlePrice'] as double,
-      json['singleHappyPrice'] as double,
-      json['doublePrice'] as double,
-      json['doubleHappyPrice'] as double,
-      (json['drinkTags'] as List<dynamic>).map((tag) => tag.toString()).toList(),
+      json['itemId'].toString(),
+      json['name'] as String,
+      json['image'] as String,
+      json['regularPrice'] as double,
+      json['discountPrice'] as double,
+      (json['categoryIds'] as List<dynamic>).map((tag) => tag.toString()).toList(),
       json['description'] as String,
-      json['point'] as int,
+      json['pointPrice'] as int,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:barzzy/OrdersPage/websocket.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
+import 'package:barzzy/config.dart';
 import 'package:barzzy/main.dart';
 import 'package:flutter/material.dart';
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
@@ -67,7 +68,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _fetchUserName(int userId) async {
     try {
       final response = await http.get(
-        Uri.parse('https://www.barzzy.site/customer/getNames/$userId'),
+        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/getNames/$userId'),
       );
 
       if (response.statusCode == 200) {
@@ -90,7 +91,7 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       // Call your backend to create a SetupIntent and retrieve the client secret
       final response = await http.get(
-        Uri.parse('https://www.barzzy.site/customer/createSetupIntent/$userId'),
+        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/createSetupIntent/$userId'),
       );
 
       if (response.statusCode == 200) {
@@ -135,7 +136,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
     try {
       final response = await http.post(
-        Uri.parse('https://www.barzzy.site/customer/addPaymentIdToDatabase'),
+        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/addPaymentIdToDatabase'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "customerId": userId, // userId is the customer ID for your app
@@ -417,7 +418,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final response = await http.post(
-        Uri.parse('https://www.barzzy.site/customer/updateNames/$userId'),
+        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/updateNames/$userId'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestBody),
       );
@@ -440,7 +441,7 @@ class _ProfilePageState extends State<ProfilePage> {
   // Function to delete user account and log out
   Future<void> deleteAccount() async {
     final response = await http.post(
-      Uri.parse('https://www.barzzy.site/newsignup/deleteaccount'),
+      Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/delete-customer'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'email': email, 'password': password}),
     );

@@ -9,6 +9,7 @@ import 'package:barzzy/AuthPages/components/mybutton.dart';
 import 'package:barzzy/AuthPages/components/mytextfield.dart';
 import 'package:barzzy/Gnav%20Bar/bottombar.dart';
 import 'package:barzzy/Terminal/select.dart';
+import 'package:barzzy/config.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -36,7 +37,7 @@ class _LoginPageState extends State<LoginPage> {
   void signUserIn() async {
     FocusScope.of(context).unfocus();
     final cacher = LoginCache();
-    final url = Uri.parse('https://www.barzzy.site/newsignup/login');
+    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/login-customer');
     final requestBody = jsonEncode({
       'email': emailController.value.text.toLowerCase(),
       'password': passwordController.value.text
@@ -154,7 +155,7 @@ class _LoginPageState extends State<LoginPage> {
 
             Center(
               child: Text(
-                'B A R Z Z Y',
+                'Megrim',
                 style: GoogleFonts.megrim(
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
