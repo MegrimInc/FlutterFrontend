@@ -269,12 +269,12 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
                           if (merchantId.isNotEmpty) {
                             debugPrint('Extracted merchant Id: $merchantId');
     
-                            // Use the Provider to access the User class
-                            final user =
-                                Provider.of<User>(context, listen: false);
+                            // Use the Provider to access the Customer class
+                            final customer =
+                                Provider.of<Customer>(context, listen: false);
     
                             // Trigger fetchTagsAndItems with the merchant Id
-                            await user.fetchTagsAndItems(merchantId);
+                            await customer.fetchTagsAndItems(merchantId);
                           } else {
                             debugPrint(
                                 'No valid merchant Id found in advertisement name: $advName');
@@ -433,7 +433,7 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
       final CustomerOrder order = CustomerOrder(
         '', // name
         '', // merchantId
-        0, // userId
+        0, // customerId
         0.0, // totalRegularPrice
         0.0, // tip
         false, // inAppPayments

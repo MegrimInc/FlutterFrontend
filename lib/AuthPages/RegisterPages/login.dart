@@ -34,7 +34,7 @@ class _LoginPageState extends State<LoginPage> {
 
   //SIGN USER IN
 
-  void signUserIn() async {
+  void signCustomerIn() async {
     FocusScope.of(context).unfocus();
     final cacher = LoginCache();
     final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/login-customer');
@@ -66,7 +66,7 @@ class _LoginPageState extends State<LoginPage> {
           cacher.setSignedIn(true);
           cacher.setUID(responseValue);
 
-          debugPrint("UserLogin");
+          debugPrint("CustomerLogin");
           // Navigate to AuthPage if responseValue is greater than 0
           Navigator.pushReplacement(context,
               MaterialPageRoute(builder: (context) => const AuthPage()));
@@ -220,7 +220,7 @@ class _LoginPageState extends State<LoginPage> {
 
             // SIGN IN
 
-            MyButton(text: 'Sign In', onTap: signUserIn),
+            MyButton(text: 'Sign In', onTap: signCustomerIn),
 
             const SizedBox(height: 25),
 

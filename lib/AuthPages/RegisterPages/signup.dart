@@ -92,7 +92,7 @@ class RegisterPageState extends State<RegisterPage>
       debugPrint('Account created successfully');
       debugPrint('Response body: ${response.body}');
 
-      // Store the user Id in the login cache
+      // Store the customer Id in the login cache
       final loginCache2 = LoginCache();
       loginCache2.setEmail(email.value.text.trim().toLowerCase());
       loginCache2.setFN(firstName.value.text.trim());
@@ -100,9 +100,9 @@ class RegisterPageState extends State<RegisterPage>
       loginCache2.setLN(lastName.value.text.trim());
       loginCache2.setSignedIn(true);
 
-      // Store the user Id returned from the backend
-      final userId = int.parse(response.body);
-      loginCache2.setUID(userId);
+      // Store the customer Id returned from the backend
+      final customerId = int.parse(response.body);
+      loginCache2.setUID(customerId);
 
       // Navigate to the next page
       Navigator.pushReplacement(

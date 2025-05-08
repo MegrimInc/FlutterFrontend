@@ -89,7 +89,7 @@ class MenuPageState extends State<MenuPage>
       appMerchantTitle = (currentMerchant!.tag ?? 'Menu Page').replaceAll(' ', '');
     }
 
-    await Provider.of<User>(context, listen: false)
+    await Provider.of<Customer>(context, listen: false)
         .fetchTagsAndItems(widget.merchantId);
     debugPrint('Finished fetching items for merchantId: ${widget.merchantId}');
     debugPrint(
@@ -129,9 +129,9 @@ class MenuPageState extends State<MenuPage>
           child: SingleChildScrollView(
             key: _listKey,
             controller: _scrollController,
-            child: Consumer<User>(
-              builder: (context, user, _) {
-                final randomItems = user.getFullItemListByMerchantId(widget.merchantId);
+            child: Consumer<Customer>(
+              builder: (context, customer, _) {
+                final randomItems = customer.getFullItemListByMerchantId(widget.merchantId);
                 // Inside your _buildMainContent method or wherever you're using it
                 return Column(
                   children: [

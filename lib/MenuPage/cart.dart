@@ -201,12 +201,12 @@ void reorder(CustomerOrder order) {
   totalCartMoney = 0.0;
   totalCartPoints = 0;
 
-  // Fetch the user's available points balance
+  // Fetch the customer's available points balance
   final localDatabase = LocalDatabase();
   final pointsData = localDatabase.getPointsForMerchant(merchantId!);
   int availablePoints = pointsData?.points ?? 0;
 
-  debugPrint("User's available points: $availablePoints");
+  debugPrint("Customer's available points: $availablePoints");
 
   // Sort items by point price in descending order (expensive items first)
   List<ItemOrder> sortedItems = List.from(order.items)

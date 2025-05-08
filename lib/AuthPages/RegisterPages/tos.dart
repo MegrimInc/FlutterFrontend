@@ -194,9 +194,9 @@ class _RegisterPageState2 extends State<RegisterPage2> {
                     style: TextStyle(color: Colors.white, fontSize: 14),
                   ),
                   SizedBox(height: 20),
-                  // User Conduct
+                  // Customer Conduct
                   Text(
-                    '5. User Conduct',
+                    '5. Customer Conduct',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,

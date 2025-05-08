@@ -37,7 +37,7 @@ class IOSStyleKeypadState extends State<IOSStyleKeypad> {
             padding: const EdgeInsets.only(bottom: 45),
             child: Text(
               widget.controller
-                  .text, // This line now shows the actual digits entered by the user.
+                  .text, // This line now shows the actual digits entered by the customer.
               style: const TextStyle(fontSize: 40, color: Colors.white),
             ),
           ),

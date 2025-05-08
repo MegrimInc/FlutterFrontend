@@ -9,14 +9,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-class User extends ChangeNotifier {
-  static final User _singleton = User._internal();
+class Customer extends ChangeNotifier {
+  static final Customer _singleton = Customer._internal();
 
-  factory User() {
+  factory Customer() {
     return _singleton;
   }
 
-  User._internal();
+  Customer._internal();
 
   // Map to store Categories objects with merchantId as the key
   Map<String, Categories> categoriesMap = {};
@@ -214,7 +214,7 @@ class User extends ChangeNotifier {
 
       addCategories(merchantId, categories);
       debugPrint(
-          'Items for merchant $merchantId have been categorized and added to the User object.');
+          'Items for merchant $merchantId have been categorized and added to the Customer object.');
     } else {
       debugPrint(
           'Failed to load items for merchant $merchantId. Status code: ${response.statusCode}');

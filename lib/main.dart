@@ -71,9 +71,9 @@ Future<void> main() async {
   );
 
   if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-    debugPrint('User granted permission');
+    debugPrint('Customer granted permission');
   } else {
-    debugPrint('User declined or has not accepted permission');
+    debugPrint('Customer declined or has not accepted permission');
   }
 
   // Retrieve and print the device token
@@ -148,7 +148,7 @@ Future<void> main() async {
         ChangeNotifierProvider(
             create: (context) => Hierarchy(context, navigatorKey)),
         ChangeNotifierProvider(create: (_) => LoginCache()),
-        ChangeNotifierProvider(create: (context) => User()),
+        ChangeNotifierProvider(create: (context) => Customer()),
         ProxyProvider<LocalDatabase, SearchService>(
           update: (_, localDatabase, __) => SearchService(localDatabase),
         ),
@@ -205,14 +205,14 @@ Future<void> sendGetRequest2() async {
     LocalDatabase localDatabase = LocalDatabase();
 
     final loginCache = LoginCache();
-    final userId = await loginCache.getUID();
+    final customerId = await loginCache.getUID();
 
-    if (userId == 0) {
-      debugPrint('User Id is 0, skipping GET request for points.');
+    if (customerId == 0) {
+      debugPrint('Customer Id is 0, skipping GET request for points.');
       return;
     }
 
-    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/points/$userId');
+    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/points/$customerId');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -223,24 +223,24 @@ Future<void> sendGetRequest2() async {
       debugPrint('Decoded JSON response: $jsonResponse');
 
       if (jsonResponse.isEmpty ||
-          !jsonResponse.containsKey(userId.toString())) {
+          !jsonResponse.containsKey(customerId.toString())) {
         debugPrint('No points found, clearing the points map.');
         localDatabase.clearPoints();
         return;
       }
 
-      // Check if the user Id from the response matches the one in LoginCache
-      final String userIdString = userId.toString();
-      if (!jsonResponse.containsKey(userIdString)) {
-        debugPrint('User Id from response does not match the logged-in user.');
+      // Check if the customer Id from the response matches the one in LoginCache
+      final String customerIdString = customerId.toString();
+      if (!jsonResponse.containsKey(customerIdString)) {
+        debugPrint('Customer Id from response does not match the logged-in customer.');
         return;
       }
 
-      // Get the points map for the user (merchantId -> points)
-      final Map<String, dynamic> userPointsMap = jsonResponse[userIdString];
+      // Get the points map for the customer (merchantId -> points)
+      final Map<String, dynamic> customerPointsMap = jsonResponse[customerIdString];
 
-      // Iterate over the user points map (merchantId -> points)
-      userPointsMap.forEach((merchantId, points) {
+      // Iterate over the customer points map (merchantId -> points)
+      customerPointsMap.forEach((merchantId, points) {
         try {
           final Point point = Point(merchantId: merchantId.toString(), points: points);
           debugPrint(
@@ -264,10 +264,10 @@ Future<void> sendGetRequest2() async {
 Future<void> sendGetRequest3() async {
   final loginCache = LoginCache();
   LocalDatabase localDatabase = LocalDatabase();
-  final userId = await loginCache.getUID();
+  final customerId = await loginCache.getUID();
 
   // Construct the URL to your backend endpoint – adjust the URL as necessary.
-  final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/cardDetails/$userId');
+  final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/cardDetails/$customerId');
 
   try {
     final response = await http.get(

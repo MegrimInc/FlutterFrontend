@@ -31,7 +31,7 @@ class LocalDatabase with ChangeNotifier {
   final Map<String, Merchant> _merchants = {};
   final Map<String, Item> _items = {};
   final Map<String, CustomerOrder> _merchantOrders = {};
-  final Map<String, Point> _userPoints = {};
+  final Map<String, Point> _customerPoints = {};
   final Map<String, bool> _happyHourStatusMap = {};
   bool isPaymentPresent = false;
 
@@ -100,28 +100,28 @@ class LocalDatabase with ChangeNotifier {
     _merchantOrders.clear();
     notifyListeners();
     debugPrint("All orders have been cleared.");
-    _userPoints.clear();
+    _customerPoints.clear();
     debugPrint("All points have been cleared.");
   }
 
   void addOrUpdatePoints(String merchantId, int points) {
-    _userPoints[merchantId] = Point(merchantId: merchantId, points: points);
+    _customerPoints[merchantId] = Point(merchantId: merchantId, points: points);
     notifyListeners();
     debugPrint('Points updated for merchant $merchantId: $points points');
   }
 
   // Method to get points for a specific merchant
   Point? getPointsForMerchant(String merchantId) {
-    return _userPoints[merchantId];
+    return _customerPoints[merchantId];
   }
 
-  // Method to get all points for the user
+  // Method to get all points for the customer
   Map<String, Point> getAllPoints() {
-    return _userPoints;
+    return _customerPoints;
   }
 
   void clearPoints() {
-    _userPoints.clear();
+    _customerPoints.clear();
     notifyListeners();
     debugPrint('All points have been cleared.');
   }

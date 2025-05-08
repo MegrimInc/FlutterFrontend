@@ -70,17 +70,17 @@ class HomePageState extends State<HomePage> {
   Future<void> checkPaymentMethod() async {
     LocalDatabase localDatabase = LocalDatabase();
     LoginCache loginCache = LoginCache();
-    final userId = await loginCache.getUID();
+    final customerId = await loginCache.getUID();
 
-    if (userId == 0) {
-      debugPrint('User Id is 0, skipping GET request for payment method.');
+    if (customerId == 0) {
+      debugPrint('Customer Id is 0, skipping GET request for payment method.');
       return;
     }
 
     try {
       final response = await http.get(
         Uri.parse(
-            '${AppConfig.postgresApiBaseUrl}/customer/checkPaymentMethod/$userId'),
+            '${AppConfig.postgresApiBaseUrl}/customer/checkPaymentMethod/$customerId'),
       );
 
       if (response.statusCode == 200) {
@@ -458,7 +458,7 @@ class HomePageState extends State<HomePage> {
                 ),
               );
             }
-            return const SizedBox.shrink(); // Return nothing if userId is not 0
+            return const SizedBox.shrink(); // Return nothing if customerId is not 0
           },
         ));
   }
