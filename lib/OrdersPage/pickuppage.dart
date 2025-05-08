@@ -1,6 +1,6 @@
 import 'package:barzzy/MenuPage/cart.dart';
 import 'package:barzzy/OrdersPage/websocket.dart';
-import 'package:barzzy/Backend/customer_order.dart';
+import 'package:barzzy/Backend/customerorder.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -38,7 +38,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    screenHeight = MediaQuery.of(context).size.height - (4 * kToolmerchantHeight);
+    screenHeight = MediaQuery.of(context).size.height - (4 * kToolbarHeight);
   }
 
   @override

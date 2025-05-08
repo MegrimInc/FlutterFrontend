@@ -45,7 +45,7 @@ class HomePageState extends State<HomePage> {
     super.didChangeDependencies();
     // Dynamically calculate the available screen height
     screenHeight = MediaQuery.of(context).size.height -
-        (3.8 * kToolBarHeight); // Subtract twice the AppBar height
+        (3.8 * kToolbarHeight); // Subtract twice the AppBar height
     bottomHeight = (MediaQuery.of(context).size.height - screenHeight) * .5;
     paddingHeight = bottomHeight * .18;
   }

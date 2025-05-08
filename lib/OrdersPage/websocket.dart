@@ -1,7 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy/Backend/customer_order.dart';
+import 'package:barzzy/Backend/customerorder.dart';
 import 'package:barzzy/Backend/localdatabase.dart';
 import 'package:barzzy/Backend/preferences.dart';
 import 'package:barzzy/main.dart';
@@ -324,7 +324,7 @@ class Hierarchy extends ChangeNotifier {
   }
 
   Future<void> handleCache(dynamic ordersData) async {
-    final customer = Provider.of<Customer>(navigatorKey.currentContext!, listen: false);
+    final customer = Provider.of<Category>(navigatorKey.currentContext!, listen: false);
 
     // Check if `ordersData` is a list or a single object
     final List<dynamic> orders = ordersData is List<dynamic>

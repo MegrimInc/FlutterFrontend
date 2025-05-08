@@ -132,7 +132,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
 // Private method to save the payment method to the database
   Future<void> _savePaymentMethodToDatabase(
-      int customerId, String customerId, String setupIntentId) async {
+      int customerId, String stripeId, String setupIntentId) async {
     final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
     try {
       final response = await http.post(
@@ -140,7 +140,7 @@ class _ProfilePageState extends State<ProfilePage> {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "customerId": customerId, // customerId is the customer Id for your app
-          "stripeId": customerId, // Stripe customer Id returned by Stripe
+          "stripeId": stripeId, // Stripe customer Id returned by Stripe
           "setupIntentId": setupIntentId // SetupIntent Id from Stripe
         }),
       );

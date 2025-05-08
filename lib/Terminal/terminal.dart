@@ -200,7 +200,7 @@ class _OrdersPageState extends State<Terminal> {
       context: context,
       position: RelativeRect.fromLTRB(
         MediaQuery.of(context).size.width - 150,
-        kToolmerchantHeight + 21,
+        kToolbarHeight + 21,
         0.0,
         0.0,
       ),

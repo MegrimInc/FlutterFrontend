@@ -271,7 +271,7 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
     
                             // Use the Provider to access the Customer class
                             final customer =
-                                Provider.of<Customer>(context, listen: false);
+                                Provider.of<Category>(context, listen: false);
     
                             // Trigger fetchTagsAndItems with the merchant Id
                             await customer.fetchTagsAndItems(merchantId);

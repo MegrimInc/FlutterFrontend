@@ -28,8 +28,7 @@ class Inventory extends ChangeNotifier {
   Future<void> fetchMerchantDetails(int merchantId) async {
     
     try {
-      //TODO:  final response = await http.get(Uri.parse("https://www.barzzy.site/merchants/$merchantId"));
-
+    
       final response = await http.get(Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/$merchantId'));
       //debugPrint("Received response with status code: ${response.statusCode}");
 

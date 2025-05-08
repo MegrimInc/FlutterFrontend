@@ -86,10 +86,10 @@ class MenuPageState extends State<MenuPage>
     debugPrint(
         'LocalDatabase instance in MenuPage: ${LocalDatabase().hashCode}');
     if (currentMerchant != null) {
-      appMerchantTitle = (currentMerchant!.tag ?? 'Menu Page').replaceAll(' ', '');
+      appBarTitle = (currentMerchant!.tag ?? 'Menu Page').replaceAll(' ', '');
     }
 
-    await Provider.of<Customer>(context, listen: false)
+    await Provider.of<Category>(context, listen: false)
         .fetchTagsAndItems(widget.merchantId);
     debugPrint('Finished fetching items for merchantId: ${widget.merchantId}');
     debugPrint(
@@ -129,7 +129,7 @@ class MenuPageState extends State<MenuPage>
           child: SingleChildScrollView(
             key: _listKey,
             controller: _scrollController,
-            child: Consumer<Customer>(
+            child: Consumer<Category>(
               builder: (context, customer, _) {
                 final randomItems = customer.getFullItemListByMerchantId(widget.merchantId);
                 // Inside your _buildMainContent method or wherever you're using it
@@ -268,7 +268,7 @@ class MenuPageState extends State<MenuPage>
                     ),
                     backgroundColor: Colors.black,
                     duration: const Duration(seconds: 1),
-                    flushmerchantPosition: FlushmerchantPosition.TOP,
+                    flushbarPosition: FlushbarPosition.TOP,
                     borderRadius: BorderRadius.circular(8),
                     margin: const EdgeInsets.all(10),
                   ).show(context);

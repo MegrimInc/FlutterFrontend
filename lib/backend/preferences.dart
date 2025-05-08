@@ -9,14 +9,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-class Customer extends ChangeNotifier {
-  static final Customer _singleton = Customer._internal();
+class Category extends ChangeNotifier {
+  static final Category _singleton = Category._internal();
 
-  factory Customer() {
+  factory Category() {
     return _singleton;
   }
 
-  Customer._internal();
+  Category._internal();
 
   // Map to store Categories objects with merchantId as the key
   Map<String, Categories> categoriesMap = {};

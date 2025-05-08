@@ -45,7 +45,7 @@ Future<void> main() async {
   AppConfig.environment = Environment.test;
   
 
-  Stripe.merchantIdentifier = 'merchant.com.barzzy'; //TODO CHECK THIS CHIDE
+  Stripe.merchantIdentifier = 'merchant.com.barzzy'; 
 
   try {
     debugPrint("Starting Firebase Initialization");
@@ -148,7 +148,7 @@ Future<void> main() async {
         ChangeNotifierProvider(
             create: (context) => Hierarchy(context, navigatorKey)),
         ChangeNotifierProvider(create: (_) => LoginCache()),
-        ChangeNotifierProvider(create: (context) => Customer()),
+        ChangeNotifierProvider(create: (context) => Category()),
         ProxyProvider<LocalDatabase, SearchService>(
           update: (_, localDatabase, __) => SearchService(localDatabase),
         ),
