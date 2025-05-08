@@ -141,7 +141,7 @@ class _OrdersPageState extends State<Terminal> {
             .where((order) =>
                 order.claimer == widget.terminalId ||
                 (order.claimer.isEmpty &&
-                    (order.userId % terminalCount) == terminalNumber))
+                    (order.customerId % terminalCount) == terminalNumber))
             .toList();
       }
 
@@ -283,7 +283,7 @@ class _OrdersPageState extends State<Terminal> {
     final claimRequest = {
       'action': 'claim',
       'terminalId': widget.terminalId.toString(),
-      'userId': order.userId,
+      'customerId': order.customerId,
       'merchantId': widget.merchantId,
     };
 
@@ -324,7 +324,7 @@ class _OrdersPageState extends State<Terminal> {
                           json.encode({
                             'action': 'unclaim',
                             'terminalId': widget.terminalId.toString(),
-                            'userId': order.userId,
+                            'customerId': order.customerId,
                             'merchantId': widget.merchantId,
                           }),
                         );
@@ -351,7 +351,7 @@ class _OrdersPageState extends State<Terminal> {
                           json.encode({
                             'action': 'ready',
                             'terminalId': widget.terminalId.toString(),
-                            'userId': order.userId,
+                            'customerId': order.customerId,
                             'merchantId': widget.merchantId,
                           }),
                         );
@@ -411,7 +411,7 @@ class _OrdersPageState extends State<Terminal> {
                           json.encode({
                             'action': 'cancel',
                             'terminalId': widget.terminalId.toString(),
-                            'userId': order.userId,
+                            'customerId': order.customerId,
                             'merchantId': widget.merchantId,
                           }),
                         );
@@ -447,7 +447,7 @@ class _OrdersPageState extends State<Terminal> {
                           json.encode({
                             'action': 'deliver',
                             'terminalId': widget.terminalId.toString(),
-                            'userId': order.userId,
+                            'customerId': order.customerId,
                             'merchantId': widget.merchantId,
                           }),
                         );
@@ -501,7 +501,7 @@ class _OrdersPageState extends State<Terminal> {
   Color _getOrderTintColor(TerminalOrder order) {
     final ageInSeconds = order.getAge();
 
-    // Debug print to show age and userId
+    // Debug print to show age and customerId
     if (order.claimer != '' && order.claimer != widget.terminalId) {
       return Colors.grey[700]!;
     }
@@ -1262,7 +1262,7 @@ class _OrdersPageState extends State<Terminal> {
               for (TerminalOrder incomingOrder in incomingOrders) {
                 // Check if the order exists in allOrders
                 int index = allOrders.indexWhere(
-                    (order) => order.userId == incomingOrder.userId);
+                    (order) => order.customerId == incomingOrder.customerId);
                 if (index != -1) {
                   // If it exists, replace the old order
                   allOrders[index] = incomingOrder;
@@ -1280,22 +1280,22 @@ class _OrdersPageState extends State<Terminal> {
 
                 // Auto-claim the order if eligible
                 if (incomingOrder.claimer.isEmpty &&
-                    (incomingOrder.userId % terminalCount) ==
+                    (incomingOrder.customerId % terminalCount) ==
                         terminalNumber) {
                   final claimRequest = {
                     'action': 'claim',
                     'terminalId': widget.terminalId,
-                    'userId': incomingOrder.userId,
+                    'customerId': incomingOrder.customerId,
                     'merchantId': widget.merchantId,
                   };
 
                   try {
                     socket!.sink.add(jsonEncode(claimRequest));
                     debugPrint(
-                        "Auto-claimed order for user Id: ${incomingOrder.userId}");
+                        "Auto-claimed order for customer Id: ${incomingOrder.customerId}");
                   } catch (e) {
                     debugPrint(
-                        "Error auto-claiming order for user Id: ${incomingOrder.userId}: $e");
+                        "Error auto-claiming order for customer Id: ${incomingOrder.customerId}: $e");
                   }
                 }
               }
@@ -1312,7 +1312,7 @@ class _OrdersPageState extends State<Terminal> {
               for (TerminalOrder incomingOrder in incomingOrders) {
                 // Check if the order exists in allOrders
                 int index = allOrders.indexWhere(
-                    (order) => order.userId == incomingOrder.userId);
+                    (order) => order.customerId == incomingOrder.customerId);
                 if (index != -1) {
                   // If it exists, replace the old order
                   allOrders[index] = incomingOrder;

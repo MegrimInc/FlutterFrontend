@@ -146,14 +146,14 @@ class Hierarchy extends ChangeNotifier {
 
   void sendRefreshMessage(BuildContext context) async {
     final loginCache = Provider.of<LoginCache>(context, listen: false);
-    final userId = await loginCache.getUID();
+    final customerId = await loginCache.getUID();
     final deviceToken = await loginCache.getDeviceToken();
 
     try {
       if (_channel != null) {
         final message = {
           "action": "refresh",
-          "userId": userId,
+          "customerId": customerId,
           "deviceToken": deviceToken
         };
         final jsonMessage =
@@ -190,17 +190,17 @@ class Hierarchy extends ChangeNotifier {
 
   void sendArriveMessage(int merchantId) async {
     try {
-      // Fetch userId from LoginCache
+      // Fetch customerId from LoginCache
       final loginCache =
           Provider.of<LoginCache>(navigatorKey.currentContext!, listen: false);
-      final userId = await loginCache.getUID();
+      final customerId = await loginCache.getUID();
 
       // Ensure WebSocket connection is active
       if (_channel != null) {
         // Create the message
         final message = {
           "action": "arrive",
-          "userId": userId,
+          "customerId": customerId,
           "merchantId": merchantId,
         };
 
@@ -324,7 +324,7 @@ class Hierarchy extends ChangeNotifier {
   }
 
   Future<void> handleCache(dynamic ordersData) async {
-    final user = Provider.of<User>(navigatorKey.currentContext!, listen: false);
+    final customer = Provider.of<Customer>(navigatorKey.currentContext!, listen: false);
 
     // Check if `ordersData` is a list or a single object
     final List<dynamic> orders = ordersData is List<dynamic>
@@ -335,7 +335,7 @@ class Hierarchy extends ChangeNotifier {
       final merchantId = order['merchantId']?.toString(); // Extract merchantId as a string
       if (merchantId != null && merchantId.isNotEmpty) {
         debugPrint('Fetching tags and items for merchantId: $merchantId');
-        await user.fetchTagsAndItems(merchantId); // Trigger the fetch
+        await customer.fetchTagsAndItems(merchantId); // Trigger the fetch
       }
     }
   }

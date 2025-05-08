@@ -4,7 +4,7 @@
 class CustomerOrder {
   String name;
   String merchantId; // Stored as a String on the frontend, converted to int for JSON
-  int userId;
+  int customerId;
   double totalRegularPrice;
   double tip;
   bool inAppPayments;
@@ -17,7 +17,7 @@ class CustomerOrder {
   CustomerOrder(
     this.name,
     this.merchantId,
-    this.userId,
+    this.customerId,
     this.totalRegularPrice,
     this.tip,
     this.inAppPayments,
@@ -43,7 +43,7 @@ class CustomerOrder {
     return CustomerOrder(
       json['name'] as String,
       json['merchantId'].toString(), // Convert merchantId to String for frontend storage
-      json['userId'] as int,
+      json['customerId'] as int,
       (json['totalRegularPrice'] as num).toDouble(),
       (json['tip'] as num).toDouble(),
       json['inAppPayments'] as bool,
@@ -61,7 +61,7 @@ class CustomerOrder {
     return {
       'name': name,
       'merchantId': int.parse(merchantId), // Convert merchantId back to int for JSON
-      'userId': userId,
+      'customerId': customerId,
       'totalRegularPrice': totalRegularPrice,
       'tip': tip,
       'inAppPayments': inAppPayments,
@@ -75,7 +75,7 @@ class CustomerOrder {
 
   // Getter methods
   double getTotalRegularPrice() => totalRegularPrice;
-  int getUserId() => userId;
+  int getCustomerId() => customerId;
   List<ItemOrder> getItems() => items;
   String getStatus() => status;
   String getClaimer() => claimer;
@@ -86,7 +86,7 @@ class CustomerOrder {
 
   // Setter methods
   void setMerchantId(String value) => merchantId = value;
-  void setUserId(int value) => userId = value;
+  void setCustomerId(int value) => customerId = value;
   void setTotalRegularPrice(double value) => totalRegularPrice = value;
   void setTip(double value) => tip = value;
   void setInAppPayments(bool value) => inAppPayments = value;

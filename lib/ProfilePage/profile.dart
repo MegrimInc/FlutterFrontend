@@ -19,10 +19,10 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  // Variables to store user information
+  // Variables to store customer information
   String email = '';
   String password = '';
-  int userId = 0;
+  int customerId = 0;
   String firstName = '';
   String lastName = '';
   bool isEditing = false;
@@ -35,7 +35,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _loadUserInfo();
+    _loadCustomerInfo();
     // Add listeners to focus nodes
     firstNameFocus.addListener(() {
       setState(() {
@@ -49,26 +49,26 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
-  // Function to load user information from shared preferences
-  void _loadUserInfo() async {
+  // Function to load customer information from shared preferences
+  void _loadCustomerInfo() async {
     final loginData = LoginCache();
     final loadedEmail = await loginData.getEmail();
     final loadedPassword = await loginData.getPW();
-    final loadedUserId = await loginData.getUID();
+    final loadedCustomerId = await loginData.getUID();
 
     setState(() {
       email = loadedEmail;
       password = loadedPassword;
-      userId = loadedUserId;
+      customerId = loadedCustomerId;
     });
 
-    _fetchUserName(loadedUserId);
+    _fetchCustomerName(loadedCustomerId);
   }
 
-  Future<void> _fetchUserName(int userId) async {
+  Future<void> _fetchCustomerName(int customerId) async {
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/getNames/$userId'),
+        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/getNames/$customerId'),
       );
 
       if (response.statusCode == 200) {
@@ -79,19 +79,19 @@ class _ProfilePageState extends State<ProfilePage> {
         });
       } else {
         debugPrint(
-            'Failed to fetch user name. Status code: ${response.statusCode}');
+            'Failed to fetch customer name. Status code: ${response.statusCode}');
         debugPrint('Response body: ${response.body}');
       }
     } catch (e) {
-      debugPrint('Error fetching user name: $e');
+      debugPrint('Error fetching customer name: $e');
     }
   }
 
-  Future<void> _showStripeSetupSheet(BuildContext context, int userId) async {
+  Future<void> _showStripeSetupSheet(BuildContext context, int customerId) async {
     try {
       // Call your backend to create a SetupIntent and retrieve the client secret
       final response = await http.get(
-        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/createSetupIntent/$userId'),
+        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/createSetupIntent/$customerId'),
       );
 
       if (response.statusCode == 200) {
@@ -117,7 +117,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
         // Present the Stripe payment sheet to collect and save payment info
         await Stripe.instance.presentPaymentSheet();
-        await _savePaymentMethodToDatabase(userId, customerId, setupIntentId);
+        await _savePaymentMethodToDatabase(customerId, customerId, setupIntentId);
       } else {
         debugPrint(
             "Failed to load setup intent data. Status code: ${response.statusCode}");
@@ -132,14 +132,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
 // Private method to save the payment method to the database
   Future<void> _savePaymentMethodToDatabase(
-      int userId, String customerId, String setupIntentId) async {
+      int customerId, String customerId, String setupIntentId) async {
     final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
     try {
       final response = await http.post(
         Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/addPaymentIdToDatabase'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "customerId": userId, // userId is the customer Id for your app
+          "customerId": customerId, // customerId is the customer Id for your app
           "stripeId": customerId, // Stripe customer Id returned by Stripe
           "setupIntentId": setupIntentId // SetupIntent Id from Stripe
         }),
@@ -258,7 +258,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     TextButton(
                       onPressed: () {
                         if (isEditing) {
-                          _updateUserName();
+                          _updateCustomerName();
                           setState(() {
                             isTextFieldActive = false;
                           });
@@ -306,7 +306,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       icon: Icons.credit_card,
                       onTap: () {
                         // Navigate to payment update
-                        _showStripeSetupSheet(context, userId);
+                        _showStripeSetupSheet(context, customerId);
                       },
                     ),
                     if (!isTextFieldActive)
@@ -410,7 +410,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<void> _updateUserName() async {
+  Future<void> _updateCustomerName() async {
     final requestBody = {
       'firstName': firstNameController.text,
       'lastName': lastNameController.text,
@@ -418,7 +418,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final response = await http.post(
-        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/updateNames/$userId'),
+        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/updateNames/$customerId'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestBody),
       );
@@ -431,14 +431,14 @@ class _ProfilePageState extends State<ProfilePage> {
           isEditing = false; // Exit edit mode
         });
       } else {
-        debugPrint('Failed to update user name: ${response.statusCode}');
+        debugPrint('Failed to update customer name: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error updating user name: $e');
+      debugPrint('Error updating customer name: $e');
     }
   }
 
-  // Function to delete user account and log out
+  // Function to delete customer account and log out
   Future<void> deleteAccount() async {
     final response = await http.post(
       Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/delete-customer'),
