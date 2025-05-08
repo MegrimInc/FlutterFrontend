@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:barzzy/Backend/customer.dart';
-import 'package:barzzy/Backend/customer_order.dart';
+import 'package:barzzy/Backend/customerorder.dart';
 import 'package:barzzy/Backend/item.dart';
 import 'package:barzzy/Backend/point.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +25,7 @@ class LocalDatabase with ChangeNotifier {
     Timer.periodic(const Duration(minutes: 30, seconds: 0), (Timer timer) {
       updateAndCheckHappyHourStatus();
     });
-    debugPrint('when do u trigger');
+    
   }
 
   final Map<String, Merchant> _merchants = {};

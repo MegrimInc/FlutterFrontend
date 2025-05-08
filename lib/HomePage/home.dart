@@ -45,7 +45,7 @@ class HomePageState extends State<HomePage> {
     super.didChangeDependencies();
     // Dynamically calculate the available screen height
     screenHeight = MediaQuery.of(context).size.height -
-        (3.8 * kToolmerchantHeight); // Subtract twice the AppMerchant height
+        (3.8 * kToolBarHeight); // Subtract twice the AppBar height
     bottomHeight = (MediaQuery.of(context).size.height - screenHeight) * .5;
     paddingHeight = bottomHeight * .18;
   }
@@ -115,7 +115,7 @@ class HomePageState extends State<HomePage> {
     return Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: Colors.black,
-        appMerchant: AppMerchant(
+        appBar: AppBar(
             backgroundColor: Colors.black,
             surfaceTintColor: Colors.transparent,
             centerTitle: true,
@@ -423,7 +423,7 @@ class HomePageState extends State<HomePage> {
             );
           },
         ),
-        bottomNavigationMerchant: FutureBuilder<int>(
+        bottomNavigationBar: FutureBuilder<int>(
           future: Provider.of<LoginCache>(context, listen: false).getUID(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
