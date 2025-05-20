@@ -1,19 +1,22 @@
 import 'dart:convert';
-import 'package:barzzy/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy/AuthPages/components/toggle.dart';
-import 'package:barzzy/Backend/merchant.dart';
-import 'package:barzzy/Backend/customer.dart';
+import 'dart:io';
+import 'package:barzzy/DTO/config.dart';
+import 'package:barzzy/UI/AuthPages/RegisterPages/logincache.dart';
+import 'package:barzzy/UI/AuthPages/components/toggle.dart';
+import 'package:barzzy/Backend/database.dart';
+import 'package:barzzy/DTO/merchant.dart';
+import 'package:barzzy/DTO/customer.dart';
 import 'package:barzzy/Backend/searchengine.dart';
 import 'package:barzzy/Backend/recommended.dart';
-import 'package:barzzy/Backend/preferences.dart';
-import 'package:barzzy/Gnav%20Bar/bottombar.dart';
-import 'package:barzzy/MenuPage/cart.dart';
-import 'package:barzzy/MenuPage/itemfeed.dart';
-import 'package:barzzy/MenuPage/menu.dart';
-import 'package:barzzy/OrdersPage/websocket.dart';
-import 'package:barzzy/Terminal/inventory.dart';
-import 'package:barzzy/Terminal/select.dart';
-import 'package:barzzy/Backend/point.dart';
+import 'package:barzzy/UI/BottomBar/bottombar.dart';
+import 'package:barzzy/Backend/cart.dart';
+import 'package:barzzy/UI/CatalogPage/catalog.dart';
+import 'package:barzzy/UI/CheckoutPage/checkout.dart';
+import 'package:barzzy/Backend/websocket.dart';
+import 'package:barzzy/UI/TerminalPages/inventory.dart';
+import 'package:barzzy/UI/TerminalPages/select.dart';
+import 'package:barzzy/DTO/point.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -21,31 +24,28 @@ import 'firebase_options.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:barzzy/Backend/localdatabase.dart';
+
 import 'package:http/http.dart' as http;
-import 'package:barzzy/Backend/merchanthistory.dart';
+import 'package:barzzy/Backend/history.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart'; // Crashlytics
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'config.dart';
 
-
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+const String currentIOSMobileVersion = '1.9.0'; // Define your app version here
+const String currentIOSTabletVersion = '0.0.0'; // Define tablet version if different
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  debugPrint("current date: ${DateTime.now()}");
-
-  // Stripe.publishableKey =
-  //     'pk_live_51QIHPQALmk8hqurj9QQVsCMabyzQ3hCJrxk1PhLNJFXDHfbmQqkJzEdOIrXlGd27hBEJchOuLBjIrb6WKxKiUKoo00tOVyaRdA';
-
-  Stripe.publishableKey =
-      'sk_test_51QIHPQALmk8hqurj69ipiDbnAGd0ELb4l1Nt8fF359rSzFmY7bUHAXClqNytoqv7cpATWNuvymfEEUICGY7bPfd700tIvIIkIY';
 
   AppConfig.environment = Environment.test;
-  
 
-  Stripe.merchantIdentifier = 'merchant.com.barzzy'; 
+  Stripe.publishableKey = AppConfig.stripePublishableKey;
+
+  Stripe.merchantIdentifier = 'merchant.com.barzzy';
 
   try {
     debugPrint("Starting Firebase Initialization");
@@ -80,6 +80,15 @@ Future<void> main() async {
   String? deviceToken = await messaging.getAPNSToken();
   debugPrint("Device Token: $deviceToken");
   deviceToken = deviceToken ?? '';
+
+  LocalDatabase localDatabase = LocalDatabase();
+
+
+  await fetchConfig();
+
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+  await AppConfig().enforceVersionPolicy(navigatorKey.currentContext!);
+  });
 
   final loginCache = LoginCache();
   bool loggedInAlready = true;
@@ -120,9 +129,9 @@ Future<void> main() async {
   final isMerchant = uid < 0;
   loggedInAlready = loggedInAlready && httpRequest;
   await loginCache.setDeviceToken(deviceToken);
-  LocalDatabase localDatabase = LocalDatabase();
-  await sendGetRequest();
-  await sendGetRequest2();
+
+  await sendGetMerchants();
+  await sendGetPoints();
 
   // Create the MethodChannel
   const MethodChannel notificationChannel =
@@ -146,9 +155,8 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => Recommended()),
         ChangeNotifierProvider(create: (_) => Inventory()),
         ChangeNotifierProvider(
-            create: (context) => Hierarchy(context, navigatorKey)),
+            create: (context) => Websocket(context, navigatorKey)),
         ChangeNotifierProvider(create: (_) => LoginCache()),
-        ChangeNotifierProvider(create: (context) => Category()),
         ProxyProvider<LocalDatabase, SearchService>(
           update: (_, localDatabase, __) => SearchService(localDatabase),
         ),
@@ -162,9 +170,29 @@ Future<void> main() async {
   );
 }
 
-Future<void> sendGetRequest() async {
+Future<void> fetchConfig() async {
   try {
-    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/seeAllMerchants');
+    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/config');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      final config = Config.fromJson(jsonResponse);
+
+      LocalDatabase().setConfig(config);
+      debugPrint("Config fetched and stored: \$config");
+    } else {
+      debugPrint("Failed to fetch config: \${response.statusCode}");
+    }
+  } catch (e) {
+    debugPrint("Error fetching config: \$e");
+  }
+}
+
+Future<void> sendGetMerchants() async {
+  try {
+    final url =
+        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/seeAllMerchants');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -173,12 +201,12 @@ Future<void> sendGetRequest() async {
       final List<dynamic> jsonResponse = jsonDecode(response.body);
       LocalDatabase localDatabase = LocalDatabase();
       for (var merchantJson in jsonResponse) {
-         debugPrint('Merchant JSON data: ${jsonEncode(merchantJson)}');
+        debugPrint('Merchant JSON data: ${jsonEncode(merchantJson)}');
         Merchant merchant = Merchant.fromJson(merchantJson);
         localDatabase.addMerchant(merchant);
 
-        if (merchant.merchantimg != null && merchant.merchantimg!.isNotEmpty) {
-          final cachedImage = CachedNetworkImageProvider(merchant.merchantimg!);
+        if (merchant.storeImg != null && merchant.storeImg!.isNotEmpty) {
+          final cachedImage = CachedNetworkImageProvider(merchant.storeImg!);
           cachedImage.resolve(const ImageConfiguration()).addListener(
                 ImageStreamListener(
                   (ImageInfo image, bool synchronousCall) {
@@ -199,7 +227,7 @@ Future<void> sendGetRequest() async {
   }
 }
 
-Future<void> sendGetRequest2() async {
+Future<void> sendGetPoints() async {
   try {
     // Add or update points in the LocalDatabase for each merchant
     LocalDatabase localDatabase = LocalDatabase();
@@ -212,7 +240,8 @@ Future<void> sendGetRequest2() async {
       return;
     }
 
-    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/points/$customerId');
+    final url = Uri.parse(
+        '${AppConfig.postgresApiBaseUrl}/customer/points/$customerId');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -232,17 +261,20 @@ Future<void> sendGetRequest2() async {
       // Check if the customer Id from the response matches the one in LoginCache
       final String customerIdString = customerId.toString();
       if (!jsonResponse.containsKey(customerIdString)) {
-        debugPrint('Customer Id from response does not match the logged-in customer.');
+        debugPrint(
+            'Customer Id from response does not match the logged-in customer.');
         return;
       }
 
       // Get the points map for the customer (merchantId -> points)
-      final Map<String, dynamic> customerPointsMap = jsonResponse[customerIdString];
+      final Map<String, dynamic> customerPointsMap =
+          jsonResponse[customerIdString];
 
       // Iterate over the customer points map (merchantId -> points)
       customerPointsMap.forEach((merchantId, points) {
         try {
-          final Point point = Point(merchantId: merchantId.toString(), points: points);
+          final Point point =
+              Point(merchantId: int.parse(merchantId), points: points);
           debugPrint(
               'Successfully serialized Point: Merchant Id: ${point.merchantId}, Points: ${point.points}');
 
@@ -261,13 +293,14 @@ Future<void> sendGetRequest2() async {
   }
 }
 
-Future<void> sendGetRequest3() async {
+Future<void> getCardDetails() async {
   final loginCache = LoginCache();
   LocalDatabase localDatabase = LocalDatabase();
   final customerId = await loginCache.getUID();
 
   // Construct the URL to your backend endpoint – adjust the URL as necessary.
-  final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/cardDetails/$customerId');
+  final url = Uri.parse(
+      '${AppConfig.postgresApiBaseUrl}/customer/cardDetails/$customerId');
 
   try {
     final response = await http.get(
@@ -292,6 +325,24 @@ Future<void> sendGetRequest3() async {
     debugPrint("Error in sendGetRequest3: $e");
   }
 }
+
+Future<void> detectIOSDeviceType() async {
+  if (Platform.isIOS) {
+    final deviceInfo = DeviceInfoPlugin();
+    final iosInfo = await deviceInfo.iosInfo;
+    final model = iosInfo.utsname.machine;
+
+    if (model.toLowerCase().contains('ipad')) {
+      debugPrint('This is an iPad.');
+    } else if (model.toLowerCase().contains('iphone')) {
+      debugPrint('This is an iPhone.');
+    } else {
+      debugPrint('Unknown iOS device: $model');
+    }
+  }
+}
+
+
 
 class Barzzy extends StatelessWidget {
   final bool loggedInAlready;
@@ -340,26 +391,26 @@ class Barzzy extends StatelessWidget {
         '/orders': (context) => const AuthPage(selectedTab: 1),
         '/menu': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map;
-          final String merchantId = args['merchantId'];
+          final int merchantId = args['merchantId'];
           final Cart cart = args['cart'];
-          final String? itemId = args['itemId']; // Optional parameter
-          final String? claimer = args['claimer'];
+          final int? itemId = args['itemId']; // Optional parameter
+          final String? terminal = args['terminal'];
 
-          return MenuPage(
+          return CatalogPage(
             merchantId: merchantId,
             cart: cart,
             itemId: itemId, // Pass the optional itemId
-            claimer: claimer,
+            terminal: terminal,
           );
         },
         '/itemFeed': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map;
-          return ItemFeed(
+          return CheckoutPage(
             item: args['item'],
             cart: args['cart'],
             merchantId: args['merchantId'],
             initialPage: args['initialPage'],
-            claimer: args['claimer'],
+            terminal: args['terminal'],
           );
         },
       },

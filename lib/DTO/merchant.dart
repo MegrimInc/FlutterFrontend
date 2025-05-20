@@ -1,0 +1,83 @@
+
+import 'dart:convert';
+
+class Merchant {
+  int? merchantId;
+  String? name;
+  String? city;
+  String? zipCode;
+  String? address;
+  String? stateOrProvince;
+  String? country;
+  String? nickname;
+  String? logoImg;
+  String? storeImg;
+  Map<String, String?>? discountSchedule;
+
+  
+
+  Merchant(
+      {
+      this.merchantId,
+      this.name,
+      this.city,
+      this.zipCode,
+      this.address,
+      this.stateOrProvince,
+      this.country,
+      this.nickname,
+      this.logoImg,
+      this.storeImg,
+      this.discountSchedule,
+      }
+      );
+
+  
+  //GETTER METHODS
+
+  String? getName() {
+    return name;
+  }
+
+  String? getNickname() {
+    return nickname;
+  }
+
+  // JSON serialization to support saving and loading merchant data
+  Map<String, dynamic> toJson() {
+    return {
+     'merchantId': merchantId,
+      'name': name,
+      'city': city,
+      'zipCode': zipCode,
+      'address': address,
+      'stateOrProvince': stateOrProvince,
+      'country': country,
+      'nickname': nickname,
+      'logoImage': logoImg,
+      'storeImage': storeImg,
+      'discountSchedule': discountSchedule, 
+    };
+  }
+
+  // Factory Constructor (fromJson)
+  factory Merchant.fromJson(Map<String, dynamic> json) {
+    return Merchant(
+      merchantId: json['merchantId'] as int?, // Match toJson key
+      name: json['name'] as String?,
+      city: json['city'] as String?,
+      zipCode: json['zipCode'] as String?,
+      address: json['address'] as String?,
+      stateOrProvince: json['stateOrProvince'] as String?,
+      country: json['country'] as String?,
+      nickname: json['nickname'] as String?, // Match toJson key
+      logoImg: json['logoImage'] as String?, // Match toJson key
+      storeImg: json['storeImage'] as String?, // Match toJson key
+      discountSchedule: json['discountSchedule'] != null
+          ? (json['discountSchedule'] is String
+              ? Map<String, String?>.from(jsonDecode(json['discountSchedule']))
+              : Map<String, String?>.from(json['discountSchedule']))
+          : null,
+    );
+  }
+}

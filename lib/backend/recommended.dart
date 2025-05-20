@@ -1,15 +1,15 @@
-import 'package:barzzy/Backend/localdatabase.dart';
+
+import 'package:barzzy/Backend/database.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'merchanthistory.dart';
+import 'history.dart';
 
 class Recommended with ChangeNotifier {
-  final List<String> _recommendedMerchants = [];
-  String? _currentTappedMerchantId;
+  final List<int> _recommendedMerchants = [];
+  int? _currentTappedMerchantId;
+  List<int> get merchantIds => _recommendedMerchants.toList();
 
-  List<String> get merchantIds => _recommendedMerchants.toList();
-
-  void setCurrentTappedMerchantId(String? merchantId) {
+  void setCurrentTappedMerchantId(int? merchantId) {
     _currentTappedMerchantId = merchantId;
   }
 
