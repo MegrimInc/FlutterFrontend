@@ -66,7 +66,7 @@ class _BankPageState extends State<BankPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'B-A-N-K',
+                    'B a n k',
                     style: GoogleFonts.megrim(
                       color: Colors.white,
                       fontSize: 25,

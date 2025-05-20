@@ -128,7 +128,7 @@ class HomePageState extends State<HomePage> {
                 //BARZZY TAG
 
                 Text(
-                  'M-E-G-R-I-M',
+                  'M e g r i m',
                   style: GoogleFonts.megrim(
                     fontWeight: FontWeight.w900,
                     color: Colors.white,

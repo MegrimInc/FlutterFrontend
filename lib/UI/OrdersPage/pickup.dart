@@ -63,7 +63,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'O-R-D-E-R-S',
+                  'O r d e r s',
                   style: GoogleFonts.megrim(
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
