@@ -22,7 +22,7 @@ class AppConfig {
   }
 
   // ---------- POSTGRES ----------
-  static String get postgresApiBaseUrl {
+  static String get postgresHttpBaseUrl {
     switch (environment) {
       case Environment.test:
         return 'https://www.barzzy.site/postgres-test-http';
@@ -41,7 +41,7 @@ class AppConfig {
   }
 
   // ---------- REDIS ----------
-  static String get redisApiBaseUrl {
+  static String get redisHttpBaseUrl {
     switch (environment) {
       case Environment.test:
         return 'https://www.barzzy.site/redis-test-http';

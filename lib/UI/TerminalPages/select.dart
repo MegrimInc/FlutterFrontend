@@ -181,7 +181,7 @@ class TerminalIdScreenState extends State<TerminalIdScreen> {
 
     try {
       final url = Uri.parse(
-          "${AppConfig.redisApiBaseUrl}/checkTerminals?merchantId=$merchantId");
+          "${AppConfig.redisHttpBaseUrl}/checkTerminals?merchantId=$merchantId");
 
           // final url = Uri.parse(
           // "${AppConfig.postgresApiBaseUrl}/ws/http/checkTerminals?merchantId=$merchantId");

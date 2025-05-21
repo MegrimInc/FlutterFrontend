@@ -341,7 +341,7 @@ Future<void> checkForMerchant(int merchantId) async {
     if (!_merchants.containsKey(merchantId)) {
       debugPrint("Merchant $merchantId not found locally. Fetching...");
 
-      final response = await http.get(Uri.parse("${AppConfig.postgresApiBaseUrl}/customer/$merchantId"));
+      final response = await http.get(Uri.parse("${AppConfig.postgresHttpBaseUrl}/customer/$merchantId"));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -367,7 +367,7 @@ Future<void> fetchCategoriesAndItems(int merchantId) async {
   }
 
   final response = await http.get(
-    Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/getInventoryByMerchant/$merchantId'),
+    Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/getInventoryByMerchant/$merchantId'),
   );
 
   if (response.statusCode == 200) {

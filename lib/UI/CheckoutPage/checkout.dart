@@ -181,7 +181,7 @@ class CheckoutPageState extends State<CheckoutPage>
       // Call your backend to create a SetupIntent and retrieve the client secret
       final response = await http.get(
         Uri.parse(
-            '${AppConfig.postgresApiBaseUrl}/customer/createSetupIntent/$customerId'),
+            '${AppConfig.postgresHttpBaseUrl}/customer/createSetupIntent/$customerId'),
       );
 
       if (response.statusCode == 200) {
@@ -237,7 +237,7 @@ class CheckoutPageState extends State<CheckoutPage>
     try {
       final response = await http.post(
         Uri.parse(
-            '${AppConfig.postgresApiBaseUrl}/customer/addPaymentIdToDatabase'),
+            '${AppConfig.postgresHttpBaseUrl}/customer/addPaymentIdToDatabase'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "customerId":

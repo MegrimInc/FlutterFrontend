@@ -95,7 +95,7 @@ Future<void> main() async {
   await loginCache.getSignedIn();
 
   // Make HTTP request and initialize your application logic
-  final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/login-customer');
+  final url = Uri.parse('${AppConfig.postgresHttpBaseUrl}/auth/login-customer');
   final initPW = await loginCache.getPW();
   final initEmail = await loginCache.getEmail();
 
@@ -172,7 +172,7 @@ Future<void> main() async {
 
 Future<void> fetchConfig() async {
   try {
-    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/config');
+    final url = Uri.parse('${AppConfig.postgresHttpBaseUrl}/config');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -192,7 +192,7 @@ Future<void> fetchConfig() async {
 Future<void> sendGetMerchants() async {
   try {
     final url =
-        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/seeAllMerchants');
+        Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/seeAllMerchants');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -241,7 +241,7 @@ Future<void> sendGetPoints() async {
     }
 
     final url = Uri.parse(
-        '${AppConfig.postgresApiBaseUrl}/customer/points/$customerId');
+        '${AppConfig.postgresHttpBaseUrl}/customer/points/$customerId');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -300,7 +300,7 @@ Future<void> getCardDetails() async {
 
   // Construct the URL to your backend endpoint – adjust the URL as necessary.
   final url = Uri.parse(
-      '${AppConfig.postgresApiBaseUrl}/customer/cardDetails/$customerId');
+      '${AppConfig.postgresHttpBaseUrl}/customer/cardDetails/$customerId');
 
   try {
     final response = await http.get(

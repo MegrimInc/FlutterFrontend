@@ -68,7 +68,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _fetchCustomerName(int customerId) async {
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/getNames/$customerId'),
+        Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/getNames/$customerId'),
       );
 
       if (response.statusCode == 200) {
@@ -91,7 +91,7 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       // Call your backend to create a SetupIntent and retrieve the client secret
       final response = await http.get(
-        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/createSetupIntent/$customerId'),
+        Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/createSetupIntent/$customerId'),
       );
 
       if (response.statusCode == 200) {
@@ -136,7 +136,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
     try {
       final response = await http.post(
-        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/addPaymentIdToDatabase'),
+        Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/addPaymentIdToDatabase'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "customerId": customerId, // customerId is the customer Id for your app
@@ -418,7 +418,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final response = await http.post(
-        Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/updateNames/$customerId'),
+        Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/updateNames/$customerId'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestBody),
       );
@@ -441,7 +441,7 @@ class _ProfilePageState extends State<ProfilePage> {
   // Function to delete customer account and log out
   Future<void> deleteAccount() async {
     final response = await http.post(
-      Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/delete-customer'),
+      Uri.parse('${AppConfig.postgresHttpBaseUrl}/auth/delete-customer'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'email': email, 'password': password}),
     );

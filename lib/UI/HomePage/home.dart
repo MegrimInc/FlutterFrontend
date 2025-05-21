@@ -82,7 +82,7 @@ class HomePageState extends State<HomePage> {
     try {
       final response = await http.get(
         Uri.parse(
-            '${AppConfig.postgresApiBaseUrl}/customer/checkPaymentMethod/$customerId'),
+            '${AppConfig.postgresHttpBaseUrl}/customer/checkPaymentMethod/$customerId'),
       );
 
       if (response.statusCode == 200) {

@@ -79,7 +79,7 @@ class _OrdersPageState extends State<Terminal> {
 
   Future<double> fetchTipAmount() async {
     String url =
-        "${AppConfig.postgresApiBaseUrl}/order/getTotalGratuity?terminal=${widget.terminal}&merchantId=${widget.merchantId}";
+        "${AppConfig.postgresHttpBaseUrl}/order/getTotalGratuity?terminal=${widget.terminal}&merchantId=${widget.merchantId}";
     try {
       final response = await http.get(
         Uri.parse(url),
@@ -917,7 +917,7 @@ class _OrdersPageState extends State<Terminal> {
                                   });
 
                                   String url =
-                                      "${AppConfig.postgresApiBaseUrl}/order/claim";
+                                      "${AppConfig.postgresHttpBaseUrl}/order/claim";
 
                                   try {
                                     final response = await http.post(

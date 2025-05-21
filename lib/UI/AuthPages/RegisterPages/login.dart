@@ -37,7 +37,7 @@ class _LoginPageState extends State<LoginPage> {
   void signCustomerIn() async {
     FocusScope.of(context).unfocus();
     final cacher = LoginCache();
-    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/login-customer');
+    final url = Uri.parse('${AppConfig.postgresHttpBaseUrl}/auth/login-customer');
     final requestBody = jsonEncode({
       'email': emailController.value.text.toLowerCase(),
       'password': passwordController.value.text

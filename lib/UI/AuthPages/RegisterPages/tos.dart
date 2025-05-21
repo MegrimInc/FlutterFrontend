@@ -25,7 +25,7 @@ class _RegisterPageState2 extends State<RegisterPage2> {
   }
 
   void acceptTOS() async {
-    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/accept-tos');
+    final url = Uri.parse('${AppConfig.postgresHttpBaseUrl}/auth/accept-tos');
     final loginCache8 = LoginCache();
     final tosEmail = await loginCache8.getEmail();
 

@@ -30,7 +30,7 @@ class Inventory extends ChangeNotifier {
     
     try {
     
-      final response = await http.get(Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/$merchantId'));
+      final response = await http.get(Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/$merchantId'));
       //debugPrint("Received response with status code: ${response.statusCode}");
 
       if (response.statusCode == 200) {
@@ -54,7 +54,7 @@ class Inventory extends ChangeNotifier {
 
 Future<void> fetchInventoryByMerchant(int merchantId) async {
   final response = await http.get(
-    Uri.parse('${AppConfig.postgresApiBaseUrl}/customer/getInventoryByMerchant/$merchantId'),
+    Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/getInventoryByMerchant/$merchantId'),
   );
 
   if (response.statusCode == 200) {

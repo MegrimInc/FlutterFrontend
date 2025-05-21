@@ -71,7 +71,7 @@ class RegisterPageState extends State<RegisterPage>
       lastName.value.text.length < 25 &&
       validCharacters.hasMatch(firstName.value.text + lastName.value.text)) {
 
-    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/register-customer');
+    final url = Uri.parse('${AppConfig.postgresHttpBaseUrl}/auth/register-customer');
     
     final requestBody = jsonEncode({
       'email': email.value.text.trim().toLowerCase(),

@@ -49,7 +49,7 @@ class _RegisterPageState11 extends State<RegisterPage11>
 
 
   void attemptVerification() async {
-    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/verify');
+    final url = Uri.parse('${AppConfig.postgresHttpBaseUrl}/auth/verify');
     final requestBody = jsonEncode({
       'email': await loginCache4.getEmail(),
       'verificationCode': verificationCode.value.text,

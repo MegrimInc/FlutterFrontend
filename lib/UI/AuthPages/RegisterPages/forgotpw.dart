@@ -40,7 +40,7 @@ Future<void> notifyServerEmailNeedsReset() async {
     isSubmitButtonEnabled = false; // Disable submit button during email submission
   });
 
-  final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/reset-password-validate-email');
+  final url = Uri.parse('${AppConfig.postgresHttpBaseUrl}/auth/reset-password-validate-email');
   final response = await http.post(
     url,
     headers: {'Content-Type': 'application/json'},
@@ -98,7 +98,7 @@ Future<void> notifyServerEmailNeedsReset() async {
       isSubmitButtonEnabled = false; // Disable submit button during verification
     });
 
-    final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/reset-password-validate-code');
+    final url = Uri.parse('${AppConfig.postgresHttpBaseUrl}/auth/reset-password-validate-code');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -174,7 +174,7 @@ Future<void> newPassword() async {
     return;
   }
 
-  final url = Uri.parse('${AppConfig.postgresApiBaseUrl}/auth/reset-password-final');
+  final url = Uri.parse('${AppConfig.postgresHttpBaseUrl}/auth/reset-password-final');
   final response = await http.post(
     url,
     headers: {'Content-Type': 'application/json'},
