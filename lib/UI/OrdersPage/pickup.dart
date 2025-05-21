@@ -84,86 +84,90 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
           },
         ),
       ),
-      body: Consumer<Websocket>(
-        builder: (context, websocket, child) {
-          if (!websocket.isConnected) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: Colors.white,
-              ),
-            );
-          }
-
-          if (websocket.isLoading) {
-            return const Center(
-              child: SpinKitThreeBounce(
-                color: Colors.white,
-                size: 30.0,
-              ),
-            );
-          }
-
-          final orders = websocket.getOrders();
-
-          return Consumer<LocalDatabase>(
-            builder: (context, localDatabase, child) {
-              return RefreshIndicator(
-                  onRefresh: () => _refreshOrders(context),
-                  color: Colors.black,
-                  child: orders.length > 1 // Check if there are multiple orders
-                      ? PageView.builder(
-                          controller: _pageController,
-                          scrollDirection: Axis.vertical,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: orders.length,
-                          onPageChanged: (index) {
-                            setState(() {
-                              currentPage = index;
-                            });
-                          },
-                          itemBuilder: (context, verticalIndex) {
-                            final merchantId = orders[verticalIndex];
-                            final order = localDatabase.getOrderForMerchant(merchantId);
-
-                            if (order == null) {
-                              return const Center(
-                                child: Text(
-                                  'No orders found',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 17,
-                                  ),
-                                ),
-                              );
-                            }
-
-                            return _buildOrderCard(order);
-                          },
-                        )
-                      : SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          child: SizedBox(
-                              height:
-                                  screenHeight, // Use the class variable here
-                              child: orders.isNotEmpty &&
-                                      localDatabase
-                                              .getOrderForMerchant(orders.first) !=
-                                          null
-                                  ? _buildOrderCard(localDatabase
-                                      .getOrderForMerchant(orders.first)!)
-                                  : const Center(
-                                      child: Text(
-                                        'No orders found.',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 17,
-                                        ),
+      body: Column(
+        children: [
+          Consumer<Websocket>(
+            builder: (context, websocket, child) {
+              if (!websocket.isConnected) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                  ),
+                );
+              }
+          
+              if (websocket.isLoading) {
+                return const Center(
+                  child: SpinKitThreeBounce(
+                    color: Colors.white,
+                    size: 30.0,
+                  ),
+                );
+              }
+          
+              final orders = websocket.getOrders();
+          
+              return Consumer<LocalDatabase>(
+                builder: (context, localDatabase, child) {
+                  return RefreshIndicator(
+                      onRefresh: () => _refreshOrders(context),
+                      color: Colors.black,
+                      child: orders.length > 1 // Check if there are multiple orders
+                          ? PageView.builder(
+                              controller: _pageController,
+                              scrollDirection: Axis.vertical,
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: orders.length,
+                              onPageChanged: (index) {
+                                setState(() {
+                                  currentPage = index;
+                                });
+                              },
+                              itemBuilder: (context, verticalIndex) {
+                                final merchantId = orders[verticalIndex];
+                                final order = localDatabase.getOrderForMerchant(merchantId);
+          
+                                if (order == null) {
+                                  return const Center(
+                                    child: Text(
+                                      'No orders found',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 17,
                                       ),
-                                    )),
-                        ));
+                                    ),
+                                  );
+                                }
+          
+                                return _buildOrderCard(order);
+                              },
+                            )
+                          : SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: SizedBox(
+                                  height:
+                                      screenHeight, // Use the class variable here
+                                  child: orders.isNotEmpty &&
+                                          localDatabase
+                                                  .getOrderForMerchant(orders.first) !=
+                                              null
+                                      ? _buildOrderCard(localDatabase
+                                          .getOrderForMerchant(orders.first)!)
+                                      : const Center(
+                                          child: Text(
+                                            'No orders found.',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 17,
+                                            ),
+                                          ),
+                                        )),
+                            ));
+                },
+              );
             },
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -239,7 +243,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
           ),
           const Spacer(flex: 1),
           _buildItemsGrid(order.items),
-          const Spacer(flex: 2),
+          const Spacer(flex: 3),
           _buildBottomButton(order),
           const Spacer(flex: 1),
         ],
@@ -656,7 +660,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
       },
       child: Container(
         height: 50,
-        width: 300,
+        width: 200,
         //padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
