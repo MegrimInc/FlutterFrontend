@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'package:barzzy/Backend/database.dart';
-import 'package:barzzy/Backend/websocket.dart';
-import 'package:barzzy/config.dart';
-import 'package:barzzy/main.dart';
+import 'package:megrim/Backend/database.dart';
+import 'package:megrim/Backend/websocket.dart';
+import 'package:megrim/config.dart';
+import 'package:megrim/main.dart';
 import 'package:flutter/material.dart';
-import 'package:barzzy/UI/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy/UI/AuthPages/components/toggle.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
+import 'package:megrim/UI/AuthPages/components/toggle.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;

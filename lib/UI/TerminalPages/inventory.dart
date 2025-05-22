@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:barzzy/DTO/merchant.dart';
-import 'package:barzzy/DTO/category.dart';
-import 'package:barzzy/DTO/item.dart';
-import 'package:barzzy/config.dart';
+import 'package:megrim/DTO/merchant.dart';
+import 'package:megrim/DTO/category.dart';
+import 'package:megrim/DTO/item.dart';
+import 'package:megrim/config.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 

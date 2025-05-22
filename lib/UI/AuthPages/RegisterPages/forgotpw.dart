@@ -1,8 +1,8 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:convert';
-import 'package:barzzy/UI/AuthPages/components/toggle.dart';
-import 'package:barzzy/config.dart';
+import 'package:megrim/UI/AuthPages/components/toggle.dart';
+import 'package:megrim/config.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 

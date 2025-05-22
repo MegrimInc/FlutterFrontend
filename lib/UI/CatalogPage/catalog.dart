@@ -1,11 +1,11 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:another_flushbar/flushbar.dart';
-import 'package:barzzy/Backend/database.dart';
-import 'package:barzzy/Backend/history.dart';
-import 'package:barzzy/DTO/item.dart';
-import 'package:barzzy/Backend/cart.dart';
-import 'package:barzzy/UI/CheckoutPage/checkout.dart';
+import 'package:megrim/Backend/database.dart';
+import 'package:megrim/Backend/history.dart';
+import 'package:megrim/DTO/item.dart';
+import 'package:megrim/Backend/cart.dart';
+import 'package:megrim/UI/CheckoutPage/checkout.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';

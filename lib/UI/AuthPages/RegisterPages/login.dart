@@ -2,14 +2,14 @@
 
 import 'dart:convert';
 
-import 'package:barzzy/UI/AuthPages/RegisterPages/forgotpw.dart';
-import 'package:barzzy/UI/AuthPages/RegisterPages/logincache.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/forgotpw.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 
-import 'package:barzzy/UI/AuthPages/components/mybutton.dart';
-import 'package:barzzy/UI/AuthPages/components/mytextfield.dart';
-import 'package:barzzy/UI/BottomBar/bottombar.dart';
-import 'package:barzzy/UI/TerminalPages/select.dart';
-import 'package:barzzy/config.dart';
+import 'package:megrim/UI/AuthPages/components/mybutton.dart';
+import 'package:megrim/UI/AuthPages/components/mytextfield.dart';
+import 'package:megrim/UI/BottomBar/bottombar.dart';
+import 'package:megrim/UI/TerminalPages/select.dart';
+import 'package:megrim/config.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';

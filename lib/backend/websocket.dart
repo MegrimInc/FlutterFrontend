@@ -1,11 +1,11 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'package:barzzy/UI/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy/DTO/customerorder.dart';
-import 'package:barzzy/Backend/database.dart';
-import 'package:barzzy/config.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
+import 'package:megrim/DTO/customerorder.dart';
+import 'package:megrim/Backend/database.dart';
+import 'package:megrim/config.dart';
 
-import 'package:barzzy/main.dart';
+import 'package:megrim/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';

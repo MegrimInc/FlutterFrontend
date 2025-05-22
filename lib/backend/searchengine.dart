@@ -1,4 +1,4 @@
-import 'package:barzzy/Backend/database.dart';
+import 'package:megrim/Backend/database.dart';
 
 
 class SearchService {

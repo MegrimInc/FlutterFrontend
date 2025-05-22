@@ -3,12 +3,12 @@
 import 'dart:async'; // Import the async package for Timer
 import 'dart:convert';
 import 'dart:io';
-import 'package:barzzy/UI/TerminalPages/inventory.dart';
-import 'package:barzzy/UI/TerminalPages/pos.dart';
-import 'package:barzzy/config.dart';
+import 'package:megrim/UI/TerminalPages/inventory.dart';
+import 'package:megrim/UI/TerminalPages/pos.dart';
+import 'package:megrim/config.dart';
 import 'package:http/http.dart' as http;
-import 'package:barzzy/DTO/terminalorder.dart';
-import 'package:barzzy/UI/TerminalPages/select.dart';
+import 'package:megrim/DTO/terminalorder.dart';
+import 'package:megrim/UI/TerminalPages/select.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';

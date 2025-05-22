@@ -1,5 +1,5 @@
 
-import 'package:barzzy/Backend/database.dart';
+import 'package:megrim/Backend/database.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'history.dart';

@@ -1,7 +1,7 @@
-import 'package:barzzy/UI/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy/UI/AuthPages/components/toggle.dart';
-import 'package:barzzy/UI/TerminalPages/terminal.dart';
-import 'package:barzzy/config.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
+import 'package:megrim/UI/AuthPages/components/toggle.dart';
+import 'package:megrim/UI/TerminalPages/terminal.dart';
+import 'package:megrim/config.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;

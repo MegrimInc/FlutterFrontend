@@ -1,7 +1,7 @@
-import 'package:barzzy/Backend/database.dart';
-import 'package:barzzy/Backend/cart.dart';
-import 'package:barzzy/UI/CatalogPage/catalog.dart';
-import 'package:barzzy/main.dart';
+import 'package:megrim/Backend/database.dart';
+import 'package:megrim/Backend/cart.dart';
+import 'package:megrim/UI/CatalogPage/catalog.dart';
+import 'package:megrim/main.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';

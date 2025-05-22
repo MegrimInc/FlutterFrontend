@@ -3,21 +3,21 @@
 import 'dart:convert';
 import 'dart:ui';
 import 'package:animated_flip_counter/animated_flip_counter.dart';
-import 'package:barzzy/UI/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy/UI/AuthPages/components/toggle.dart';
-import 'package:barzzy/Backend/database.dart';
-import 'package:barzzy/Backend/websocket.dart';
-import 'package:barzzy/config.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
+import 'package:megrim/UI/AuthPages/components/toggle.dart';
+import 'package:megrim/Backend/database.dart';
+import 'package:megrim/Backend/websocket.dart';
+import 'package:megrim/config.dart';
 import 'package:http/http.dart' as http;
-import 'package:barzzy/main.dart';
+import 'package:megrim/main.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:barzzy/DTO/item.dart';
-import 'package:barzzy/Backend/cart.dart';
+import 'package:megrim/DTO/item.dart';
+import 'package:megrim/Backend/cart.dart';
 import 'package:shimmer/shimmer.dart';
 
 class CheckoutPage extends StatefulWidget {

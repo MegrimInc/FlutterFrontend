@@ -1,9 +1,9 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:convert';
-import 'package:barzzy/UI/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy/UI/BottomBar/bottombar.dart';
-import 'package:barzzy/config.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
+import 'package:megrim/UI/BottomBar/bottombar.dart';
+import 'package:megrim/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 

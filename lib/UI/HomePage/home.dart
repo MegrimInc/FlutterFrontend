@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import 'package:barzzy/UI/AuthPages/RegisterPages/logincache.dart';
-import 'package:barzzy/Backend/database.dart';
-import 'package:barzzy/Backend/cart.dart';
-import 'package:barzzy/Backend/websocket.dart';
-import 'package:barzzy/UI/SearchPage/searchpage.dart';
-import 'package:barzzy/config.dart';
-import 'package:barzzy/main.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
+import 'package:megrim/Backend/database.dart';
+import 'package:megrim/Backend/cart.dart';
+import 'package:megrim/Backend/websocket.dart';
+import 'package:megrim/UI/SearchPage/searchpage.dart';
+import 'package:megrim/config.dart';
+import 'package:megrim/main.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,9 +14,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/heroicons_solid.dart';
 import 'package:provider/provider.dart';
-import 'package:barzzy/Backend/history.dart';
-import 'package:barzzy/Backend/recommended.dart';
-import 'package:barzzy/UI/CatalogPage/catalog.dart';
+import 'package:megrim/Backend/history.dart';
+import 'package:megrim/Backend/recommended.dart';
+import 'package:megrim/UI/CatalogPage/catalog.dart';
 import 'package:http/http.dart' as http;
 
 class HomePage extends StatefulWidget {

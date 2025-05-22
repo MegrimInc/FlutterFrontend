@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:barzzy/Backend/database.dart';
-import 'package:barzzy/main.dart';
+import 'package:megrim/Backend/database.dart';
+import 'package:megrim/main.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -25,18 +25,18 @@ class AppConfig {
   static String get postgresHttpBaseUrl {
     switch (environment) {
       case Environment.test:
-        return 'https://www.barzzy.site/postgres-test-http';
+        return 'https://www.megrim.com/postgres-test-http';
       case Environment.live:
-        return 'https://www.barzzy.site/postgres-live-http';
+        return 'https://www.megrim.com/postgres-live-http';
     }
   }
 
   static String get postgresWsBaseUrl {
     switch (environment) {
       case Environment.test:
-        return 'wss://www.barzzy.site/postgres-test-ws';
+        return 'wss://www.megrim.com/postgres-test-ws';
       case Environment.live:
-        return 'wss://www.barzzy.site/postgres-live-ws';
+        return 'wss://www.megrim.com/postgres-live-ws';
     }
   }
 
@@ -44,18 +44,18 @@ class AppConfig {
   static String get redisHttpBaseUrl {
     switch (environment) {
       case Environment.test:
-        return 'https://www.barzzy.site/redis-test-http';
+        return 'https://www.megrim.com/redis-test-http';
       case Environment.live:
-        return 'https://www.barzzy.site/redis-live-http';
+        return 'https://www.megrim.com/redis-live-http';
     }
   }
 
   static String get redisWsBaseUrl {
     switch (environment) {
       case Environment.test:
-        return 'wss://www.barzzy.site/redis-test-ws';
+        return 'wss://www.megrim.com/redis-test-ws';
       case Environment.live:
-        return 'wss://www.barzzy.site/redis-live-ws';
+        return 'wss://www.megrim.com/redis-live-ws';
     }
   }
 

@@ -1,8 +1,8 @@
 
 
 
-import 'package:barzzy/Backend/database.dart';
-import 'package:barzzy/Backend/recommended.dart';
+import 'package:megrim/Backend/database.dart';
+import 'package:megrim/Backend/recommended.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';

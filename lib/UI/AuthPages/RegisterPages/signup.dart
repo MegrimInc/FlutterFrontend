@@ -1,16 +1,16 @@
 // ignore_for_file: use_build_context_synchronously, unused_element
 
 import 'dart:convert';
-import 'package:barzzy/UI/AuthPages/RegisterPages/tos.dart';
-import 'package:barzzy/UI/AuthPages/RegisterPages/verification.dart';
-import 'package:barzzy/UI/HomePage/home.dart';
-import 'package:barzzy/config.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/tos.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/verification.dart';
+import 'package:megrim/UI/HomePage/home.dart';
+import 'package:megrim/config.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:barzzy/UI/AuthPages/RegisterPages/logincache.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 
-import 'package:barzzy/UI/AuthPages/components/mybutton.dart';
-import 'package:barzzy/UI/AuthPages/components/mytextfield.dart';
+import 'package:megrim/UI/AuthPages/components/mybutton.dart';
+import 'package:megrim/UI/AuthPages/components/mytextfield.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 

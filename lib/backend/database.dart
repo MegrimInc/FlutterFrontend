@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:barzzy/DTO/category.dart';
-import 'package:barzzy/DTO/config.dart';
-import 'package:barzzy/DTO/customer.dart';
-import 'package:barzzy/DTO/customerorder.dart';
-import 'package:barzzy/DTO/item.dart';
-import 'package:barzzy/DTO/point.dart';
-import 'package:barzzy/config.dart';
+import 'package:megrim/DTO/category.dart';
+import 'package:megrim/DTO/config.dart';
+import 'package:megrim/DTO/customer.dart';
+import 'package:megrim/DTO/customerorder.dart';
+import 'package:megrim/DTO/item.dart';
+import 'package:megrim/DTO/point.dart';
+import 'package:megrim/config.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:ntp/ntp.dart';

@@ -1,5 +1,5 @@
-import 'package:barzzy/UI/AuthPages/RegisterPages/login.dart';
-import 'package:barzzy/UI/AuthPages/RegisterPages/signup.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/login.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/signup.dart';
 import 'package:flutter/material.dart';
 
 

@@ -1,9 +1,9 @@
-import 'package:barzzy/Backend/searchengine.dart';
-import 'package:barzzy/Backend/cart.dart';
-import 'package:barzzy/UI/SearchPage/searchbar.dart';
+import 'package:megrim/Backend/searchengine.dart';
+import 'package:megrim/Backend/cart.dart';
+import 'package:megrim/UI/SearchPage/searchbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:barzzy/UI/CatalogPage/catalog.dart';
+import 'package:megrim/UI/CatalogPage/catalog.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SearchPage extends StatefulWidget {

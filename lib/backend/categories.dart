@@ -1,9 +1,9 @@
 // import 'dart:convert';
 
-// import 'package:barzzy/DTO/merchant.dart';
-// import 'package:barzzy/DTO/item.dart';
-// import 'package:barzzy/Backend/database.dart';
-// import 'package:barzzy/config.dart';
+// import 'package:megrim/DTO/merchant.dart';
+// import 'package:megrim/DTO/item.dart';
+// import 'package:megrim/Backend/database.dart';
+// import 'package:megrim/config.dart';
 // import 'package:cached_network_image/cached_network_image.dart';
 // import 'package:flutter/material.dart';
 // import 'package:http/http.dart' as http;

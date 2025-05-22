@@ -1,8 +1,8 @@
-import 'package:barzzy/UI/BottomBar/scanner.dart';
-import 'package:barzzy/UI/HomePage/home.dart';
-import 'package:barzzy/UI/OrdersPage/pickup.dart';
-import 'package:barzzy/UI/ProfilePage/profile.dart';
-import 'package:barzzy/UI/BankPage/bank.dart';
+import 'package:megrim/UI/BottomBar/scanner.dart';
+import 'package:megrim/UI/HomePage/home.dart';
+import 'package:megrim/UI/OrdersPage/pickup.dart';
+import 'package:megrim/UI/ProfilePage/profile.dart';
+import 'package:megrim/UI/BankPage/bank.dart';
 import 'package:flutter/material.dart';
 
 class AuthPage extends StatefulWidget {

@@ -1,7 +1,7 @@
-import 'package:barzzy/Backend/database.dart';
-import 'package:barzzy/Backend/cart.dart';
-import 'package:barzzy/Backend/websocket.dart';
-import 'package:barzzy/DTO/customerorder.dart';
+import 'package:megrim/Backend/database.dart';
+import 'package:megrim/Backend/cart.dart';
+import 'package:megrim/Backend/websocket.dart';
+import 'package:megrim/DTO/customerorder.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -84,90 +84,86 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
           },
         ),
       ),
-      body: Column(
-        children: [
-          Consumer<Websocket>(
-            builder: (context, websocket, child) {
-              if (!websocket.isConnected) {
-                return const Center(
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                  ),
-                );
-              }
-          
-              if (websocket.isLoading) {
-                return const Center(
-                  child: SpinKitThreeBounce(
-                    color: Colors.white,
-                    size: 30.0,
-                  ),
-                );
-              }
-          
-              final orders = websocket.getOrders();
-          
-              return Consumer<LocalDatabase>(
-                builder: (context, localDatabase, child) {
-                  return RefreshIndicator(
-                      onRefresh: () => _refreshOrders(context),
-                      color: Colors.black,
-                      child: orders.length > 1 // Check if there are multiple orders
-                          ? PageView.builder(
-                              controller: _pageController,
-                              scrollDirection: Axis.vertical,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              itemCount: orders.length,
-                              onPageChanged: (index) {
-                                setState(() {
-                                  currentPage = index;
-                                });
-                              },
-                              itemBuilder: (context, verticalIndex) {
-                                final merchantId = orders[verticalIndex];
-                                final order = localDatabase.getOrderForMerchant(merchantId);
-          
-                                if (order == null) {
-                                  return const Center(
-                                    child: Text(
-                                      'No orders found',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 17,
+      body: Consumer<Websocket>(
+        builder: (context, websocket, child) {
+          if (!websocket.isConnected) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+              ),
+            );
+          }
+
+          if (websocket.isLoading) {
+            return const Center(
+              child: SpinKitThreeBounce(
+                color: Colors.white,
+                size: 30.0,
+              ),
+            );
+          }
+
+          final orders = websocket.getOrders();
+
+          return Consumer<LocalDatabase>(
+            builder: (context, localDatabase, child) {
+              return RefreshIndicator(
+                  onRefresh: () => _refreshOrders(context),
+                  color: Colors.black,
+                  child: orders.length > 1 // Check if there are multiple orders
+                      ? PageView.builder(
+                          controller: _pageController,
+                          scrollDirection: Axis.vertical,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: orders.length,
+                          onPageChanged: (index) {
+                            setState(() {
+                              currentPage = index;
+                            });
+                          },
+                          itemBuilder: (context, verticalIndex) {
+                            final merchantId = orders[verticalIndex];
+                            final order = localDatabase.getOrderForMerchant(merchantId);
+
+                            if (order == null) {
+                              return const Center(
+                                child: Text(
+                                  'No orders found',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                  ),
+                                ),
+                              );
+                            }
+
+                            return _buildOrderCard(order);
+                          },
+                        )
+                      : SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: SizedBox(
+                              height:
+                                  screenHeight, // Use the class variable here
+                              child: orders.isNotEmpty &&
+                                      localDatabase
+                                              .getOrderForMerchant(orders.first) !=
+                                          null
+                                  ? _buildOrderCard(localDatabase
+                                      .getOrderForMerchant(orders.first)!)
+                                  : const Center(
+                                      child: Text(
+                                        'No orders found.',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 17,
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                }
-          
-                                return _buildOrderCard(order);
-                              },
-                            )
-                          : SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: SizedBox(
-                                  height:
-                                      screenHeight, // Use the class variable here
-                                  child: orders.isNotEmpty &&
-                                          localDatabase
-                                                  .getOrderForMerchant(orders.first) !=
-                                              null
-                                      ? _buildOrderCard(localDatabase
-                                          .getOrderForMerchant(orders.first)!)
-                                      : const Center(
-                                          child: Text(
-                                            'No orders found.',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 17,
-                                            ),
-                                          ),
-                                        )),
-                            ));
-                },
-              );
+                                    )),
+                        ));
             },
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -243,7 +239,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
           ),
           const Spacer(flex: 1),
           _buildItemsGrid(order.items),
-          const Spacer(flex: 3),
+          const Spacer(flex: 2),
           _buildBottomButton(order),
           const Spacer(flex: 1),
         ],

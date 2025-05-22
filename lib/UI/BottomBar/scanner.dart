@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io'; // For platform checks
-import 'package:barzzy/Backend/database.dart';
-import 'package:barzzy/DTO/merchant.dart';
-import 'package:barzzy/DTO/customerorder.dart';
+import 'package:megrim/Backend/database.dart';
+import 'package:megrim/DTO/merchant.dart';
+import 'package:megrim/DTO/customerorder.dart';
 
-import 'package:barzzy/Backend/cart.dart';
+import 'package:megrim/Backend/cart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';

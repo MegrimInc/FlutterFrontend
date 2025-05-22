@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:barzzy/DTO/customerorder.dart';
-import 'package:barzzy/Backend/database.dart';
+import 'package:megrim/DTO/customerorder.dart';
+import 'package:megrim/Backend/database.dart';
 import 'package:flutter/material.dart';
 
 class Cart extends ChangeNotifier {

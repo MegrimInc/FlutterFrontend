@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:barzzy/UI/TerminalPages/inventory.dart';
+import 'package:megrim/UI/TerminalPages/inventory.dart';
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
