@@ -85,7 +85,7 @@ class CatalogpageState extends State<CatalogPage>
     debugPrint(
         'LocalDatabase instance in Catalogpage: ${LocalDatabase().hashCode}');
     if (currentMerchant != null) {
-      appBarTitle = (currentMerchant!.nickname ?? 'Catalog Page').replaceAll(' ', '');
+     appBarTitle = '@${(currentMerchant!.nickname ?? 'Catalog Page').replaceAll(' ', '')}';
     }
 
     await Provider.of<LocalDatabase>(context, listen: false)

@@ -153,7 +153,7 @@ class CheckoutPageState extends State<CheckoutPage>
       }).toList();
     }).toList();
 
-    // Calculate the total regular price for all items paid with money
+    final password = await loginCache.getPW();
 
     // Prepare the order object to send
     final order = {
@@ -162,6 +162,7 @@ class CheckoutPageState extends State<CheckoutPage>
       "customerId": customerId,
       "items": itemOrders,
       "isDiscount": cart.isDiscount,
+      "password": password,
       if (widget.terminal != null) "terminal": widget.terminal,
     };
 
@@ -186,7 +187,7 @@ class CheckoutPageState extends State<CheckoutPage>
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-         debugPrint('Full response data: $responseData'); 
+        debugPrint('Full response data: $responseData');
         final setupIntentClientSecret = responseData["setupIntentClientSecret"];
         final stripeId = responseData["customerId"];
         final setupIntentId = setupIntentClientSecret.split('_secret_')[0];
@@ -208,8 +209,7 @@ class CheckoutPageState extends State<CheckoutPage>
 
         localDatabase.updatePaymentStatus(PaymentStatus.loading);
         await Stripe.instance.presentPaymentSheet();
-        await _savePaymentMethodToDatabase(
-            customerId, stripeId, setupIntentId);
+        await _savePaymentMethodToDatabase(customerId, stripeId, setupIntentId);
         localDatabase.updatePaymentStatus(PaymentStatus.present);
       } else {
         if (localDatabase.customer != null) {
@@ -611,7 +611,7 @@ class CheckoutPageState extends State<CheckoutPage>
             fontSize: 18,
           ),
         )),
-       const Spacer(flex: 1),
+        const Spacer(flex: 1),
         Center(
           child: Text(
             totalText,

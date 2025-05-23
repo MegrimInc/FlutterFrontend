@@ -75,8 +75,8 @@ class RegisterPageState extends State<RegisterPage>
     
     final requestBody = jsonEncode({
       'email': email.value.text.trim().toLowerCase(),
-      'firstName': firstName.value.text.trim(),
-      'lastName': lastName.value.text.trim(),
+      'firstName': firstName.value.text.trim().toLowerCase(),
+      'lastName': lastName.value.text.trim().toLowerCase(),
       'password': password.value.text,
     });
 

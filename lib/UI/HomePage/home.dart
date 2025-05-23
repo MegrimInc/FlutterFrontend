@@ -272,7 +272,7 @@ class HomePageState extends State<HomePage> {
                                             ),
                                           ),
                                           const SizedBox(height: 2),
-                                          Text(merchant?.nickname ?? 'No Tag',
+                                          Text("@${merchant?.nickname ?? 'No Tag'}",
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 12,
