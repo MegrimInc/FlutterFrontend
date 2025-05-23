@@ -24,7 +24,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
   bool isNewPasswordEnabled = false;
   bool isSubmitEmailDisabled = false;
   bool isVerificationSuccess = false;
-  bool isSubmitButtonEnabled = true;  // Manage submit button state
+  bool isSubmitButtonEnabled = true; // Manage submit button state
 
   @override
   void initState() {
@@ -35,70 +35,72 @@ class _ForgotPasswordState extends State<ForgotPassword> {
     });
   }
 
-Future<void> notifyServerEmailNeedsReset() async {
-  setState(() {
-    isSubmitButtonEnabled = false; // Disable submit button during email submission
-  });
-
-  final url = Uri.parse('${AppConfig.postgresHttpBaseUrl}/auth/reset-password-validate-email');
-  final response = await http.post(
-    url,
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      'action': 'checkEmail',
-      'email': emailController.text.trim()
-    }),
-  );
-
-  if (response.statusCode == 200) {
+  Future<void> notifyServerEmailNeedsReset() async {
     setState(() {
-      isVerificationCodeEnabled = true;
-      isSubmitEmailDisabled = true; // Disable email field
-      isSubmitButtonEnabled = true; // Re-enable submit button for the next step
+      isSubmitButtonEnabled =
+          false; // Disable submit button during email submission
     });
 
-    // Show success SnackBar
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        backgroundColor: Colors.white,
-        behavior: SnackBarBehavior.floating,
-        content: Center(
-          child: Text(
-            'Verification code sent to your email. Check your Spam/Junk folder.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 14,
+    final url = Uri.parse(
+        '${AppConfig.postgresHttpBaseUrl}/auth/reset-password-validate-email');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(
+          {'action': 'checkEmail', 'email': emailController.text.trim()}),
+    );
+
+    if (response.statusCode == 200) {
+      setState(() {
+        isVerificationCodeEnabled = true;
+        isSubmitEmailDisabled = true; // Disable email field
+        isSubmitButtonEnabled =
+            true; // Re-enable submit button for the next step
+      });
+
+      // Show success SnackBar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.white,
+          behavior: SnackBarBehavior.floating,
+          content: Center(
+            child: Text(
+              'Verification code sent to your email. Check your Spam/Junk folder.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 14,
+              ),
             ),
           ),
+          duration: Duration(seconds: 3),
         ),
-        duration: Duration(seconds: 3),
-      ),
-    );
-  } else {
-    setState(() {
-      isSubmitButtonEnabled = true; // Re-enable submit button on failure
-    });
+      );
+    } else {
+      setState(() {
+        isSubmitButtonEnabled = true; // Re-enable submit button on failure
+      });
 
-    // Show alert dialog with error message from the response body
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(response.body), // Show the error message from the response body
-      ),
-    );
+      // Show alert dialog with error message from the response body
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Text(
+              response.body), // Show the error message from the response body
+        ),
+      );
+    }
   }
-}
-
-
 
   Future<void> checkVerificationCode() async {
     setState(() {
-      isSubmitButtonEnabled = false; // Disable submit button during verification
+      isSubmitButtonEnabled =
+          false; // Disable submit button during verification
     });
 
-    final url = Uri.parse('${AppConfig.postgresHttpBaseUrl}/auth/reset-password-validate-code');
+    final url = Uri.parse(
+        '${AppConfig.postgresHttpBaseUrl}/auth/reset-password-validate-code');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -112,7 +114,8 @@ Future<void> notifyServerEmailNeedsReset() async {
     if (response.statusCode == 200) {
       setState(() {
         isVerificationSuccess = true;
-        isVerificationCodeEnabled = false; // Grey out the verification code field
+        isVerificationCodeEnabled =
+            false; // Grey out the verification code field
         isNewPasswordEnabled = true; // Enable password fields
         isSubmitButtonEnabled = true; // Re-enable submit button
       });
@@ -128,7 +131,8 @@ Future<void> notifyServerEmailNeedsReset() async {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Invalid Code'),
-          content: Text('Error: ${response.body}'), // Display response body in the dialog
+          content: Text(
+              'Error: ${response.body}'), // Display response body in the dialog
           actions: [
             TextButton(
               onPressed: () {
@@ -141,7 +145,6 @@ Future<void> notifyServerEmailNeedsReset() async {
       );
     }
   }
-
 
   // Validate password and confirm password
   bool checkValidInput() {
@@ -168,51 +171,61 @@ Future<void> notifyServerEmailNeedsReset() async {
   }
 
 // Submit new password
-Future<void> newPassword() async {
-  // Check if input is valid before proceeding
-  if (!checkValidInput()) {
-    return;
+  Future<void> newPassword() async {
+    // Check if input is valid before proceeding
+    if (!checkValidInput()) {
+      return;
+    }
+
+    final url =
+        Uri.parse('${AppConfig.postgresHttpBaseUrl}/auth/reset-password-final');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'action': 'resetPW',
+        'email': emailController.text.trim(),
+        'code': verificationCodeController.text.trim(),
+        'password': newPasswordController.text.trim(),
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      // If the response is successful, navigate to the LoginPage
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                const LoginOrRegisterPage()), // Navigate to LoginPage
+        (Route<dynamic> route) => false,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Successfully reset password',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: Colors.green,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      // If the response is unsuccessful, show the error message in an AlertDialog
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Text(
+              response.body), // Show the error message from the response body
+        ),
+      );
+    }
   }
-
-  final url = Uri.parse('${AppConfig.postgresHttpBaseUrl}/auth/reset-password-final');
-  final response = await http.post(
-    url,
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      'action': 'resetPW',
-      'email': emailController.text.trim(),
-      'code': verificationCodeController.text.trim(),
-      'password': newPasswordController.text.trim(),
-    }),
-  );
-
-  if (response.statusCode == 200) {
-    // If the response is successful, navigate to the LoginPage
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()), // Navigate to LoginPage
-      (Route<dynamic> route) => false,
-    );
-
-    // Show success SnackBar
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Successfully reset password'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  } else {
-    // If the response is unsuccessful, show the error message in an AlertDialog
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(response.body), // Show the error message from the response body
-      ),
-    );
-  }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -220,20 +233,19 @@ Future<void> newPassword() async {
       backgroundColor: Colors.black,
       appBar: AppBar(
         title: const Text('Forgot Password',
-        style: TextStyle(
-        color: Colors.white
-
-        )
-        ),
+            style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.black,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back,
-          color: Colors.white,
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Colors.white,
           ),
           onPressed: () {
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()), // Your LoginPage
+              MaterialPageRoute(
+                  builder: (context) =>
+                      const LoginOrRegisterPage()), // Your LoginPage
               (Route<dynamic> route) => false,
             );
           },
@@ -244,51 +256,50 @@ Future<void> newPassword() async {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-           const SizedBox(height: 50),
+            const SizedBox(height: 50),
             TextField(
-  controller: emailController,
-  focusNode: emailFocusNode, 
-  cursorColor: Colors.white, // Change cursor color
-  style: const TextStyle(
-    color: Colors.white, // Change text color
-    fontSize: 14, // Adjust text size if needed
-  ), 
-  enabled: !isSubmitEmailDisabled,
-  decoration: const InputDecoration(
-    labelText: 'Email',
-    labelStyle: TextStyle(
-      color: Colors.grey, // Default label color
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Colors.white, width: 2.0),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Colors.grey, width: 1.0),
-    ),
-    border: OutlineInputBorder(),
-  ),
-),
+              controller: emailController,
+              focusNode: emailFocusNode,
+              cursorColor: Colors.white, // Change cursor color
+              style: const TextStyle(
+                color: Colors.white, // Change text color
+                fontSize: 14, // Adjust text size if needed
+              ),
+              enabled: !isSubmitEmailDisabled,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                labelStyle: TextStyle(
+                  color: Colors.grey, // Default label color
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white, width: 2.0),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                ),
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 10),
             TextField(
               controller: verificationCodeController,
               cursorColor: Colors.white, // Change cursor color
-  style: const TextStyle(
-    color: Colors.white, // Change text color
-    fontSize: 14, // Adjust text size if needed
-  ),
-              decoration: const InputDecoration(labelText: 'Verification Code',
-              
-              
-              labelStyle: TextStyle(
-      color: Colors.grey, // Default label color
-    ),
-              focusedBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Colors.white, width: 2.0),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Colors.grey, width: 1.0),
-    ),
-    border: OutlineInputBorder(),
+              style: const TextStyle(
+                color: Colors.white, // Change text color
+                fontSize: 14, // Adjust text size if needed
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Verification Code',
+                labelStyle: TextStyle(
+                  color: Colors.grey, // Default label color
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white, width: 2.0),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                ),
+                border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.number, // Numeric input only
               enabled: isVerificationCodeEnabled,
@@ -297,21 +308,22 @@ Future<void> newPassword() async {
             TextField(
               controller: newPasswordController,
               cursorColor: Colors.white, // Change cursor color
-  style: const TextStyle(
-    color: Colors.white, // Change text color
-    fontSize: 14, // Adjust text size if needed
-  ), 
-              decoration: const InputDecoration(labelText: 'New Password',
-              labelStyle: TextStyle(
-      color: Colors.grey, // Default label color
-    ),
-              focusedBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Colors.white, width: 2.0),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Colors.grey, width: 1.0),
-    ),
-    border: OutlineInputBorder(),
+              style: const TextStyle(
+                color: Colors.white, // Change text color
+                fontSize: 14, // Adjust text size if needed
+              ),
+              decoration: const InputDecoration(
+                labelText: 'New Password',
+                labelStyle: TextStyle(
+                  color: Colors.grey, // Default label color
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white, width: 2.0),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                ),
+                border: OutlineInputBorder(),
               ),
               obscureText: true,
               enabled: isNewPasswordEnabled,
@@ -320,21 +332,22 @@ Future<void> newPassword() async {
             TextField(
               controller: confirmPasswordController,
               cursorColor: Colors.white, // Change cursor color
-  style: const TextStyle(
-    color: Colors.white, // Change text color
-    fontSize: 14, // Adjust text size if needed
-  ), 
-              decoration: const InputDecoration(labelText: 'New Password Again',
-              labelStyle: TextStyle(
-      color: Colors.grey, // Default label color
-    ),
-              focusedBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Colors.white, width: 2.0),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Colors.grey, width: 1.0),
-    ),
-    border: OutlineInputBorder(),
+              style: const TextStyle(
+                color: Colors.white, // Change text color
+                fontSize: 14, // Adjust text size if needed
+              ),
+              decoration: const InputDecoration(
+                labelText: 'New Password Again',
+                labelStyle: TextStyle(
+                  color: Colors.grey, // Default label color
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white, width: 2.0),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                ),
+                border: OutlineInputBorder(),
               ),
               obscureText: true,
               enabled: isNewPasswordEnabled,
@@ -342,33 +355,33 @@ Future<void> newPassword() async {
             const SizedBox(height: 20),
             Center(
               child: ElevatedButton(
-                onPressed: isSubmitButtonEnabled ? () async {
-                  if (!isSubmitEmailDisabled) {
-                    await notifyServerEmailNeedsReset();
-                  } else if (!isNewPasswordEnabled) {
-                    // showDialog(
-                    //   context: context,
-                    //   builder: (context) => const AlertDialog(
-                    //     title: Text('Verifying code...'),
-                    //   ),
-                    // );
-                    await checkVerificationCode();
-                  } else {
-                    if (checkValidInput()) {
-                      // showDialog(
-                      //   context: context,
-                      //   builder: (context) => const AlertDialog(
-                      //     title: Text('Changing Password...'),
-                      //   ),
-                      // );
-                      await newPassword();
-                    }
-                  }
-                } : null, // Disable button if not enabled
-                child: const Text('Submit', 
-                style: TextStyle(
-                  color: Colors.black
-                  )),
+                onPressed: isSubmitButtonEnabled
+                    ? () async {
+                        if (!isSubmitEmailDisabled) {
+                          await notifyServerEmailNeedsReset();
+                        } else if (!isNewPasswordEnabled) {
+                          // showDialog(
+                          //   context: context,
+                          //   builder: (context) => const AlertDialog(
+                          //     title: Text('Verifying code...'),
+                          //   ),
+                          // );
+                          await checkVerificationCode();
+                        } else {
+                          if (checkValidInput()) {
+                            // showDialog(
+                            //   context: context,
+                            //   builder: (context) => const AlertDialog(
+                            //     title: Text('Changing Password...'),
+                            //   ),
+                            // );
+                            await newPassword();
+                          }
+                        }
+                      }
+                    : null, // Disable button if not enabled
+                child:
+                    const Text('Submit', style: TextStyle(color: Colors.black)),
               ),
             ),
           ],

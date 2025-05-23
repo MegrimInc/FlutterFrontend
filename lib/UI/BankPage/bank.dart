@@ -7,7 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-
 class BankPage extends StatefulWidget {
   const BankPage({super.key});
 
@@ -27,6 +26,7 @@ class _BankPageState extends State<BankPage> {
     _focusNode.addListener(() {
       setState(() {}); // Triggers rebuild on focus change
     });
+    _refreshData();
   }
 
   Future<void> _refreshData() async {
@@ -43,10 +43,12 @@ class _BankPageState extends State<BankPage> {
     final totalPoints = localDatabase
         .getSearchableMerchantInfo()
         .keys
-        .map((merchantId) => localDatabase.getPointsForMerchant(merchantId)?.points ?? 0)
+        .map((merchantId) =>
+            localDatabase.getPointsForMerchant(merchantId)?.points ?? 0)
         .fold(0, (sum, points) => sum + points);
 
-    final filteredMerchants = localDatabase.getSearchableMerchantInfo().entries.where(
+    final filteredMerchants =
+        localDatabase.getSearchableMerchantInfo().entries.where(
       (entry) {
         final name = entry.value['name'] ?? '';
         return name.toLowerCase().contains(_searchText.toLowerCase());
@@ -122,10 +124,13 @@ class _BankPageState extends State<BankPage> {
                     final merchantId = filteredMerchants[index].key;
                     final merchantName =
                         filteredMerchants[index].value['name'] ?? 'Unknown';
-                    final points =
-                        localDatabase.getPointsForMerchant(merchantId)?.points ?? 0;
-                    final tagImage = LocalDatabase.getMerchantById(merchantId)?.storeImg ??
-                        'https://www.barzzy.site/images/default.png';
+                    final points = localDatabase
+                            .getPointsForMerchant(merchantId)
+                            ?.points ??
+                        0;
+                    final tagImage =
+                        LocalDatabase.getMerchantById(merchantId)?.storeImg ??
+                            'https://www.barzzy.site/images/default.png';
 
                     return GestureDetector(
                       onTap: () {
@@ -145,8 +150,7 @@ class _BankPageState extends State<BankPage> {
                         leading: CircleAvatar(
                           radius: 30,
                           backgroundColor: Colors.transparent,
-                          backgroundImage:
-                              CachedNetworkImageProvider(tagImage),
+                          backgroundImage: CachedNetworkImageProvider(tagImage),
                         ),
                         title: Text(
                           '$merchantName - $points pts',
@@ -165,42 +169,43 @@ class _BankPageState extends State<BankPage> {
     );
   }
 
- Widget _buildSearchBar() {
-  return Container(
-    height: 50,
-    decoration: BoxDecoration(
-      color: Colors.grey[900],
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: TextField(
-      controller: _searchController,
-      focusNode: _focusNode,
-      style: const TextStyle(color: Colors.white),
-      cursorColor: Colors.white,
-      textAlignVertical: TextAlignVertical.center, // Ensure vertical centering
-      decoration: InputDecoration(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-        border: InputBorder.none,
-        hintText: 'Search... ',
-        hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.clear, color: Colors.white),
-          onPressed: () {
-            setState(() {
-              _searchController.clear();
-              _searchText = '';
-            });
-          },
-        ),
+  Widget _buildSearchBar() {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(10),
       ),
-      onChanged: (text) {
-        setState(() {
-          _searchText = text;
-        });
-      },
-    ),
-  );
-}
+      child: TextField(
+        controller: _searchController,
+        focusNode: _focusNode,
+        style: const TextStyle(color: Colors.white),
+        cursorColor: Colors.white,
+        textAlignVertical:
+            TextAlignVertical.center, // Ensure vertical centering
+        decoration: InputDecoration(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+          border: InputBorder.none,
+          hintText: 'Search... ',
+          hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.clear, color: Colors.white),
+            onPressed: () {
+              setState(() {
+                _searchController.clear();
+                _searchText = '';
+              });
+            },
+          ),
+        ),
+        onChanged: (text) {
+          setState(() {
+            _searchText = text;
+          });
+        },
+      ),
+    );
+  }
 
   @override
   void dispose() {

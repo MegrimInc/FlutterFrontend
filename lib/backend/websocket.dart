@@ -235,12 +235,9 @@ class Websocket extends ChangeNotifier {
       setLoading(false);
 
        try {
-      // Check if the status in the data is "delivered" or "canceled"
-      if (data['status'] == 'unready') {
-        debugPrint('Status is unready. Triggering sendGetPoints');
         await sendGetPoints();
         debugPrint('sendGetPoints triggered successfully.');
-      }
+        
     } catch (e) {
       debugPrint('Error while handling update response: $e');
     }

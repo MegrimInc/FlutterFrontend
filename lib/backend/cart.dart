@@ -196,10 +196,13 @@ class Cart extends ChangeNotifier {
       });
     });
 
-    serviceFeeTotal =
-        ((totalCartMoney + taxTotal + totalGratuity) * serviceFeeRate) +
-            serviceFeeFlat;
-    finalTotal = totalCartMoney + taxTotal + serviceFeeTotal + totalGratuity;
+    // Round intermediate values like backend
+    taxTotal = _round(taxTotal);
+    totalGratuity = _round(totalGratuity);
+    final baseAmount = totalCartMoney + taxTotal + totalGratuity;
+    serviceFeeTotal = baseAmount == 0 ? 0.0 : _round(baseAmount * serviceFeeRate + serviceFeeFlat);
+    
+    finalTotal = baseAmount + serviceFeeTotal;
 
     debugPrint('💸 Totals — '
         'Subtotal: \$${totalCartMoney.toStringAsFixed(2)}, '
@@ -210,6 +213,8 @@ class Cart extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  double _round(double value) => (value * 100).round() / 100.0;
 
   void reorder(CustomerOrder order) {
     // Clear the current cart
@@ -286,9 +291,10 @@ class Cart extends ChangeNotifier {
             ifAbsent: () => regularPrice * remainingQuantity);
         debugPrint("Added $remainingQuantity of $itemId as regular.");
 
-         final earnedPoints = ((regularPrice * remainingQuantity) * 10).round();
-      availablePoints += earnedPoints;
-      debugPrint("Earned $earnedPoints points from $itemId. New available points: $availablePoints");
+        final earnedPoints = ((regularPrice * remainingQuantity) * 10).round();
+        availablePoints += earnedPoints;
+        debugPrint(
+            "Earned $earnedPoints points from $itemId. New available points: $availablePoints");
       }
     }
 

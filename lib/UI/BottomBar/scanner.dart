@@ -465,7 +465,7 @@ class _BlueTooth extends State<BlueToothScanner> with WidgetsBindingObserver {
           'merchantId': merchantId,
           'cart': cart,
           'itemId': order.items.first.itemId, // Optional itemId.
-          'claimer': terminalId
+          'terminal': terminalId
         },
       );
     } catch (e, stackTrace) {

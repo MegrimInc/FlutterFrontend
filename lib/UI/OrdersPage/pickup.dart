@@ -57,7 +57,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
 
             // Determine the text based on the number of orders
             final displayText =
-                totalOrders == 0 ? '...' : '${currentPage + 1} / $totalOrders';
+                totalOrders == 0 ? '0/0' : '${currentPage + 1} / $totalOrders';
 
             return Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -75,7 +75,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
                   displayText, // Display the appropriate text
                   style: GoogleFonts.poppins(
                     color: Colors.grey,
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

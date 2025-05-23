@@ -34,14 +34,14 @@ import 'config.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-const String currentIOSMobileVersion = '1.1.1'; // Define your app version here
-const String currentIOSTabletVersion = '1.1.1'; // Define tablet version if different
+const String currentIOSMobileVersion = '3.0.0'; // Define your app version here
+const String currentIOSTabletVersion = '3.0.0'; // Define tablet version if different
 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  AppConfig.environment = Environment.test;
+  AppConfig.environment = Environment.live;
 
   Stripe.publishableKey = AppConfig.stripePublishableKey;
 
