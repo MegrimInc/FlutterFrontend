@@ -32,6 +32,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'config.dart';
 
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 const String currentIOSMobileVersion = '3.0.0'; // Define your app version here
@@ -415,5 +416,6 @@ class Barzzy extends StatelessWidget {
         },
       },
     );
+
   }
 }

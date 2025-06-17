@@ -1,18 +1,18 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'package:another_flushbar/flushbar.dart';
 import 'package:megrim/Backend/database.dart';
 import 'package:megrim/Backend/history.dart';
 import 'package:megrim/DTO/item.dart';
 import 'package:megrim/Backend/cart.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 import 'package:megrim/UI/CheckoutPage/checkout.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:megrim/UI/WalletPage/wallet.dart';
 import 'package:provider/provider.dart';
 import '../../DTO/merchant.dart';
-
 
 class CatalogPage extends StatefulWidget {
   final int merchantId;
@@ -57,7 +57,11 @@ class CatalogpageState extends State<CatalogPage>
       final item = localDatabase.getItemById(widget.itemId!);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).push(
-          _createRoute(item, widget.cart, targetPage: 1,),
+          _createRoute(
+            item,
+            widget.cart,
+            targetPage: 1,
+          ),
         );
       });
     }
@@ -85,7 +89,8 @@ class CatalogpageState extends State<CatalogPage>
     debugPrint(
         'LocalDatabase instance in Catalogpage: ${LocalDatabase().hashCode}');
     if (currentMerchant != null) {
-     appBarTitle = '@${(currentMerchant!.nickname ?? 'Catalog Page').replaceAll(' ', '')}';
+      appBarTitle =
+          '@${(currentMerchant!.nickname ?? 'Catalog Page').replaceAll(' ', '')}';
     }
 
     await Provider.of<LocalDatabase>(context, listen: false)
@@ -94,22 +99,44 @@ class CatalogpageState extends State<CatalogPage>
     debugPrint(
         'LocalDatabase instance in Catalogpage: ${LocalDatabase().hashCode}');
 
-
     setState(() {
       isLoading = false;
     });
-    final merchantHistory = Provider.of<MerchantHistory>(context, listen: false);
+    final merchantHistory =
+        Provider.of<MerchantHistory>(context, listen: false);
     merchantHistory.setTappedMerchantId(widget.merchantId);
+  }
+
+  void showCardsOverlay() async {
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+
+    final customerId = await LoginCache().getUID();
+    final merchantId = Provider.of<MerchantHistory>(context, listen: false)
+        .currentTappedMerchantId;
+
+    if (merchantId == null || customerId == 0) return;
+
+    entry = OverlayEntry(
+      builder: (context) => WalletPage(
+        onClose: () => entry.remove(),
+        customerId: customerId,
+        merchantId: merchantId,
+        isBlack: false, //TODO: CHANGE TO DYNAMIC 
+      ),
+    );
+
+    overlay.insert(entry);
   }
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: widget.cart,
-      child: SafeArea(
-        child: Scaffold(
-          backgroundColor: Colors.black,
-          body: Stack(
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: Stack(
             children: [
               _buildMainContent(),
             ],
@@ -128,20 +155,21 @@ class CatalogpageState extends State<CatalogPage>
             key: _listKey,
             controller: _scrollController,
             child: Consumer<LocalDatabase>(
-            builder: (context, database, _) {
-              final categoryMap = database.getFullItemListByMerchantId(widget.merchantId);
-              return Column(
-                children: [
-                  const SizedBox(height: 25),
-                  for (final entry in categoryMap.entries)
-                    if (entry.value.isNotEmpty) ...[
-                      _buildItemSection(context, entry.key, entry.value),
-                      const SizedBox(height: 50),
-                    ]
-                ],
-              );
-            },
-          ),
+              builder: (context, database, _) {
+                final categoryMap =
+                    database.getFullItemListByMerchantId(widget.merchantId);
+                return Column(
+                  children: [
+                    const SizedBox(height: 25),
+                    for (final entry in categoryMap.entries)
+                      if (entry.value.isNotEmpty) ...[
+                        _buildItemSection(context, entry.key, entry.value),
+                        const SizedBox(height: 50),
+                      ]
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ],
@@ -184,38 +212,12 @@ class CatalogpageState extends State<CatalogPage>
           Consumer<Cart>(
             builder: (context, cart, _) {
               return IconButton(
-                icon: const Icon(
-                  FontAwesomeIcons.solidStar,
-                  color: Colors.white,
-                  size: 17.5,
-                ),
-                onPressed: () {
-                  Flushbar(
-                    messageText: Row(
-                      children: [
-                        const Spacer(),
-                        const Icon(Icons.star, color: Colors.white),
-                        const SizedBox(width: 7),
-                        Text(
-                          "You have ${cart.merchantPoints} points!",
-                          style: const TextStyle(
-                            color: Colors.white, // Customize the message color
-                            fontSize: 16,
-                          ),
-                          textAlign: TextAlign
-                              .center, // Ensure the text is centered within the widget
-                        ),
-                        const Spacer(),
-                      ],
-                    ),
-                    backgroundColor: Colors.black,
-                    duration: const Duration(seconds: 1),
-                    flushbarPosition: FlushbarPosition.TOP,
-                    borderRadius: BorderRadius.circular(8),
-                    margin: const EdgeInsets.all(10),
-                  ).show(context);
-                },
-              );
+                  icon: const Icon(
+                    FontAwesomeIcons.solidCreditCard,
+                    color: Colors.grey,
+                    size: 17.5,
+                  ),
+                  onPressed: showCardsOverlay);
             },
           ),
         ],
@@ -229,15 +231,14 @@ class CatalogpageState extends State<CatalogPage>
     final int pageCount = (itemIds.length / itemsPerPage).ceil();
     final screenHeight = MediaQuery.of(context).size.height;
 
-
     double boxHeight;
 
     if (itemIds.length <= 3) {
       //boxHeight = 150; // Height for 1 row
-       boxHeight = screenHeight * 0.19;
+      boxHeight = screenHeight * 0.19;
     } else if (itemIds.length <= 6) {
       //boxHeight = 300.0; // Height for 2 rows
-      boxHeight = screenHeight * 0.37; 
+      boxHeight = screenHeight * 0.37;
     } else {
       //boxHeight = 450; // Height for 3 rows
       boxHeight = screenHeight * 0.55;
@@ -294,7 +295,7 @@ class CatalogpageState extends State<CatalogPage>
                   (startIndex + itemsPerPage).clamp(0, itemIds.length);
 
               return GridView.builder(
-                 shrinkWrap: true,
+                shrinkWrap: true,
                 physics:
                     const NeverScrollableScrollPhysics(), // Disable inner scrolling
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -335,7 +336,7 @@ class CatalogpageState extends State<CatalogPage>
                                     builder: (context, cart, _) {
                                       int itemQuantities = cart
                                           .getTotalQuantityForItem(item.itemId);
-                    
+
                                       if (itemQuantities > 0) {
                                         return Container(
                                           decoration: BoxDecoration(
@@ -394,7 +395,7 @@ class CatalogpageState extends State<CatalogPage>
   }
 
   Route _createRoute(Item item, Cart cart, {int targetPage = 0}) {
-    debugPrint("Catalogpage: Passing claimer = ${widget.terminal}"); 
+    debugPrint("Catalogpage: Passing claimer = ${widget.terminal}");
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => CheckoutPage(
         item: item,

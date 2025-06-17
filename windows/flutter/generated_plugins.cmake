@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   bluetooth_low_energy_windows
   firebase_core
+  geolocator_windows
   permission_handler_windows
 )
 

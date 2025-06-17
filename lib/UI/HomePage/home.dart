@@ -1,23 +1,28 @@
 import 'dart:convert';
-
+import 'package:megrim/DTO/merchant.dart';
 import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 import 'package:megrim/Backend/database.dart';
 import 'package:megrim/Backend/cart.dart';
 import 'package:megrim/Backend/websocket.dart';
+import 'package:megrim/UI/ChatPage/chat.dart';
+import 'package:megrim/UI/WalletPage/wallet.dart';
 import 'package:megrim/UI/SearchPage/searchpage.dart';
 import 'package:megrim/config.dart';
 import 'package:megrim/main.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/heroicons_solid.dart';
 import 'package:provider/provider.dart';
 import 'package:megrim/Backend/history.dart';
-import 'package:megrim/Backend/recommended.dart';
 import 'package:megrim/UI/CatalogPage/catalog.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
+import 'dart:math' as math;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -27,19 +32,19 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  List<int> masterList = [];
-  List<int> tappedIds = [];
+ 
   late double screenHeight;
   late double bottomHeight;
   late double paddingHeight;
+  late Future<(LatLng, List<({Merchant merchant, LatLng coordinates})>)> _mapDataFuture;
 
   @override
   void initState() {
     super.initState();
     _connect();
-    _updateMasterList();
     checkPaymentMethod();
     sendGetPoints();
+    _mapDataFuture = _prepareMapData();
   }
 
   @override
@@ -57,17 +62,6 @@ class HomePageState extends State<HomePage> {
     hierarchy.connect(context); // No need to await since it returns void
   }
 
-  void _updateMasterList() async {
-    final recommended = Provider.of<Recommended>(context, listen: false);
-
-    await recommended.fetchRecommendedMerchants(context);
-
-    final recommendedIds = recommended.merchantIds;
-
-    setState(() {
-      masterList = [...tappedIds, ...recommendedIds];
-    });
-  }
 
   Future<void> checkPaymentMethod() async {
     LocalDatabase localDatabase = LocalDatabase();
@@ -105,15 +99,72 @@ class HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _handleRefresh() async {
-    debugPrint("Refreshing HomePage...");
-     await sendGetPoints();
+
+  void showCardsOverlay() async {
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+
+    final customerId = await LoginCache().getUID();
+    // ignore: use_build_context_synchronously
+    final merchantId = Provider.of<MerchantHistory>(context, listen: false)
+        .currentTappedMerchantId;
+
+    if (merchantId == null || customerId == 0) return;
+
+    entry = OverlayEntry(
+      builder: (context) => WalletPage(
+        onClose: () => entry.remove(),
+        customerId: customerId,
+        merchantId: merchantId,
+        isBlack: false, //TODO: CHANGE TO DYNAMIC
+      ),
+    );
+
+    overlay.insert(entry);
+  }
+
+
+    Future<(LatLng, List<({Merchant merchant, LatLng coordinates})>)> _prepareMapData() async {
+    final userPosition = await _determinePosition();
+    final userLatLng = LatLng(userPosition.latitude, userPosition.longitude);
+
+    final allMerchants = LocalDatabase().merchants.values.toList();
+    
+    var geocodedMerchants = <({Merchant merchant, LatLng coordinates})>[];
+    for (final merchant in allMerchants) {
+      try {
+        final addressString = '${merchant.address}, ${merchant.city}, ${merchant.stateOrProvince} ${merchant.zipCode}';
+        final locations = await locationFromAddress(addressString);
+        if (locations.isNotEmpty) {
+          final loc = locations.first;
+          // Add a record to our list
+          geocodedMerchants.add((merchant: merchant, coordinates: LatLng(loc.latitude, loc.longitude)));
+        }
+      } catch (e) {
+        debugPrint('Could not geocode merchant ${merchant.name}: $e');
+      }
+    }
+    // Return the final record
+    return (userLatLng, geocodedMerchants);
+  }
+
+  /// Determines the current position of the device using Geolocator.
+  Future<Position> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return Future.error('Location services are disabled.');
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return Future.error('Location permissions are denied');
+    }
+    if (permission == LocationPermission.deniedForever) return Future.error('Location permissions are permanently denied.');
+    return await Geolocator.getCurrentPosition();
   }
 
   @override
   Widget build(BuildContext context) {
-    final merchantHistory = Provider.of<MerchantHistory>(context);
-
     return Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: Colors.black,
@@ -123,12 +174,10 @@ class HomePageState extends State<HomePage> {
             centerTitle: true,
             elevation: 2,
             title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                //BARZZY TAG
-
                 Text(
-                  'M e g r i m',
+                  'H o m e',
                   style: GoogleFonts.megrim(
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
@@ -136,7 +185,7 @@ class HomePageState extends State<HomePage> {
                   ),
                 ),
 
-                const SizedBox(width: 20),
+                const Spacer(),
 
                 //SEARCH
 
@@ -155,282 +204,133 @@ class HomePageState extends State<HomePage> {
                     color: Colors.grey,
                   ),
                 ),
+
+                const SizedBox(width: 15),
+
+                GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const ChatPage()),
+                      );
+                    },
+                    child: Transform(
+                      alignment: Alignment.center,
+                      transform: Matrix4.rotationY(math.pi),
+                      child: const Icon(
+                        Icons.chat,
+                        size: 25.5,
+                        color: Colors.grey,
+                      ),
+                    )),
               ],
             )),
-        body: FutureBuilder<int>(
-          future: Provider.of<LoginCache>(context, listen: false).getUID(),
-          builder: (context, snapshot) {
-            bool isGuest = snapshot.hasData && snapshot.data == 0;
-            return RefreshIndicator(
-              onRefresh: _handleRefresh,
-              child: SingleChildScrollView(
-                physics: isGuest
-                    ? const NeverScrollableScrollPhysics()
-                    : const AlwaysScrollableScrollPhysics(),
-                child: Container(
-                  height: screenHeight,
-                  padding: const EdgeInsets.fromLTRB(0, 5, 0, 0),
-                  child: Column(
-                    children: [
-                      //MASTER LIST
-
-                      Consumer<Recommended>(
-                        builder: (context, recommended, _) {
-                          final recommendedIds = recommended.merchantIds;
-                          masterList = [...recommendedIds].take(4).toList();
-
-                          return Container(
-                            padding: const EdgeInsets.only(bottom: 15),
-                            height: 128,
-                            decoration: const BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: Color.fromARGB(255, 126, 126, 126),
-                                  width: 0.1,
-                                ),
-                              ),
-                            ),
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: masterList.length,
-                              itemBuilder: (context, index) {
-                                final merchantId = masterList[index];
-                                //final isTapped = merchantHistory.merchantIds.contains(merchantId);
-                                final isRecommended =
-                                    recommendedIds.contains(merchantId);
-                                final merchant =
-                                    LocalDatabase.getMerchantById(merchantId);
-                                return GestureDetector(
-                                    behavior: HitTestBehavior.translucent,
-                                    onLongPress: () {
-                                      HapticFeedback.heavyImpact();
-                                      final merchantHistory =
-                                          Provider.of<MerchantHistory>(context,
-                                              listen: false);
-                                      merchantHistory
-                                          .setTappedMerchantId(merchantId);
-                                    },
-                                    onTap: () {
-                                      Navigator.push(context, MaterialPageRoute(
-                                        builder: (context) {
-                                          Cart cart = Cart();
-                                          cart.setMerchant(
-                                              merchantId); // Set the merchant Id for the cart
-                                          return CatalogPage(
-                                            merchantId: merchantId,
-                                            cart: cart,
-                                          );
-                                        },
-                                      ));
-                                    },
-                                    child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Container(
-                                            width: 85,
-                                            height: 85,
-                                            margin: const EdgeInsets.symmetric(
-                                                horizontal: 6),
-                                            decoration: BoxDecoration(
-                                              color: const Color.fromARGB(
-                                                  255, 0, 0, 0),
-                                              borderRadius:
-                                                  BorderRadius.circular(60),
-                                            ),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(60),
-                                              child: Stack(
-                                                fit: StackFit.expand,
-                                                children: [
-                                                  // Always display the image
-                                                  CachedNetworkImage(
-                                                    imageUrl: merchant
-                                                            ?.logoImg ??
-                                                        'https://www.barzzy.site/images/default.png',
-                                                    fit: BoxFit.cover,
-                                                  ),
-
-                                                  // Conditionally display the icon over the image
-                                                  if (isRecommended)
-                                                    const Padding(
-                                                        padding:
-                                                            EdgeInsets.all(20),
-                                                        child: Padding(
-                                                          padding: EdgeInsets
-                                                              .fromLTRB(
-                                                                  20, 8, 0, 2),
-                                                          child: Iconify(
-                                                            HeroiconsSolid
-                                                                .search,
-                                                            color: Colors.white,
-                                                          ),
-                                                        )),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text("@${merchant?.nickname ?? 'No Tag'}",
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 12,
-                                              ))
-                                        ]));
-                              },
-                            ),
-                          );
-                        },
-                      ),
-
-                      // EVERYTHING BELOW THE MASTER LIST
-
-                      // TOP ROW WITH BAR NAME AND WAIT TIME
-
-                      if (merchantHistory.currentTappedMerchantId != null)
-                        Flexible(
-                          flex: 2,
-                          child: Column(
-                            children: [
-                              const Spacer(),
-                              Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 11),
-                                      child: Text(
-                                        LocalDatabase.getMerchantById(
-                                                    merchantHistory
-                                                        .currentTappedMerchantId!)
-                                                ?.name ??
-                                            'No Name',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                    IconButton(
-                                        icon: const Icon(Icons.more_horiz,
-                                            size: 24, color: Colors.grey),
-                                        onPressed: () {}),
-                                  ]),
-                              const Spacer(),
-                            ],
-                          ),
-                        ),
-
-                      // MAIN MOST RECENT BAR
-
-                      if (merchantHistory.currentTappedMerchantId != null)
-                        Expanded(
-                          flex: 15,
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) {
-                                    // Create a new Cart instance and initialize it
-                                    Cart cart = Cart();
-                                    cart.setMerchant(merchantHistory
-                                        .currentTappedMerchantId!); // Set the merchant Id for the cart
-
-                                    // Pass the newly created Cart instance to the MenuPage
-                                    return CatalogPage(
-                                      merchantId: merchantHistory
-                                          .currentTappedMerchantId!,
-                                      cart: cart,
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                color: Colors.black,
-                              ),
-                              child: CachedNetworkImage(
-                                imageUrl: LocalDatabase.getMerchantById(
-                                      merchantHistory.currentTappedMerchantId!,
-                                    )?.storeImg ??
-                                    'https://www.barzzy.site/images/champs/6.png',
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                      //BOTTOM ROW WITH RECENT DRINKS AND WAIT TIME
-
-                      if (merchantHistory.currentTappedMerchantId != null)
-                        Flexible(
-                          flex: 2,
-                          child: Column(
-                            children: [
-                              const Spacer(),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 11),
-                                    child: RichText(
-                                      text: const TextSpan(
-                                        children: [
-                                          TextSpan(
-                                            text: "Open",
-                                            style: TextStyle(
-                                                color: Colors.green,
-                                                fontWeight: FontWeight.w800,
-                                                fontSize: 14),
-                                          ),
-                                          TextSpan(
-                                            text: " / ",
-                                            style: TextStyle(
-                                                color: Colors.grey,
-                                                //fontWeight: FontWeight.bold,
-                                                fontSize: 14),
-                                          ),
-                                          TextSpan(
-                                            text: "Closed",
-                                            style: TextStyle(
-                                                color: Colors.grey,
-                                                fontWeight: FontWeight.w800,
-                                                fontSize: 14),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 11),
-                                    child: Text(
-                                      LocalDatabase.getMerchantById(
-                                                  merchantHistory
-                                                      .currentTappedMerchantId!)
-                                              ?.address ??
-                                          'No Address Available',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        //fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const Spacer(),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+        body: FutureBuilder<(LatLng, List<({Merchant merchant, LatLng coordinates})>)>(
+        future: _mapDataFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Colors.white),
+                  SizedBox(height: 16),
+                  Text('Finding your location...', style: TextStyle(color: Colors.white)),
+                ],
               ),
             );
-          },
-        ),
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+          }
+
+          if (!snapshot.hasData) {
+            return const Center(child: Text('Could not load map data.', style: TextStyle(color: Colors.white)));
+          }
+
+          // Access data from the record using .$1, .$2, etc.
+          final userLocation = snapshot.data!.$1;
+          final geocodedMerchants = snapshot.data!.$2;
+
+          return FlutterMap(
+            options: MapOptions(
+              initialCenter: userLocation,
+              initialZoom: 13.0,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'site.megrim.app',
+              ),
+              MarkerLayer(
+                markers: geocodedMerchants.map((record) {
+                  // Access data from the inner record
+                  final merchant = record.merchant;
+                  final coordinates = record.coordinates;
+
+                  return Marker(
+                    point: coordinates,
+                    width: 80,
+                    height: 95,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (context) {
+                            Cart cart = Cart();
+                            cart.setMerchant(merchant.merchantId!);
+                            return CatalogPage(merchantId: merchant.merchantId!, cart: cart);
+                          },
+                        ));
+                      },
+                      child: Column(
+                        children: [
+                          Container(
+                            height: 80,
+                            width: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(color: Colors.black, width: 2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: ClipOval(
+                              child: CachedNetworkImage(
+                                imageUrl: merchant.storeImg ?? 'https://www.barzzy.site/images/champs/6.png',
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                                errorWidget: (context, url, error) => const Icon(Icons.store, color: Colors.grey),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "@${merchant.nickname ?? 'No Tag'}",
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              backgroundColor: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: userLocation,
+                    child: const Icon(Icons.my_location, color: Colors.red, size: 30),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
         bottomNavigationBar: FutureBuilder<int>(
           future: Provider.of<LoginCache>(context, listen: false).getUID(),
           builder: (context, snapshot) {

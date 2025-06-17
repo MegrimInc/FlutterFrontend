@@ -33,13 +33,13 @@
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>This app uses Bluetooth for our advanced ordering system.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>We need location services for BLE broadcasting.</string>
+	<string>Megrim needs location services for BLE broadcasting.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>This app uses the camera for card scanning or other payment-related functionality provided by the Stripe SDK.</string>
+	<string>This app uses the camera for card scanning or other payment-related functionality.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app uses location data to support localized payment features, enabled by the Stripe SDK.</string>
+	<string>Megrim needs access to your location to show you relevant businesses nearby.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app accesses the photo library for uploading images or receipts, enabled through the Stripe SDK.</string>
+	<string>This app accesses the photo library for uploading images or receipts.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
