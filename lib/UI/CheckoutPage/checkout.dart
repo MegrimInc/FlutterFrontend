@@ -25,7 +25,8 @@ class CheckoutPage extends StatefulWidget {
   final Cart cart;
   final int merchantId;
   final int initialPage;
-  final String? terminal;
+  final int? employeeId;
+  final String pointOfSale;
 
   const CheckoutPage({
     super.key,
@@ -33,7 +34,8 @@ class CheckoutPage extends StatefulWidget {
     required this.cart,
     required this.merchantId,
     this.initialPage = 0,
-    this.terminal,
+    this.employeeId,
+    required this.pointOfSale
   });
 
   @override
@@ -87,13 +89,15 @@ class CheckoutPageState extends State<CheckoutPage>
       return;
     }
 
-    // If inAppPayments is false, show a dialog and exit early.
-    if (!inAppPayments &&
-        localDatabase.paymentStatus == PaymentStatus.notPresent) {
-      _showNotAllowedDialog(
-          "Your cart only contains point-based items. Please add at least one item with a regular price to proceed.");
-      return;
-    }
+    //TODO: MIGHT UNCOMMENT IF PEOPLE ABUSE WILL SEE HOW THIS GOES NEXT SEMESTER
+
+    // // If inAppPayments is false, show a dialog and exit early.
+    // if (!inAppPayments &&
+    //     localDatabase.paymentStatus == PaymentStatus.notPresent) {
+    //   _showNotAllowedDialog(
+    //       "Your cart only contains point-based items. Please add at least one item with a regular price to proceed.");
+    //   return;
+    // }
 
     if (inAppPayments &&
         localDatabase.paymentStatus == PaymentStatus.notPresent) {
@@ -163,7 +167,8 @@ class CheckoutPageState extends State<CheckoutPage>
       "items": itemOrders,
       "isDiscount": cart.isDiscount,
       "password": password,
-      if (widget.terminal != null) "terminal": widget.terminal,
+      if (widget.employeeId != null) "employeeId": widget.employeeId,
+      "pointOfSale": widget.pointOfSale
     };
 
     websocket.createOrder(order);
@@ -305,7 +310,7 @@ class CheckoutPageState extends State<CheckoutPage>
                   sigmaY: _blurAnimation.value,
                 ),
                 child: Container(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                 ),
               ),
               SafeArea(

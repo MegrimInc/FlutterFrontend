@@ -99,7 +99,7 @@ class _WalletPageState extends State<WalletPage>
                       sigmaX: _blurAnimation.value,
                       sigmaY: _blurAnimation.value,
                     ),
-                    child: Container(color: Colors.black.withOpacity(0.4)),
+                    child: Container(color: Colors.black.withValues(alpha: 0.4)),
                   ),
                   FadeTransition(
                     opacity: _controller,
@@ -150,7 +150,7 @@ class _WalletPageState extends State<WalletPage>
             highlightColor: Colors.white,
             period: const Duration(milliseconds: 1500),
             child: Text(
-              'Swipe Down to Close',
+              'Swipe Down to Go Back',
               style: GoogleFonts.poppins(
                 color: Colors.white,
                 fontSize: 22,

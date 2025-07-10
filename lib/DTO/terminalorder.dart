@@ -10,12 +10,11 @@ class TerminalOrder {
   bool inAppPayments;
   List<ItemOrder> items;
   String status;
-  String terminal;
+  int employeeId;
   int timestamp; // Stored as an int on the frontend, converted to String for JSON
   String sessionId;
-  String
-      name; // The name that is displayed whenever an order is created. Does not need to be unique. OrderId will be the same.
-  bool pointOfSale;
+  String name; 
+  String pointOfSale;
 
   TerminalOrder(
       this.merchantId,
@@ -25,7 +24,7 @@ class TerminalOrder {
       this.inAppPayments,
       this.items,
       this.status,
-      this.terminal,
+      this.employeeId,
       this.timestamp,
       this.sessionId,
       this.name,
@@ -51,12 +50,12 @@ class TerminalOrder {
         json['inAppPayments'] as bool,
         items,
         json['status'] as String,
-        json['terminal'] as String,
+        json['employeeId'] as int,
         int.parse(
             json['timestamp']), // Convert timestamp to int for frontend storage
         json['sessionId'] as String,
         json['name'] as String,
-        json['pointOfSale'] as bool
+        json['pointOfSale'] as String
         );
   }
 
@@ -70,7 +69,7 @@ class TerminalOrder {
       'inAppPayments': inAppPayments,
       'items': items.map((item) => item.toJson()).toList(),
       'status': status,
-      'terminal': terminal,
+      'employeeId': employeeId,
       'timestamp': timestamp.toString(), // Convert timestamp to String for JSON
       'sessionId': sessionId,
       'name': name,
@@ -84,7 +83,7 @@ class TerminalOrder {
   int getCustomerId() => customerId;
   List<ItemOrder> getItems() => items;
   String getStatus() => status;
-  String getTerminal() => terminal;
+  int getEmployeeId() => employeeId;
   int getTimestamp() => timestamp;
   bool getInAppPayments() => inAppPayments;
   double getTotalGratuity() => totalGratuity;
@@ -99,7 +98,7 @@ class TerminalOrder {
   void setInAppPayments(bool value) => inAppPayments = value;
   void setItems(List<ItemOrder> value) => items = value;
   void setStatus(String value) => status = value;
-  void setTerminal(String value) => terminal = value;
+  void setEmployeeId(int value) => employeeId = value;
   void setTimestamp(int value) => timestamp = value;
   void setSessionId(String value) => sessionId = value;
   void setDisplayName(String value) => name = value;

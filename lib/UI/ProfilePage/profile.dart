@@ -343,7 +343,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             deleteAccount,
                           );
                         },
-                        tileColor: Colors.redAccent.withOpacity(0.2),
+                        tileColor: Colors.redAccent.withValues(alpha: 0.2),
                         iconColor: Colors.redAccent,
                       ),
                   ],

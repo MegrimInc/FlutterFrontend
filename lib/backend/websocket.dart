@@ -18,7 +18,7 @@ class Websocket extends ChangeNotifier {
   WebSocketChannel? _channel;
   int _reconnectAttempts = 0;
   final LocalDatabase localDatabase;
-  final Map<int, int> _createdOrderMerchantIds = {};
+  final Map<int, Map<int, int>> _createdOrderMerchantIds = {};
   bool _isConnected = false;
   final GlobalKey<NavigatorState> navigatorKey;
   bool isLoading = false;
@@ -189,7 +189,7 @@ class Websocket extends ChangeNotifier {
     }
   }
 
-  void sendArriveMessage(int merchantId) async {
+  void sendArriveMessage(int merchantId, int employeeId) async {
     try {
       // Fetch customerId from LoginCache
       final loginCache =
@@ -203,6 +203,7 @@ class Websocket extends ChangeNotifier {
           "action": "arrive",
           "customerId": customerId,
           "merchantId": merchantId,
+          "employeeId": employeeId,
         };
 
         // Convert message to JSON and send
@@ -225,22 +226,23 @@ class Websocket extends ChangeNotifier {
       debugPrint('CustomerOrder created: $customerOrder');
 
       localDatabase.addOrUpdateOrderForMerchant(customerOrder);
-      // Directly update the map with the new timestamp for the merchantId
-      _createdOrderMerchantIds[customerOrder.merchantId] = customerOrder.timestamp;
+
+      _createdOrderMerchantIds.putIfAbsent(customerOrder.merchantId, () => {});
+      _createdOrderMerchantIds[customerOrder.merchantId]![
+          customerOrder.employeeId] = customerOrder.timestamp;
 
       // Print statement to confirm addition
       debugPrint(
           'CustomerOrder added to LocalDatabase: ${customerOrder.merchantId}');
-     
+
       setLoading(false);
 
-       try {
+      try {
         await sendGetPoints();
         debugPrint('sendGetPoints triggered successfully.');
-        
-    } catch (e) {
-      debugPrint('Error while handling update response: $e');
-    }
+      } catch (e) {
+        debugPrint('Error while handling update response: $e');
+      }
 
       notifyListeners();
     } catch (e) {
@@ -248,10 +250,53 @@ class Websocket extends ChangeNotifier {
     }
   }
 
-  // Method to handle update responses and send notifications
   void _handleUpdateResponse(Map<String, dynamic> data) async {
-    // Call createOrderResponse to handle the data processing
-    _createOrderResponse(data);
+    try {
+      final customerOrder = CustomerOrder.fromJson(data);
+
+      // If status is delivered or canceled, remove from the order map
+      if (customerOrder.status == "delivered" ||
+          customerOrder.status == "canceled") {
+        debugPrint(
+            'Order ${customerOrder.merchantId} removed due to status: ${customerOrder.status}');
+
+        localDatabase.removeOrderForMerchantAndEmployee(
+          customerOrder.merchantId,
+          customerOrder.employeeId,
+        );
+
+        if (_createdOrderMerchantIds.containsKey(customerOrder.merchantId)) {
+          _createdOrderMerchantIds[customerOrder.merchantId]
+              ?.remove(customerOrder.employeeId);
+          if (_createdOrderMerchantIds[customerOrder.merchantId]?.isEmpty ??
+              true) {
+            _createdOrderMerchantIds.remove(customerOrder.merchantId);
+          }
+        }
+      } else {
+        // Otherwise, add or update order as usual
+        localDatabase.addOrUpdateOrderForMerchant(customerOrder);
+        _createdOrderMerchantIds.putIfAbsent(
+            customerOrder.merchantId, () => {});
+        _createdOrderMerchantIds[customerOrder.merchantId]![
+            customerOrder.employeeId] = customerOrder.timestamp;
+        debugPrint(
+            'Order ${customerOrder.merchantId} updated/added with status: ${customerOrder.status}');
+      }
+
+      setLoading(false);
+
+      try {
+        await sendGetPoints();
+        debugPrint('sendGetPoints triggered successfully.');
+      } catch (e) {
+        debugPrint('Error while handling update response: $e');
+      }
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error while processing update response: $e');
+    }
   }
 
   void disconnect() {
@@ -265,11 +310,20 @@ class Websocket extends ChangeNotifier {
   }
 
   // Method to retrieve the list of merchantIds for created orders
-  List<int> getOrders() {
-    // Return the list of merchant Ids sorted by timestamp in descending order
-    return _createdOrderMerchantIds.keys.toList()
-      ..sort(
-          (a, b) => _createdOrderMerchantIds[b]!.compareTo(_createdOrderMerchantIds[a]!));
+  List<MapEntry<int, int>> getOrders() {
+    final List<MapEntry<int, int>> orders = [];
+    _createdOrderMerchantIds.forEach((merchantId, empMap) {
+      empMap.forEach((employeeId, _) {
+        orders.add(MapEntry(merchantId, employeeId));
+      });
+    });
+    // Sort by timestamp (descending)
+    orders.sort((a, b) {
+      final tA = _createdOrderMerchantIds[a.key]![a.value]!;
+      final tB = _createdOrderMerchantIds[b.key]![b.value]!;
+      return tB.compareTo(tA);
+    });
+    return orders;
   }
 
   void _handleError(BuildContext context, String errorMessage) {
@@ -321,7 +375,8 @@ class Websocket extends ChangeNotifier {
   }
 
   Future<void> handleCache(dynamic ordersData) async {
-    final database = Provider.of<LocalDatabase>(navigatorKey.currentContext!, listen: false);
+    final database =
+        Provider.of<LocalDatabase>(navigatorKey.currentContext!, listen: false);
 
     // Check if `ordersData` is a list or a single object
     final List<dynamic> orders = ordersData is List<dynamic>

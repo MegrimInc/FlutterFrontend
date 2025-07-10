@@ -2,21 +2,17 @@ import 'dart:convert';
 import 'package:megrim/DTO/merchant.dart';
 import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 import 'package:megrim/Backend/database.dart';
-import 'package:megrim/Backend/cart.dart';
 import 'package:megrim/Backend/websocket.dart';
 import 'package:megrim/UI/ChatPage/chat.dart';
 import 'package:megrim/UI/WalletPage/wallet.dart';
 import 'package:megrim/UI/SearchPage/searchpage.dart';
 import 'package:megrim/config.dart';
 import 'package:megrim/main.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/heroicons_solid.dart';
 import 'package:provider/provider.dart';
-import 'package:megrim/Backend/history.dart';
-import 'package:megrim/UI/CatalogPage/catalog.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -32,11 +28,12 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
- 
   late double screenHeight;
   late double bottomHeight;
   late double paddingHeight;
-  late Future<(LatLng, List<({Merchant merchant, LatLng coordinates})>)> _mapDataFuture;
+  late Future<(LatLng, List<({Merchant merchant, LatLng coordinates})>)>
+      _mapDataFuture;
+  LocationPermission? _permissionStatus;
 
   @override
   void initState() {
@@ -44,24 +41,13 @@ class HomePageState extends State<HomePage> {
     _connect();
     checkPaymentMethod();
     sendGetPoints();
-    _mapDataFuture = _prepareMapData();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Dynamically calculate the available screen height
-    screenHeight = MediaQuery.of(context).size.height -
-        (3.8 * kToolbarHeight); // Subtract twice the AppBar height
-    bottomHeight = (MediaQuery.of(context).size.height - screenHeight) * .5;
-    paddingHeight = bottomHeight * .18;
+    _checkLocationPermission();
   }
 
   Future<void> _connect() async {
     final hierarchy = Provider.of<Websocket>(context, listen: false);
     hierarchy.connect(context); // No need to await since it returns void
   }
-
 
   Future<void> checkPaymentMethod() async {
     LocalDatabase localDatabase = LocalDatabase();
@@ -99,18 +85,16 @@ class HomePageState extends State<HomePage> {
     }
   }
 
-
-  void showCardsOverlay() async {
+  void showCardsOverlay(int merchantId) async {
+    // ✨ Change 1: Added merchantId as a parameter
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
 
     final customerId = await LoginCache().getUID();
-    // ignore: use_build_context_synchronously
-    final merchantId = Provider.of<MerchantHistory>(context, listen: false)
-        .currentTappedMerchantId;
 
-    if (merchantId == null || customerId == 0) return;
+    if (customerId == 0) return;
 
+    // The rest of the function now uses the merchantId we passed in
     entry = OverlayEntry(
       builder: (context) => WalletPage(
         onClose: () => entry.remove(),
@@ -123,23 +107,71 @@ class HomePageState extends State<HomePage> {
     overlay.insert(entry);
   }
 
+  /// Checks the current location permission status using Geolocator.
+  Future<void> _checkLocationPermission() async {
+    // First, check if location services are even enabled on the device
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      // If services are disabled, we treat it as denied for the UI
+      setState(() => _permissionStatus = LocationPermission.denied);
+      return;
+    }
 
-    Future<(LatLng, List<({Merchant merchant, LatLng coordinates})>)> _prepareMapData() async {
+    // Check the permission status
+    final status = await Geolocator.checkPermission();
+    setState(() {
+      _permissionStatus = status;
+    });
+
+    if (status == LocationPermission.whileInUse ||
+        status == LocationPermission.always) {
+      _loadMapData();
+    }
+  }
+
+  /// Requests location permission from the user using Geolocator.
+  Future<void> _requestLocationPermission() async {
+    final status = await Geolocator.requestPermission();
+    setState(() {
+      _permissionStatus = status;
+    });
+
+    if (status == LocationPermission.whileInUse ||
+        status == LocationPermission.always) {
+      _loadMapData();
+    }
+  }
+
+  /// This function now only runs AFTER permission is granted.
+  void _loadMapData() {
+    setState(() {
+      _mapDataFuture = _prepareMapData();
+    });
+  }
+
+  Future<(LatLng, List<({Merchant merchant, LatLng coordinates})>)>
+      _prepareMapData() async {
     final userPosition = await _determinePosition();
-    final userLatLng = LatLng(userPosition.latitude, userPosition.longitude);
+    //final userLatLng = LatLng(userPosition.latitude, userPosition.longitude);
+    final userLatLng = const LatLng(37.229572, -80.413940);
 
     final allMerchants = LocalDatabase().merchants.values.toList();
-    
+
     var geocodedMerchants = <({Merchant merchant, LatLng coordinates})>[];
     for (final merchant in allMerchants) {
       try {
-        final addressString = '${merchant.address}, ${merchant.city}, ${merchant.stateOrProvince} ${merchant.zipCode}';
+        final addressString =
+            '${merchant.address}, ${merchant.city}, ${merchant.stateOrProvince} ${merchant.zipCode}';
         final locations = await locationFromAddress(addressString);
-        if (locations.isNotEmpty) {
-          final loc = locations.first;
-          // Add a record to our list
-          geocodedMerchants.add((merchant: merchant, coordinates: LatLng(loc.latitude, loc.longitude)));
+        if (locations.isEmpty) {
+          // nothing found for this address, skip to next merchant
+          continue;
         }
+        final loc = locations.first;
+        geocodedMerchants.add((
+          merchant: merchant,
+          coordinates: LatLng(loc.latitude, loc.longitude)
+        ));
       } catch (e) {
         debugPrint('Could not geocode merchant ${merchant.name}: $e');
       }
@@ -157,31 +189,45 @@ class HomePageState extends State<HomePage> {
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return Future.error('Location permissions are denied');
+      if (permission == LocationPermission.denied) {
+        return Future.error('Location permissions are denied');
+      }
     }
-    if (permission == LocationPermission.deniedForever) return Future.error('Location permissions are permanently denied.');
+    if (permission == LocationPermission.deniedForever) {
+      return Future.error('Location permissions are permanently denied.');
+    }
     return await Geolocator.getCurrentPosition();
+  }
+
+  void _refreshMap() {
+    setState(() {
+      _mapDataFuture = _prepareMapData();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        extendBodyBehindAppBar: true,
         resizeToAvoidBottomInset: false,
         backgroundColor: Colors.black,
         appBar: AppBar(
-            backgroundColor: Colors.black,
+            backgroundColor: Colors.transparent,
             surfaceTintColor: Colors.transparent,
             centerTitle: true,
             elevation: 2,
             title: Row(
-              // mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'H o m e',
-                  style: GoogleFonts.megrim(
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    fontSize: 25,
+                GestureDetector(
+                  onTap: _refreshMap, // Calls our new function
+                  child: Text(
+                    'H o m e',
+                    style: GoogleFonts.megrim(
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      fontSize: 25,
+                      shadows: [],
+                    ),
                   ),
                 ),
 
@@ -226,111 +272,7 @@ class HomePageState extends State<HomePage> {
                     )),
               ],
             )),
-        body: FutureBuilder<(LatLng, List<({Merchant merchant, LatLng coordinates})>)>(
-        future: _mapDataFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Colors.white),
-                  SizedBox(height: 16),
-                  Text('Finding your location...', style: TextStyle(color: Colors.white)),
-                ],
-              ),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
-          }
-
-          if (!snapshot.hasData) {
-            return const Center(child: Text('Could not load map data.', style: TextStyle(color: Colors.white)));
-          }
-
-          // Access data from the record using .$1, .$2, etc.
-          final userLocation = snapshot.data!.$1;
-          final geocodedMerchants = snapshot.data!.$2;
-
-          return FlutterMap(
-            options: MapOptions(
-              initialCenter: userLocation,
-              initialZoom: 13.0,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'site.megrim.app',
-              ),
-              MarkerLayer(
-                markers: geocodedMerchants.map((record) {
-                  // Access data from the inner record
-                  final merchant = record.merchant;
-                  final coordinates = record.coordinates;
-
-                  return Marker(
-                    point: coordinates,
-                    width: 80,
-                    height: 95,
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (context) {
-                            Cart cart = Cart();
-                            cart.setMerchant(merchant.merchantId!);
-                            return CatalogPage(merchantId: merchant.merchantId!, cart: cart);
-                          },
-                        ));
-                      },
-                      child: Column(
-                        children: [
-                          Container(
-                            height: 80,
-                            width: 80,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(color: Colors.black, width: 2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: ClipOval(
-                              child: CachedNetworkImage(
-                                imageUrl: merchant.storeImg ?? 'https://www.barzzy.site/images/champs/6.png',
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                                errorWidget: (context, url, error) => const Icon(Icons.store, color: Colors.grey),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "@${merchant.nickname ?? 'No Tag'}",
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                              backgroundColor: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: userLocation,
-                    child: const Icon(Icons.my_location, color: Colors.red, size: 30),
-                  ),
-                ],
-              ),
-            ],
-          );
-        },
-      ),
+        body: _buildBody(),
         bottomNavigationBar: FutureBuilder<int>(
           future: Provider.of<LoginCache>(context, listen: false).getUID(),
           builder: (context, snapshot) {
@@ -370,5 +312,187 @@ class HomePageState extends State<HomePage> {
                 .shrink(); // Return nothing if customerId is not 0
           },
         ));
+  }
+
+  Widget _buildBody() {
+    // While we're first checking, show a loader
+    if (_permissionStatus == null) {
+      return const Center(
+          child: CircularProgressIndicator(color: Colors.white));
+    }
+
+    switch (_permissionStatus!) {
+      case LocationPermission.always:
+      case LocationPermission.whileInUse:
+        // If permission is granted, show the FutureBuilder and the map
+        return FutureBuilder<
+            (LatLng, List<({Merchant merchant, LatLng coordinates})>)>(
+          future: _mapDataFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting ||
+                !snapshot.hasData) {
+              return const Center(
+                  child: CircularProgressIndicator(color: Colors.white));
+            }
+            if (snapshot.hasError) {
+              return Center(
+                  child: Text('Error: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.red)));
+            }
+            final userLocation = snapshot.data!.$1;
+            final geocodedMerchants = snapshot.data!.$2;
+
+            // Create a lookup map for easy access to coordinates by ID
+            final merchantLocations = {
+              for (var record in geocodedMerchants)
+                record.merchant.merchantId: record.coordinates
+            };
+
+            // Define the points for our line
+            final List<LatLng> connectionPoints = [];
+
+            // Get the locations for the specific merchants we want to connect
+            final LatLng? location1 = merchantLocations[95]; // ID for @theburg
+            final LatLng? location2 = merchantLocations[94]; // ID for @centros
+
+            // If both locations were found, add them to our list
+            if (location1 != null && location2 != null) {
+              connectionPoints.addAll([location1, location2]);
+            }
+
+            return FlutterMap(
+              options: MapOptions(
+                initialCenter: userLocation,
+                initialZoom: 18,
+                backgroundColor: Colors.black,
+                minZoom: 2,
+                maxZoom: 20.0,
+                cameraConstraint: CameraConstraint.contain(
+                  bounds: LatLngBounds(const LatLng(-85.0511, -180.0),
+                      const LatLng(85.0511, 180.0)),
+                ),
+              ),
+              children: [
+                // Layer 1: The dark-themed base map
+                TileLayer(
+                  urlTemplate:
+                      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                  subdomains: const ['a', 'b', 'c', 'd'],
+                  retinaMode: true,
+                  userAgentPackageName: 'site.megrim.app',
+                ),
+
+                if (connectionPoints.isNotEmpty)
+                  PolylineLayer(
+                    polylines: [
+                      Polyline(
+                        points: connectionPoints,
+                        color: Colors.green,
+                        strokeWidth: 1.0,
+                      ),
+                    ],
+                  ),
+
+                // Layer 2: The markers for all your businesses
+                MarkerLayer(
+                  markers: geocodedMerchants.map((record) {
+                    // Access data from the inner record
+                    final merchant = record.merchant;
+                    final coordinates = record.coordinates;
+
+                    return Marker(
+                      point: coordinates,
+                      width: 121,
+                      height: 30,
+                      child: GestureDetector(
+                        onTap: () => showCardsOverlay(merchant.merchantId!),
+                        child: Container(
+                          color: Colors.transparent,
+                          child: Center(
+                            child: Text(
+                              "@${merchant.nickname ?? 'No Tag'}",
+                              softWrap: false,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            );
+          },
+        );
+
+      case LocationPermission.denied:
+        return _buildPermissionRequestUI(
+          "Megrim uses your location to show you nearby places.",
+          "Allow Location",
+          _requestLocationPermission,
+        );
+
+      case LocationPermission.deniedForever:
+        return _buildPermissionRequestUI(
+          "Location permissions have been denied. Please enable it in your device settings to use the map.",
+          "Open Settings",
+          Geolocator.openAppSettings, // Geolocator has a helper for this!
+        );
+
+      // This case handles `unableToDetermine`
+      default:
+        return _buildPermissionRequestUI(
+          "Could not determine location permission. Please try again.",
+          "Check Permission",
+          _checkLocationPermission,
+        );
+    }
+  }
+
+  /// A reusable widget for the permission request UI.
+  Widget _buildPermissionRequestUI(
+      String text, String buttonText, VoidCallback onPressed) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.location_on, color: Colors.grey, size: 80),
+            const SizedBox(height: 20),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              ),
+              onPressed: onPressed,
+              child: Text(buttonText),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Dynamically calculate the available screen height
+    screenHeight = MediaQuery.of(context).size.height -
+        (3.8 * kToolbarHeight); // Subtract twice the AppBar height
+    bottomHeight = (MediaQuery.of(context).size.height - screenHeight) * .5;
+    paddingHeight = bottomHeight * .18;
   }
 }

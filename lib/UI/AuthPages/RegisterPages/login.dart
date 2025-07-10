@@ -7,7 +7,8 @@ import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 
 import 'package:megrim/UI/AuthPages/components/mybutton.dart';
 import 'package:megrim/UI/AuthPages/components/mytextfield.dart';
-import 'package:megrim/UI/BottomBar/bottombar.dart';
+import 'package:megrim/UI/Navigation/navigation.dart';
+
 import 'package:megrim/UI/TerminalPages/select.dart';
 import 'package:megrim/config.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -69,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
           debugPrint("CustomerLogin");
           // Navigate to AuthPage if responseValue is greater than 0
           Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (context) => const AuthPage()));
+              MaterialPageRoute(builder: (context) => const Navigation()));
         } else {
           debugPrint("MerchantLogin");
 
@@ -82,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
           Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                  builder: (context) => const TerminalIdScreen()));
+                  builder: (context) => const SelectPage()));
         }
       } catch (e) {
         // Handle any parsing or other errors

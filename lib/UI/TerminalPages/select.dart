@@ -1,44 +1,54 @@
 import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 import 'package:megrim/UI/AuthPages/components/toggle.dart';
+import 'package:megrim/UI/TerminalPages/create.dart';
+import 'package:megrim/UI/TerminalPages/inventory.dart';
 import 'package:megrim/UI/TerminalPages/terminal.dart';
-import 'package:megrim/config.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
-class TerminalIdScreen extends StatefulWidget {
-  const TerminalIdScreen({super.key});
+class SelectPage extends StatefulWidget {
+  const SelectPage({super.key});
 
   @override
-  TerminalIdScreenState createState() => TerminalIdScreenState();
+  SelectPageState createState() => SelectPageState();
 }
 
-class TerminalIdScreenState extends State<TerminalIdScreen> {
-  final ValueNotifier<String?> selectedLetter = ValueNotifier<String?>(null);
-  Set<String> activeTerminals = {};
-
+class SelectPageState extends State<SelectPage> {
   @override
   void initState() {
     super.initState();
-    _fetchActiveTerminals();
+    _setUpInventory();
   }
 
-  Future<void> _handleSubmit(String terminal) async {
+  Future<void> _setUpInventory() async {
     final loginData = LoginCache();
     final negativeMerchantId = await loginData.getUID();
     final merchantId = -1 * negativeMerchantId;
 
-    Navigator.pushAndRemoveUntil(
+    try {
+      debugPrint("Setting up inventory...");
       // ignore: use_build_context_synchronously
-      context,
+      final inv = Provider.of<Inventory>(context, listen: false);
+      await inv.fetchMerchantDetails(merchantId);
+      debugPrint("Inventory setup completed successfully.");
+    } catch (e) {
+      debugPrint("Error setting up inventory: $e");
+    }
+  }
+
+
+  void _createEmployee() async {
+    final loginData = LoginCache();
+    final negativeMerchantId = await loginData.getUID();
+    final merchantId = -1 * negativeMerchantId;
+    // ignore: use_build_context_synchronously
+    await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => Terminal(
-          terminal: terminal.toUpperCase(),
-          merchantId: merchantId,
-        ),
+        builder: (_) => CreateEmployeePage(merchantId: merchantId),
       ),
-      (Route<dynamic> route) => false, // Remove all previous routes
     );
+    // when CreateEmployeePage pops with `pop(true)`, you can refresh:
+    setState(() {});
   }
 
   void _logout() {
@@ -56,148 +66,163 @@ class TerminalIdScreenState extends State<TerminalIdScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final inv = Provider.of<Inventory>(context);
+    final merchant = inv.merchant;
+
+    if (merchant == null) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+      );
+    }
+
+    final employees = merchant.employees ?? [];
+
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 50),
-            const SizedBox(height: 150),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Text(
-                  'Megrim',
-                  style: GoogleFonts.megrim(
-                    textStyle: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 47,
-                      fontWeight: FontWeight.bold,
-                    ),
+            // Header
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.logout, color: Colors.redAccent),
+                    iconSize: 27,
+                    onPressed: _logout,
+                    tooltip: 'Logout',
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 50),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '        Select Terminal Id',
-                style: TextStyle(
-                  fontSize: 17.5,
-                  color: Colors.white,
-                ),
+                  const Text(
+                    "Employees",
+                    style: TextStyle(color: Colors.white, fontSize: 22),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add, color: Colors.white),
+                    iconSize: 33,
+                    onPressed: _createEmployee,
+                    tooltip: 'Add Employee',
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 10),
+            // Body Content
             Expanded(
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 6, // 6 columns for the alphabet buttons
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                ),
-                itemCount: 30, // 26 letters + 4 additional spaces
-                itemBuilder: (context, index) {
-                  if (index < 26) {
-                    final letter = String.fromCharCode(65 + index); // A to Z
-                    return ValueListenableBuilder<String?>(
-                      valueListenable: selectedLetter,
-                      builder: (context, selected, child) {
-                        return ElevatedButton(
-                          onPressed: () {
-                            selectedLetter.value = letter;
-                            _handleSubmit(
-                                letter); // Automatically submit on selection
-                          },
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: selected == letter
-                                ? Colors.black
-                                : Colors.white,
-                            backgroundColor: selected == letter
-                                ? Colors.white
-                                : activeTerminals.contains(letter)
-                                    ? Colors.red[800] // Active terminal's button is green
-                                    : Colors.grey[
-                                        800], // Inactive terminal's button is grey
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 20, horizontal: 10),
+              child: employees.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.people_outline,
+                              color: Colors.white24, size: 80),
+                          const SizedBox(height: 20),
+                          const Text(
+                            "No Employees Found",
+                            style:
+                                TextStyle(color: Colors.white70, fontSize: 18),
                           ),
-                          child: Text(
-                            letter,
-                            style: GoogleFonts.poppins(
-                              textStyle: const TextStyle(
-                                fontSize: 24,
+                          const SizedBox(height: 20),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: Colors.black,
+                              backgroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 0),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
                               ),
                             ),
+                            icon: const Icon(Icons.add),
+                            label: const Text("Create First Employee",
+                                style: TextStyle(fontSize: 16)),
+                            onPressed: _createEmployee,
+                          ),
+                        ],
+                      ),
+                    )
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(16.0),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 24,
+                        childAspectRatio: 0.8,
+                      ),
+                      itemCount: employees.length,
+                      itemBuilder: (ctx, i) {
+                        final emp = employees[i];
+                        final name = emp.name ?? "";
+
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => Terminal(
+                                  employeeId: emp.employeeId!,
+                                  merchantId: merchant.merchantId!,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // ✨ --- NEW: Outer CircleAvatar for the white border --- ✨
+                              CircleAvatar(
+                                radius: 101,
+                                backgroundColor: Colors.white,
+                                child: CircleAvatar(
+                                  radius: 100,
+                                  backgroundColor: Colors.grey.shade800,
+                                  backgroundImage: emp.imageUrl != null
+                                      ? NetworkImage(emp.imageUrl!)
+                                      : null,
+                                  child: emp.imageUrl == null
+                                      ? const Icon(Icons.person,
+                                          size: 35, color: Colors.white60)
+                                      : null,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                name,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              // ✨ --- NEW: Email text --- ✨
+                              Text(
+                                emp.email ?? '',
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       },
-                    );
-                  } else if (index == 29) {
-                    // The 4th extra space (index 29)
-                    return ElevatedButton(
-                      onPressed: _logout,
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.red[800],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 20, horizontal: 10),
-                      ),
-                      child: Text(
-                        'Logout',
-                        style: GoogleFonts.poppins(
-                          textStyle: const TextStyle(
-                            fontSize: 24,
-                          ),
-                        ),
-                      ),
-                    );
-                  } else {
-                    return const SizedBox
-                        .shrink(); // Empty space for the other 3 positions
-                  }
-                },
-              ),
+                    ),
             ),
           ],
         ),
       ),
     );
-  }
-
-  Future<void> _fetchActiveTerminals() async {
-    final loginData = LoginCache();
-    final negativeMerchantId = await loginData.getUID();
-    final merchantId = -1 * negativeMerchantId;
-
-
-    try {
-      final url = Uri.parse(
-          "${AppConfig.redisHttpBaseUrl}/checkTerminals?merchantId=$merchantId");
-
-          // final url = Uri.parse(
-          // "${AppConfig.postgresApiBaseUrl}/ws/http/checkTerminals?merchantId=$merchantId");
-      final response = await http.get(url);
-
-      if (response.statusCode == 200) {
-        setState(() {
-          activeTerminals =
-              response.body.split('').toSet(); // Parse the response string
-        });
-      } else {
-        debugPrint(
-            "Failed to fetch active terminals. Status: ${response.statusCode}");
-      }
-    } catch (e) {
-      debugPrint("Error fetching active terminals: $e");
-    }
   }
 }

@@ -48,6 +48,8 @@ dependencies:
   geolocator: ^14.0.1
   geocoding: ^4.0.0
   flutter_map: ^7.0.2
+  image_picker: ^0.8.7+3
+  path: ^1.8.3
  
   
   

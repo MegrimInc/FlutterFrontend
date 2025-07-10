@@ -1,5 +1,5 @@
+import 'dart:async';
 import 'dart:convert';
-
 import 'package:megrim/DTO/merchant.dart';
 import 'package:megrim/DTO/category.dart';
 import 'package:megrim/DTO/item.dart';
@@ -10,7 +10,6 @@ import 'package:http/http.dart' as http;
 class Inventory extends ChangeNotifier {
   static final Inventory _instance = Inventory._internal();
 
-  // Step 2: Private constructor
   Inventory._internal();
 
   // Step 3: Factory method to return the instance
@@ -18,7 +17,7 @@ class Inventory extends ChangeNotifier {
     return _instance;
   }
 
-  late Merchant merchant;
+  Merchant? merchant;
   final Map<int, Item> _items = {};
   final Map<int, Category> _categoriesById = {};
   final Map<String, List<int>> _categoryItemMap = {};
@@ -27,10 +26,9 @@ class Inventory extends ChangeNotifier {
   String _selectedCategory = '';
 
   Future<void> fetchMerchantDetails(int merchantId) async {
-    
     try {
-    
-      final response = await http.get(Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/$merchantId'));
+      final response = await http.get(
+          Uri.parse('${AppConfig.postgresHttpBaseUrl}/employee/$merchantId'));
       //debugPrint("Received response with status code: ${response.statusCode}");
 
       if (response.statusCode == 200) {
@@ -50,62 +48,63 @@ class Inventory extends ChangeNotifier {
     }
   }
 
-  
+  Future<void> fetchInventoryByMerchant(int merchantId) async {
+    final response = await http.get(
+      Uri.parse(
+          '${AppConfig.postgresHttpBaseUrl}/employee/getInventoryByMerchant/$merchantId'),
+    );
 
-Future<void> fetchInventoryByMerchant(int merchantId) async {
-  final response = await http.get(
-    Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/getInventoryByMerchant/$merchantId'),
-  );
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> json = jsonDecode(response.body);
+      final List<dynamic> itemJsonList = json['items'];
+      final List<dynamic> categoryJsonList = json['categories'];
 
-  if (response.statusCode == 200) {
-    final Map<String, dynamic> json = jsonDecode(response.body);
-    final List<dynamic> itemJsonList = json['items'];
-    final List<dynamic> categoryJsonList = json['categories'];
+      final Map<String, List<int>> tempCategoryMap = {};
 
-    final Map<String, List<int>> tempCategoryMap = {};
+      // Load categories into the internal map
+      _categoriesById.clear();
+      for (var categoryJson in categoryJsonList) {
+        final category = Category(
+          categoryId: categoryJson['categoryId'],
+          name: categoryJson['name'],
+        );
+        _categoriesById[category.categoryId] = category;
+      }
 
-    // Load categories into the internal map
-    _categoriesById.clear();
-    for (var categoryJson in categoryJsonList) {
-      final category = Category(
-        categoryId: categoryJson['categoryId'],
-        name: categoryJson['name'],
-      );
-      _categoriesById[category.categoryId] = category;
-    }
+      // Process items
+      _items.clear();
+      for (var itemJson in itemJsonList) {
+        final item = Item.fromJson(itemJson);
+        setItem(item); // add to _items map
 
-    // Process items
-    _items.clear();
-    for (var itemJson in itemJsonList) {
-      final item = Item.fromJson(itemJson);
-      setItem(item); // add to _items map
-
-      for (int categoryId in item.categories) {
-        final categoryName = _categoriesById[categoryId]?.name;
-        if (categoryName != null) {
-          tempCategoryMap.putIfAbsent(categoryName, () => []).add(item.itemId);
+        for (int categoryId in item.categories) {
+          final categoryName = _categoriesById[categoryId]?.name;
+          if (categoryName != null) {
+            tempCategoryMap
+                .putIfAbsent(categoryName, () => [])
+                .add(item.itemId);
+          }
         }
       }
+
+      _categoryItemMap.clear();
+      _categoryItemMap.addAll(tempCategoryMap);
+
+      if (_categoryItemMap.isNotEmpty) {
+        _selectedCategory = _categoryItemMap.keys.first;
+      }
+
+      notifyListeners();
+    } else {
+      debugPrint('Failed to fetch inventory. Status: ${response.statusCode}');
     }
-
-    _categoryItemMap.clear();
-    _categoryItemMap.addAll(tempCategoryMap);
-
-    if (_categoryItemMap.isNotEmpty) {
-  _selectedCategory = _categoryItemMap.keys.first;
-}
-
-    notifyListeners();
-  } else {
-    debugPrint('Failed to fetch inventory. Status: ${response.statusCode}');
   }
-}
 
   void addItem(int itemId) {
-  
     // Initialize the item's map if it doesn't exist
     _inventoryCart.putIfAbsent(itemId, () => 0);
-   _inventoryCart.update(itemId, (quantity) => quantity + 1, ifAbsent: () => 1);
+    _inventoryCart.update(itemId, (quantity) => quantity + 1,
+        ifAbsent: () => 1);
     debugPrint("Instance Id: $hashCode");
     debugPrint('Updated inventory cart: $_inventoryCart');
 
@@ -116,42 +115,41 @@ Future<void> fetchInventoryByMerchant(int merchantId) async {
     notifyListeners();
   }
 
-
   void removeItem(int itemId) {
-  if (_inventoryCart.containsKey(itemId)) {
-    _inventoryCart[itemId] = _inventoryCart[itemId]! - 1;
+    if (_inventoryCart.containsKey(itemId)) {
+      _inventoryCart[itemId] = _inventoryCart[itemId]! - 1;
 
-    if (_inventoryCart[itemId]! <= 0) {
-      _inventoryCart.remove(itemId);
-      _inventoryOrder.remove(itemId);
+      if (_inventoryCart[itemId]! <= 0) {
+        _inventoryCart.remove(itemId);
+        _inventoryOrder.remove(itemId);
+      }
+
+      notifyListeners();
+    } else {
+      debugPrint('Item with Id $itemId not found in cart.');
     }
-
-    notifyListeners();
-  } else {
-    debugPrint('Item with Id $itemId not found in cart.');
   }
-}
 
+  String serializeInventoryCart(
+      Map<int, int> inventoryCart, int employeeId) {
+    final merchantId = merchant!.merchantId;
+    final List<Map<String, dynamic>> cartItems =
+        inventoryCart.entries.map((entry) {
+      return {
+        "itemId": entry.key,
+        "quantity": entry.value,
+      };
+    }).toList();
 
-  String serializeInventoryCart(Map<int, int> inventoryCart, String terminalId) {
-  final merchantId = merchant.merchantId;
-  final List<Map<String, dynamic>> cartItems = inventoryCart.entries.map((entry) {
-    return {
-      "itemId": entry.key,
-      "quantity": entry.value,
+    final String merchantIdAndEmployeeId = "$merchantId&$employeeId";
+
+    final Map<String, dynamic> result = {
+      "id": merchantIdAndEmployeeId,
+      "order": cartItems,
     };
-  }).toList();
 
-  final String merchantIdWithTerminal = "$merchantId$terminalId";
-
-  final Map<String, dynamic> result = {
-    "id": merchantIdWithTerminal,
-    "order": cartItems,
-  };
-
-  return jsonEncode(result);
-}
-
+    return jsonEncode(result);
+  }
 
   // Setters for the merchant object
   void setMerchant(Merchant newMerchant) {
@@ -175,7 +173,8 @@ Future<void> fetchInventoryByMerchant(int merchantId) async {
     return _items[itemId];
   }
 
-  List<int> getCategoryItems(String categoryName) => _categoryItemMap[categoryName] ?? [];
+  List<int> getCategoryItems(String categoryName) =>
+      _categoryItemMap[categoryName] ?? [];
 
   Map<int, int> get inventoryCart => _inventoryCart;
 

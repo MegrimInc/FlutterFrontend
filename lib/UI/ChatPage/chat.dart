@@ -17,6 +17,9 @@ class ChatPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        elevation: 0,
+        surfaceTintColor: Colors.black,
+        scrolledUnderElevation: 0,
         title: const Text(
           'Messages',
           style: TextStyle(fontWeight: FontWeight.bold),

@@ -1,6 +1,6 @@
 import 'package:megrim/Backend/database.dart';
-import 'package:megrim/Backend/cart.dart';
-import 'package:megrim/UI/CatalogPage/catalog.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
+import 'package:megrim/UI/WalletPage/wallet.dart';
 import 'package:megrim/main.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -33,6 +33,33 @@ class _BankPageState extends State<BankPage> {
     // Call sendGetRequest2 to fetch the latest data
     await sendGetPoints();
     setState(() {}); // Rebuild the UI with the new data
+  }
+
+
+  void showCardsOverlay(int merchantId) async {
+    _focusNode.unfocus();
+
+    if (!mounted) return;
+
+    // ✨ Change 1: Added merchantId as a parameter
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+
+    final customerId = await LoginCache().getUID();
+
+    if (customerId == 0) return;
+
+    // The rest of the function now uses the merchantId we passed in
+    entry = OverlayEntry(
+      builder: (context) => WalletPage(
+        onClose: () => entry.remove(),
+        customerId: customerId,
+        merchantId: merchantId,
+        isBlack: false, //TODO: CHANGE TO DYNAMIC
+      ),
+    );
+
+    overlay.insert(entry);
   }
 
   @override
@@ -133,19 +160,7 @@ class _BankPageState extends State<BankPage> {
                             'https://www.barzzy.site/images/default.png';
 
                     return GestureDetector(
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (context) {
-                            Cart cart = Cart();
-                            cart.setMerchant(merchantId);
-
-                            return CatalogPage(
-                              merchantId: merchantId,
-                              cart: cart,
-                            );
-                          },
-                        ));
-                      },
+                       onTap: () => showCardsOverlay(merchantId),
                       child: ListTile(
                         leading: CircleAvatar(
                           radius: 30,

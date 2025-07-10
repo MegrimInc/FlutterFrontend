@@ -1,9 +1,9 @@
 import 'package:megrim/Backend/searchengine.dart';
-import 'package:megrim/Backend/cart.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 import 'package:megrim/UI/SearchPage/searchbar.dart';
 import 'package:flutter/material.dart';
+import 'package:megrim/UI/WalletPage/wallet.dart';
 import 'package:provider/provider.dart';
-import 'package:megrim/UI/CatalogPage/catalog.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SearchPage extends StatefulWidget {
@@ -26,6 +26,32 @@ class SearchPageState extends State<SearchPage> {
     setState(() {
       _filteredMerchants = filteredMerchants;
     });
+  }
+
+  void showCardsOverlay(int merchantId) async {
+    _focusNode.unfocus();
+
+    if (!mounted) return;
+
+    // ✨ Change 1: Added merchantId as a parameter
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+
+    final customerId = await LoginCache().getUID();
+
+    if (customerId == 0) return;
+
+    // The rest of the function now uses the merchantId we passed in
+    entry = OverlayEntry(
+      builder: (context) => WalletPage(
+        onClose: () => entry.remove(),
+        customerId: customerId,
+        merchantId: merchantId,
+        isBlack: false, //TODO: CHANGE TO DYNAMIC
+      ),
+    );
+
+    overlay.insert(entry);
   }
 
   @override
@@ -58,22 +84,7 @@ class SearchPageState extends State<SearchPage> {
                       displayText,
                       style: GoogleFonts.sourceSans3(color: Colors.grey),
                     ),
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) {
-                          // Create a new Cart instance and initialize it
-                          Cart cart = Cart();
-                          cart.setMerchant(
-                              merchantId); // Set the merchant Id for the cart
-
-                          // Pass the newly created Cart instance to the MenuPage
-                          return CatalogPage(
-                            merchantId: merchantId,
-                            cart: cart,
-                          );
-                        },
-                      ));
-                    },
+                    onTap: () => showCardsOverlay(merchantId),
                   );
                 },
               ),

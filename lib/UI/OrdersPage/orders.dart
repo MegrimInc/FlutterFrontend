@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
 import 'package:megrim/Backend/database.dart';
 import 'package:megrim/Backend/cart.dart';
 import 'package:megrim/Backend/websocket.dart';
@@ -6,20 +9,24 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:megrim/DTO/transaction.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
+import 'package:megrim/config.dart';
 import 'package:provider/provider.dart';
 
-
-class PickupPage extends StatefulWidget {
-  const PickupPage({super.key});
+class OrdersPage extends StatefulWidget {
+  const OrdersPage({super.key});
 
   @override
-  State<PickupPage> createState() => PickupPageState();
+  State<OrdersPage> createState() => OrdersPageState();
 }
 
-class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
+class OrdersPageState extends State<OrdersPage> with WidgetsBindingObserver {
   late PageController _pageController; // Define a PageController
   int currentPage = 0;
   late double screenHeight;
+  List<Transaction> transactionHistory = [];
+  bool isHistoryLoading = false;
 
   @override
   void initState() {
@@ -28,12 +35,43 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
 
     Future.delayed(const Duration(milliseconds: 500), () {
-    if (mounted) {
-      final websocket = Provider.of<Websocket>(context, listen: false);
-      websocket.sendRefreshMessage(context); 
-    }
-  });
+      if (mounted) {
+        final websocket = Provider.of<Websocket>(context, listen: false);
+        websocket.sendRefreshMessage(context);
+        _fetchTransactionHistory();
+      }
+    });
+  }
 
+  Future<void> _fetchTransactionHistory() async {
+    setState(() => isHistoryLoading = true);
+
+    try {
+      final loginCache = Provider.of<LoginCache>(context, listen: false);
+      final customerId = await loginCache.getUID();
+
+      final response = await http.get(
+        Uri.parse(
+            '${AppConfig.postgresHttpBaseUrl}/customer/orders/$customerId'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        setState(() {
+          transactionHistory = data.map((json) {
+            return Transaction.fromJson(json);
+          }).toList();
+          isHistoryLoading = false;
+        });
+      } else {
+        debugPrint(
+            "Failed to fetch transaction history: ${response.statusCode}");
+        setState(() => isHistoryLoading = false);
+      }
+    } catch (e) {
+      debugPrint("Error fetching transaction history: $e");
+      setState(() => isHistoryLoading = false);
+    }
   }
 
   @override
@@ -122,45 +160,63 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
                             });
                           },
                           itemBuilder: (context, verticalIndex) {
-                            final merchantId = orders[verticalIndex];
-                            final order = localDatabase.getOrderForMerchant(merchantId);
+                            final pair =
+                                orders[verticalIndex]; // MapEntry<int, int>
+                            final merchantId = pair.key;
+                            final employeeId = pair.value;
+                            final order =
+                                localDatabase.getOrderForMerchantAndEmployee(
+                                    merchantId, employeeId);
 
-                            if (order == null) {
-                              return const Center(
-                                child: Text(
-                                  'No orders found',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 17,
-                                  ),
-                                ),
-                              );
-                            }
-
-                            return _buildOrderCard(order);
+                            return PageView(
+                              scrollDirection: Axis.horizontal,
+                              children: [
+                                order != null
+                                    ? _buildOrderCard(order)
+                                    : const Center(
+                                        child: Text(
+                                          'No active orders',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 17,
+                                          ),
+                                        ),
+                                      ),
+                                _buildTransactionHistory(),
+                              ],
+                            );
                           },
                         )
                       : SingleChildScrollView(
                           physics: const AlwaysScrollableScrollPhysics(),
                           child: SizedBox(
-                              height:
-                                  screenHeight, // Use the class variable here
-                              child: orders.isNotEmpty &&
-                                      localDatabase
-                                              .getOrderForMerchant(orders.first) !=
-                                          null
-                                  ? _buildOrderCard(localDatabase
-                                      .getOrderForMerchant(orders.first)!)
-                                  : const Center(
-                                      child: Text(
-                                        'No orders found.',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 17,
+                            height: screenHeight,
+                            child: PageView(
+                              scrollDirection: Axis.horizontal,
+                              children: [
+                                orders.isNotEmpty &&
+                                        localDatabase
+                                                .getOrderForMerchantAndEmployee(
+                                                    orders.first.key,
+                                                    orders.first.value) !=
+                                            null
+                                    ? _buildOrderCard(localDatabase
+                                        .getOrderForMerchantAndEmployee(
+                                            orders.first.key,
+                                            orders.first.value)!)
+                                    : Center(
+                                        child: Text(
+                                          'No active orders',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 17,
+                                          ),
                                         ),
                                       ),
-                                    )),
-                        ));
+                                _buildTransactionHistory(),
+                              ],
+                            ),
+                          )));
             },
           );
         },
@@ -171,11 +227,180 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
   Future<void> _refreshOrders(BuildContext context) async {
     final websocket = Provider.of<Websocket>(context, listen: false);
     websocket.sendRefreshMessage(context);
+    _fetchTransactionHistory();
     debugPrint('Order list has been refreshed.');
+  }
+
+  Widget _buildTransactionHistory() {
+    if (isHistoryLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
+    }
+
+    if (transactionHistory.isEmpty) {
+      return const Center(
+        child: Text(
+          'No past orders',
+          style: TextStyle(color: Colors.white, fontSize: 17),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: transactionHistory.length,
+      itemBuilder: (context, index) {
+        final order = transactionHistory[index];
+
+        // Merge items with the same name regardless of payment type
+        final Map<String, int> mergedItems = {};
+        for (var item in order.items) {
+          mergedItems.update(
+            item.itemName,
+            (existingQty) => existingQty + item.quantity,
+            ifAbsent: () => item.quantity,
+          );
+        }
+
+        final hasPoints =
+            order.items.any((item) => item.paymentType == 'points');
+        final hasRegular =
+            order.items.any((item) => item.paymentType == 'regular');
+        final paymentTypeSummary = (hasPoints && hasRegular)
+            ? 'Payment: Mixed'
+            : hasPoints
+                ? 'Payment: Points'
+                : 'Payment: Regular';
+
+        // Format timestamp inline
+        String formattedTimestamp;
+        try {
+          final dateTime = DateTime.parse(order.timestamp);
+          formattedTimestamp =
+              '${dateTime.month}/${dateTime.day}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+        } catch (_) {
+          formattedTimestamp = order.timestamp;
+        }
+
+        final merchant = LocalDatabase.getMerchantById(order.merchantId);
+
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Row(
+                      children: [
+                        if (order.totalRegularPrice > 0)
+                          Text(
+                            '\$${order.totalRegularPrice.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        if (order.totalRegularPrice > 0 &&
+                            order.totalPointPrice > 0)
+                          Text(
+                            ', ',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        if (order.totalPointPrice > 0)
+                          Text(
+                            '${order.totalPointPrice} pts',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Text(
+                      order.status == 'delivered'
+                          ? 'COMPLETED'
+                          : order.status == 'canceled'
+                              ? 'CANCELED'
+                              : order.status.toUpperCase(),
+                      style: TextStyle(
+                        color: order.status == 'delivered'
+                            ? Colors.lightGreenAccent
+                            : Colors.red,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ...mergedItems.entries.map((entry) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text(
+                        '${entry.key} x${entry.value}',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    )),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text(
+                      formattedTimestamp,
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '@${merchant?.nickname ?? "Unknown"}',
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildOrderCard(CustomerOrder order) {
     final merchant = LocalDatabase.getMerchantById(order.merchantId);
+
+    final employee = Provider.of<LocalDatabase>(context, listen: false)
+        .findEmployeeById(order.merchantId, order.employeeId);
+
+    // Use employee image if it exists, otherwise fallback
+    final String imageUrl =
+        (employee?.imageUrl != null && employee!.imageUrl!.isNotEmpty)
+            ? employee.imageUrl!
+            : 'https://www.barzzy.site/images/default.png';
+
+    final String workerName =
+        (employee?.name?.isNotEmpty ?? false) ? employee!.name! : 'Loading...';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
@@ -189,8 +414,7 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
             children: [
               ClipOval(
                 child: CachedNetworkImage(
-                  imageUrl: merchant?.logoImg ??
-                      'https://www.barzzy.site/images/default.png',
+                  imageUrl: imageUrl,
                   fit: BoxFit.cover,
                   width: 100,
                   height: 100,
@@ -198,46 +422,53 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 30),
               Text(
-                merchant?.name ?? 'No Tag',
+                "@${merchant?.nickname ?? 'No Tag'}",
                 style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              const SizedBox(height: 3),
+              Text(
+                workerName,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 21,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 25),
-          _buildStatusBar(order.status, order.terminal),
-          const SizedBox(height: 25),
+          _buildStatusBar(order.status),
+          const SizedBox(height: 10),
           Row(
             children: [
               const Spacer(),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Text(
-                    '*${order.name}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 21,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    ' Worker: ${order.terminal.isNotEmpty ? order.terminal: 'N/A'}',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 21,
-                    ),
-                  ),
-                ],
-              ),
+              // Column(
+              //   mainAxisAlignment: MainAxisAlignment.start,
+              //   children: [
+              //     Text(
+              //       '${order.name}',
+              //       style: const TextStyle(
+              //         color: Colors.white,
+              //         fontSize: 21,
+              //         fontWeight: FontWeight.bold,
+              //       ),
+              //     ),
+              //     //const SizedBox(height: 5),
+              //     // Text(
+              //     //   '$workerName',
+              //     //   style: const TextStyle(
+              //     //     color: Colors.grey,
+              //     //     fontSize: 21,
+              //     //   ),
+              //     // ),
+              //   ],
+              // ),
               const Spacer(),
             ],
           ),
-          const Spacer(flex: 1),
           _buildItemsGrid(order.items),
           const Spacer(flex: 2),
           _buildBottomButton(order),
@@ -247,24 +478,21 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildStatusBar(String status, String terminal) {
+  Widget _buildStatusBar(String status) {
     // Define colors and icons for each stage
     Color inactiveColor = Colors.grey;
     Color inQueueColor = Colors.orange;
-    Color claimedColor = Colors.yellow.shade400;
     Color readyColor = Colors.lightGreenAccent;
     Color arrivedColor = Colors.blueAccent;
 
     IconData inQueueIcon = Icons.access_time;
-    IconData claimedIcon = Icons.wine_bar;
     IconData readyIcon = Icons.check_circle;
 
-    bool isInQueue = status == "unready" && terminal.isEmpty;
-    bool isClaimed = status == "unready" && terminal.isNotEmpty;
-    bool isReady = status == "ready" && terminal.isNotEmpty;
-    bool isArrived = status == "arrived" && terminal.isNotEmpty;
+    bool isInQueue = status == "unready";
+    bool isReady = status == "ready";
+    bool isArrived = status == "arrived";
     bool isDeliveredOrCanceled =
-        (status == "delivered" || status == "canceled") && terminal.isNotEmpty;
+        (status == "delivered" || status == "canceled");
 
     if (isDeliveredOrCanceled) {
       return ElevatedButton(
@@ -284,38 +512,28 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
     }
 
     Color queueColor;
-    Color claimedStageColor;
+
     Color readyStageColor;
     Color firstConnectorColor;
     Color secondConnectorColor;
 
     if (isReady) {
       queueColor = readyColor;
-      claimedStageColor = readyColor;
       readyStageColor = readyColor;
       firstConnectorColor = readyColor;
       secondConnectorColor = readyColor;
-    } else if (isClaimed) {
-      queueColor = claimedColor;
-      claimedStageColor = claimedColor;
-      readyStageColor = inactiveColor;
-      firstConnectorColor = claimedColor;
-      secondConnectorColor = inactiveColor;
     } else if (isInQueue) {
       queueColor = inQueueColor;
-      claimedStageColor = inactiveColor;
       readyStageColor = inactiveColor;
       firstConnectorColor = inactiveColor;
       secondConnectorColor = inactiveColor;
     } else if (isArrived) {
       queueColor = arrivedColor;
-      claimedStageColor = arrivedColor;
       readyStageColor = arrivedColor;
       firstConnectorColor = arrivedColor;
       secondConnectorColor = arrivedColor;
     } else {
       queueColor = inactiveColor;
-      claimedStageColor = inactiveColor;
       readyStageColor = inactiveColor;
       firstConnectorColor = inactiveColor;
       secondConnectorColor = inactiveColor;
@@ -349,23 +567,6 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
               color: firstConnectorColor,
             ),
           ),
-        ),
-        Column(
-          children: [
-            Icon(
-              claimedIcon,
-              color: claimedStageColor,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              "Preparing",
-              style: TextStyle(
-                fontSize: 12,
-                color: claimedStageColor,
-              ),
-            ),
-          ],
         ),
         Expanded(
           child: Padding(
@@ -420,20 +621,13 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
           children: [
             const SizedBox(height: 10),
             if (totalPages > 1)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Spacer(),
-                  Text(
-                    '${currentPage + 1} / $totalPages', // Current page / Total pages
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 25),
-                ],
+              Text(
+                '${currentPage + 1} / $totalPages', // Current page / Total pages
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             const SizedBox(height: 25),
             SizedBox(
@@ -565,23 +759,19 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
   }
 
   Widget _buildBottomButton(CustomerOrder order) {
+    debugPrint("Rendering order with status: '${order.status}'");
     Color activeColor;
-    if (order.status == "ready" && order.terminal.isNotEmpty) {
+    if (order.status == "ready") {
       activeColor = Colors.lightGreenAccent;
-    } else if (order.status == "arrived" && order.terminal.isNotEmpty) {
+    } else if (order.status == "arrived") {
       activeColor = Colors.blueAccent;
-    } else if (order.status == "unready" && order.terminal.isNotEmpty) {
-      activeColor = Colors.yellow.shade400;
-    } else if (order.status == "unready" && order.terminal.isEmpty) {
+    } else if (order.status == "unready") {
       activeColor = Colors.orange;
     } else {
       activeColor = Colors.grey;
     }
 
-    if ((order.status == "delivered" || order.status == "canceled") &&
-        order.terminal.isNotEmpty) {
-      return Center(child: _buildReorderButton(order));
-    } else if (order.status == "unready" && order.terminal.isEmpty) {
+    if (order.status == "unready") {
       return Center(
         child: SizedBox(
           height: 40,
@@ -596,29 +786,14 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
           ),
         ),
       );
-    } else if (order.status == "unready" && order.terminal.isNotEmpty) {
-      return Center(
-        child: SizedBox(
-          height: 40,
-          child: Text(
-            'Your order is being prepared',
-            style: GoogleFonts.poppins(
-              color: activeColor,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    } else if (order.status == "ready" && order.terminal.isNotEmpty) {
+    } else if (order.status == "ready") {
       return Center(child: _buildArriveButton(order));
-    } else if (order.status == "arrived" && order.terminal.isNotEmpty) {
+    } else if (order.status == "arrived") {
       return Center(
         child: SizedBox(
           height: 40,
           child: Text(
-            'Worker ${order.terminal} has been notified',
+            'Worker has been notified',
             style: GoogleFonts.poppins(
               color: activeColor,
               fontSize: 18,
@@ -645,12 +820,11 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
 
         // Navigate to MenuPage
         await Navigator.of(context).pushNamed(
-          '/menu',
+          '/items',
           arguments: {
             'merchantId': merchantId,
             'cart': cart,
-            'itemId':
-                order.items.first.itemId, // Optional itemId.
+            'itemId': order.items.first.itemId, // Optional itemId.
           },
         );
       },
@@ -680,16 +854,16 @@ class PickupPageState extends State<PickupPage> with WidgetsBindingObserver {
     return GestureDetector(
       onTap: () {
         final merchantId = order.merchantId;
+        final employeeId = order.employeeId;
 
-          final websocket = Provider.of<Websocket>(context, listen: false);
-          websocket.sendArriveMessage(merchantId);
+        final websocket = Provider.of<Websocket>(context, listen: false);
+        websocket.sendArriveMessage(merchantId, employeeId);
 
-          debugPrint('Arrive message sent for merchantId: $merchantId');
-        
+        debugPrint('Arrive message sent for merchantId: $merchantId');
       },
       child: Container(
-       height: 50,
-       width: 300,
+        height: 50,
+        width: 300,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),

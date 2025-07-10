@@ -1,38 +1,37 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:megrim/Backend/database.dart';
-import 'package:megrim/Backend/history.dart';
 import 'package:megrim/DTO/item.dart';
 import 'package:megrim/Backend/cart.dart';
-import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 import 'package:megrim/UI/CheckoutPage/checkout.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:megrim/UI/WalletPage/wallet.dart';
 import 'package:provider/provider.dart';
 import '../../DTO/merchant.dart';
 
-class CatalogPage extends StatefulWidget {
+class ItemsPage extends StatefulWidget {
   final int merchantId;
   final Cart cart;
   final int? itemId;
-  final String? terminal;
+  final int? employeeId;
+  final String pointOfSale;
 
-  const CatalogPage({
+  const ItemsPage({
     super.key,
     required this.merchantId,
     required this.cart,
     this.itemId,
-    this.terminal,
+    this.employeeId,
+    required this.pointOfSale
   });
 
   @override
-  CatalogpageState createState() => CatalogpageState();
+  ItemsPageState createState() => ItemsPageState();
 }
 
-class CatalogpageState extends State<CatalogPage>
+class ItemsPageState extends State<ItemsPage>
     with SingleTickerProviderStateMixin {
   String appBarTitle = '';
   bool isLoading = true;
@@ -87,7 +86,7 @@ class CatalogpageState extends State<CatalogPage>
 
     currentMerchant = LocalDatabase.getMerchantById(widget.merchantId);
     debugPrint(
-        'LocalDatabase instance in Catalogpage: ${LocalDatabase().hashCode}');
+        'LocalDatabase instance in ItemsPage: ${LocalDatabase().hashCode}');
     if (currentMerchant != null) {
       appBarTitle =
           '@${(currentMerchant!.nickname ?? 'Catalog Page').replaceAll(' ', '')}';
@@ -97,36 +96,11 @@ class CatalogpageState extends State<CatalogPage>
         .fetchCategoriesAndItems(widget.merchantId);
     debugPrint('Finished fetching items for merchantId: ${widget.merchantId}');
     debugPrint(
-        'LocalDatabase instance in Catalogpage: ${LocalDatabase().hashCode}');
+        'LocalDatabase instance in ItemsPage: ${LocalDatabase().hashCode}');
 
     setState(() {
       isLoading = false;
     });
-    final merchantHistory =
-        Provider.of<MerchantHistory>(context, listen: false);
-    merchantHistory.setTappedMerchantId(widget.merchantId);
-  }
-
-  void showCardsOverlay() async {
-    final overlay = Overlay.of(context);
-    late OverlayEntry entry;
-
-    final customerId = await LoginCache().getUID();
-    final merchantId = Provider.of<MerchantHistory>(context, listen: false)
-        .currentTappedMerchantId;
-
-    if (merchantId == null || customerId == 0) return;
-
-    entry = OverlayEntry(
-      builder: (context) => WalletPage(
-        onClose: () => entry.remove(),
-        customerId: customerId,
-        merchantId: merchantId,
-        isBlack: false, //TODO: CHANGE TO DYNAMIC 
-      ),
-    );
-
-    overlay.insert(entry);
   }
 
   @override
@@ -181,13 +155,13 @@ class CatalogpageState extends State<CatalogPage>
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Colors.grey.withOpacity(0.3),
+            color: Colors.grey.withValues(alpha: 0.3),
             width: 0.25,
           ),
         ),
         color: Colors.black, // Removed gradient
       ),
-      padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 5.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -209,17 +183,14 @@ class CatalogpageState extends State<CatalogPage>
               ),
             ),
           ),
-          Consumer<Cart>(
-            builder: (context, cart, _) {
-              return IconButton(
-                  icon: const Icon(
-                    FontAwesomeIcons.solidCreditCard,
-                    color: Colors.grey,
-                    size: 17.5,
-                  ),
-                  onPressed: showCardsOverlay);
-            },
-          ),
+          IconButton(
+            icon: const Icon(
+              Icons.more_horiz,
+              color: Colors.white54,
+              size: 30,
+            ),
+            onPressed: () {},
+          )
         ],
       ),
     );
@@ -340,8 +311,8 @@ class CatalogpageState extends State<CatalogPage>
                                       if (itemQuantities > 0) {
                                         return Container(
                                           decoration: BoxDecoration(
-                                            color:
-                                                Colors.black.withOpacity(0.6),
+                                            color: Colors.black
+                                                .withValues(alpha: 0.6),
                                             borderRadius:
                                                 BorderRadius.circular(5),
                                           ),
@@ -395,14 +366,15 @@ class CatalogpageState extends State<CatalogPage>
   }
 
   Route _createRoute(Item item, Cart cart, {int targetPage = 0}) {
-    debugPrint("Catalogpage: Passing claimer = ${widget.terminal}");
+    debugPrint("ItemsPage: Passing claimer = ${widget.employeeId}");
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => CheckoutPage(
         item: item,
         cart: cart,
         merchantId: widget.merchantId,
         initialPage: targetPage,
-        terminal: widget.terminal,
+        employeeId: widget.employeeId,
+        pointOfSale: widget.pointOfSale
       ),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         var begin = 0.0;

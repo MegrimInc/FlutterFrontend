@@ -7,10 +7,9 @@ import 'package:megrim/Backend/database.dart';
 import 'package:megrim/DTO/merchant.dart';
 import 'package:megrim/DTO/customer.dart';
 import 'package:megrim/Backend/searchengine.dart';
-import 'package:megrim/Backend/recommended.dart';
-import 'package:megrim/UI/BottomBar/bottombar.dart';
 import 'package:megrim/Backend/cart.dart';
-import 'package:megrim/UI/CatalogPage/catalog.dart';
+import 'package:megrim/UI/Navigation/navigation.dart';
+import 'package:megrim/UI/ItemsPage/items.dart';
 import 'package:megrim/UI/CheckoutPage/checkout.dart';
 import 'package:megrim/Backend/websocket.dart';
 import 'package:megrim/UI/TerminalPages/inventory.dart';
@@ -24,9 +23,7 @@ import 'firebase_options.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'package:http/http.dart' as http;
-import 'package:megrim/Backend/history.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart'; // Crashlytics
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
@@ -42,7 +39,7 @@ const String currentIOSTabletVersion = '3.0.0'; // Define tablet version if diff
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  AppConfig.environment = Environment.live;
+  AppConfig.environment = Environment.test;
 
   Stripe.publishableKey = AppConfig.stripePublishableKey;
 
@@ -152,8 +149,6 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => localDatabase),
-        ChangeNotifierProvider(create: (context) => MerchantHistory()),
-        ChangeNotifierProvider(create: (context) => Recommended()),
         ChangeNotifierProvider(create: (_) => Inventory()),
         ChangeNotifierProvider(
             create: (context) => Websocket(context, navigatorKey)),
@@ -162,7 +157,7 @@ Future<void> main() async {
           update: (_, localDatabase, __) => SearchService(localDatabase),
         ),
       ],
-      child: Barzzy(
+      child: Megrim(
         loggedInAlready: loggedInAlready,
         isMerchant: isMerchant,
         navigatorKey: navigatorKey,
@@ -345,12 +340,12 @@ Future<void> detectIOSDeviceType() async {
 
 
 
-class Barzzy extends StatelessWidget {
+class Megrim extends StatelessWidget {
   final bool loggedInAlready;
   final bool isMerchant;
   final GlobalKey<NavigatorState> navigatorKey;
 
-  const Barzzy({
+  const Megrim({
     super.key,
     required this.loggedInAlready,
     required this.isMerchant,
@@ -359,9 +354,6 @@ class Barzzy extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Provider.of<MerchantHistory>(context, listen: false).setContext(context);
-    Provider.of<Recommended>(context, listen: false)
-        .fetchRecommendedMerchants(context);
 
     final String initialRoute;
     if (!loggedInAlready) {
@@ -386,22 +378,24 @@ class Barzzy extends StatelessWidget {
       ),
       initialRoute: initialRoute,
       routes: {
-        '/auth': (context) => const AuthPage(),
-        '/merchant': (context) => const TerminalIdScreen(),
+        '/auth': (context) => const Navigation(),
+        '/merchant': (context) => const SelectPage(),
         '/login': (context) => const LoginOrRegisterPage(),
-        '/orders': (context) => const AuthPage(selectedTab: 1),
-        '/menu': (context) {
+        '/orders': (context) => const Navigation(selectedTab: 1),
+        '/items': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map;
           final int merchantId = args['merchantId'];
           final Cart cart = args['cart'];
           final int? itemId = args['itemId']; // Optional parameter
-          final String? terminal = args['terminal'];
+          final int? employeeId = args['employeeId'];
+          final String pointOfSale = args['pointOfSale'];
 
-          return CatalogPage(
+          return ItemsPage(
             merchantId: merchantId,
             cart: cart,
             itemId: itemId, // Pass the optional itemId
-            terminal: terminal,
+            employeeId: employeeId,
+            pointOfSale: pointOfSale,
           );
         },
         '/itemFeed': (context) {
@@ -411,7 +405,8 @@ class Barzzy extends StatelessWidget {
             cart: args['cart'],
             merchantId: args['merchantId'],
             initialPage: args['initialPage'],
-            terminal: args['terminal'],
+            employeeId: args['employeeId'],
+            pointOfSale: args['pointOfSale'],
           );
         },
       },

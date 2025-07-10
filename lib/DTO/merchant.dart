@@ -1,5 +1,6 @@
 
 import 'dart:convert';
+import 'package:megrim/DTO/employee.dart';
 
 class Merchant {
   int? merchantId;
@@ -13,6 +14,7 @@ class Merchant {
   String? logoImg;
   String? storeImg;
   Map<String, String?>? discountSchedule;
+  List<Employee>? employees;
 
   
 
@@ -29,6 +31,7 @@ class Merchant {
       this.logoImg,
       this.storeImg,
       this.discountSchedule,
+      this.employees,
       }
       );
 
@@ -57,6 +60,7 @@ class Merchant {
       'logoImage': logoImg,
       'storeImage': storeImg,
       'discountSchedule': discountSchedule, 
+       'employees': employees?.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -78,6 +82,9 @@ class Merchant {
               ? Map<String, String?>.from(jsonDecode(json['discountSchedule']))
               : Map<String, String?>.from(json['discountSchedule']))
           : null,
-    );
+       employees: (json['employees'] as List<dynamic>?)
+            ?.map((e) => Employee.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
   }
 }

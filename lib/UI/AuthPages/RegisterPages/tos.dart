@@ -2,7 +2,7 @@
 
 import 'dart:convert';
 import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
-import 'package:megrim/UI/BottomBar/bottombar.dart';
+import 'package:megrim/UI/Navigation/navigation.dart';
 import 'package:megrim/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -43,7 +43,7 @@ class _RegisterPageState2 extends State<RegisterPage2> {
         debugPrint('TOS Response body: ${response.body}');
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const AuthPage()),
+          MaterialPageRoute(builder: (context) => const Navigation()),
         );
       } else {
         debugPrint('TOS Request failed with status: ${response.statusCode}');

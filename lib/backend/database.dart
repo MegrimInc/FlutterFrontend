@@ -5,6 +5,7 @@ import 'package:megrim/DTO/category.dart';
 import 'package:megrim/DTO/config.dart';
 import 'package:megrim/DTO/customer.dart';
 import 'package:megrim/DTO/customerorder.dart';
+import 'package:megrim/DTO/employee.dart';
 import 'package:megrim/DTO/item.dart';
 import 'package:megrim/DTO/point.dart';
 import 'package:megrim/config.dart';
@@ -28,12 +29,12 @@ class LocalDatabase with ChangeNotifier {
   }
 
   LocalDatabase._internal() {
-      updateAndCheckDiscountScheduleStatus();
+    updateAndCheckDiscountScheduleStatus();
   }
 
   final Map<int, Merchant> _merchants = {};
   final Map<int, Item> _items = {};
-  final Map<int, CustomerOrder> _merchantOrders = {};
+  final Map<int, Map<int, CustomerOrder>> _merchantOrders = {};
   final Map<int, Point> _customerPoints = {};
   final Map<int, bool> _discountScheduleMap = {};
   bool isPaymentPresent = false;
@@ -43,12 +44,11 @@ class LocalDatabase with ChangeNotifier {
   PaymentStatus paymentStatus = PaymentStatus.notPresent;
   Config? get config => _config;
 
-
-void setConfig(Config config) {
-  _config = config;
-  notifyListeners();
-  debugPrint("Configuration updated: $config");
-}
+  void setConfig(Config config) {
+    _config = config;
+    notifyListeners();
+    debugPrint("Configuration updated: $config");
+  }
 
   void updatePaymentStatus(PaymentStatus status) {
     paymentStatus = status;
@@ -57,13 +57,24 @@ void setConfig(Config config) {
   }
 
   void addOrUpdateOrderForMerchant(CustomerOrder order) {
-    _merchantOrders[order.merchantId] = order;
+  _merchantOrders.putIfAbsent(order.merchantId, () => {});
+  _merchantOrders[order.merchantId]![order.employeeId] = order;
+  notifyListeners();
+}
+
+  CustomerOrder? getOrderForMerchantAndEmployee(int merchantId, int employeeId) {
+  return _merchantOrders[merchantId]?[employeeId];
+}
+
+void removeOrderForMerchantAndEmployee(int merchantId, int employeeId) {
+  if (_merchantOrders.containsKey(merchantId)) {
+    _merchantOrders[merchantId]?.remove(employeeId);
+    if (_merchantOrders[merchantId]?.isEmpty ?? true) {
+      _merchantOrders.remove(merchantId);
+    }
     notifyListeners();
   }
-
-  CustomerOrder? getOrderForMerchant(int merchantId) {
-    return _merchantOrders[merchantId];
-  }
+}
 
   // Method to add a new merchant, generating an Id for it
   void addMerchant(Merchant merchant) {
@@ -85,11 +96,10 @@ void setConfig(Config config) {
         'Item with Id: ${item.itemId} added to LocalDatabase instance: $hashCode. Total items: ${_items.length}');
   }
 
-
   // Method to get minimal information necessary for search
   Map<int, Map<String, String>> getSearchableMerchantInfo() {
-    return _merchants.map((id, merchant) =>
-        MapEntry(id, {'name': merchant.name ?? '', 'address': merchant.address ?? ''}));
+    return _merchants.map((id, merchant) => MapEntry(
+        id, {'name': merchant.name ?? '', 'address': merchant.address ?? ''}));
   }
 
   // In LocalDatabase class
@@ -195,14 +205,16 @@ void setConfig(Config config) {
               if ((now.isAfter(start) || now.isAtSameMomentAs(start)) &&
                   (now.isBefore(end) || now.isAtSameMomentAs(end))) {
                 isDiscount = true;
-                debugPrint("Merchant $merchantId is within Discount Schedule range.");
+                debugPrint(
+                    "Merchant $merchantId is within Discount Schedule range.");
                 break;
               }
             }
           }
 
           if (!isDiscount) {
-            debugPrint("Merchant Id: $merchantId is NOT within any Discount Schedule range.");
+            debugPrint(
+                "Merchant Id: $merchantId is NOT within any Discount Schedule range.");
           }
 
           // Update Discount Schedule status if it has changed
@@ -217,7 +229,8 @@ void setConfig(Config config) {
 
       if (anyChanges) {
         notifyListeners();
-        debugPrint("Discount Schedule status updated for one or more merchants.");
+        debugPrint(
+            "Discount Schedule status updated for one or more merchants.");
       }
     } catch (e) {
       debugPrint("Failed to fetch NTP time: $e");
@@ -227,7 +240,8 @@ void setConfig(Config config) {
   // New function to check Discount Schedule status for a specific merchant
   Future<void> _checkDiscountScheduleForMerchant(int merchantId) async {
     DateTime now = (await NTP.now()).toUtc();
-    debugPrint("Checking Discount Schedule status for merchant $merchantId at time $now");
+    debugPrint(
+        "Checking Discount Schedule status for merchant $merchantId at time $now");
 
     bool isDiscount = false;
     final merchant = _merchants[merchantId];
@@ -271,7 +285,8 @@ void setConfig(Config config) {
           if ((now.isAfter(start) || now.isAtSameMomentAs(start)) &&
               (now.isBefore(end) || now.isAtSameMomentAs(end))) {
             isDiscount = true;
-            debugPrint("Merchant $merchantId is within Discount Schedule range.");
+            debugPrint(
+                "Merchant $merchantId is within Discount Schedule range.");
             break;
           }
         }
@@ -291,7 +306,7 @@ void setConfig(Config config) {
     return _discountScheduleMap[merchantId] ?? false;
   }
 
-   Customer? _customer;
+  Customer? _customer;
 
   Customer? get customer => _customer;
 
@@ -301,119 +316,133 @@ void setConfig(Config config) {
     debugPrint("Customer data updated in LocalDatabase: $customer");
   }
 
-
-
-/// Adds a single category
-void addCategory(Category category) {
-  _categoriesById[category.categoryId] = category;
-}
-
-void addCategories(int merchantId, Map<String, List<int>> categories) {
-  categoryMap[merchantId] = categories;
-  notifyListeners();
-}
-
-/// Adds a list of categories
-void addCategoriesList(List<Category> categories) {
-  for (final category in categories) {
+  /// Adds a single category
+  void addCategory(Category category) {
     _categoriesById[category.categoryId] = category;
   }
-}
 
-/// Retrieves category name by its ID
-String? getCategoryNameById(int categoryId) {
-  return _categoriesById[categoryId]?.name;
-}
+  void addCategories(int merchantId, Map<String, List<int>> categories) {
+    categoryMap[merchantId] = categories;
+    notifyListeners();
+  }
 
-/// Checks if categories are already loaded for a merchant
-bool categoriesExistForMerchant(int merchantId) {
-  return categoryMap.containsKey(merchantId);
-}
-
-/// Returns the full item list grouped by category name
-Map<String, List<int>> getFullItemListByMerchantId(int merchantId) {
-  return categoryMap[merchantId] ?? {};
-}
-
-/// Ensures a merchant is cached locally
-Future<void> checkForMerchant(int merchantId) async {
-  try {
-    if (!_merchants.containsKey(merchantId)) {
-      debugPrint("Merchant $merchantId not found locally. Fetching...");
-
-      final response = await http.get(Uri.parse("${AppConfig.postgresHttpBaseUrl}/customer/$merchantId"));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final Merchant merchant = Merchant.fromJson(data);
-        addMerchant(merchant);
-        debugPrint("Merchant $merchantId added to local cache.");
-      } else {
-        throw Exception("Failed to fetch merchant: ${response.statusCode}");
-      }
+  /// Adds a list of categories
+  void addCategoriesList(List<Category> categories) {
+    for (final category in categories) {
+      _categoriesById[category.categoryId] = category;
     }
-  } catch (error) {
-    debugPrint("Error fetching merchant $merchantId: $error");
-  }
-}
-
-Future<void> fetchCategoriesAndItems(int merchantId) async {
-  debugPrint('Fetching inventory for merchant $merchantId');
-  await checkForMerchant(merchantId);
-
-  if (categoriesExistForMerchant(merchantId)) {
-    debugPrint('Categories already exist for merchant $merchantId, skipping.');
-    return;
   }
 
-  final response = await http.get(
-    Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/getInventoryByMerchant/$merchantId'),
-  );
+  /// Retrieves category name by its ID
+  String? getCategoryNameById(int categoryId) {
+    return _categoriesById[categoryId]?.name;
+  }
 
-  if (response.statusCode == 200) {
-    debugPrint('Full JSON response from API: ${response.body}');
-    final Map<String, dynamic> json = jsonDecode(response.body);
+  /// Checks if categories are already loaded for a merchant
+  bool categoriesExistForMerchant(int merchantId) {
+    return categoryMap.containsKey(merchantId);
+  }
 
-    final List<dynamic> itemJsonList = json['items'];
-    final List<dynamic> categoryJsonList = json['categories'];
+  /// Returns the full item list grouped by category name
+  Map<String, List<int>> getFullItemListByMerchantId(int merchantId) {
+    return categoryMap[merchantId] ?? {};
+  }
 
-    final Map<String, List<int>> merchantCategories = {};
+  /// Ensures a merchant is cached locally
+  Future<void> checkForMerchant(int merchantId) async {
+    try {
+      if (!_merchants.containsKey(merchantId)) {
+        debugPrint("Merchant $merchantId not found locally. Fetching...");
 
-    // Load categories first so we can get names during item processing
-    addCategoriesList(categoryJsonList.map((e) => Category(
-      categoryId: e['categoryId'],
-      name: e['name'],
-    )).toList());
+        final response = await http.get(
+            Uri.parse("${AppConfig.postgresHttpBaseUrl}/customer/$merchantId"));
 
-    for (var itemJson in itemJsonList) {
-      final item = Item.fromJson(itemJson);
-      addItem(item);
-
-      debugPrint('Item ${item.itemId} added to LocalDatabase.');
-
-      if (item.image.isNotEmpty) {
-        final cachedImage = CachedNetworkImageProvider(item.image);
-        cachedImage.resolve(const ImageConfiguration()).addListener(
-          ImageStreamListener(
-            (image, _) => debugPrint('Cached image for ${item.image}'),
-            onError: (e, _) => debugPrint('Failed to cache image: $e'),
-          ),
-        );
-      }
-
-      for (int categoryId in item.categories) {
-        final categoryName = getCategoryNameById(categoryId);
-        if (categoryName != null) {
-          merchantCategories.putIfAbsent(categoryName, () => []).add(item.itemId);
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          final Merchant merchant = Merchant.fromJson(data);
+          addMerchant(merchant);
+          debugPrint("Merchant $merchantId added to local cache.");
+        } else {
+          throw Exception("Failed to fetch merchant: ${response.statusCode}");
         }
       }
+    } catch (error) {
+      debugPrint("Error fetching merchant $merchantId: $error");
+    }
+  }
+
+  Future<void> fetchCategoriesAndItems(int merchantId) async {
+    debugPrint('Fetching inventory for merchant $merchantId');
+    await checkForMerchant(merchantId);
+
+    if (categoriesExistForMerchant(merchantId)) {
+      debugPrint(
+          'Categories already exist for merchant $merchantId, skipping.');
+      return;
     }
 
-    addCategories(merchantId, merchantCategories);
-    debugPrint('Completed categorization for merchant $merchantId.');
-  } else {
-    debugPrint('Failed to fetch inventory for $merchantId. Status: ${response.statusCode}');
-  }
-}
+    final response = await http.get(
+      Uri.parse(
+          '${AppConfig.postgresHttpBaseUrl}/customer/getInventoryByMerchant/$merchantId'),
+    );
 
+    if (response.statusCode == 200) {
+      debugPrint('Full JSON response from API: ${response.body}');
+      final Map<String, dynamic> json = jsonDecode(response.body);
+
+      final List<dynamic> itemJsonList = json['items'];
+      final List<dynamic> categoryJsonList = json['categories'];
+
+      final Map<String, List<int>> merchantCategories = {};
+
+      // Load categories first so we can get names during item processing
+      addCategoriesList(categoryJsonList
+          .map((e) => Category(
+                categoryId: e['categoryId'],
+                name: e['name'],
+              ))
+          .toList());
+
+      for (var itemJson in itemJsonList) {
+        final item = Item.fromJson(itemJson);
+        addItem(item);
+
+        debugPrint('Item ${item.itemId} added to LocalDatabase.');
+
+        if (item.image.isNotEmpty) {
+          final cachedImage = CachedNetworkImageProvider(item.image);
+          cachedImage.resolve(const ImageConfiguration()).addListener(
+                ImageStreamListener(
+                  (image, _) => debugPrint('Cached image for ${item.image}'),
+                  onError: (e, _) => debugPrint('Failed to cache image: $e'),
+                ),
+              );
+        }
+
+        for (int categoryId in item.categories) {
+          final categoryName = getCategoryNameById(categoryId);
+          if (categoryName != null) {
+            merchantCategories
+                .putIfAbsent(categoryName, () => [])
+                .add(item.itemId);
+          }
+        }
+      }
+
+      addCategories(merchantId, merchantCategories);
+      debugPrint('Completed categorization for merchant $merchantId.');
+    } else {
+      debugPrint(
+          'Failed to fetch inventory for $merchantId. Status: ${response.statusCode}');
+    }
+  }
+
+  Employee? findEmployeeById(int merchantId, int employeeId) {
+    final merchant = _merchants[merchantId];
+    if (merchant == null || merchant.employees == null) return null;
+    for (final emp in merchant.employees!) {
+      if (emp.employeeId == employeeId) return emp;
+    }
+    return null;
+  }
 }
