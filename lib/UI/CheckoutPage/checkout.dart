@@ -28,15 +28,14 @@ class CheckoutPage extends StatefulWidget {
   final int? employeeId;
   final String pointOfSale;
 
-  const CheckoutPage({
-    super.key,
-    required this.item,
-    required this.cart,
-    required this.merchantId,
-    this.initialPage = 0,
-    this.employeeId,
-    required this.pointOfSale
-  });
+  const CheckoutPage(
+      {super.key,
+      required this.item,
+      required this.cart,
+      required this.merchantId,
+      this.initialPage = 0,
+      this.employeeId,
+      required this.pointOfSale});
 
   @override
   CheckoutPageState createState() => CheckoutPageState();
@@ -172,11 +171,6 @@ class CheckoutPageState extends State<CheckoutPage>
     };
 
     websocket.createOrder(order);
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      '/orders',
-      (Route<dynamic> route) => false,
-      arguments: merchantId,
-    );
   }
 
   Future<void> _showStripeSetupSheet(

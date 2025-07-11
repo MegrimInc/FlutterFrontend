@@ -1,8 +1,7 @@
 import 'dart:async';
-
-import 'package:megrim/DTO/customerorder.dart';
 import 'package:megrim/Backend/database.dart';
 import 'package:flutter/material.dart';
+import 'package:megrim/DTO/items.dart';
 
 class Cart extends ChangeNotifier {
   int? merchantPoints;
@@ -200,8 +199,10 @@ class Cart extends ChangeNotifier {
     taxTotal = _round(taxTotal);
     totalGratuity = _round(totalGratuity);
     final baseAmount = totalCartMoney + taxTotal + totalGratuity;
-    serviceFeeTotal = baseAmount == 0 ? 0.0 : _round(baseAmount * serviceFeeRate + serviceFeeFlat);
-    
+    serviceFeeTotal = baseAmount == 0
+        ? 0.0
+        : _round(baseAmount * serviceFeeRate + serviceFeeFlat);
+
     finalTotal = baseAmount + serviceFeeTotal;
 
     debugPrint('💸 Totals — '
@@ -216,7 +217,7 @@ class Cart extends ChangeNotifier {
 
   double _round(double value) => (value * 100).round() / 100.0;
 
-  void reorder(CustomerOrder order) {
+  void reorder(List<Items> items) {
     // Clear the current cart
     merchantCart.clear();
     typeTotals.clear();
@@ -232,7 +233,7 @@ class Cart extends ChangeNotifier {
     debugPrint("Customer's available points: $availablePoints");
 
     // Sort items by point price in descending order (expensive items first)
-    List<ItemOrder> sortedItems = List.from(order.items)
+    List<Items> sortedItems = List.from(items)
       ..sort((a, b) {
         final itemA = localDatabase.getItemById(a.itemId);
         final itemB = localDatabase.getItemById(b.itemId);
@@ -248,6 +249,7 @@ class Cart extends ChangeNotifier {
 
       // Retrieve the item details
       final item = localDatabase.getItemById(itemId);
+
 
       // Determine prices
       double regularPrice = item.regularPrice;

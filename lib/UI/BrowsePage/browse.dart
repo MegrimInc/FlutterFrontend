@@ -3,6 +3,8 @@
 import 'package:megrim/Backend/database.dart';
 import 'package:megrim/DTO/item.dart';
 import 'package:megrim/Backend/cart.dart';
+import 'package:megrim/DTO/items.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 import 'package:megrim/UI/CheckoutPage/checkout.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -11,27 +13,26 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../DTO/merchant.dart';
 
-class ItemsPage extends StatefulWidget {
+class BrowsePage extends StatefulWidget {
   final int merchantId;
   final Cart cart;
-  final int? itemId;
+  final List<Items>? items;
   final int? employeeId;
   final String pointOfSale;
 
-  const ItemsPage({
-    super.key,
-    required this.merchantId,
-    required this.cart,
-    this.itemId,
-    this.employeeId,
-    required this.pointOfSale
-  });
+  const BrowsePage(
+      {super.key,
+      required this.merchantId,
+      required this.cart,
+      this.items,
+      this.employeeId,
+      required this.pointOfSale});
 
   @override
-  ItemsPageState createState() => ItemsPageState();
+  BrowsePageState createState() => BrowsePageState();
 }
 
-class ItemsPageState extends State<ItemsPage>
+class BrowsePageState extends State<BrowsePage>
     with SingleTickerProviderStateMixin {
   String appBarTitle = '';
   bool isLoading = true;
@@ -50,10 +51,11 @@ class ItemsPageState extends State<ItemsPage>
 
     _fetchMerchantData();
 
-    if (widget.itemId != null) {
+    if (widget.items != null && widget.employeeId != null) {
       final localDatabase =
           LocalDatabase(); // This retrieves the singleton instance.
-      final item = localDatabase.getItemById(widget.itemId!);
+      widget.cart.reorder(widget.items!);
+      final item = localDatabase.getItemById(widget.items!.first.itemId);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).push(
           _createRoute(
@@ -86,7 +88,7 @@ class ItemsPageState extends State<ItemsPage>
 
     currentMerchant = LocalDatabase.getMerchantById(widget.merchantId);
     debugPrint(
-        'LocalDatabase instance in ItemsPage: ${LocalDatabase().hashCode}');
+        'LocalDatabase instance in BrowsePage: ${LocalDatabase().hashCode}');
     if (currentMerchant != null) {
       appBarTitle =
           '@${(currentMerchant!.nickname ?? 'Catalog Page').replaceAll(' ', '')}';
@@ -96,11 +98,55 @@ class ItemsPageState extends State<ItemsPage>
         .fetchCategoriesAndItems(widget.merchantId);
     debugPrint('Finished fetching items for merchantId: ${widget.merchantId}');
     debugPrint(
-        'LocalDatabase instance in ItemsPage: ${LocalDatabase().hashCode}');
+        'LocalDatabase instance in BrowsePage: ${LocalDatabase().hashCode}');
 
     setState(() {
       isLoading = false;
     });
+  }
+
+  Future<void> _handleReorder() async {
+    final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
+
+    // Fetch transaction history ONLY if it's empty
+    if (localDatabase.transactionHistory.isEmpty) {
+      final loginCache = Provider.of<LoginCache>(context, listen: false);
+      final customerId = await loginCache.getUID();
+      await localDatabase.fetchTransactionHistory(customerId);
+      debugPrint('Fetched transaction history because it was empty.');
+    } else {
+      debugPrint('Transaction history already loaded, skipping fetch.');
+    }
+
+    // Filter by this merchant
+    final transactions = localDatabase.transactionHistory
+        .where((t) => t.merchantId == widget.merchantId)
+        .toList();
+
+    if (transactions.isEmpty) {
+      debugPrint('No past transactions found for this merchant.');
+      return;
+    }
+
+    // Find most recent by timestamp
+    transactions.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final lastTransaction = transactions.first;
+
+    debugPrint('Most recent transaction: ${lastTransaction.timestamp}');
+
+    if (lastTransaction.items.isEmpty) {
+      debugPrint('No items in last transaction.');
+      return;
+    }
+
+    // Apply to cart
+    widget.cart.reorder(lastTransaction.items);
+
+    final localDb = LocalDatabase();
+    final firstItemId = lastTransaction.items.first.itemId;
+    final item = localDb.getItemById(firstItemId);
+
+    Navigator.of(context).push(_createRoute(item, widget.cart, targetPage: 1));
   }
 
   @override
@@ -366,16 +412,15 @@ class ItemsPageState extends State<ItemsPage>
   }
 
   Route _createRoute(Item item, Cart cart, {int targetPage = 0}) {
-    debugPrint("ItemsPage: Passing claimer = ${widget.employeeId}");
+    debugPrint("BrowsePage: Passing employeeId = ${widget.employeeId}");
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => CheckoutPage(
-        item: item,
-        cart: cart,
-        merchantId: widget.merchantId,
-        initialPage: targetPage,
-        employeeId: widget.employeeId,
-        pointOfSale: widget.pointOfSale
-      ),
+          item: item,
+          cart: cart,
+          merchantId: widget.merchantId,
+          initialPage: targetPage,
+          employeeId: widget.employeeId,
+          pointOfSale: widget.pointOfSale),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         var begin = 0.0;
         var end = 1.0;

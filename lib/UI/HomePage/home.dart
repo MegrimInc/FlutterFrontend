@@ -7,7 +7,6 @@ import 'package:megrim/UI/ChatPage/chat.dart';
 import 'package:megrim/UI/WalletPage/wallet.dart';
 import 'package:megrim/UI/SearchPage/searchpage.dart';
 import 'package:megrim/config.dart';
-import 'package:megrim/main.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
@@ -40,7 +39,7 @@ class HomePageState extends State<HomePage> {
     super.initState();
     _connect();
     checkPaymentMethod();
-    sendGetPoints();
+    //sendGetPoints();
     _checkLocationPermission();
   }
 

@@ -8,6 +8,7 @@ import 'package:megrim/DTO/customerorder.dart';
 import 'package:megrim/DTO/employee.dart';
 import 'package:megrim/DTO/item.dart';
 import 'package:megrim/DTO/point.dart';
+import 'package:megrim/DTO/transaction.dart';
 import 'package:megrim/config.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -43,6 +44,8 @@ class LocalDatabase with ChangeNotifier {
   Config? _config;
   PaymentStatus paymentStatus = PaymentStatus.notPresent;
   Config? get config => _config;
+  List<Transaction> _transactionHistory = [];
+  bool _isTransactionHistoryLoading = false;
 
   void setConfig(Config config) {
     _config = config;
@@ -57,24 +60,25 @@ class LocalDatabase with ChangeNotifier {
   }
 
   void addOrUpdateOrderForMerchant(CustomerOrder order) {
-  _merchantOrders.putIfAbsent(order.merchantId, () => {});
-  _merchantOrders[order.merchantId]![order.employeeId] = order;
-  notifyListeners();
-}
-
-  CustomerOrder? getOrderForMerchantAndEmployee(int merchantId, int employeeId) {
-  return _merchantOrders[merchantId]?[employeeId];
-}
-
-void removeOrderForMerchantAndEmployee(int merchantId, int employeeId) {
-  if (_merchantOrders.containsKey(merchantId)) {
-    _merchantOrders[merchantId]?.remove(employeeId);
-    if (_merchantOrders[merchantId]?.isEmpty ?? true) {
-      _merchantOrders.remove(merchantId);
-    }
+    _merchantOrders.putIfAbsent(order.merchantId, () => {});
+    _merchantOrders[order.merchantId]![order.employeeId] = order;
     notifyListeners();
   }
-}
+
+  CustomerOrder? getOrderForMerchantAndEmployee(
+      int merchantId, int employeeId) {
+    return _merchantOrders[merchantId]?[employeeId];
+  }
+
+  void removeOrderForMerchantAndEmployee(int merchantId, int employeeId) {
+    if (_merchantOrders.containsKey(merchantId)) {
+      _merchantOrders[merchantId]?.remove(employeeId);
+      if (_merchantOrders[merchantId]?.isEmpty ?? true) {
+        _merchantOrders.remove(merchantId);
+      }
+      notifyListeners();
+    }
+  }
 
   // Method to add a new merchant, generating an Id for it
   void addMerchant(Merchant merchant) {
@@ -444,5 +448,36 @@ void removeOrderForMerchantAndEmployee(int merchantId, int employeeId) {
       if (emp.employeeId == employeeId) return emp;
     }
     return null;
+  }
+
+  List<Transaction> get transactionHistory => _transactionHistory;
+  bool get isTransactionHistoryLoading => _isTransactionHistoryLoading;
+
+  Future<void> fetchTransactionHistory(int customerId) async {
+    _isTransactionHistoryLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '${AppConfig.postgresHttpBaseUrl}/customer/orders/$customerId'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        _transactionHistory = data.map((json) {
+          return Transaction.fromJson(json);
+        }).toList();
+        debugPrint('Fetched ${_transactionHistory.length} transactions.');
+      } else {
+        debugPrint(
+            "Failed to fetch transaction history: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Error fetching transaction history: $e");
+    }
+
+    _isTransactionHistoryLoading = false;
+    notifyListeners();
   }
 }

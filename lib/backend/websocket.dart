@@ -21,7 +21,6 @@ class Websocket extends ChangeNotifier {
   final Map<int, Map<int, int>> _createdOrderMerchantIds = {};
   bool _isConnected = false;
   final GlobalKey<NavigatorState> navigatorKey;
-  bool isLoading = false;
 
   Websocket(BuildContext context, this.navigatorKey)
       : localDatabase = Provider.of<LocalDatabase>(context, listen: false);
@@ -60,6 +59,7 @@ class Websocket extends ChangeNotifier {
                 case 'ping':
                   debugPrint('Ping received, sending refresh message.');
                   sendRefreshMessage(context); // Handle the ping message
+                  sendGetPoints();
                   break;
 
                 case 'refresh':
@@ -82,7 +82,6 @@ class Websocket extends ChangeNotifier {
                   debugPrint('error response received.');
                   final String errorMessage = decodedMessage['message'];
                   _handleError(context, errorMessage);
-                  setLoading(false);
                   break;
 
                 case 'update':
@@ -93,7 +92,6 @@ class Websocket extends ChangeNotifier {
 
                 default:
                   debugPrint('Unknown message type: $messageType');
-                  setLoading(false);
                   // Handle any other message types or log an error
                   break;
               }
@@ -179,8 +177,6 @@ class Websocket extends ChangeNotifier {
         debugPrint('Sending create order: $jsonOrder');
         _channel!.sink.add(jsonOrder); // Send the order over WebSocket
         debugPrint('Order sent.');
-        setLoading(true);
-        debugPrint('isLoading is set to true');
       } else {
         debugPrint('Failed to send order: WebSocket is not connected');
       }
@@ -235,7 +231,11 @@ class Websocket extends ChangeNotifier {
       debugPrint(
           'CustomerOrder added to LocalDatabase: ${customerOrder.merchantId}');
 
-      setLoading(false);
+      navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/orders',
+        (Route<dynamic> route) => false,
+        arguments: customerOrder.merchantId,
+      );
 
       try {
         await sendGetPoints();
@@ -273,6 +273,15 @@ class Websocket extends ChangeNotifier {
             _createdOrderMerchantIds.remove(customerOrder.merchantId);
           }
         }
+
+        final safeContext = navigatorKey.currentContext;
+        if (safeContext == null) {
+          debugPrint('Context is null, skipping fetchTransactionHistory.');
+          return;
+        }
+        final loginCache = Provider.of<LoginCache>(safeContext, listen: false);
+        final customerId = await loginCache.getUID();
+        await localDatabase.fetchTransactionHistory(customerId);
       } else {
         // Otherwise, add or update order as usual
         localDatabase.addOrUpdateOrderForMerchant(customerOrder);
@@ -282,15 +291,6 @@ class Websocket extends ChangeNotifier {
             customerOrder.employeeId] = customerOrder.timestamp;
         debugPrint(
             'Order ${customerOrder.merchantId} updated/added with status: ${customerOrder.status}');
-      }
-
-      setLoading(false);
-
-      try {
-        await sendGetPoints();
-        debugPrint('sendGetPoints triggered successfully.');
-      } catch (e) {
-        debugPrint('Error while handling update response: $e');
       }
 
       notifyListeners();
@@ -393,11 +393,4 @@ class Websocket extends ChangeNotifier {
   }
 
   bool get isConnected => _isConnected;
-
-  void setLoading(bool value) {
-    if (isLoading != value) {
-      isLoading = value;
-      notifyListeners();
-    }
-  }
 }

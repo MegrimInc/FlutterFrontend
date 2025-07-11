@@ -1,9 +1,11 @@
+import 'package:megrim/DTO/items.dart';
+
 class Transaction {
   final int orderId;
   final int merchantId;
   final int customerId;
   final String timestamp;
-  final List<ItemTransaction> items;
+  final List<Items> items;
   final int totalPointPrice;
   final double totalRegularPrice;
   final double totalGratuity;
@@ -38,7 +40,7 @@ class Transaction {
       customerId: json['customerId'] ?? 0,
       timestamp: json['timestamp'] ?? '',
       items: (json['items'] as List<dynamic>? ?? [])
-          .map((item) => ItemTransaction.fromJson(item))
+          .map((item) => Items.fromJson(item))
           .toList(),
       totalPointPrice: json['totalPointPrice'] ?? 0,
       totalRegularPrice: (json['totalRegularPrice'] ?? 0).toDouble(),
@@ -72,34 +74,3 @@ class Transaction {
   }
 }
 
-class ItemTransaction {
-  final int itemId;
-  final String itemName;
-  final String paymentType;
-  final int quantity;
-
-  ItemTransaction({
-    required this.itemId,
-    required this.itemName,
-    required this.paymentType,
-    required this.quantity,
-  });
-
-  factory ItemTransaction.fromJson(Map<String, dynamic> json) {
-    return ItemTransaction(
-      itemId: json['itemId'] ?? 0,
-      itemName: json['itemName'] ?? '',
-      paymentType: json['paymentType'] ?? '',
-      quantity: json['quantity'] ?? 0,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'itemId': itemId,
-      'itemName': itemName,
-      'paymentType': paymentType,
-      'quantity': quantity,
-    };
-  }
-}

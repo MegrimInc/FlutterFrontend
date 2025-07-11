@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:megrim/DTO/config.dart';
+import 'package:megrim/DTO/items.dart';
 import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 import 'package:megrim/UI/AuthPages/components/toggle.dart';
 import 'package:megrim/Backend/database.dart';
@@ -9,8 +10,7 @@ import 'package:megrim/DTO/customer.dart';
 import 'package:megrim/Backend/searchengine.dart';
 import 'package:megrim/Backend/cart.dart';
 import 'package:megrim/UI/Navigation/navigation.dart';
-import 'package:megrim/UI/ItemsPage/items.dart';
-import 'package:megrim/UI/CheckoutPage/checkout.dart';
+import 'package:megrim/UI/BrowsePage/browse.dart';
 import 'package:megrim/Backend/websocket.dart';
 import 'package:megrim/UI/TerminalPages/inventory.dart';
 import 'package:megrim/UI/TerminalPages/select.dart';
@@ -386,27 +386,16 @@ class Megrim extends StatelessWidget {
           final args = ModalRoute.of(context)!.settings.arguments as Map;
           final int merchantId = args['merchantId'];
           final Cart cart = args['cart'];
-          final int? itemId = args['itemId']; // Optional parameter
+          final List<Items>? items = args['items']; // Optional parameter
           final int? employeeId = args['employeeId'];
           final String pointOfSale = args['pointOfSale'];
 
-          return ItemsPage(
+          return BrowsePage(
             merchantId: merchantId,
             cart: cart,
-            itemId: itemId, // Pass the optional itemId
+            items: items, // Pass the optional itemId
             employeeId: employeeId,
             pointOfSale: pointOfSale,
-          );
-        },
-        '/itemFeed': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments as Map;
-          return CheckoutPage(
-            item: args['item'],
-            cart: args['cart'],
-            merchantId: args['merchantId'],
-            initialPage: args['initialPage'],
-            employeeId: args['employeeId'],
-            pointOfSale: args['pointOfSale'],
           );
         },
       },

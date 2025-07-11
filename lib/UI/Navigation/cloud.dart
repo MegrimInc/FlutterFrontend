@@ -1,22 +1,25 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io'; // For platform checks
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:megrim/Backend/database.dart';
 import 'package:megrim/DTO/employee.dart';
+import 'package:megrim/DTO/items.dart';
 import 'package:megrim/DTO/merchant.dart';
-import 'package:megrim/DTO/customerorder.dart';
-
 import 'package:megrim/Backend/cart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:megrim/UI/ItemsPage/items.dart';
+import 'package:megrim/DTO/transaction.dart';
+import 'package:megrim/UI/BrowsePage/browse.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 class CloudPage extends StatefulWidget {
-  const CloudPage({super.key});
+  final Transaction? transaction;
+
+  const CloudPage({super.key, this.transaction});
 
   @override
   State<CloudPage> createState() => _BlueTooth();
@@ -31,10 +34,13 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
   final ValueNotifier<bool> isLoading = ValueNotifier(false);
   final _pageController = PageController(initialPage: 5000);
   int _currentPageIndex = 0;
+  late final Transaction? transaction;
 
   @override
   void initState() {
     super.initState();
+    transaction = widget.transaction;
+    debugPrint('CloudPage opened with transaction: $transaction');
     WidgetsBinding.instance.addObserver(this);
     requestBluetoothPermissions();
   }
@@ -399,7 +405,7 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
                 // --- 1. The Leading Avatar ---
                 merchant?.logoImg != null && merchant!.logoImg!.isNotEmpty
                     ? CircleAvatar(
-                        backgroundImage: NetworkImage("$profileImage"),
+                        backgroundImage: CachedNetworkImageProvider("$profileImage"),
                         radius: avatarRadius,
                       )
                     : CircleAvatar(
@@ -530,7 +536,7 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
                 // --- 1. The Leading Avatar ---
                 merchant?.logoImg != null && merchant!.logoImg!.isNotEmpty
                     ? CircleAvatar(
-                        backgroundImage: NetworkImage("$profileImage"),
+                        backgroundImage: CachedNetworkImageProvider("$profileImage"),
                         radius: avatarRadius,
                       )
                     : CircleAvatar(
@@ -736,11 +742,33 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
                 final cart = Cart();
                 cart.setMerchant(merchantId);
 
+                if (transaction != null) {
+                  if (transaction!.merchantId == merchantId) {
+                    debugPrint('Merchant IDs match, using transaction items');
+
+                    await Navigator.of(context).pushNamed(
+                      '/items',
+                      arguments: {
+                        'merchantId': merchantId,
+                        'cart': cart,
+                        'items': transaction!.items,
+                        'employeeId': employeeId,
+                        'pointOfSale': "cloudlink"
+                      },
+                    );
+                    return;
+                  } else {
+                    debugPrint(
+                        'Merchant IDs did not match, aborting special navigation.');
+                    return;
+                  }
+                }
+
                 await Navigator.push(
                   // ignore: use_build_context_synchronously
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ItemsPage(
+                    builder: (context) => BrowsePage(
                       merchantId: merchantId,
                       employeeId: employeeId,
                       pointOfSale: "cloudlink",
@@ -787,46 +815,29 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
       final List<dynamic> cartItems = parsedResponse['order'] ?? [];
 
       // Construct the list of ItemOrder objects
-      final List<ItemOrder> itemOrders = cartItems.map((item) {
+      final List<Items> itemOrders = cartItems.map((item) {
         final int itemId = item['itemId'] ?? 0;
         final int quantity = item['quantity'] ?? 0;
         const String paymentType = "regular"; // Default value for paymentType
 
         // Return a ItemOrder object
-        return ItemOrder(
-          itemId, // itemId
-          '', // itemName (placeholder)
-          paymentType, // paymentType
-          quantity, // quantity
+        return Items(
+          itemId: itemId,
+          itemName: '',
+          paymentType: paymentType,
+          quantity: quantity,
         );
       }).toList();
 
-      // Create the CustomerOrder object
-      final CustomerOrder order = CustomerOrder(
-        '', // name
-        0, // merchantId
-        0, // customerId
-        0.0, // totalRegularPrice
-        false, // inAppPayments
-        itemOrders, // items
-        '', // status
-        0, // claimer
-        0, // timestamp
-        '', // sessionId
-      );
-
-      debugPrint('Created CustomerOrder: $order');
-
       final cart = Cart();
       cart.setMerchant(merchantId);
-      cart.reorder(order);
 
       await Navigator.of(context).pushNamed(
         '/items',
         arguments: {
           'merchantId': merchantId,
           'cart': cart,
-          'itemId': order.items.first.itemId, // Optional itemId.
+          'items': itemOrders.isNotEmpty ? itemOrders : null,
           'employeeId': employeeId,
           'pointOfSale': "cloudcast"
         },

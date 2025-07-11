@@ -1,13 +1,15 @@
 // Same as https://github.com/BarzzyLLC/RedisMicroService/blob/0.0.0/src/main/java/edu/help/dto/Order.java.
 //This version is the future version, supposed to replace activeorder.dart.
 
+import 'package:megrim/DTO/items.dart';
+
 class CustomerOrder {
   String name;
   int merchantId; // Stored as a String on the frontend, converted to int for JSON
   int customerId;
   double totalRegularPrice;
   bool inAppPayments;
-  List<ItemOrder> items;
+  List<Items> items;
   String status;
   int employeeId;
   int timestamp; // Stored as an int on the frontend, converted to String for JSON
@@ -30,11 +32,11 @@ class CustomerOrder {
   factory CustomerOrder.fromJson(Map<String, dynamic> json) {
     //debugPrint('Parsing JSON data: $json');
 
-    List<ItemOrder> items = [];
+    List<Items> items = [];
     if (json['items'] != null) {
       //debugPrint('Parsing items...');
       items = (json['items'] as List)
-          .map((itemJson) => ItemOrder.fromJson(itemJson))
+          .map((itemJson) => Items.fromJson(itemJson))
           .toList();
     }
 
@@ -72,7 +74,7 @@ class CustomerOrder {
   // Getter methods
   double getTotalRegularPrice() => totalRegularPrice;
   int getCustomerId() => customerId;
-  List<ItemOrder> getItems() => items;
+  List<Items> getItems() => items;
   String getStatus() => status;
   int getEmployeeId() => employeeId;
   int getTimestamp() => timestamp;
@@ -84,7 +86,7 @@ class CustomerOrder {
   void setCustomerId(int value) => customerId = value;
   void setTotalRegularPrice(double value) => totalRegularPrice = value;
   void setInAppPayments(bool value) => inAppPayments = value;
-  void setItems(List<ItemOrder> value) => items = value;
+  void setItems(List<Items> value) => items = value;
   void setStatus(String value) => status = value;
   void setEmployeeId(int value) => employeeId = value;
   void setTimestamp(int value) => timestamp = value;
@@ -97,43 +99,4 @@ class CustomerOrder {
         .difference(DateTime.fromMillisecondsSinceEpoch(timestamp));
     return ageDuration.inSeconds;
   }
-}
-
-class ItemOrder {
-  int itemId;
-  String itemName;
-  String paymentType;
-  int quantity;
-
-  ItemOrder(
-    this.itemId,
-    this.itemName,
-    this.paymentType,
-    this.quantity,
-  );
-
-  // Factory constructor to create a ItemOrder from JSON
-  factory ItemOrder.fromJson(Map<String, dynamic> json) {
-    return ItemOrder(
-      json['itemId'] as int,
-      json['itemName'] as String,
-      json['paymentType'] as String,
-      json['quantity'] as int,
-    );
-  }
-
-  // Method to convert a ItemOrder instance to JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'itemId': itemId,
-      'itemName': itemName,
-      'paymentType': paymentType,
-      'quantity': quantity,
-    };
-  }
-
-  int getItemId() => itemId;
-  String getItemName() => itemName;
-  String getPaymentType() => paymentType;
-  int getQuantity() => quantity;
 }
