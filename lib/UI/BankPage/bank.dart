@@ -1,6 +1,6 @@
 import 'package:megrim/Backend/database.dart';
 import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
-import 'package:megrim/UI/WalletPage/wallet.dart';
+import 'package:megrim/UI/LeaderboardPage/leaderboard.dart';
 import 'package:megrim/main.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -51,11 +51,10 @@ class _BankPageState extends State<BankPage> {
 
     // The rest of the function now uses the merchantId we passed in
     entry = OverlayEntry(
-      builder: (context) => WalletPage(
+      builder: (context) => LeaderboardPage(
         onClose: () => entry.remove(),
         customerId: customerId,
         merchantId: merchantId,
-        isBlack: false, //TODO: CHANGE TO DYNAMIC
       ),
     );
 

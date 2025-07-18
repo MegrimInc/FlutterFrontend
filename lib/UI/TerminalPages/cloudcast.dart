@@ -1,9 +1,7 @@
-
 import 'package:megrim/UI/TerminalPages/inventory.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:provider/provider.dart';
-
 
 class CloudCastPage extends StatefulWidget {
   final int employeeId;
@@ -21,14 +19,11 @@ class CloudCastPage extends StatefulWidget {
 }
 
 class _CloudCastPageState extends State<CloudCastPage> {
-  
-
   @override
   void initState() {
     super.initState();
     debugPrint("CloudCastPage widget initialized.");
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -281,7 +276,6 @@ class _CloudCastPageState extends State<CloudCastPage> {
       ),
     );
   }
-
 
   @override
   void dispose() {

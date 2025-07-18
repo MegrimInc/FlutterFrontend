@@ -344,7 +344,7 @@ class OrdersPageState extends State<OrdersPage> with WidgetsBindingObserver {
                     children: [
                       if (order.totalRegularPrice > 0)
                         Text(
-                          '\$${order.totalRegularPrice.toStringAsFixed(2)}',
+                          '\$${(order.totalRegularPrice + order.totalTax + order.totalGratuity + order.totalServiceFee).toStringAsFixed(2)}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,

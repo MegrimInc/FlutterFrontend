@@ -4,7 +4,7 @@ import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 import 'package:megrim/Backend/database.dart';
 import 'package:megrim/Backend/websocket.dart';
 import 'package:megrim/UI/ChatPage/chat.dart';
-import 'package:megrim/UI/WalletPage/wallet.dart';
+import 'package:megrim/UI/LeaderboardPage/leaderboard.dart';
 import 'package:megrim/UI/SearchPage/searchpage.dart';
 import 'package:megrim/config.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +18,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'dart:math' as math;
+import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
+import 'package:vector_map_tiles/vector_map_tiles.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -33,6 +35,7 @@ class HomePageState extends State<HomePage> {
   late Future<(LatLng, List<({Merchant merchant, LatLng coordinates})>)>
       _mapDataFuture;
   LocationPermission? _permissionStatus;
+  Style? _style;
 
   @override
   void initState() {
@@ -95,11 +98,10 @@ class HomePageState extends State<HomePage> {
 
     // The rest of the function now uses the merchantId we passed in
     entry = OverlayEntry(
-      builder: (context) => WalletPage(
+      builder: (context) => LeaderboardPage(
         onClose: () => entry.remove(),
         customerId: customerId,
         merchantId: merchantId,
-        isBlack: false, //TODO: CHANGE TO DYNAMIC
       ),
     );
 
@@ -142,10 +144,25 @@ class HomePageState extends State<HomePage> {
   }
 
   /// This function now only runs AFTER permission is granted.
-  void _loadMapData() {
-    setState(() {
-      _mapDataFuture = _prepareMapData();
-    });
+  void _loadMapData() async {
+    try {
+      // Load the style from your server
+      final newStyle = await StyleReader(
+        uri: 'http://54.147.153.13/styles/dark-matter/style.json',
+      ).read();
+
+      // Once the style is loaded, prepare the map data for the markers
+      final mapDataFuture = _prepareMapData();
+
+      if (mounted) {
+        setState(() {
+          _style = newStyle;
+          _mapDataFuture = mapDataFuture;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error setting up map: $e');
+    }
   }
 
   Future<(LatLng, List<({Merchant merchant, LatLng coordinates})>)>
@@ -315,7 +332,7 @@ class HomePageState extends State<HomePage> {
 
   Widget _buildBody() {
     // While we're first checking, show a loader
-    if (_permissionStatus == null) {
+    if (_permissionStatus == null || _style == null) {
       return const Center(
           child: CircularProgressIndicator(color: Colors.white));
     }
@@ -341,38 +358,20 @@ class HomePageState extends State<HomePage> {
             final userLocation = snapshot.data!.$1;
             final geocodedMerchants = snapshot.data!.$2;
 
-            // Create a lookup map for easy access to coordinates by ID
-            final merchantLocations = {
-              for (var record in geocodedMerchants)
-                record.merchant.merchantId: record.coordinates
-            };
-
-            // Define the points for our line
-            final List<LatLng> connectionPoints = [];
-
-            // Get the locations for the specific merchants we want to connect
-            final LatLng? location1 = merchantLocations[95]; // ID for @theburg
-            final LatLng? location2 = merchantLocations[94]; // ID for @centros
-
-            // If both locations were found, add them to our list
-            if (location1 != null && location2 != null) {
-              connectionPoints.addAll([location1, location2]);
-            }
-
             return FlutterMap(
               options: MapOptions(
                 initialCenter: userLocation,
-                initialZoom: 18,
+                initialZoom: 19,
                 backgroundColor: Colors.black,
                 minZoom: 2,
-                maxZoom: 20.0,
+                maxZoom: 22.0,
                 cameraConstraint: CameraConstraint.contain(
                   bounds: LatLngBounds(const LatLng(-85.0511, -180.0),
                       const LatLng(85.0511, 180.0)),
                 ),
               ),
               children: [
-                // Layer 1: The dark-themed base map
+
                 TileLayer(
                   urlTemplate:
                       'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -381,47 +380,46 @@ class HomePageState extends State<HomePage> {
                   userAgentPackageName: 'site.megrim.app',
                 ),
 
-                if (connectionPoints.isNotEmpty)
-                  PolylineLayer(
-                    polylines: [
-                      Polyline(
-                        points: connectionPoints,
-                        color: Colors.green,
-                        strokeWidth: 1.0,
-                      ),
-                    ],
-                  ),
+                // VectorTileLayer(
+                //   theme: _style!.theme,
+                //   tileProviders: TileProviders({
+                //     'openmaptiles': NetworkVectorTileProvider(
+                //       urlTemplate:
+                //           'http://54.147.153.13/data/openmaptiles/{z}/{x}/{y}.pbf',
+                //     ),
+                //   }),
+                // ),
 
-                // Layer 2: The markers for all your businesses
-                MarkerLayer(
-                  markers: geocodedMerchants.map((record) {
-                    // Access data from the inner record
-                    final merchant = record.merchant;
-                    final coordinates = record.coordinates;
-
-                    return Marker(
-                      point: coordinates,
-                      width: 121,
-                      height: 30,
-                      child: GestureDetector(
-                        onTap: () => showCardsOverlay(merchant.merchantId!),
-                        child: Container(
-                          color: Colors.transparent,
-                          child: Center(
-                            child: Text(
-                              "@${merchant.nickname ?? 'No Tag'}",
-                              softWrap: false,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
+                MarkerClusterLayerWidget(
+                  options: MarkerClusterLayerOptions(
+                    maxClusterRadius: 45,
+                    size: const Size(40, 40),
+                    markers: geocodedMerchants.map((record) {
+                      final merchant = record.merchant;
+                      final coordinates = record.coordinates;
+                      return Marker(
+                        point: coordinates,
+                        width: 105,
+                        height: 95,
+                        child: _buildMerchantMarker(merchant),
+                      );
+                    }).toList(),
+                    builder: (context, markers) {
+                      return Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.black.withAlpha(200),
+                          border: Border.all(color: Colors.white, width: 2),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                        child: Text(
+                          '${markers.length}',
+                          style: const TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ],
             );
@@ -450,6 +448,38 @@ class HomePageState extends State<HomePage> {
           _checkLocationPermission,
         );
     }
+  }
+
+  Widget _buildMerchantMarker(Merchant merchant) {
+    return GestureDetector(
+        onTap: () => showCardsOverlay(merchant.merchantId!),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (merchant.storeImg != null && merchant.storeImg!.isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(35),
+                child: Image.network(
+                  merchant.storeImg!,
+                  width: 70,
+                  height: 70,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            const SizedBox(height: 3),
+            Text(
+              "@${merchant.nickname ?? 'No Tag'}",
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ));
   }
 
   /// A reusable widget for the permission request UI.

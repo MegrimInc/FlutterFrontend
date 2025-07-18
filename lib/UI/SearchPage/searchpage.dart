@@ -2,7 +2,7 @@ import 'package:megrim/Backend/searchengine.dart';
 import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 import 'package:megrim/UI/SearchPage/searchbar.dart';
 import 'package:flutter/material.dart';
-import 'package:megrim/UI/WalletPage/wallet.dart';
+import 'package:megrim/UI/LeaderboardPage/leaderboard.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -43,11 +43,10 @@ class SearchPageState extends State<SearchPage> {
 
     // The rest of the function now uses the merchantId we passed in
     entry = OverlayEntry(
-      builder: (context) => WalletPage(
+      builder: (context) => LeaderboardPage(
         onClose: () => entry.remove(),
         customerId: customerId,
         merchantId: merchantId,
-        isBlack: false, //TODO: CHANGE TO DYNAMIC
       ),
     );
 
