@@ -11,8 +11,7 @@ class Merchant {
   String? stateOrProvince;
   String? country;
   String? nickname;
-  String? logoImg;
-  String? storeImg;
+  String? image;
   Map<String, String?>? discountSchedule;
   List<Employee>? employees;
 
@@ -28,8 +27,7 @@ class Merchant {
       this.stateOrProvince,
       this.country,
       this.nickname,
-      this.logoImg,
-      this.storeImg,
+      this.image,
       this.discountSchedule,
       this.employees,
       }
@@ -57,8 +55,7 @@ class Merchant {
       'stateOrProvince': stateOrProvince,
       'country': country,
       'nickname': nickname,
-      'logoImage': logoImg,
-      'storeImage': storeImg,
+      'image': image,
       'discountSchedule': discountSchedule, 
        'employees': employees?.map((e) => e.toJson()).toList(),
     };
@@ -75,8 +72,7 @@ class Merchant {
       stateOrProvince: json['stateOrProvince'] as String?,
       country: json['country'] as String?,
       nickname: json['nickname'] as String?, // Match toJson key
-      logoImg: json['logoImage'] as String?, // Match toJson key
-      storeImg: json['storeImage'] as String?, // Match toJson key
+      image: json['image'] as String?, // Match toJson key
       discountSchedule: json['discountSchedule'] != null
           ? (json['discountSchedule'] is String
               ? Map<String, String?>.from(jsonDecode(json['discountSchedule']))

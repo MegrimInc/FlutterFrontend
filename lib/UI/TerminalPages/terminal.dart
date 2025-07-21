@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import 'package:megrim/UI/TerminalPages/inventory.dart';
 import 'package:megrim/UI/TerminalPages/select.dart';
+import 'package:megrim/UI/TerminalPages/summary.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -17,7 +18,8 @@ class Terminal extends StatefulWidget {
   final int employeeId;
   final int merchantId;
 
-  const Terminal({super.key, required this.employeeId, required this.merchantId});
+  const Terminal(
+      {super.key, required this.employeeId, required this.merchantId});
   @override
   State<Terminal> createState() => _TerminalState();
 }
@@ -238,59 +240,103 @@ class _TerminalState extends State<Terminal> with WidgetsBindingObserver {
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              IconButton(
-                icon: const Icon(Icons.power_settings_new,
-                    color: Colors.redAccent, size: 30),
-                onPressed: () {
-                  Navigator.pushAndRemoveUntil(
-                    // ignore: use_build_context_synchronously
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SelectPage(),
-                    ),
-                    (Route<dynamic> route) =>
-                        false, // Remove all previous routes
-                  );
-                },
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.power_settings_new,
+                        color: Colors.redAccent, size: 30),
+                    onPressed: () {
+                      Navigator.pushAndRemoveUntil(
+                        // ignore: use_build_context_synchronously
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SelectPage(),
+                        ),
+                        (Route<dynamic> route) =>
+                            false, // Remove all previous routes
+                      );
+                    },
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.025,
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(2, (pageIndex) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: Icon(
+                          Icons.circle,
+                          color: _currentPageIndex == pageIndex
+                              ? Colors.white
+                              : Colors.grey,
+                          size: 14.5,
+                        ),
+                      );
+                    }),
+                  ),
+                ],
               ),
               Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(2, (pageIndex) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: Icon(
-                      Icons.circle,
-                      color: _currentPageIndex == pageIndex
-                          ? Colors.white
-                          : Colors.grey,
-                      size: 12.0,
-                    ),
-                  );
-                }),
-              ),
-              _isLoading
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => SummaryPage(
+                          merchantId: widget.merchantId,
+                          employeeId: widget.employeeId,
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15), // curved edges
+                      ),
+                      child: const Text(
+                        'View Shift',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    )
-                  : IconButton(
-                      icon: Icon(_isDisabled ? Icons.power_off : Icons.power,
-                          size: 30),
-                      color: Colors.white,
-                      onPressed: () {
-                        setState(() => _isLoading = true);
-                        _isDisabled
-                            ? _initializePeripheral(_currentPageIndex)
-                            : _disableAdvertising();
-                      },
                     ),
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.024,
+                  ),
+                  _isLoading
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                        )
+                      : IconButton(
+                          icon: Icon(
+                              _isDisabled ? Icons.power_off : Icons.power,
+                              size: 30),
+                          color: Colors.white,
+                          onPressed: () {
+                            setState(() => _isLoading = true);
+                            _isDisabled
+                                ? _initializePeripheral(_currentPageIndex)
+                                : _disableAdvertising();
+                          },
+                        ),
+                ],
+              )
             ],
           ),
         ),

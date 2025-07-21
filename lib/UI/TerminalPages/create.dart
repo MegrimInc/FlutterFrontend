@@ -70,7 +70,7 @@ class CreateEmployeePageState extends State<CreateEmployeePage> {
 
     setState(() => _isLoading = true);
 
-    String? imageUrl;
+    String? image;
     if (_pickedImage != null) {
       final filename = basename(_pickedImage!.path);
       final presignRes = await http.post(
@@ -105,7 +105,7 @@ class CreateEmployeePageState extends State<CreateEmployeePage> {
         return;
       }
 
-      imageUrl = 'https://megrimages.s3.us-east-1.amazonaws.com/$key';
+      image = 'https://megrimages.s3.us-east-1.amazonaws.com/$key';
     }
 
     // Compose the name
@@ -123,7 +123,7 @@ class CreateEmployeePageState extends State<CreateEmployeePage> {
       'merchantId': widget.merchantId,
       'name': name,
       'email': _emailCtl.text.trim(),
-      if (imageUrl != null) 'imageUrl': imageUrl,
+      if (image != null) 'image': image,
     };
 
     final createRes = await http.post(

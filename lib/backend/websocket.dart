@@ -21,6 +21,7 @@ class Websocket extends ChangeNotifier {
   final Map<int, Map<int, int>> _createdOrderMerchantIds = {};
   bool _isConnected = false;
   final GlobalKey<NavigatorState> navigatorKey;
+  bool isLoading = false;
 
   Websocket(BuildContext context, this.navigatorKey)
       : localDatabase = Provider.of<LocalDatabase>(context, listen: false);
@@ -177,6 +178,8 @@ class Websocket extends ChangeNotifier {
         debugPrint('Sending create order: $jsonOrder');
         _channel!.sink.add(jsonOrder); // Send the order over WebSocket
         debugPrint('Order sent.');
+        isLoading = true;
+        notifyListeners();
       } else {
         debugPrint('Failed to send order: WebSocket is not connected');
       }
@@ -244,6 +247,7 @@ class Websocket extends ChangeNotifier {
         debugPrint('Error while handling update response: $e');
       }
 
+      isLoading = false;
       notifyListeners();
     } catch (e) {
       debugPrint('Error while creating CustomerOrder: $e');
@@ -327,15 +331,14 @@ class Websocket extends ChangeNotifier {
   }
 
   void _handleError(BuildContext context, String errorMessage) {
-    // Use the global navigator key to get a safe context
+    isLoading = false;
+    notifyListeners();
     final safeContext = navigatorKey.currentContext;
 
     if (safeContext == null) {
       //debugPrint('Safe context is null. Cannot show dialog.');
       return;
     }
-
-    //debugPrint('Showing error dialog with safe context: $safeContext');
 
     showDialog(
       context: safeContext,

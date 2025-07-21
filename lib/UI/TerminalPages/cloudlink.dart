@@ -340,19 +340,10 @@ class _OrdersPageState extends State<CloudLinkPage>
     );
   }
 
-  Color _getOrderTintColor(TerminalOrder order) {
-    final ageInSeconds = order.getAge();
+  Color? _getOrderTintColor(TerminalOrder order) {
     if (order.status == 'ready') return Colors.green;
-    if (order.status == 'arrived' && order.pointOfSale == "cloudcast") {
-      return Colors.purple;
-    }
-    if (order.status == 'arrived' && order.pointOfSale == "cloudlink") {
-      return  Colors.blueAccent;
-    }
-    if (ageInSeconds <= 180) return Colors.orange[200]!; // 0-3 minutes old
-    if (ageInSeconds <= 300) return Colors.orange[200]!; // 3-5 minutes old
-    if (ageInSeconds <= 600) return Colors.orange[200]!; // 5-10 minutes old
-    return Colors.orange[200]!; // Over 10 minutes old
+    if (order.status == 'unready') return Colors.orange[200]; // Over 10 minutes old
+    return Colors.grey;
   }
 
   @override
@@ -402,7 +393,7 @@ class _OrdersPageState extends State<CloudLinkPage>
                       padding: const EdgeInsets.all(8.0),
                       child: Row(children: [
                         Text(
-                          '*${order.name}',
+                          order.name,
                           style: const TextStyle(
                             fontSize: 21,
                             fontWeight: FontWeight.bold,
@@ -493,20 +484,24 @@ class _OrdersPageState extends State<CloudLinkPage>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                         Text(
-                                  '@${order.employeeId}',
-                                  style: const TextStyle(
-                                      fontSize: 25,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black,
-                                          offset: Offset(1.0, 1.0),
-                                          blurRadius: 1.0,
-                                        ),
-                                      ]),
-                                ),
+                          Text(
+                            order.pointOfSale == 'cloudlink'
+                                ? '*CL'
+                                : (order.pointOfSale == 'cloudcats'
+                                    ? '*CC'
+                                    : order.pointOfSale),
+                            style: const TextStyle(
+                                fontSize: 25,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black,
+                                    offset: Offset(1.0, 1.0),
+                                    blurRadius: 1.0,
+                                  ),
+                                ]),
+                          ),
                           Text(
                             formatElapsedTime(order.getAge()),
                             style: const TextStyle(
@@ -708,7 +703,7 @@ class _OrdersPageState extends State<CloudLinkPage>
                 socket!.sink.close(); // Close the WebSocket connection
                 socket = null; // Set the WebSocket reference to null
               }
-               Navigator.pushAndRemoveUntil(
+              Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const SelectPage()),
                 (Route<dynamic> route) => false, // Remove all previous routes
@@ -792,7 +787,7 @@ class _OrdersPageState extends State<CloudLinkPage>
             connected = false;
           });
 
-         _attemptReconnect();
+          _attemptReconnect();
         },
         cancelOnError: false, // Optionally, cancel the listener on error
       );

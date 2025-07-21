@@ -3,17 +3,17 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:megrim/Backend/database.dart';
-import 'package:megrim/UI/LeaderboardPage/card.dart';
+import 'package:megrim/UI/InfoPage/card.dart';
 import 'package:megrim/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:shimmer/shimmer.dart';
 
-class LeaderboardPage extends StatefulWidget {
+class InfoPage extends StatefulWidget {
   final VoidCallback onClose;
   final int merchantId;
   final int customerId;
 
-  const LeaderboardPage({
+  const InfoPage({
     super.key,
     required this.onClose,
     required this.merchantId,
@@ -21,10 +21,10 @@ class LeaderboardPage extends StatefulWidget {
   });
 
   @override
-  State<LeaderboardPage> createState() => _LeaderboardPageState();
+  State<InfoPage> createState() => _InfoPageState();
 }
 
-class _LeaderboardPageState extends State<LeaderboardPage>
+class _InfoPageState extends State<InfoPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _blurAnimation;
@@ -118,17 +118,17 @@ class _LeaderboardPageState extends State<LeaderboardPage>
                       children: [
                         SizedBox(
                             height: MediaQuery.of(context).size.height * 0.11),
-                        Text(
-                          (LocalDatabase.getMerchantById(widget.merchantId)
-                                      ?.nickname ??
-                                  'MERCHANT')
-                              .toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                       Text(
+  ('@${LocalDatabase.getMerchantById(widget.merchantId)
+                  ?.nickname ??
+              'MERCHANT'}')
+      ,
+  style: const TextStyle(
+    fontSize: 28,
+    fontWeight: FontWeight.bold,
+    color: Colors.white,
+  ),
+),
                         const SizedBox(height: 10),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 24.0),

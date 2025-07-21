@@ -1,9 +1,8 @@
 // ignore_for_file: use_build_context_synchronously, unused_element
 
 import 'dart:convert';
-import 'package:megrim/UI/AuthPages/RegisterPages/tos.dart';
 import 'package:megrim/UI/AuthPages/RegisterPages/verification.dart';
-import 'package:megrim/UI/HomePage/home.dart';
+import 'package:megrim/UI/Navigation/navigation.dart';
 import 'package:megrim/config.dart';
 import 'package:http/http.dart' as http;
 
@@ -107,7 +106,7 @@ class RegisterPageState extends State<RegisterPage>
       // Navigate to the next page
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const RegisterPage2()),
+        MaterialPageRoute(builder: (context) => const Navigation()),
       );
     } else if (response.statusCode == 409 &&
            response.body.trim().toLowerCase() == 'email already exists') {
@@ -277,7 +276,7 @@ class RegisterPageState extends State<RegisterPage>
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const HomePage(),
+                        builder: (context) => const Navigation(),
                       ),
                     );
                   },

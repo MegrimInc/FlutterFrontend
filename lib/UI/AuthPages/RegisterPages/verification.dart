@@ -2,8 +2,8 @@
 
 import 'dart:ui';
 import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
-import 'package:megrim/UI/AuthPages/RegisterPages/tos.dart';
 import 'package:megrim/UI/AuthPages/components/keypad.dart';
+import 'package:megrim/UI/Navigation/navigation.dart';
 import 'package:megrim/config.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -78,7 +78,7 @@ class _RegisterPageState11 extends State<RegisterPage11>
         final loginCache4 = LoginCache();
         loginCache4.setUID(uid);
         Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (context) => const RegisterPage2()));
+            MaterialPageRoute(builder: (context) => const Navigation()));
       }
     } else {
       debugPrint('Request failed with status: ${response.statusCode}');

@@ -46,6 +46,15 @@ class LocalDatabase with ChangeNotifier {
   Config? get config => _config;
   List<Transaction> _transactionHistory = [];
   bool _isTransactionHistoryLoading = false;
+  final Map<int, List<double>> _merchantCoordinatesCache = {};
+
+  void cacheMerchantCoordinates(int merchantId, double lat, double lon) {
+  _merchantCoordinatesCache[merchantId] = [lat, lon];
+}
+
+List<double>? getCachedCoordinates(int merchantId) {
+  return _merchantCoordinatesCache[merchantId];
+}
 
   void setConfig(Config config) {
     _config = config;
@@ -351,6 +360,12 @@ class LocalDatabase with ChangeNotifier {
   Map<String, List<int>> getFullItemListByMerchantId(int merchantId) {
     return categoryMap[merchantId] ?? {};
   }
+
+  int? getCategoryIdByName(String name) {
+  return _categoriesById.entries
+      .firstWhere((e) => e.value.name == name, orElse: () => MapEntry(-1, Category(categoryId: -1, name: '')))
+      .key;
+}
 
   /// Ensures a merchant is cached locally
   Future<void> checkForMerchant(int merchantId) async {

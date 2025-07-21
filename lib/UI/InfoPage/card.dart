@@ -61,7 +61,7 @@ class LuxuryCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  "\$${(difference + 0.01).toStringAsFixed(2)} ${rank == 1 ? 'ahead' : 'away'}",
+                  "\$${(rank == 1 ? difference : difference + 0.01).toStringAsFixed(2)} ${rank == 1 ? 'ahead' : 'away'}",
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,

@@ -201,8 +201,8 @@ Future<void> sendGetMerchants() async {
         Merchant merchant = Merchant.fromJson(merchantJson);
         localDatabase.addMerchant(merchant);
 
-        if (merchant.storeImg != null && merchant.storeImg!.isNotEmpty) {
-          final cachedImage = CachedNetworkImageProvider(merchant.storeImg!);
+        if (merchant.image != null && merchant.image!.isNotEmpty) {
+          final cachedImage = CachedNetworkImageProvider(merchant.image!);
           cachedImage.resolve(const ImageConfiguration()).addListener(
                 ImageStreamListener(
                   (ImageInfo image, bool synchronousCall) {
@@ -381,7 +381,7 @@ class Megrim extends StatelessWidget {
         '/auth': (context) => const Navigation(),
         '/merchant': (context) => const SelectPage(),
         '/login': (context) => const LoginOrRegisterPage(),
-        '/orders': (context) => const Navigation(selectedTab: 1),
+        '/orders': (context) => const Navigation(selectedTab: 0),
         '/items': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map;
           final int merchantId = args['merchantId'];

@@ -308,42 +308,55 @@ class CheckoutPageState extends State<CheckoutPage>
                 ),
               ),
               SafeArea(
-                child: Column(
-                  children: [
-                    _buildHeader(context),
-                    Expanded(
-                      child: Consumer<Cart>(
-                        builder: (context, cart, _) {
-                          final isCartEmpty = cart.getTotalItemCount() == 0;
-                          return PageView(
-                            controller: _pageController,
-                            onPageChanged: (int page) {
-                              _currentPageNotifier.value = page;
-                            },
-                            physics: isCartEmpty
-                                ? const NeverScrollableScrollPhysics()
-                                : const BouncingScrollPhysics(),
-                            children: [
-                              ValueListenableBuilder<Item>(
-                                valueListenable: currentItem,
-                                builder: (context, item, _) {
-                                  return _buildItemPage(
-                                      context); // Item page rebuilds when currentItem changes
-                                },
-                              ),
-                              ValueListenableBuilder<Item>(
-                                valueListenable: currentItem,
-                                builder: (context, item, _) {
-                                  return _buildSummaryPage(
-                                      context); // Summary page rebuilds when currentItem changes
-                                },
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                // ✨ Wrap the original Column with a Consumer<Websocket>
+                child: Consumer<Websocket>(
+                  builder: (context, websocket, child) {
+                    // ✨ Check the isLoading flag
+                    if (websocket.isLoading) {
+                      // ✨ If loading, show a centered progress indicator
+                      return _buildLoadingPage(context);
+                    } else {
+                      // ✨ If not loading, show the original UI
+                      return Column(
+                        children: [
+                          _buildHeader(context),
+                          Expanded(
+                            child: Consumer<Cart>(
+                              builder: (context, cart, _) {
+                                final isCartEmpty =
+                                    cart.getTotalItemCount() == 0;
+                                return PageView(
+                                  controller: _pageController,
+                                  onPageChanged: (int page) {
+                                    _currentPageNotifier.value = page;
+                                  },
+                                  physics: isCartEmpty
+                                      ? const NeverScrollableScrollPhysics()
+                                      : const BouncingScrollPhysics(),
+                                  children: [
+                                    ValueListenableBuilder<Item>(
+                                      valueListenable: currentItem,
+                                      builder: (context, item, _) {
+                                        return _buildItemPage(
+                                            context); // Item page rebuilds when currentItem changes
+                                      },
+                                    ),
+                                    ValueListenableBuilder<Item>(
+                                      valueListenable: currentItem,
+                                      builder: (context, item, _) {
+                                        return _buildSummaryPage(
+                                            context); // Summary page rebuilds when currentItem changes
+                                      },
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                  },
                 ),
               ),
             ],
@@ -886,6 +899,41 @@ class CheckoutPageState extends State<CheckoutPage>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLoadingPage(BuildContext context) {
+    return Column(
+      children: [
+        _buildHeader(context),
+        const Expanded(
+          child: Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+        ),
+        // This container mimics the style and position of the purchase button
+        Container(
+          width: 300,
+          height: 50,
+          decoration: BoxDecoration(
+            color: Colors.white, // Solid white for the loading button
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              'Loading...',
+              style: GoogleFonts.poppins(
+                color: Colors.black,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 50), // Matches the bottom padding
+      ],
     );
   }
 

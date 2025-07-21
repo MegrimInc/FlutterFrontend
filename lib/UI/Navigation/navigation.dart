@@ -1,8 +1,8 @@
+import 'package:megrim/UI/ChatPage/chat.dart';
 import 'package:megrim/UI/Navigation/cloud.dart';
 import 'package:megrim/UI/HomePage/home.dart';
-import 'package:megrim/UI/OrdersPage/orders.dart';
 import 'package:megrim/UI/ProfilePage/profile.dart';
-import 'package:megrim/UI/BankPage/bank.dart';
+import 'package:megrim/UI/SearchPage/search.dart';
 import 'package:flutter/material.dart';
 
 class Navigation extends StatefulWidget {
@@ -19,9 +19,9 @@ class NavigationState extends State<Navigation> {
 
   final List<Widget> _screens = [
     const HomePage(),
-    const OrdersPage(),
+    const ChatPage(),
     Container(color: Colors.black), // Placeholder for modal action
-    const BankPage(),
+    const SearchPage(),
     const ProfilePage(),
   ];
 
@@ -88,7 +88,7 @@ class NavigationState extends State<Navigation> {
                 onPressed: () => _onTabTapped(0),
               ),
               IconButton(
-                icon: const Icon(Icons.description),
+                icon: const Icon(Icons.chat),
                 color: _currentIndex == 1 ? Colors.white : Colors.grey,
                 iconSize: 24,
                 onPressed: () => _onTabTapped(1),
@@ -143,7 +143,7 @@ class NavigationState extends State<Navigation> {
 
               // Right icons
               IconButton(
-                icon: const Icon(Icons.attach_money),
+                icon: const Icon(Icons.search),
                 color: _currentIndex == 3 ? Colors.white : Colors.grey,
                 iconSize: 29,
                 onPressed: () => _onTabTapped(3),
@@ -151,7 +151,7 @@ class NavigationState extends State<Navigation> {
               IconButton(
                 icon: const Icon(Icons.person),
                 color: _currentIndex == 4 ? Colors.white : Colors.grey,
-                iconSize: 27,
+                iconSize: 28,
                 onPressed: () => _onTabTapped(4),
               ),
             ],

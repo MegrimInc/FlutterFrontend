@@ -181,10 +181,10 @@ class SelectPageState extends State<SelectPage> {
                                 child: CircleAvatar(
                                   radius: 100,
                                   backgroundColor: Colors.grey.shade800,
-                                  backgroundImage: emp.imageUrl != null
-                                      ? NetworkImage(emp.imageUrl!)
+                                  backgroundImage: emp.image != null
+                                      ? NetworkImage(emp.image!)
                                       : null,
-                                  child: emp.imageUrl == null
+                                  child: emp.image == null
                                       ? const Icon(Icons.person,
                                           size: 35, color: Colors.white60)
                                       : null,

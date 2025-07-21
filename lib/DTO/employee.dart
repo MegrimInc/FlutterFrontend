@@ -4,14 +4,14 @@ class Employee {
   int? employeeId;
   int? merchantId;
   String? name;
-  String? imageUrl;
+  String? image;
   String? email;
 
   Employee({
     this.employeeId,
     this.merchantId,
     this.name,
-    this.imageUrl,
+    this.image,
     this.email,
   });
 
@@ -19,7 +19,7 @@ class Employee {
         employeeId: json['employeeId'] as int?,
         merchantId: json['merchantId'] as int?,
         name: json['name'] as String?,
-        imageUrl: json['imageUrl'] as String?,
+        image: json['image'] as String?,
         email: json['email'] as String?,
       );
 
@@ -27,7 +27,7 @@ class Employee {
         'employeeId': employeeId,
         'merchantId': merchantId,
         'name': name,
-        'imageUrl': imageUrl,
+        'image': image,
         'email': email,
       };
 }

@@ -4,7 +4,6 @@ import 'package:megrim/Backend/database.dart';
 import 'package:megrim/DTO/item.dart';
 import 'package:megrim/Backend/cart.dart';
 import 'package:megrim/DTO/items.dart';
-import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 import 'package:megrim/UI/CheckoutPage/checkout.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -105,50 +104,6 @@ class BrowsePageState extends State<BrowsePage>
     });
   }
 
-  Future<void> _handleReorder() async {
-    final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
-
-    // Fetch transaction history ONLY if it's empty
-    if (localDatabase.transactionHistory.isEmpty) {
-      final loginCache = Provider.of<LoginCache>(context, listen: false);
-      final customerId = await loginCache.getUID();
-      await localDatabase.fetchTransactionHistory(customerId);
-      debugPrint('Fetched transaction history because it was empty.');
-    } else {
-      debugPrint('Transaction history already loaded, skipping fetch.');
-    }
-
-    // Filter by this merchant
-    final transactions = localDatabase.transactionHistory
-        .where((t) => t.merchantId == widget.merchantId)
-        .toList();
-
-    if (transactions.isEmpty) {
-      debugPrint('No past transactions found for this merchant.');
-      return;
-    }
-
-    // Find most recent by timestamp
-    transactions.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    final lastTransaction = transactions.first;
-
-    debugPrint('Most recent transaction: ${lastTransaction.timestamp}');
-
-    if (lastTransaction.items.isEmpty) {
-      debugPrint('No items in last transaction.');
-      return;
-    }
-
-    // Apply to cart
-    widget.cart.reorder(lastTransaction.items);
-
-    final localDb = LocalDatabase();
-    final firstItemId = lastTransaction.items.first.itemId;
-    final item = localDb.getItemById(firstItemId);
-
-    Navigator.of(context).push(_createRoute(item, widget.cart, targetPage: 1));
-  }
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
@@ -166,35 +121,41 @@ class BrowsePageState extends State<BrowsePage>
     );
   }
 
-  Widget _buildMainContent() {
-    return Column(
-      children: [
-        _buildTopBar(),
-        Expanded(
-          child: SingleChildScrollView(
-            key: _listKey,
-            controller: _scrollController,
-            child: Consumer<LocalDatabase>(
-              builder: (context, database, _) {
-                final categoryMap =
-                    database.getFullItemListByMerchantId(widget.merchantId);
-                return Column(
-                  children: [
-                    const SizedBox(height: 25),
-                    for (final entry in categoryMap.entries)
-                      if (entry.value.isNotEmpty) ...[
-                        _buildItemSection(context, entry.key, entry.value),
-                        const SizedBox(height: 50),
-                      ]
-                  ],
-                );
-              },
-            ),
+ Widget _buildMainContent() {
+  return Column(
+    children: [
+      _buildTopBar(),
+      Expanded(
+        child: SingleChildScrollView(
+          key: _listKey,
+          controller: _scrollController,
+          child: Consumer<LocalDatabase>(
+            builder: (context, database, _) {
+              final categoryMap = database.getFullItemListByMerchantId(widget.merchantId);
+              final sortedEntries = categoryMap.entries.toList()
+                ..sort((a, b) {
+                  final aId = database.getCategoryIdByName(a.key) ?? 999999;
+                  final bId = database.getCategoryIdByName(b.key) ?? 999999;
+                  return aId.compareTo(bId);
+                });
+
+              return Column(
+                children: [
+                  const SizedBox(height: 25),
+                  for (final entry in sortedEntries)
+                    if (entry.value.isNotEmpty) ...[
+                      _buildItemSection(context, entry.key, entry.value),
+                      const SizedBox(height: 50),
+                    ]
+                ],
+              );
+            },
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Widget _buildTopBar() {
     return Container(
@@ -223,7 +184,7 @@ class BrowsePageState extends State<BrowsePage>
             child: Text(
               appBarTitle,
               style: GoogleFonts.poppins(
-                color: Colors.white70,
+                color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),

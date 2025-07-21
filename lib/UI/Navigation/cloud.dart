@@ -372,8 +372,8 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
             localDatabase.findEmployeeById(parsedMerchantId, parsedEmployeeId!);
 
         final String? profileImage =
-            (employee?.imageUrl != null && employee!.imageUrl!.isNotEmpty)
-                ? employee.imageUrl
+            (employee?.image != null && employee!.image!.isNotEmpty)
+                ? employee.image
                 : null;
 
         final String merchantName = merchant != null
@@ -403,7 +403,7 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
               children: [
                 SizedBox(width: MediaQuery.of(context).size.width * .025),
                 // --- 1. The Leading Avatar ---
-                merchant?.logoImg != null && merchant!.logoImg!.isNotEmpty
+                merchant?.image != null && merchant!.image!.isNotEmpty
                     ? CircleAvatar(
                         backgroundImage: CachedNetworkImageProvider("$profileImage"),
                         radius: avatarRadius,
@@ -500,8 +500,8 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
             localDatabase.findEmployeeById(parsedMerchantId, parsedEmployeeId!);
 
         final String? profileImage =
-            (employee?.imageUrl != null && employee!.imageUrl!.isNotEmpty)
-                ? employee.imageUrl
+            (employee?.image != null && employee!.image!.isNotEmpty)
+                ? employee.image
                 : null;
 
         final String merchantName = merchant != null
@@ -534,7 +534,7 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
               children: [
                 SizedBox(width: MediaQuery.of(context).size.width * .025),
                 // --- 1. The Leading Avatar ---
-                merchant?.logoImg != null && merchant!.logoImg!.isNotEmpty
+                merchant?.image != null && merchant!.image!.isNotEmpty
                     ? CircleAvatar(
                         backgroundImage: CachedNetworkImageProvider("$profileImage"),
                         radius: avatarRadius,

@@ -68,7 +68,8 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _fetchCustomerName(int customerId) async {
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/getNames/$customerId'),
+        Uri.parse(
+            '${AppConfig.postgresHttpBaseUrl}/customer/getNames/$customerId'),
       );
 
       if (response.statusCode == 200) {
@@ -81,17 +82,23 @@ class _ProfilePageState extends State<ProfilePage> {
         debugPrint(
             'Failed to fetch customer name. Status code: ${response.statusCode}');
         debugPrint('Response body: ${response.body}');
+        setState(() {
+        firstName = 'Guest';
+        lastName = 'Account';
+          });
       }
     } catch (e) {
       debugPrint('Error fetching customer name: $e');
     }
   }
 
-  Future<void> _showStripeSetupSheet(BuildContext context, int customerId) async {
+  Future<void> _showStripeSetupSheet(
+      BuildContext context, int customerId) async {
     try {
       // Call your backend to create a SetupIntent and retrieve the client secret
       final response = await http.get(
-        Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/createSetupIntent/$customerId'),
+        Uri.parse(
+            '${AppConfig.postgresHttpBaseUrl}/customer/createSetupIntent/$customerId'),
       );
 
       if (response.statusCode == 200) {
@@ -136,10 +143,12 @@ class _ProfilePageState extends State<ProfilePage> {
     final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
     try {
       final response = await http.post(
-        Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/addPaymentIdToDatabase'),
+        Uri.parse(
+            '${AppConfig.postgresHttpBaseUrl}/customer/addPaymentIdToDatabase'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "customerId": customerId, // customerId is the customer Id for your app
+          "customerId":
+              customerId, // customerId is the customer Id for your app
           "stripeId": stripeId, // Stripe customer Id returned by Stripe
           "setupIntentId": setupIntentId // SetupIntent Id from Stripe
         }),
@@ -175,8 +184,6 @@ class _ProfilePageState extends State<ProfilePage> {
       body: SafeArea(
         child: Column(
           children: [
-            //const Spacer(flex: 3),
-
             const SizedBox(height: 50),
             // Profile Header
             const CircleAvatar(
@@ -418,7 +425,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final response = await http.post(
-        Uri.parse('${AppConfig.postgresHttpBaseUrl}/customer/updateNames/$customerId'),
+        Uri.parse(
+            '${AppConfig.postgresHttpBaseUrl}/customer/updateNames/$customerId'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestBody),
       );

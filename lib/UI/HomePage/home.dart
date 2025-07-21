@@ -1,54 +1,54 @@
 import 'dart:convert';
-import 'package:megrim/DTO/merchant.dart';
-import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:megrim/Backend/database.dart';
 import 'package:megrim/Backend/websocket.dart';
-import 'package:megrim/UI/ChatPage/chat.dart';
-import 'package:megrim/UI/LeaderboardPage/leaderboard.dart';
-import 'package:megrim/UI/SearchPage/searchpage.dart';
-import 'package:megrim/config.dart';
+import 'package:megrim/DTO/customerorder.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:iconify_flutter/iconify_flutter.dart';
-import 'package:iconify_flutter/icons/heroicons_solid.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:megrim/DTO/transaction.dart';
+import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
+import 'package:megrim/UI/Navigation/cloud.dart';
+import 'package:megrim/config.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:http/http.dart' as http;
-import 'dart:math' as math;
-import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
-import 'package:vector_map_tiles/vector_map_tiles.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:shimmer/shimmer.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  HomePageState createState() => HomePageState();
+  State<HomePage> createState() => HomePageState();
 }
 
-class HomePageState extends State<HomePage> {
-  late double screenHeight;
-  late double bottomHeight;
-  late double paddingHeight;
-  late Future<(LatLng, List<({Merchant merchant, LatLng coordinates})>)>
-      _mapDataFuture;
-  LocationPermission? _permissionStatus;
-  Style? _style;
-
+class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    _connect();
-    checkPaymentMethod();
-    //sendGetPoints();
-    _checkLocationPermission();
+    WidgetsBinding.instance.addObserver(this);
+    if (mounted) {
+      _connect();
+      _fetchTransactionHistory();
+      checkPaymentMethod();
+    }
   }
 
   Future<void> _connect() async {
     final hierarchy = Provider.of<Websocket>(context, listen: false);
-    hierarchy.connect(context); // No need to await since it returns void
+    hierarchy.connect(context);
+  }
+
+  Future<void> _fetchTransactionHistory() async {
+    final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
+    if (localDatabase.transactionHistory.isEmpty) {
+      final loginCache = Provider.of<LoginCache>(context, listen: false);
+      final customerId = await loginCache.getUID();
+      await localDatabase.fetchTransactionHistory(customerId);
+    } else {
+      debugPrint('Transaction history already loaded, skipping fetch.');
+    }
   }
 
   Future<void> checkPaymentMethod() async {
@@ -68,7 +68,7 @@ class HomePageState extends State<HomePage> {
       );
 
       if (response.statusCode == 200) {
-        final paymentPresent = jsonDecode(response.body); // true or false
+        final paymentPresent = jsonDecode(response.body);
         debugPrint('Payment method check result: $paymentPresent');
 
         if (paymentPresent == true) {
@@ -87,441 +87,514 @@ class HomePageState extends State<HomePage> {
     }
   }
 
-  void showCardsOverlay(int merchantId) async {
-    // ✨ Change 1: Added merchantId as a parameter
-    final overlay = Overlay.of(context);
-    late OverlayEntry entry;
-
-    final customerId = await LoginCache().getUID();
-
-    if (customerId == 0) return;
-
-    // The rest of the function now uses the merchantId we passed in
-    entry = OverlayEntry(
-      builder: (context) => LeaderboardPage(
-        onClose: () => entry.remove(),
-        customerId: customerId,
-        merchantId: merchantId,
-      ),
-    );
-
-    overlay.insert(entry);
-  }
-
-  /// Checks the current location permission status using Geolocator.
-  Future<void> _checkLocationPermission() async {
-    // First, check if location services are even enabled on the device
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      // If services are disabled, we treat it as denied for the UI
-      setState(() => _permissionStatus = LocationPermission.denied);
-      return;
-    }
-
-    // Check the permission status
-    final status = await Geolocator.checkPermission();
-    setState(() {
-      _permissionStatus = status;
-    });
-
-    if (status == LocationPermission.whileInUse ||
-        status == LocationPermission.always) {
-      _loadMapData();
-    }
-  }
-
-  /// Requests location permission from the user using Geolocator.
-  Future<void> _requestLocationPermission() async {
-    final status = await Geolocator.requestPermission();
-    setState(() {
-      _permissionStatus = status;
-    });
-
-    if (status == LocationPermission.whileInUse ||
-        status == LocationPermission.always) {
-      _loadMapData();
-    }
-  }
-
-  /// This function now only runs AFTER permission is granted.
-  void _loadMapData() async {
-    try {
-      // Load the style from your server
-      final newStyle = await StyleReader(
-        uri: 'http://54.147.153.13/styles/dark-matter/style.json',
-      ).read();
-
-      // Once the style is loaded, prepare the map data for the markers
-      final mapDataFuture = _prepareMapData();
-
-      if (mounted) {
-        setState(() {
-          _style = newStyle;
-          _mapDataFuture = mapDataFuture;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error setting up map: $e');
-    }
-  }
-
-  Future<(LatLng, List<({Merchant merchant, LatLng coordinates})>)>
-      _prepareMapData() async {
-    final userPosition = await _determinePosition();
-    //final userLatLng = LatLng(userPosition.latitude, userPosition.longitude);
-    final userLatLng = const LatLng(37.229572, -80.413940);
-
-    final allMerchants = LocalDatabase().merchants.values.toList();
-
-    var geocodedMerchants = <({Merchant merchant, LatLng coordinates})>[];
-    for (final merchant in allMerchants) {
-      try {
-        final addressString =
-            '${merchant.address}, ${merchant.city}, ${merchant.stateOrProvince} ${merchant.zipCode}';
-        final locations = await locationFromAddress(addressString);
-        if (locations.isEmpty) {
-          // nothing found for this address, skip to next merchant
-          continue;
-        }
-        final loc = locations.first;
-        geocodedMerchants.add((
-          merchant: merchant,
-          coordinates: LatLng(loc.latitude, loc.longitude)
-        ));
-      } catch (e) {
-        debugPrint('Could not geocode merchant ${merchant.name}: $e');
-      }
-    }
-    // Return the final record
-    return (userLatLng, geocodedMerchants);
-  }
-
-  /// Determines the current position of the device using Geolocator.
-  Future<Position> _determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return Future.error('Location services are disabled.');
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return Future.error('Location permissions are denied');
-      }
-    }
-    if (permission == LocationPermission.deniedForever) {
-      return Future.error('Location permissions are permanently denied.');
-    }
-    return await Geolocator.getCurrentPosition();
-  }
-
-  void _refreshMap() {
-    setState(() {
-      _mapDataFuture = _prepareMapData();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        extendBodyBehindAppBar: true,
-        resizeToAvoidBottomInset: false,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
         backgroundColor: Colors.black,
-        appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            surfaceTintColor: Colors.transparent,
-            centerTitle: true,
-            elevation: 2,
-            title: Row(
-              children: [
-                GestureDetector(
-                  onTap: _refreshMap, // Calls our new function
-                  child: Text(
-                    'H o m e',
-                    style: GoogleFonts.megrim(
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      fontSize: 25,
-                      shadows: [],
-                    ),
-                  ),
-                ),
-
-                const Spacer(),
-
-                //SEARCH
-
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SearchPage(),
-                      ),
-                    );
-                  },
-                  child: const Iconify(
-                    HeroiconsSolid.search,
-                    size: 25,
-                    color: Colors.grey,
-                  ),
-                ),
-
-                const SizedBox(width: 15),
-
-                GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const ChatPage()),
-                      );
-                    },
-                    child: Transform(
-                      alignment: Alignment.center,
-                      transform: Matrix4.rotationY(math.pi),
-                      child: const Icon(
-                        Icons.chat,
-                        size: 25.5,
-                        color: Colors.grey,
-                      ),
-                    )),
-              ],
-            )),
-        body: _buildBody(),
-        bottomNavigationBar: FutureBuilder<int>(
-          future: Provider.of<LoginCache>(context, listen: false).getUID(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const SizedBox.shrink(); // Return nothing while waiting
-            }
-            if (snapshot.hasData && snapshot.data == 0) {
-              return Container(
-                height: bottomHeight,
-                width: double.infinity, // Ensures full-width alignment
+        body: SafeArea(
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: const BoxDecoration(
-                  color: Colors.black, // Background color for better visibility
+                  color: Colors.black,
                   border: Border(
-                    top: BorderSide(
-                      color: Color.fromARGB(255, 126, 126, 126),
-                      width: 0.1,
+                    bottom: BorderSide(
+                      color: Colors.grey,
+                      width: .1,
                     ),
                   ),
                 ),
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.only(bottom: paddingHeight),
-                    child: const Text(
-                      '⚠️   WARNING: VIEW ONLY   ⚠️',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        fontStyle: FontStyle.italic,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.05,
+                    ),
+                    Text(
+                      'H o m e',
+                      style: GoogleFonts.megrim(
+                        textStyle: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              );
-            }
-            return const SizedBox
-                .shrink(); // Return nothing if customerId is not 0
-          },
-        ));
-  }
-
-  Widget _buildBody() {
-    // While we're first checking, show a loader
-    if (_permissionStatus == null || _style == null) {
-      return const Center(
-          child: CircularProgressIndicator(color: Colors.white));
-    }
-
-    switch (_permissionStatus!) {
-      case LocationPermission.always:
-      case LocationPermission.whileInUse:
-        // If permission is granted, show the FutureBuilder and the map
-        return FutureBuilder<
-            (LatLng, List<({Merchant merchant, LatLng coordinates})>)>(
-          future: _mapDataFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting ||
-                !snapshot.hasData) {
-              return const Center(
-                  child: CircularProgressIndicator(color: Colors.white));
-            }
-            if (snapshot.hasError) {
-              return Center(
-                  child: Text('Error: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.red)));
-            }
-            final userLocation = snapshot.data!.$1;
-            final geocodedMerchants = snapshot.data!.$2;
-
-            return FlutterMap(
-              options: MapOptions(
-                initialCenter: userLocation,
-                initialZoom: 19,
-                backgroundColor: Colors.black,
-                minZoom: 2,
-                maxZoom: 22.0,
-                cameraConstraint: CameraConstraint.contain(
-                  bounds: LatLngBounds(const LatLng(-85.0511, -180.0),
-                      const LatLng(85.0511, 180.0)),
+                    Spacer(),
+                    Icon(Icons.home, color: Colors.grey, size: 29),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.05,
+                    ),
+                  ],
                 ),
               ),
-              children: [
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () => _refreshOrders(context),
+                  color: Colors.black,
+                  child: Consumer2<Websocket, LocalDatabase>(
+                    builder: (context, websocket, localDatabase, child) {
+                      final activeOrderPairs = websocket.getOrders();
 
-                TileLayer(
-                  urlTemplate:
-                      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-                  subdomains: const ['a', 'b', 'c', 'd'],
-                  retinaMode: true,
-                  userAgentPackageName: 'site.megrim.app',
-                ),
+                      final activeOrders = activeOrderPairs
+                          .map((pair) =>
+                              localDatabase.getOrderForMerchantAndEmployee(
+                                  pair.key, pair.value))
+                          .where((order) => order != null)
+                          .toList();
 
-                // VectorTileLayer(
-                //   theme: _style!.theme,
-                //   tileProviders: TileProviders({
-                //     'openmaptiles': NetworkVectorTileProvider(
-                //       urlTemplate:
-                //           'http://54.147.153.13/data/openmaptiles/{z}/{x}/{y}.pbf',
-                //     ),
-                //   }),
-                // ),
+                      final transactionHistory =
+                          localDatabase.transactionHistory;
+                      final isHistoryLoading =
+                          localDatabase.isTransactionHistoryLoading;
 
-                MarkerClusterLayerWidget(
-                  options: MarkerClusterLayerOptions(
-                    maxClusterRadius: 45,
-                    size: const Size(40, 40),
-                    markers: geocodedMerchants.map((record) {
-                      final merchant = record.merchant;
-                      final coordinates = record.coordinates;
-                      return Marker(
-                        point: coordinates,
-                        width: 105,
-                        height: 95,
-                        child: _buildMerchantMarker(merchant),
-                      );
-                    }).toList(),
-                    builder: (context, markers) {
-                      return Container(
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black.withAlpha(200),
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: Text(
-                          '${markers.length}',
-                          style: const TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
+                      if (!websocket.isConnected || isHistoryLoading) {
+                        return const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        );
+                      }
+
+                      if (activeOrders.isEmpty && transactionHistory.isEmpty) {
+                        return buildIntroScreen();
+                      }
+
+                      return ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          if (activeOrders.isNotEmpty) ...[
+                            ...activeOrders
+                                .map((order) => _buildActiveOrder(order!)),
+                          ],
+                          if (transactionHistory.isNotEmpty) ...[
+                            ...transactionHistory
+                                .map((order) => _buildPastOrder(order)),
+                          ],
+                        ],
                       );
                     },
                   ),
                 ),
-              ],
-            );
-          },
-        );
-
-      case LocationPermission.denied:
-        return _buildPermissionRequestUI(
-          "Megrim uses your location to show you nearby places.",
-          "Allow Location",
-          _requestLocationPermission,
-        );
-
-      case LocationPermission.deniedForever:
-        return _buildPermissionRequestUI(
-          "Location permissions have been denied. Please enable it in your device settings to use the map.",
-          "Open Settings",
-          Geolocator.openAppSettings, // Geolocator has a helper for this!
-        );
-
-      // This case handles `unableToDetermine`
-      default:
-        return _buildPermissionRequestUI(
-          "Could not determine location permission. Please try again.",
-          "Check Permission",
-          _checkLocationPermission,
-        );
-    }
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  Widget _buildMerchantMarker(Merchant merchant) {
-    return GestureDetector(
-        onTap: () => showCardsOverlay(merchant.merchantId!),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (merchant.storeImg != null && merchant.storeImg!.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(35),
-                child: Image.network(
-                  merchant.storeImg!,
-                  width: 70,
-                  height: 70,
-                  fit: BoxFit.cover,
+  Widget buildIntroScreen() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Positioned(
+          top: MediaQuery.of(context).size.height * 0.225,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Shimmer.fromColors(
+                baseColor: Colors.white54,
+                highlightColor: Colors.white,
+                period: const Duration(milliseconds: 1500),
+                child: Text(
+                  'M',
+                  style: GoogleFonts.megrim(
+                    textStyle: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 100,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              )
+            ],
+          ),
+        ),
+        Positioned(
+            top: MediaQuery.of(context).size.height * 0.59,
+            child: Column(children: [
+              DefaultTextStyle(
+                style: const TextStyle(
+                  fontSize: 20,
+                  color: Colors.white70,
+                ),
+                child: AnimatedTextKit(
+                  isRepeatingAnimation: false,
+                  animatedTexts: [
+                    TyperAnimatedText(
+                      'Tap Here to Order',
+                      speed: Duration(milliseconds: 50),
+                    ),
+                  ],
                 ),
               ),
-            const SizedBox(height: 3),
-            Text(
-              "@${merchant.nickname ?? 'No Tag'}",
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ));
+              Icon(Icons.arrow_drop_down, size: 100, color: Colors.white)
+                  .animate(onComplete: (c) => c.repeat())
+                  .custom(
+                    duration: 1750.ms,
+                    builder: (context, value, child) {
+                      final opacity = value < 0.5
+                          ? value * 2 // Fade in from 0 to 1
+                          : (1 - value) * 2; // Then fade out from 1 to 0
+                      return Opacity(opacity: opacity, child: child);
+                    },
+                  ),
+            ])),
+      ],
+    );
   }
 
-  /// A reusable widget for the permission request UI.
-  Widget _buildPermissionRequestUI(
-      String text, String buttonText, VoidCallback onPressed) {
-    return Center(
+  Future<void> _refreshOrders(BuildContext context) async {
+    final websocket = Provider.of<Websocket>(context, listen: false);
+    websocket.sendRefreshMessage(context);
+    _fetchTransactionHistory();
+    debugPrint('Order list has been refreshed.');
+  }
+
+  Widget _buildActiveOrder(CustomerOrder order) {
+    final merchant = LocalDatabase.getMerchantById(order.merchantId);
+    final employee = Provider.of<LocalDatabase>(context, listen: false)
+        .findEmployeeById(order.merchantId, order.employeeId);
+
+    final String imageUrl = (employee?.image?.isNotEmpty ?? false)
+        ? employee!.image!
+        : 'https://www.barzzy.site/images/default.png';
+
+    final String workerName = employee?.name ?? 'Loading...';
+    final String customerName = order.name;
+
+    // Merge items by name
+    final Map<String, int> mergedItems = {};
+    for (var item in order.items) {
+      mergedItems.update(
+        item.itemName,
+        (existingQty) => existingQty + item.quantity,
+        ifAbsent: () => item.quantity,
+      );
+    }
+
+    final List<MapEntry<String, int>> itemList = mergedItems.entries.toList();
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.location_on, color: Colors.grey, size: 80),
-            const SizedBox(height: 20),
-            Text(
-              text,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+            Row(
+              children: [
+                ClipOval(
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '@${merchant?.nickname ?? "Unknown"}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        workerName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _buildStatusIndicator(order.status),
+              ],
             ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            const SizedBox(height: 12),
+            ...itemList.sublist(0, itemList.length - 1).map((entry) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Text(
+                    '${entry.key} x${entry.value}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                )),
+            if (itemList.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  children: [
+                    Text(
+                      '${itemList.last.key} x${itemList.last.value}',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      customerName.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 14,
+                        //fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              onPressed: onPressed,
-              child: Text(buttonText),
-            ),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildStatusIndicator(String status) {
+    String displayText;
+    Color displayColor;
+
+    if (status == "unready") {
+      displayText = "IN QUEUE";
+      displayColor = Colors.orange;
+    } else if (status == "ready") {
+      displayText = "READY";
+      displayColor = Colors.lightGreenAccent;
+    } else if (status == "arrived") {
+      displayText = "ARRIVED";
+      displayColor = Colors.blueAccent;
+    } else if (status == "delivered") {
+      displayText = "COMPLETED";
+      displayColor = Colors.grey;
+    } else if (status == "canceled") {
+      displayText = "CANCELED";
+      displayColor = Colors.red.shade300;
+    } else {
+      displayText = status.toUpperCase();
+      displayColor = Colors.grey;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: displayColor.withValues(alpha: .02),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: displayColor),
+      ),
+      child: Text(
+        displayText,
+        style: TextStyle(
+          color: displayColor,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPastOrder(Transaction order) {
+    final merchant = LocalDatabase.getMerchantById(order.merchantId);
+
+    // Merge items with the same name regardless of payment type
+    final Map<String, int> mergedItems = {};
+    for (var item in order.items) {
+      mergedItems.update(
+        item.itemName,
+        (existingQty) => existingQty + item.quantity,
+        ifAbsent: () => item.quantity,
+      );
+    }
+
+    // Format timestamp inline
+    String formattedTimestamp;
+    try {
+      final utcDateTime = DateTime.parse(order.timestamp);
+      final localDateTime = utcDateTime.toLocal();
+
+      // 12-hour time with AM/PM
+      final hour = localDateTime.hour % 12 == 0 ? 12 : localDateTime.hour % 12;
+      final minute = localDateTime.minute.toString().padLeft(2, '0');
+      final period = localDateTime.hour >= 12 ? 'PM' : 'AM';
+
+      formattedTimestamp =
+          '${localDateTime.month}/${localDateTime.day}/${localDateTime.year} $hour:$minute $period';
+    } catch (_) {
+      formattedTimestamp = order.timestamp;
+    }
+
+    return GestureDetector(
+      onTap: () async {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.grey,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (BuildContext context) {
+            return CloudPage(transaction: order);
+          },
+        );
+        await Provider.of<LocalDatabase>(context, listen: false)
+            .fetchCategoriesAndItems(order.merchantId);
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white24),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Row(
+                    children: [
+                      if (order.totalRegularPrice > 0)
+                        Text(
+                          '\$${(order.totalRegularPrice + order.totalTax + order.totalGratuity + order.totalServiceFee).toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      if (order.totalRegularPrice > 0 &&
+                          order.totalPointPrice > 0)
+                        const Text(
+                          ', ',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      if (order.totalPointPrice > 0)
+                        Text(
+                          '${order.totalPointPrice} pts',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Text(
+                    order.status == 'delivered'
+                        ? 'COMPLETED'
+                        : order.status == 'canceled'
+                            ? 'CANCELED'
+                            : order.status.toUpperCase(),
+                    style: TextStyle(
+                      color: order.status == 'delivered'
+                          ? Colors.lightGreenAccent
+                          : Colors.red,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ...mergedItems.entries.map((entry) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text(
+                      '${entry.key} x${entry.value}',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  )),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(
+                    formattedTimestamp,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '@${merchant?.nickname ?? "Unknown"}',
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Widget _buildArriveButton(CustomerOrder order) {
+  //   return GestureDetector(
+  //     onTap: () {
+  //       final merchantId = order.merchantId;
+  //       final employeeId = order.employeeId;
+
+  //       final websocket = Provider.of<Websocket>(context, listen: false);
+  //       websocket.sendArriveMessage(merchantId, employeeId);
+
+  //       debugPrint('Arrive message sent for merchantId: $merchantId');
+  //     },
+  //     child: Container(
+  //       height: 50,
+  //       width: 300,
+  //       decoration: BoxDecoration(
+  //         color: Colors.white,
+  //         borderRadius: BorderRadius.circular(12),
+  //       ),
+  //       child: Center(
+  //         child: Text(
+  //           "I'm Here",
+  //           style: GoogleFonts.poppins(
+  //             color: Colors.black,
+  //             fontSize: 14,
+  //             fontWeight: FontWeight.w500,
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Dynamically calculate the available screen height
-    screenHeight = MediaQuery.of(context).size.height -
-        (3.8 * kToolbarHeight); // Subtract twice the AppBar height
-    bottomHeight = (MediaQuery.of(context).size.height - screenHeight) * .5;
-    paddingHeight = bottomHeight * .18;
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshOrders(context);
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // ✅ Remove observer
+    super.dispose();
   }
 }
