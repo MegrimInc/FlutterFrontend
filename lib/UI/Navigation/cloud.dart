@@ -338,14 +338,145 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildCloudLinkScanResults(List<ScanResult> scanResultsValue) {
-    return ListView.builder(
-      itemCount: scanResultsValue.length,
-      itemBuilder: (context, index) {
-        final double itemHeight = MediaQuery.of(context).size.height * 0.13;
+  // Widget _buildCloudLinkScanResults(List<ScanResult> scanResultsValue) {
+  //   return ListView.builder(
+  //     itemCount: scanResultsValue.length,
+  //     itemBuilder: (context, index) {
+  //       final double itemHeight = MediaQuery.of(context).size.height * 0.13;
 
-        final double avatarRadius = itemHeight * 0.33;
-        final double spinnerSize = itemHeight * 0.25;
+  //       final double avatarRadius = itemHeight * 0.33;
+  //       final double spinnerSize = itemHeight * 0.25;
+  //       final result = scanResultsValue[index];
+  //       final String advName = result.advertisementData.advName;
+  //       final List<String> starSplit = advName.split('*');
+  //       if (starSplit.length < 2) return const SizedBox.shrink();
+  //       final String idPart = starSplit[0];
+  //       final List<String> idSplit = idPart.split('&');
+  //       if (idSplit.length < 2) return const SizedBox.shrink();
+
+  //       final String merchantIdStr = idSplit[0];
+  //       final String employeeIdStr = idSplit[1];
+
+  //       final int? parsedMerchantId = int.tryParse(merchantIdStr);
+  //       if (parsedMerchantId == null) {
+  //         return const SizedBox.shrink();
+  //       }
+
+  //       final int? parsedEmployeeId = int.tryParse(employeeIdStr);
+
+  //       final localDatabase =
+  //           Provider.of<LocalDatabase>(context, listen: false);
+  //       final Merchant? merchant = localDatabase.merchants[parsedMerchantId];
+
+  //       final Employee? employee =
+  //           localDatabase.findEmployeeById(parsedMerchantId, parsedEmployeeId!);
+
+  //       final String? profileImage =
+  //           (employee?.image != null && employee!.image!.isNotEmpty)
+  //               ? employee.image
+  //               : null;
+
+  //       final String merchantName = merchant != null
+  //           ? merchant.nickname ?? 'Unknown Tag'
+  //           : "Unknown Merchant";
+
+  //       return GestureDetector(
+  //         onTap: () async {
+  //           isLoading.value = true;
+  //           try {
+  //             await attemptPairingForCloudLink(result); // ← await here
+  //           } finally {
+  //             isLoading.value = false;
+  //           }
+  //         },
+  //         child: Container(
+  //           height: itemHeight,
+  //           width: MediaQuery.of(context).size.width,
+  //           margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+  //           padding: const EdgeInsets.all(8),
+  //           decoration: BoxDecoration(
+  //             color: Colors.white24,
+  //             borderRadius: BorderRadius.circular(10),
+  //           ),
+  //           // We no longer need the Center widget
+  //           child: Row(
+  //             children: [
+  //               SizedBox(width: MediaQuery.of(context).size.width * .025),
+  //               // --- 1. The Leading Avatar ---
+  //               merchant?.image != null && merchant!.image!.isNotEmpty
+  //                   ? CircleAvatar(
+  //                       backgroundImage: CachedNetworkImageProvider("$profileImage"),
+  //                       radius: avatarRadius,
+  //                     )
+  //                   : CircleAvatar(
+  //                       backgroundColor: Colors.grey,
+  //                       radius: avatarRadius,
+  //                       child: Icon(Icons.image,
+  //                           color: Colors.white, size: avatarRadius),
+  //                     ),
+
+  //               // --- 2. The Space Between ---
+  //               SizedBox(width: MediaQuery.of(context).size.width * .03),
+
+  //               // --- 3. The Title and Subtitle Block ---
+  //               Expanded(
+  //                 child: Column(
+  //                   mainAxisAlignment: MainAxisAlignment
+  //                       .center, // Vertically centers the texts
+  //                   crossAxisAlignment:
+  //                       CrossAxisAlignment.start, // Left-aligns the texts
+  //                   children: [
+  //                     Text(
+  //                       "@$merchantName",
+  //                       style: TextStyle(
+  //                         color: Colors.white,
+  //                         fontWeight: FontWeight.w600,
+  //                       ),
+  //                     ),
+  //                     const SizedBox(
+  //                         height: 4), // Small gap between title and subtitle
+  //                     Text(
+  //                       (employee != null &&
+  //                               employee.name != null &&
+  //                               employee.name!.isNotEmpty)
+  //                           ? employee.name!
+  //                           : "...",
+  //                       style: TextStyle(
+  //                         color: Colors.white54,
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+
+  //               // --- 4. The Trailing Spinner ---
+  //               SizedBox(
+  //                 width: spinnerSize * 2,
+  //                 child: SpinKitThreeBounce(
+  //                   color: Colors.white,
+  //                   size: spinnerSize,
+  //                 ),
+  //               ),
+  //               SizedBox(width: MediaQuery.of(context).size.width * .03)
+  //             ],
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
+
+  Widget _buildCloudLinkScanResults(List<ScanResult> scanResultsValue) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(10),
+      itemCount: scanResultsValue.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: .9,
+      ),
+      itemBuilder: (context, index) {
         final result = scanResultsValue[index];
         final String advName = result.advertisementData.advName;
         final List<String> starSplit = advName.split('*');
@@ -356,110 +487,58 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
 
         final String merchantIdStr = idSplit[0];
         final String employeeIdStr = idSplit[1];
-
         final int? parsedMerchantId = int.tryParse(merchantIdStr);
-        if (parsedMerchantId == null) {
+        final int? parsedEmployeeId = int.tryParse(employeeIdStr);
+        if (parsedMerchantId == null || parsedEmployeeId == null) {
           return const SizedBox.shrink();
         }
-
-        final int? parsedEmployeeId = int.tryParse(employeeIdStr);
 
         final localDatabase =
             Provider.of<LocalDatabase>(context, listen: false);
         final Merchant? merchant = localDatabase.merchants[parsedMerchantId];
-
         final Employee? employee =
-            localDatabase.findEmployeeById(parsedMerchantId, parsedEmployeeId!);
-
+            localDatabase.findEmployeeById(parsedMerchantId, parsedEmployeeId);
         final String? profileImage =
-            (employee?.image != null && employee!.image!.isNotEmpty)
-                ? employee.image
-                : null;
-
-        final String merchantName = merchant != null
-            ? merchant.nickname ?? 'Unknown Tag'
-            : "Unknown Merchant";
+            (employee?.image?.isNotEmpty ?? false) ? employee!.image : null;
+        final String merchantName = merchant?.nickname ?? 'Unknown Tag';
 
         return GestureDetector(
           onTap: () async {
             isLoading.value = true;
             try {
-              await attemptPairingForCloudLink(result); // ← await here
+              await attemptPairingForCloudLink(result);
             } finally {
               isLoading.value = false;
             }
           },
-          child: Container(
-            height: itemHeight,
-            width: MediaQuery.of(context).size.width,
-            margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            // We no longer need the Center widget
-            child: Row(
-              children: [
-                SizedBox(width: MediaQuery.of(context).size.width * .025),
-                // --- 1. The Leading Avatar ---
-                merchant?.image != null && merchant!.image!.isNotEmpty
-                    ? CircleAvatar(
-                        backgroundImage: CachedNetworkImageProvider("$profileImage"),
-                        radius: avatarRadius,
-                      )
-                    : CircleAvatar(
-                        backgroundColor: Colors.grey,
-                        radius: avatarRadius,
-                        child: Icon(Icons.image,
-                            color: Colors.white, size: avatarRadius),
-                      ),
-
-                // --- 2. The Space Between ---
-                SizedBox(width: MediaQuery.of(context).size.width * .03),
-
-                // --- 3. The Title and Subtitle Block ---
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment
-                        .center, // Vertically centers the texts
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start, // Left-aligns the texts
-                    children: [
-                      Text(
-                        "@$merchantName",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(
-                          height: 4), // Small gap between title and subtitle
-                      Text(
-                        (employee != null &&
-                                employee.name != null &&
-                                employee.name!.isNotEmpty)
-                            ? employee.name!
-                            : "...",
-                        style: TextStyle(
-                          color: Colors.white54,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // --- 4. The Trailing Spinner ---
-                SizedBox(
-                  width: spinnerSize * 2,
-                  child: SpinKitThreeBounce(
-                    color: Colors.white,
-                    size: spinnerSize,
-                  ),
-                ),
-                SizedBox(width: MediaQuery.of(context).size.width * .03)
-              ],
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 5),
+              CircleAvatar(
+                backgroundImage: profileImage != null
+                    ? CachedNetworkImageProvider(profileImage)
+                    : null,
+                backgroundColor: Colors.grey,
+                radius: 60,
+                child: profileImage == null
+                    ? const Icon(Icons.image, color: Colors.white)
+                    : null,
+              ),
+              const SizedBox(height: 8),
+               Text(
+                "@$merchantName",
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+              Text(
+                (employee?.name?.isNotEmpty ?? false)
+                    ? employee!.name!.toLowerCase()
+                    : "...",
+                style: const TextStyle(
+                    color: Colors.white54, fontWeight: FontWeight.w600),
+              ),
+            ],
           ),
         );
       },
@@ -536,7 +615,8 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
                 // --- 1. The Leading Avatar ---
                 merchant?.image != null && merchant!.image!.isNotEmpty
                     ? CircleAvatar(
-                        backgroundImage: CachedNetworkImageProvider("$profileImage"),
+                        backgroundImage:
+                            CachedNetworkImageProvider("$profileImage"),
                         radius: avatarRadius,
                       )
                     : CircleAvatar(

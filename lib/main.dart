@@ -39,7 +39,7 @@ const String currentIOSTabletVersion = '3.0.0'; // Define tablet version if diff
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  AppConfig.environment = Environment.test;
+  AppConfig.environment = Environment.live;
 
   Stripe.publishableKey = AppConfig.stripePublishableKey;
 

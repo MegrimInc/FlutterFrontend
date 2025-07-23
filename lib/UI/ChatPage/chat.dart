@@ -120,7 +120,7 @@ class _ChatPageState extends State<ChatPage> {
               ),
               Padding(
                 padding: EdgeInsets.only(
-                  left: MediaQuery.of(context).size.width * 0.05,
+                  left: MediaQuery.of(context).size.width * 0.043,
                   // width: MediaQuery.of(context).size.width * 0.05,
                   right: MediaQuery.of(context).size.width * 0.02,
                   bottom: 25,

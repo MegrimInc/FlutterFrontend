@@ -121,41 +121,42 @@ class BrowsePageState extends State<BrowsePage>
     );
   }
 
- Widget _buildMainContent() {
-  return Column(
-    children: [
-      _buildTopBar(),
-      Expanded(
-        child: SingleChildScrollView(
-          key: _listKey,
-          controller: _scrollController,
-          child: Consumer<LocalDatabase>(
-            builder: (context, database, _) {
-              final categoryMap = database.getFullItemListByMerchantId(widget.merchantId);
-              final sortedEntries = categoryMap.entries.toList()
-                ..sort((a, b) {
-                  final aId = database.getCategoryIdByName(a.key) ?? 999999;
-                  final bId = database.getCategoryIdByName(b.key) ?? 999999;
-                  return aId.compareTo(bId);
-                });
+  Widget _buildMainContent() {
+    return Column(
+      children: [
+        _buildTopBar(),
+        Expanded(
+          child: SingleChildScrollView(
+            key: _listKey,
+            controller: _scrollController,
+            child: Consumer<LocalDatabase>(
+              builder: (context, database, _) {
+                final categoryMap =
+                    database.getFullItemListByMerchantId(widget.merchantId);
 
-              return Column(
-                children: [
-                  const SizedBox(height: 25),
-                  for (final entry in sortedEntries)
-                    if (entry.value.isNotEmpty) ...[
-                      _buildItemSection(context, entry.key, entry.value),
-                      const SizedBox(height: 50),
-                    ]
-                ],
-              );
-            },
+                // Debug: Print category order
+                for (var entry in categoryMap.entries) {
+                  final id = database.getCategoryIdByName(entry.key);
+                  debugPrint('${entry.key} → $id');
+                }
+
+                return Column(
+                  children: [
+                    const SizedBox(height: 25),
+                    for (final entry in categoryMap.entries)
+                      if (entry.value.isNotEmpty) ...[
+                        _buildItemSection(context, entry.key, entry.value),
+                        const SizedBox(height: 50),
+                      ]
+                  ],
+                );
+              },
+            ),
           ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
 
   Widget _buildTopBar() {
     return Container(
@@ -244,7 +245,7 @@ class BrowsePageState extends State<BrowsePage>
                 Text(
                   '${_currentPageIndices[tagName]! + 1} / $pageCount',
                   style: GoogleFonts.poppins(
-                    color: Colors.white70,
+                    color: Colors.white,
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                   ),

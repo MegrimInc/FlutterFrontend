@@ -49,12 +49,12 @@ class LocalDatabase with ChangeNotifier {
   final Map<int, List<double>> _merchantCoordinatesCache = {};
 
   void cacheMerchantCoordinates(int merchantId, double lat, double lon) {
-  _merchantCoordinatesCache[merchantId] = [lat, lon];
-}
+    _merchantCoordinatesCache[merchantId] = [lat, lon];
+  }
 
-List<double>? getCachedCoordinates(int merchantId) {
-  return _merchantCoordinatesCache[merchantId];
-}
+  List<double>? getCachedCoordinates(int merchantId) {
+    return _merchantCoordinatesCache[merchantId];
+  }
 
   void setConfig(Config config) {
     _config = config;
@@ -356,16 +356,33 @@ List<double>? getCachedCoordinates(int merchantId) {
     return categoryMap.containsKey(merchantId);
   }
 
-  /// Returns the full item list grouped by category name
   Map<String, List<int>> getFullItemListByMerchantId(int merchantId) {
-    return categoryMap[merchantId] ?? {};
+    final rawMap = categoryMap[merchantId] ?? {};
+
+    // Create a map of categoryName -> categoryId for THIS merchant only.
+    final Map<String, int> categoryNameToId = {};
+    for (var entry in _categoriesById.values) {
+      // if you don't have merchantId in category, skip this check
+      categoryNameToId[entry.name] = entry.categoryId;
+    }
+
+    // Sort by categoryId
+    final sortedEntries = rawMap.entries.toList()
+      ..sort((a, b) {
+        final aId = categoryNameToId[a.key] ?? 999999;
+        final bId = categoryNameToId[b.key] ?? 999999;
+        return aId.compareTo(bId);
+      });
+
+    return Map.fromEntries(sortedEntries);
   }
 
   int? getCategoryIdByName(String name) {
-  return _categoriesById.entries
-      .firstWhere((e) => e.value.name == name, orElse: () => MapEntry(-1, Category(categoryId: -1, name: '')))
-      .key;
-}
+    return _categoriesById.entries
+        .firstWhere((e) => e.value.name == name,
+            orElse: () => MapEntry(-1, Category(categoryId: -1, name: '')))
+        .key;
+  }
 
   /// Ensures a merchant is cached locally
   Future<void> checkForMerchant(int merchantId) async {
