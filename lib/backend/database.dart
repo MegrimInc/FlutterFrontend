@@ -131,12 +131,23 @@ class LocalDatabase with ChangeNotifier {
     return _items[id]!;
   }
 
-  void clearOrders() {
+  void clearAll() {
+    _merchants.clear();
+    _items.clear();
     _merchantOrders.clear();
-    notifyListeners();
-    debugPrint("All orders have been cleared.");
     _customerPoints.clear();
-    debugPrint("All points have been cleared.");
+    _discountScheduleMap.clear();
+    isPaymentPresent = false;
+    categoryMap.clear();
+    _categoriesById.clear();
+    _config = null;
+    paymentStatus = PaymentStatus.notPresent;
+    _transactionHistory.clear();
+    _isTransactionHistoryLoading = false;
+    _merchantCoordinatesCache.clear();
+    _customer = null;
+    notifyListeners();
+    debugPrint('LocalDatabase: All data cleared and reset to defaults.');
   }
 
   void addOrUpdatePoints(int merchantId, int points) {

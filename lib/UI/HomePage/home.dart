@@ -12,6 +12,7 @@ import 'package:megrim/DTO/transaction.dart';
 import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 import 'package:megrim/UI/Navigation/cloud.dart';
 import 'package:megrim/config.dart';
+import 'package:megrim/main.dart';
 import 'package:provider/provider.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:shimmer/shimmer.dart';
@@ -32,6 +33,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _connect();
       _fetchTransactionHistory();
       checkPaymentMethod();
+       sendGetPoints();
     }
   }
 

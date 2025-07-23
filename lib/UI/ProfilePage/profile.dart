@@ -83,9 +83,9 @@ class _ProfilePageState extends State<ProfilePage> {
             'Failed to fetch customer name. Status code: ${response.statusCode}');
         debugPrint('Response body: ${response.body}');
         setState(() {
-        firstName = 'Guest';
-        lastName = 'Account';
-          });
+          firstName = 'Guest';
+          lastName = 'Account';
+        });
       }
     } catch (e) {
       debugPrint('Error fetching customer name: $e');
@@ -494,7 +494,7 @@ class _ProfilePageState extends State<ProfilePage> {
     loginData.setUID(0);
     loginData.setSignedIn(false);
     websocket.disconnect();
-    localDatabase.clearOrders();
+    localDatabase.clearAll();
   }
 
   // Show confirmation dialog

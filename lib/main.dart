@@ -129,7 +129,6 @@ Future<void> main() async {
   await loginCache.setDeviceToken(deviceToken);
 
   await sendGetMerchants();
-  await sendGetPoints();
 
   // Create the MethodChannel
   const MethodChannel notificationChannel =
