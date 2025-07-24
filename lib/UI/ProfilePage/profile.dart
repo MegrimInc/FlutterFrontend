@@ -94,6 +94,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _showStripeSetupSheet(
       BuildContext context, int customerId) async {
+    final localDatabase = Provider.of<LocalDatabase>(context, listen: false);
     try {
       // Call your backend to create a SetupIntent and retrieve the client secret
       final response = await http.get(
@@ -122,17 +123,26 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         );
 
-        // Present the Stripe payment sheet to collect and save payment info
+        localDatabase.updatePaymentStatus(PaymentStatus.loading);
         await Stripe.instance.presentPaymentSheet();
         await _savePaymentMethodToDatabase(customerId, stripeId, setupIntentId);
+        localDatabase.updatePaymentStatus(PaymentStatus.present);
       } else {
+        if (localDatabase.customer != null) {
+          localDatabase.updatePaymentStatus(PaymentStatus.present);
+        } else {
+          localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
+        }
         debugPrint(
             "Failed to load setup intent data. Status code: ${response.statusCode}");
         debugPrint("Error Response Body: ${response.body}");
-        throw Exception(
-            "Failed to load setup intent data with status code: ${response.statusCode}");
       }
     } catch (e) {
+      if (localDatabase.customer != null) {
+        localDatabase.updatePaymentStatus(PaymentStatus.present);
+      } else {
+        localDatabase.updatePaymentStatus(PaymentStatus.notPresent);
+      }
       debugPrint('Error presenting Stripe setup sheet: $e');
     }
   }
