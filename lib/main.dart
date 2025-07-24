@@ -32,8 +32,8 @@ import 'config.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-const String currentIOSMobileVersion = '4.0.0'; // Define your app version here
-const String currentIOSTabletVersion = '4.0.0'; // Define tablet version if different
+const String currentIOSMobileVersion = '4.0.1'; // Define your app version here
+const String currentIOSTabletVersion = '4.0.1'; // Define tablet version if different
 
 
 Future<void> main() async {
