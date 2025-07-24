@@ -113,7 +113,7 @@ class _ProfilePageState extends State<ProfilePage> {
           paymentSheetParameters: SetupPaymentSheetParameters(
             setupIntentClientSecret: setupIntentClientSecret,
             customerId: stripeId,
-            merchantDisplayName: "Barzzy",
+            merchantDisplayName: "Megrim",
             style: ThemeMode.system,
             allowsDelayedPaymentMethods: true, // Required for Apple Pay
             applePay: const PaymentSheetApplePay(

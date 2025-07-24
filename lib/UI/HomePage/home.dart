@@ -187,62 +187,58 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Widget buildIntroScreen() {
-    return Stack(
-      alignment: Alignment.center,
+    return Column(
       children: [
-        Positioned(
-          top: MediaQuery.of(context).size.height * 0.225,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Shimmer.fromColors(
-                baseColor: Colors.white54,
-                highlightColor: Colors.white,
-                period: const Duration(milliseconds: 1500),
-                child: Text(
-                  'M',
-                  style: GoogleFonts.megrim(
-                    textStyle: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 100,
-                      fontWeight: FontWeight.w900,
-                    ),
+        Spacer(),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Shimmer.fromColors(
+              baseColor: Colors.white54,
+              highlightColor: Colors.white,
+              period: const Duration(milliseconds: 1500),
+              child: Text(
+                'M',
+                style: GoogleFonts.megrim(
+                  textStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 100,
+                    fontWeight: FontWeight.w900,
                   ),
-                ),
-              )
-            ],
-          ),
-        ),
-        Positioned(
-            top: MediaQuery.of(context).size.height * 0.59,
-            child: Column(children: [
-              DefaultTextStyle(
-                style: const TextStyle(
-                  fontSize: 20,
-                  color: Colors.white70,
-                ),
-                child: AnimatedTextKit(
-                  isRepeatingAnimation: false,
-                  animatedTexts: [
-                    TyperAnimatedText(
-                      'Tap Here to Order',
-                      speed: Duration(milliseconds: 50),
-                    ),
-                  ],
                 ),
               ),
-              Icon(Icons.arrow_drop_down, size: 100, color: Colors.white)
-                  .animate(onComplete: (c) => c.repeat())
-                  .custom(
-                    duration: 1750.ms,
-                    builder: (context, value, child) {
-                      final opacity = value < 0.5
-                          ? value * 2 // Fade in from 0 to 1
-                          : (1 - value) * 2; // Then fade out from 1 to 0
-                      return Opacity(opacity: opacity, child: child);
-                    },
-                  ),
-            ])),
+            )
+          ],
+        ),
+        Spacer(),
+        Column(children: [
+          DefaultTextStyle(
+            style: const TextStyle(
+              fontSize: 20,
+              color: Colors.white70,
+            ),
+            child: AnimatedTextKit(
+              isRepeatingAnimation: false,
+              animatedTexts: [
+                TyperAnimatedText(
+                  'Tap Here to Order',
+                  speed: Duration(milliseconds: 50),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.arrow_drop_down, size: 100, color: Colors.white)
+              .animate(onComplete: (c) => c.repeat())
+              .custom(
+                duration: 1750.ms,
+                builder: (context, value, child) {
+                  final opacity = value < 0.5
+                      ? value * 2 // Fade in from 0 to 1
+                      : (1 - value) * 2; // Then fade out from 1 to 0
+                  return Opacity(opacity: opacity, child: child);
+                },
+              ),
+        ]),
       ],
     );
   }
