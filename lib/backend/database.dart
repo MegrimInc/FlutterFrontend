@@ -46,15 +46,7 @@ class LocalDatabase with ChangeNotifier {
   Config? get config => _config;
   List<Transaction> _transactionHistory = [];
   bool _isTransactionHistoryLoading = false;
-  final Map<int, List<double>> _merchantCoordinatesCache = {};
 
-  void cacheMerchantCoordinates(int merchantId, double lat, double lon) {
-    _merchantCoordinatesCache[merchantId] = [lat, lon];
-  }
-
-  List<double>? getCachedCoordinates(int merchantId) {
-    return _merchantCoordinatesCache[merchantId];
-  }
 
   void setConfig(Config config) {
     _config = config;
@@ -132,7 +124,6 @@ class LocalDatabase with ChangeNotifier {
   }
 
   void clearAll() {
-    _merchants.clear();
     _items.clear();
     _merchantOrders.clear();
     _customerPoints.clear();
@@ -140,11 +131,9 @@ class LocalDatabase with ChangeNotifier {
     isPaymentPresent = false;
     categoryMap.clear();
     _categoriesById.clear();
-    _config = null;
     paymentStatus = PaymentStatus.notPresent;
     _transactionHistory.clear();
     _isTransactionHistoryLoading = false;
-    _merchantCoordinatesCache.clear();
     _customer = null;
     notifyListeners();
     debugPrint('LocalDatabase: All data cleared and reset to defaults.');
@@ -508,9 +497,17 @@ class LocalDatabase with ChangeNotifier {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        _transactionHistory = data.map((json) {
-          return Transaction.fromJson(json);
-        }).toList();
+       final cutoff = DateTime.parse('2025-08-10 02:59:11.757902+00')
+          .toUtc()
+          .add(const Duration(seconds: 1));
+
+      _transactionHistory = data
+          .map<Transaction>((json) => Transaction.fromJson(json))
+          .where((t) {
+            final ts = DateTime.tryParse(t.timestamp)?.toUtc();
+            return ts == null || ts.isAfter(cutoff);
+          })
+          .toList();
         debugPrint('Fetched ${_transactionHistory.length} transactions.');
       } else {
         debugPrint(

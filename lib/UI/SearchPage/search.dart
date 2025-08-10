@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:megrim/Backend/database.dart';
 import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
-import 'package:megrim/UI/InfoPage/info.dart';
+import 'package:megrim/UI/CardPage/info.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';

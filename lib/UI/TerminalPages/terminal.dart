@@ -71,8 +71,12 @@ class _TerminalState extends State<Terminal> with WidgetsBindingObserver {
         ? "d973f26e-8da7-4a96-a7d6-cbca9f2d9a7e"
         : "b0869404-e0aa-40b2-ab60-4262709c6fbb";
 
-    serviceUuid = const Uuid().v4();
-    debugPrint("Generated new service UUID: $serviceUuid");
+    serviceUuid = isCast
+    ? "22222222-2222-2222-2222-222222222222" // CloudCast service
+    : "11111111-1111-1111-1111-111111111111"; // CloudLink service
+
+    // serviceUuid = const Uuid().v4();
+    // debugPrint("Generated new service UUID: $serviceUuid");
 
     // Convert predefined characteristic UUIDs to byte arrays
     final serviceUuidBytes = _stringToBytes(serviceUuid);
@@ -414,28 +418,9 @@ class _TerminalState extends State<Terminal> with WidgetsBindingObserver {
       await _peripheralManager.removeAllServices();
       debugPrint("All BLE services removed successfully.");
 
-      await Future.delayed(const Duration(milliseconds: 100));
+    
 
-      _peripheralManager = PeripheralManager();
-
-      final String tempUUID = const Uuid().v4();
-
-      final Advertisement tempAdvertisement = Advertisement(
-        name: tempUUID, // Temporary name to overwrite cache
-        serviceUUIDs: [UUID(_stringToBytes(tempUUID))], // Dummy service UUID
-      );
-
-      debugPrint("🔄 Starting temporary advertisement...");
-      await _peripheralManager.startAdvertising(tempAdvertisement);
-      await Future.delayed(
-          const Duration(milliseconds: 800)); // Give it time to register
-
-      await _peripheralManager.stopAdvertising();
-
-      debugPrint("✅ Temporary advertisement stopped.");
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      debugPrint("✅ Clear complete");
+      // debugPrint("✅ Clear complete");
     } catch (error, stackTrace) {
       debugPrint("Error clearing BLE resources: $error");
       debugPrint("Stack trace: $stackTrace");

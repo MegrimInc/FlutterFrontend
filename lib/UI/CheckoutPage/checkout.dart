@@ -3,6 +3,7 @@
 import 'dart:convert';
 import 'dart:ui';
 import 'package:animated_flip_counter/animated_flip_counter.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:megrim/UI/AuthPages/RegisterPages/logincache.dart';
 import 'package:megrim/UI/AuthPages/components/toggle.dart';
 import 'package:megrim/Backend/database.dart';
@@ -50,6 +51,7 @@ class CheckoutPageState extends State<CheckoutPage>
   late PageController _pageController; // Controller for the PageView
   final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
   late ValueNotifier<Item> currentItem;
+  final ValueNotifier<int?> rank = ValueNotifier<int?>(null);
 
   @override
   void initState() {
@@ -69,7 +71,29 @@ class CheckoutPageState extends State<CheckoutPage>
     );
 
     _controller.forward();
+    _fetchRank();
     getCardDetails();
+  }
+
+  Future<void> _fetchRank() async {
+    final loginCache = Provider.of<LoginCache>(context, listen: false);
+    final customerId = await loginCache.getUID();
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '${AppConfig.postgresHttpBaseUrl}/customer/getRank?merchantId=${widget.merchantId}&customerId=$customerId',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        rank.value = data['rank'] as int;
+      } else {
+        debugPrint('Rank fetch failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Rank fetch error: $e');
+    }
   }
 
   void _submitOrder(BuildContext context, {required bool inAppPayments}) async {
@@ -369,51 +393,105 @@ class CheckoutPageState extends State<CheckoutPage>
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 30.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
         children: [
-          Consumer<Cart>(
-            builder: (context, cart, _) {
-              final localPoints = cart.merchantPoints ?? 0;
-              final earnedPoints = cart.getEarnedPointsFromCart();
-              final usedPoints = cart.totalCartPoints;
-              final availablePoints = localPoints + earnedPoints - usedPoints;
+          ValueListenableBuilder<int?>(
+            valueListenable: rank,
+            builder: (context, r, _) {
+              // Loading: show only the 3-dot bounce
+              if (r == null) {
+                return SizedBox(
+                  height: 30,
+                  width: double.infinity,
+                  child: SizedBox(
+                    height: 25,
+                    child: Center(
+                      child: SpinKitThreeBounce(
+                        size: 30,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ),
+                );
+              }
 
-              final textColor =
-                  availablePoints < 0 ? Colors.redAccent : Colors.greenAccent;
-
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Balance: ',
+              // Loaded: show "Rank: #<int>" with split colors
+              return SizedBox(
+                height: 30,
+                width: double.infinity,
+                child: RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
                     style: GoogleFonts.poppins(
-                      color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w600,
                     ),
+                    children: [
+                      TextSpan(
+                        text: 'Rank:',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      TextSpan(
+                        text: '  #$r',
+                        style: const TextStyle(
+                            color: Color.fromARGB(255, 116, 234, 255)),
+                      ),
+                    ],
                   ),
-                  AnimatedFlipCounter(
-                    value: availablePoints,
-                    duration: const Duration(milliseconds: 600),
-                    textStyle: GoogleFonts.poppins(
-                      color: textColor,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    'pts',
-                    style: GoogleFonts.poppins(
-                      color: textColor,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+                ),
               );
             },
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Consumer<Cart>(
+                builder: (context, cart, _) {
+                  final localPoints = cart.merchantPoints ?? 0;
+                  final earnedPoints = cart.getEarnedPointsFromCart();
+                  final usedPoints = cart.totalCartPoints;
+                  final availablePoints =
+                      localPoints + earnedPoints - usedPoints;
+
+                  final textColor = availablePoints < 0
+                      ? Colors.redAccent
+                      : Colors.greenAccent;
+
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Balance: ',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      AnimatedFlipCounter(
+                        value: availablePoints,
+                        duration: const Duration(milliseconds: 600),
+                        textStyle: GoogleFonts.poppins(
+                          color: textColor,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'pts',
+                        style: GoogleFonts.poppins(
+                          color: textColor,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),

@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:megrim/Backend/database.dart';
-import 'package:megrim/UI/InfoPage/card.dart';
+import 'package:megrim/UI/CardPage/card.dart';
 import 'package:megrim/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:shimmer/shimmer.dart';
@@ -118,17 +118,14 @@ class _InfoPageState extends State<InfoPage>
                       children: [
                         SizedBox(
                             height: MediaQuery.of(context).size.height * 0.11),
-                       Text(
-  ('@${LocalDatabase.getMerchantById(widget.merchantId)
-                  ?.nickname ??
-              'MERCHANT'}')
-      ,
-  style: const TextStyle(
-    fontSize: 28,
-    fontWeight: FontWeight.bold,
-    color: Colors.white,
-  ),
-),
+                        Text(
+                          ('@${LocalDatabase.getMerchantById(widget.merchantId)?.nickname ?? 'MERCHANT'}'),
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 24.0),
@@ -142,7 +139,6 @@ class _InfoPageState extends State<InfoPage>
                                   //fontStyle: FontStyle.italic,
                                 ),
                                 textAlign: TextAlign.center,
-                                
                               ),
                               SizedBox(height: 10),
                               Text(
@@ -167,10 +163,10 @@ class _InfoPageState extends State<InfoPage>
                               )
                             : LuxuryCard(
                                 rank: rank ?? 0,
-                                //rank: 2,
                                 difference: difference ?? 0.0,
                                 rivalName: rivalFullName,
                                 cardholderName: customerFullName,
+                                balance: LocalDatabase().getPointsForMerchant(widget.merchantId)?.points ?? 0
                               ),
                         const Spacer(flex: 4),
                         Center(

@@ -9,7 +9,6 @@ import 'package:megrim/DTO/merchant.dart';
 import 'package:megrim/Backend/cart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:megrim/DTO/transaction.dart';
 import 'package:megrim/UI/BrowsePage/browse.dart';
@@ -18,8 +17,9 @@ import 'package:provider/provider.dart';
 
 class CloudPage extends StatefulWidget {
   final Transaction? transaction;
+  final int initialPageIndex;
 
-  const CloudPage({super.key, this.transaction});
+  const CloudPage({super.key, this.transaction, this.initialPageIndex = 0});
 
   @override
   State<CloudPage> createState() => _BlueTooth();
@@ -32,7 +32,8 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
   final ValueNotifier<List<ScanResult>> scanResults = ValueNotifier([]);
   StreamSubscription? scanSubscription;
   final ValueNotifier<bool> isLoading = ValueNotifier(false);
-  final _pageController = PageController(initialPage: 5000);
+  //final _pageController = PageController(initialPage: 5000);
+  late final PageController _pageController;
   int _currentPageIndex = 0;
   late final Transaction? transaction;
 
@@ -40,6 +41,8 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     transaction = widget.transaction;
+    _currentPageIndex = widget.initialPageIndex;
+    _pageController = PageController(initialPage: 5000 + _currentPageIndex);
     debugPrint('CloudPage opened with transaction: $transaction');
     WidgetsBinding.instance.addObserver(this);
     requestBluetoothPermissions();
@@ -206,26 +209,11 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
 
   /// Builds the header with looping arrows and the PageView.
   Widget _buildHeaderSwitcher() {
-    final screenWidth = MediaQuery.of(context).size.width;
-
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(width: screenWidth * 0.025),
-            IconButton(
-              icon: const Icon(Icons.fast_rewind_rounded,
-                  size: 30, color: Colors.white54),
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              onPressed: () {
-                _pageController.previousPage(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              },
-            ),
             Expanded(
               child: SizedBox(
                 height: 40,
@@ -285,19 +273,6 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
                 ),
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.fast_forward_rounded,
-                  size: 30, color: Colors.white54),
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              onPressed: () {
-                _pageController.nextPage(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              },
-            ),
-            SizedBox(width: screenWidth * 0.025),
           ],
         ),
       ],
@@ -338,145 +313,12 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
     );
   }
 
-  // Widget _buildCloudLinkScanResults(List<ScanResult> scanResultsValue) {
-  //   return ListView.builder(
-  //     itemCount: scanResultsValue.length,
-  //     itemBuilder: (context, index) {
-  //       final double itemHeight = MediaQuery.of(context).size.height * 0.13;
-
-  //       final double avatarRadius = itemHeight * 0.33;
-  //       final double spinnerSize = itemHeight * 0.25;
-  //       final result = scanResultsValue[index];
-  //       final String advName = result.advertisementData.advName;
-  //       final List<String> starSplit = advName.split('*');
-  //       if (starSplit.length < 2) return const SizedBox.shrink();
-  //       final String idPart = starSplit[0];
-  //       final List<String> idSplit = idPart.split('&');
-  //       if (idSplit.length < 2) return const SizedBox.shrink();
-
-  //       final String merchantIdStr = idSplit[0];
-  //       final String employeeIdStr = idSplit[1];
-
-  //       final int? parsedMerchantId = int.tryParse(merchantIdStr);
-  //       if (parsedMerchantId == null) {
-  //         return const SizedBox.shrink();
-  //       }
-
-  //       final int? parsedEmployeeId = int.tryParse(employeeIdStr);
-
-  //       final localDatabase =
-  //           Provider.of<LocalDatabase>(context, listen: false);
-  //       final Merchant? merchant = localDatabase.merchants[parsedMerchantId];
-
-  //       final Employee? employee =
-  //           localDatabase.findEmployeeById(parsedMerchantId, parsedEmployeeId!);
-
-  //       final String? profileImage =
-  //           (employee?.image != null && employee!.image!.isNotEmpty)
-  //               ? employee.image
-  //               : null;
-
-  //       final String merchantName = merchant != null
-  //           ? merchant.nickname ?? 'Unknown Tag'
-  //           : "Unknown Merchant";
-
-  //       return GestureDetector(
-  //         onTap: () async {
-  //           isLoading.value = true;
-  //           try {
-  //             await attemptPairingForCloudLink(result); // ← await here
-  //           } finally {
-  //             isLoading.value = false;
-  //           }
-  //         },
-  //         child: Container(
-  //           height: itemHeight,
-  //           width: MediaQuery.of(context).size.width,
-  //           margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-  //           padding: const EdgeInsets.all(8),
-  //           decoration: BoxDecoration(
-  //             color: Colors.white24,
-  //             borderRadius: BorderRadius.circular(10),
-  //           ),
-  //           // We no longer need the Center widget
-  //           child: Row(
-  //             children: [
-  //               SizedBox(width: MediaQuery.of(context).size.width * .025),
-  //               // --- 1. The Leading Avatar ---
-  //               merchant?.image != null && merchant!.image!.isNotEmpty
-  //                   ? CircleAvatar(
-  //                       backgroundImage: CachedNetworkImageProvider("$profileImage"),
-  //                       radius: avatarRadius,
-  //                     )
-  //                   : CircleAvatar(
-  //                       backgroundColor: Colors.grey,
-  //                       radius: avatarRadius,
-  //                       child: Icon(Icons.image,
-  //                           color: Colors.white, size: avatarRadius),
-  //                     ),
-
-  //               // --- 2. The Space Between ---
-  //               SizedBox(width: MediaQuery.of(context).size.width * .03),
-
-  //               // --- 3. The Title and Subtitle Block ---
-  //               Expanded(
-  //                 child: Column(
-  //                   mainAxisAlignment: MainAxisAlignment
-  //                       .center, // Vertically centers the texts
-  //                   crossAxisAlignment:
-  //                       CrossAxisAlignment.start, // Left-aligns the texts
-  //                   children: [
-  //                     Text(
-  //                       "@$merchantName",
-  //                       style: TextStyle(
-  //                         color: Colors.white,
-  //                         fontWeight: FontWeight.w600,
-  //                       ),
-  //                     ),
-  //                     const SizedBox(
-  //                         height: 4), // Small gap between title and subtitle
-  //                     Text(
-  //                       (employee != null &&
-  //                               employee.name != null &&
-  //                               employee.name!.isNotEmpty)
-  //                           ? employee.name!
-  //                           : "...",
-  //                       style: TextStyle(
-  //                         color: Colors.white54,
-  //                       ),
-  //                     ),
-  //                   ],
-  //                 ),
-  //               ),
-
-  //               // --- 4. The Trailing Spinner ---
-  //               SizedBox(
-  //                 width: spinnerSize * 2,
-  //                 child: SpinKitThreeBounce(
-  //                   color: Colors.white,
-  //                   size: spinnerSize,
-  //                 ),
-  //               ),
-  //               SizedBox(width: MediaQuery.of(context).size.width * .03)
-  //             ],
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
-
   Widget _buildCloudLinkScanResults(List<ScanResult> scanResultsValue) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(10),
+    return ListView.builder(
       itemCount: scanResultsValue.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: .9,
-      ),
       itemBuilder: (context, index) {
+        final double itemHeight = MediaQuery.of(context).size.height * 0.17;
+        final double avatarRadius = itemHeight * 0.37;
         final result = scanResultsValue[index];
         final String advName = result.advertisementData.advName;
         final List<String> starSplit = advName.split('*');
@@ -487,20 +329,28 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
 
         final String merchantIdStr = idSplit[0];
         final String employeeIdStr = idSplit[1];
+
         final int? parsedMerchantId = int.tryParse(merchantIdStr);
-        final int? parsedEmployeeId = int.tryParse(employeeIdStr);
-        if (parsedMerchantId == null || parsedEmployeeId == null) {
+        if (parsedMerchantId == null) {
           return const SizedBox.shrink();
         }
+
+        final int? parsedEmployeeId = int.tryParse(employeeIdStr);
 
         final localDatabase =
             Provider.of<LocalDatabase>(context, listen: false);
         final Merchant? merchant = localDatabase.merchants[parsedMerchantId];
+
         final Employee? employee =
-            localDatabase.findEmployeeById(parsedMerchantId, parsedEmployeeId);
+            localDatabase.findEmployeeById(parsedMerchantId, parsedEmployeeId!);
+
         final String? profileImage =
-            (employee?.image?.isNotEmpty ?? false) ? employee!.image : null;
-        final String merchantName = merchant?.nickname ?? 'Unknown Tag';
+            (employee?.image != null && employee!.image!.isNotEmpty)
+                ? employee.image
+                : null;
+
+        final String merchantName =
+            merchant != null ? merchant.nickname ?? '...' : "...";
 
         return GestureDetector(
           onTap: () async {
@@ -511,34 +361,85 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
               isLoading.value = false;
             }
           },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 5),
-              CircleAvatar(
-                backgroundImage: profileImage != null
-                    ? CachedNetworkImageProvider(profileImage)
-                    : null,
-                backgroundColor: Colors.grey,
-                radius: 60,
-                child: profileImage == null
-                    ? const Icon(Icons.image, color: Colors.white)
-                    : null,
-              ),
-              const SizedBox(height: 8),
-               Text(
-                "@$merchantName",
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w600),
-              ),
-              Text(
-                (employee?.name?.isNotEmpty ?? false)
-                    ? employee!.name!.toLowerCase()
-                    : "...",
-                style: const TextStyle(
-                    color: Colors.white54, fontWeight: FontWeight.w600),
-              ),
-            ],
+          child: Container(
+            height: itemHeight,
+            width: MediaQuery.of(context).size.width,
+            margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                SizedBox(width: MediaQuery.of(context).size.width * .025),
+                merchant?.image != null && merchant!.image!.isNotEmpty
+                    ? CircleAvatar(
+                        radius: avatarRadius + 1,
+                        backgroundColor: Colors.white,
+                        child: CircleAvatar(
+                          backgroundImage:
+                              CachedNetworkImageProvider("$profileImage"),
+                          radius: avatarRadius,
+                        ),
+                      )
+                    : CircleAvatar(
+                        radius: avatarRadius + 1,
+                        backgroundColor: Colors.white,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.white54,
+                          radius: avatarRadius,
+                          child: Icon(Icons.image,
+                              color: Colors.white, size: avatarRadius),
+                        ),
+                      ),
+                Spacer(),
+                CircleAvatar(
+                  radius: avatarRadius, // <- radius, not diameter
+                  backgroundColor: Colors.transparent,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "@$merchantName",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                      ),
+                      Spacer(),
+                      Text("Link",
+                          style: GoogleFonts.poppins(
+                              textStyle: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 25,
+                                  fontWeight: FontWeight.w600))),
+                      Spacer(),
+                      Text(
+                        (employee?.name?.isNotEmpty ?? false)
+                            ? employee!.name!.toLowerCase()
+                            : "...",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: MediaQuery.of(context).size.width * .025),
+              ],
+            ),
           ),
         );
       },
@@ -549,10 +450,8 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
     return ListView.builder(
       itemCount: scanResultsValue.length,
       itemBuilder: (context, index) {
-        final double itemHeight = MediaQuery.of(context).size.height * 0.13;
-
-        final double avatarRadius = itemHeight * 0.33;
-        final double spinnerSize = itemHeight * 0.25;
+        final double itemHeight = MediaQuery.of(context).size.height * 0.17;
+        final double avatarRadius = itemHeight * 0.37;
         final result = scanResultsValue[index];
         final String advName = result.advertisementData.advName;
         final List<String> starSplit = advName.split('*');
@@ -608,67 +507,74 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
               color: Colors.white24,
               borderRadius: BorderRadius.circular(10),
             ),
-            // We no longer need the Center widget
             child: Row(
               children: [
                 SizedBox(width: MediaQuery.of(context).size.width * .025),
-                // --- 1. The Leading Avatar ---
                 merchant?.image != null && merchant!.image!.isNotEmpty
                     ? CircleAvatar(
+                      radius: avatarRadius + 1,
+                      backgroundColor: Colors.white,
+                      child: CircleAvatar(
                         backgroundImage:
                             CachedNetworkImageProvider("$profileImage"),
                         radius: avatarRadius,
-                      )
-                    : CircleAvatar(
-                        backgroundColor: Colors.grey,
-                        radius: avatarRadius,
-                        child: Icon(Icons.image,
-                            color: Colors.white, size: avatarRadius),
                       ),
-
-                // --- 2. The Space Between ---
-                SizedBox(width: MediaQuery.of(context).size.width * .03),
-
-                // --- 3. The Title and Subtitle Block ---
-                Expanded(
+                    )
+                    : CircleAvatar(
+                        radius: avatarRadius + 1,
+                        backgroundColor: Colors.white,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.white54,
+                          radius: avatarRadius,
+                          child: Icon(Icons.image,
+                              color: Colors.white, size: avatarRadius),
+                        ),
+                      ),
+                Spacer(),
+                CircleAvatar(
+                  radius: avatarRadius, // <- radius, not diameter
+                  backgroundColor: Colors.transparent,
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment
-                        .center, // Vertically centers the texts
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start, // Left-aligns the texts
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
                         "@$merchantName",
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
+                          fontSize: 15,
                         ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
                       ),
-                      const SizedBox(
-                          height: 4), // Small gap between title and subtitle
+                      Spacer(),
+                      Text("Cast",
+                          style: GoogleFonts.poppins(
+                              textStyle: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 25,
+                                  fontWeight: FontWeight.w600))),
+                      Spacer(),
                       Text(
-                        (employee != null &&
-                                employee.name != null &&
-                                employee.name!.isNotEmpty)
-                            ? employee.name!
+                        (employee?.name?.isNotEmpty ?? false)
+                            ? employee!.name!.toLowerCase()
                             : "...",
-                        style: TextStyle(
-                          color: Colors.white54,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
                         ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
                       ),
                     ],
                   ),
                 ),
-
-                // --- 4. The Trailing Spinner ---
-                SizedBox(
-                  width: spinnerSize * 2,
-                  child: SpinKitThreeBounce(
-                    color: Colors.white,
-                    size: spinnerSize,
-                  ),
-                ),
-                SizedBox(width: MediaQuery.of(context).size.width * .03)
+                SizedBox(width: MediaQuery.of(context).size.width * .025),
               ],
             ),
           ),
@@ -790,87 +696,165 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
     }
   }
 
+  // Future<void> attemptPairingForCloudLink(ScanResult result) async {
+  //   const String readCharacteristicUuid =
+  //       "b0869404-e0aa-40b2-ab60-4262709c6fbb";
+  //   final device = result.device;
+
+  //   try {
+  //     // 1. Connect
+  //     await device.connect(timeout: const Duration(seconds: 10));
+  //     // 2. Discover services & characteristics
+  //     final services = await device.discoverServices();
+
+  //     for (final service in services) {
+  //       for (final c in service.characteristics) {
+  //         if (c.uuid.toString() == readCharacteristicUuid) {
+  //           // 3. Read
+  //           final response = await c.read();
+  //           final responseString = String.fromCharCodes(response);
+  //           debugPrint('Pairing got: $responseString');
+
+  //           // 4. Disconnect asap
+  //           await device.disconnect();
+
+  //           // 5. Parse: expecting "merchantId&employeeId"
+  //           final parts = responseString.trim().split('&');
+  //           if (parts.length == 2) {
+  //             final int? merchantId = int.tryParse(parts[0]);
+  //             final int? employeeId = int.tryParse(parts[1]);
+
+  //             if (merchantId != null && employeeId != null && mounted) {
+  //               final cart = Cart();
+  //               cart.setMerchant(merchantId);
+
+  //               if (transaction != null) {
+  //                 if (transaction!.merchantId == merchantId) {
+  //                   debugPrint('Merchant IDs match, using transaction items');
+
+  //                   await Navigator.of(context).pushNamed(
+  //                     '/items',
+  //                     arguments: {
+  //                       'merchantId': merchantId,
+  //                       'cart': cart,
+  //                       'items': transaction!.items,
+  //                       'employeeId': employeeId,
+  //                       'pointOfSale': "cloudlink"
+  //                     },
+  //                   );
+  //                   return;
+  //                 } else {
+  //                   debugPrint(
+  //                       'Merchant IDs did not match, aborting special navigation.');
+  //                   return;
+  //                 }
+  //               }
+
+  //               await Navigator.push(
+  //                 // ignore: use_build_context_synchronously
+  //                 context,
+  //                 MaterialPageRoute(
+  //                   builder: (context) => BrowsePage(
+  //                     merchantId: merchantId,
+  //                     employeeId: employeeId,
+  //                     pointOfSale: "cloudlink",
+  //                     cart: cart,
+  //                   ),
+  //                 ),
+  //               );
+  //             }
+  //           } else {
+  //             debugPrint("Unexpected BLE response: $responseString");
+  //           }
+  //           return;
+  //         }
+  //       }
+  //     }
+  //     // if we fall through without finding the characteristic:
+  //     await device.disconnect();
+  //   } catch (e) {
+  //     debugPrint('Error in attemptPairingForCloudLink: $e');
+  //     try {
+  //       await device.disconnect();
+  //     } catch (_) {}
+  //   }
+  // }
+
   Future<void> attemptPairingForCloudLink(ScanResult result) async {
-    const String readCharacteristicUuid =
-        "b0869404-e0aa-40b2-ab60-4262709c6fbb";
-    final device = result.device;
-
     try {
-      // 1. Connect
-      await device.connect(timeout: const Duration(seconds: 10));
+      await Future.delayed(const Duration(milliseconds: 300));
 
-      // 2. Discover services & characteristics
-      final services = await device.discoverServices();
-      for (final service in services) {
-        for (final c in service.characteristics) {
-          if (c.uuid.toString() == readCharacteristicUuid) {
-            // 3. Read
-            final response = await c.read();
-            final responseString = String.fromCharCodes(response);
-            debugPrint('Pairing got: $responseString');
-
-            // 4. Disconnect asap
-            await device.disconnect();
-
-            // 5. Parse: expecting "merchantId&employeeId"
-            final parts = responseString.trim().split('&');
-            if (parts.length == 2) {
-              final int? merchantId = int.tryParse(parts[0]);
-              final int? employeeId = int.tryParse(parts[1]);
-
-              if (merchantId != null && employeeId != null && mounted) {
-                final cart = Cart();
-                cart.setMerchant(merchantId);
-
-                if (transaction != null) {
-                  if (transaction!.merchantId == merchantId) {
-                    debugPrint('Merchant IDs match, using transaction items');
-
-                    await Navigator.of(context).pushNamed(
-                      '/items',
-                      arguments: {
-                        'merchantId': merchantId,
-                        'cart': cart,
-                        'items': transaction!.items,
-                        'employeeId': employeeId,
-                        'pointOfSale': "cloudlink"
-                      },
-                    );
-                    return;
-                  } else {
-                    debugPrint(
-                        'Merchant IDs did not match, aborting special navigation.');
-                    return;
-                  }
-                }
-
-                await Navigator.push(
-                  // ignore: use_build_context_synchronously
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BrowsePage(
-                      merchantId: merchantId,
-                      employeeId: employeeId,
-                      pointOfSale: "cloudlink",
-                      cart: cart,
-                    ),
-                  ),
-                );
-              }
-            } else {
-              debugPrint("Unexpected BLE response: $responseString");
-            }
-            return;
-          }
-        }
+      final advName = result.advertisementData.advName; // "123&45*cl|..."
+      if (advName.isEmpty) {
+        debugPrint("No advName on result");
+        return;
       }
-      // if we fall through without finding the characteristic:
-      await device.disconnect();
-    } catch (e) {
-      debugPrint('Error in attemptPairingForCloudLink: $e');
+
+      // Expect "<merchantId>&<employeeId>*cl|..."
+      final star = advName.indexOf('*');
+      if (star <= 0) {
+        debugPrint("Unexpected adv format: $advName");
+        return;
+      }
+
+      final idPart = advName.substring(0, star); // "merchantId&employeeId"
+      final pieces = idPart.split('&');
+      if (pieces.length != 2) {
+        debugPrint("ID segment missing in adv: $advName");
+        return;
+      }
+
+      final int? merchantId = int.tryParse(pieces[0]);
+      final int? employeeId = int.tryParse(pieces[1]);
+      if (merchantId == null || employeeId == null) {
+        debugPrint("Could not parse IDs from adv: $advName");
+        return;
+      }
+
+      // (Optional) sanity: make sure it looked like a cl advert
+      if (!advName.contains('*cl|')) {
+        debugPrint("Not a CloudLink advert, skipping fast path.");
+        return;
+      }
+
+      // Preload merchant data if you want the next page to feel instant
+      final localDb = Provider.of<LocalDatabase>(context, listen: false);
       try {
-        await device.disconnect();
+        await localDb.fetchCategoriesAndItems(merchantId);
       } catch (_) {}
+
+      final cart = Cart()..setMerchant(merchantId);
+
+      if (transaction != null && transaction!.merchantId == merchantId) {
+        debugPrint('Merchant IDs match, using transaction items (fast path)');
+        // ignore: use_build_context_synchronously
+        await Navigator.of(context).pushNamed(
+          '/items',
+          arguments: {
+            'merchantId': merchantId,
+            'cart': cart,
+            'items': transaction!.items,
+            'employeeId': employeeId,
+            'pointOfSale': "cloudlink",
+          },
+        );
+        return;
+      }
+
+      await Navigator.push(
+        // ignore: use_build_context_synchronously
+        context,
+        MaterialPageRoute(
+          builder: (context) => BrowsePage(
+            merchantId: merchantId,
+            employeeId: employeeId,
+            pointOfSale: "cloudlink",
+            cart: cart,
+          ),
+        ),
+      );
+    } catch (e, st) {
+      debugPrint('Fast-path CloudLink error: $e\n$st');
     }
   }
 

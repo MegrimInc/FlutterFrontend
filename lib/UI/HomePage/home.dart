@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -33,7 +34,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _connect();
       _fetchTransactionHistory();
       checkPaymentMethod();
-       sendGetPoints();
+      sendGetPoints();
     }
   }
 
@@ -212,19 +213,13 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
         Spacer(),
         Column(children: [
-          DefaultTextStyle(
-            style: const TextStyle(
+          TypedWithHaptics(
+            text: 'Tap to order at the counter;\npress and hold to self-order',
+            speed: const Duration(milliseconds: 20),
+            textStyle: GoogleFonts.poppins(
               fontSize: 20,
               color: Colors.white70,
-            ),
-            child: AnimatedTextKit(
-              isRepeatingAnimation: false,
-              animatedTexts: [
-                TyperAnimatedText(
-                  'Tap Here to Order',
-                  speed: Duration(milliseconds: 50),
-                ),
-              ],
+              fontStyle: FontStyle.italic, // <- here
             ),
           ),
           Icon(Icons.arrow_drop_down, size: 100, color: Colors.white)
@@ -444,7 +439,8 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           builder: (BuildContext context) {
-            return CloudPage(transaction: order);
+            return CloudPage(
+                transaction: order, initialPageIndex: 0); //Cloudlink
           },
         );
         await Provider.of<LocalDatabase>(context, listen: false)
@@ -513,6 +509,17 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ),
                 ],
               ),
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '@${merchant?.nickname ?? "Unknown"}',
+                  style: const TextStyle(
+                    color: Colors.white54,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
               const SizedBox(height: 8),
               ...mergedItems.entries.map((entry) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
@@ -535,11 +542,20 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                   ),
                   const Spacer(),
-                  Text(
-                    '@${merchant?.nickname ?? "Unknown"}',
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12,
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Shimmer.fromColors(
+                      baseColor: Colors.white38,
+                      highlightColor: Colors.white,
+                      period: Duration(milliseconds: 1500),
+                      child: const Text(
+                        'Tap to Reorder',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -594,5 +610,81 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this); // ✅ Remove observer
     super.dispose();
+  }
+}
+
+class TypedWithHaptics extends StatefulWidget {
+  const TypedWithHaptics({
+    super.key,
+    required this.text,
+    this.speed = const Duration(milliseconds: 50),
+    this.textStyle = const TextStyle(fontSize: 20, color: Colors.white70),
+  });
+
+  final String text;
+  final Duration speed;
+  final TextStyle textStyle;
+
+  @override
+  State<TypedWithHaptics> createState() => _TypedWithHapticsState();
+}
+
+class _TypedWithHapticsState extends State<TypedWithHaptics> {
+  Timer? _timer;
+  int _ticks = 0;
+
+  int get _len => widget.text.runes.length;
+
+  void _startHaptics() {
+    _timer?.cancel();
+    _ticks = 0;
+
+    // Throttle if very fast to avoid overwhelming the haptics engine.
+    final stride = widget.speed.inMilliseconds < 35 ? 3 : 1;
+
+    _timer = Timer.periodic(widget.speed, (t) {
+      if (!mounted) return t.cancel();
+      if (_ticks >= _len) return t.cancel();
+
+      if (_ticks % stride == 0) {
+        HapticFeedback.lightImpact();
+      }
+      _ticks++;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startHaptics());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      alignment: Alignment.center,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 40),
+        child: AnimatedTextKit(
+          isRepeatingAnimation: false,
+          onFinished: () => _timer?.cancel(),
+          animatedTexts: [
+            TyperAnimatedText(
+              widget.text,
+              speed: widget.speed,
+              textAlign: TextAlign.center,
+              textStyle: widget.textStyle,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

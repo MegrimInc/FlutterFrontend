@@ -4,6 +4,7 @@ import 'package:megrim/UI/HomePage/home.dart';
 import 'package:megrim/UI/ProfilePage/profile.dart';
 import 'package:megrim/UI/SearchPage/search.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class Navigation extends StatefulWidget {
   final int selectedTab;
@@ -41,9 +42,7 @@ class NavigationState extends State<Navigation> {
     }
   }
 
-  void showBottomSheet(
-    BuildContext context,
-  ) {
+  void showBottomSheet(BuildContext context, {int initialPageIndex = 0}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -54,7 +53,7 @@ class NavigationState extends State<Navigation> {
         ),
       ),
       builder: (BuildContext context) {
-        return const CloudPage();
+        return CloudPage(initialPageIndex: initialPageIndex);
       },
     );
   }
@@ -95,7 +94,12 @@ class NavigationState extends State<Navigation> {
               ),
 
               GestureDetector(
-                onTap: () => showBottomSheet(context),
+                onTap: () =>
+                    showBottomSheet(context, initialPageIndex: 1), // CloudCast
+                onLongPressStart: (LongPressStartDetails details) {
+                  HapticFeedback.heavyImpact();
+                  showBottomSheet(context, initialPageIndex: 0); // CloudLink
+                },
                 child: Container(
                   height: 75,
                   width: 75,
