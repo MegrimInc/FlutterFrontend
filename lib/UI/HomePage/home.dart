@@ -190,50 +190,43 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget buildIntroScreen() {
     return Column(
       children: [
-        Spacer(),
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Shimmer.fromColors(
-              baseColor: Colors.white54,
-              highlightColor: Colors.white,
-              period: const Duration(milliseconds: 1500),
-              child: Text(
-                'M',
-                style: GoogleFonts.megrim(
-                  textStyle: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 100,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+        SizedBox(height: MediaQuery.of(context).size.width * .475),
+        Shimmer.fromColors(
+          baseColor: Colors.white54,
+          highlightColor: Colors.white,
+          period: const Duration(milliseconds: 1500),
+          child: Text(
+            'M',
+            style: GoogleFonts.megrim(
+              textStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 100,
+                fontWeight: FontWeight.w900,
               ),
-            )
-          ],
-        ),
-        Spacer(),
-        Column(children: [
-          TypedWithHaptics(
-            text: 'Tap to order at the counter;\npress and hold to self-order',
-            speed: const Duration(milliseconds: 20),
-            textStyle: GoogleFonts.poppins(
-              fontSize: 20,
-              color: Colors.white70,
-              fontStyle: FontStyle.italic, // <- here
             ),
           ),
-          Icon(Icons.arrow_drop_down, size: 100, color: Colors.white)
-              .animate(onComplete: (c) => c.repeat())
-              .custom(
-                duration: 1750.ms,
-                builder: (context, value, child) {
-                  final opacity = value < 0.5
-                      ? value * 2 // Fade in from 0 to 1
-                      : (1 - value) * 2; // Then fade out from 1 to 0
-                  return Opacity(opacity: opacity, child: child);
-                },
-              ),
-        ]),
+        ),
+        Spacer(),
+        TypedWithHaptics(
+          text: 'Tap to self order; press and\nhold to order at the counter.',
+          speed: const Duration(milliseconds: 20),
+          textStyle: GoogleFonts.poppins(
+            fontSize: 18,
+            color: Colors.white,
+            fontStyle: FontStyle.italic, // <- here
+          ),
+        ),
+        Icon(Icons.arrow_drop_down, size: 75, color: Colors.white)
+            .animate(onComplete: (c) => c.repeat())
+            .custom(
+              duration: 1750.ms,
+              builder: (context, value, child) {
+                final opacity = value < 0.5
+                    ? value * 2 // Fade in from 0 to 1
+                    : (1 - value) * 2; // Then fade out from 1 to 0
+                return Opacity(opacity: opacity, child: child);
+              },
+            ),
       ],
     );
   }
@@ -551,7 +544,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       child: const Text(
                         'Tap to Reorder',
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: Colors.white,
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),

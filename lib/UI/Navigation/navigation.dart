@@ -95,10 +95,10 @@ class NavigationState extends State<Navigation> {
 
               GestureDetector(
                 onTap: () =>
-                    showBottomSheet(context, initialPageIndex: 1), // CloudCast
+                    showBottomSheet(context, initialPageIndex: 0), // CloudLink
                 onLongPressStart: (LongPressStartDetails details) {
                   HapticFeedback.heavyImpact();
-                  showBottomSheet(context, initialPageIndex: 0); // CloudLink
+                  showBottomSheet(context, initialPageIndex: 1); // CloudCast
                 },
                 child: Container(
                   height: 75,

@@ -239,6 +239,7 @@ class _TerminalState extends State<Terminal> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        backgroundColor: Colors.black,
         appBar: AppBar(
           backgroundColor: Colors.black,
           title: Row(

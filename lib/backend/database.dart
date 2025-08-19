@@ -124,13 +124,9 @@ class LocalDatabase with ChangeNotifier {
   }
 
   void clearAll() {
-    _items.clear();
     _merchantOrders.clear();
     _customerPoints.clear();
-    _discountScheduleMap.clear();
     isPaymentPresent = false;
-    categoryMap.clear();
-    _categoriesById.clear();
     paymentStatus = PaymentStatus.notPresent;
     _transactionHistory.clear();
     _isTransactionHistoryLoading = false;

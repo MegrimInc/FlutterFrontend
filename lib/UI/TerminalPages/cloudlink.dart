@@ -3,11 +3,12 @@
 import 'dart:async'; // Import the async package for Timer
 import 'dart:convert';
 import 'dart:io';
+import 'package:megrim/UI/TerminalPages/inventory.dart';
 import 'package:megrim/config.dart';
-import 'package:http/http.dart' as http;
 import 'package:megrim/DTO/terminalorder.dart';
 import 'package:megrim/UI/TerminalPages/select.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class CloudLinkPage extends StatefulWidget {
@@ -47,32 +48,9 @@ class _OrdersPageState extends State<CloudLinkPage>
     _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
       _updateLists();
     });
-  }
 
-  Future<double> fetchTipAmount() async {
-    String url =
-        "${AppConfig.postgresHttpBaseUrl}/order/getTotalGratuity?terminal=${widget.employeeId}&merchantId=${widget.merchantId}";
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {"Content-Type": "application/json"},
-        //body: jsonEncode(payload),
-      );
-
-      if (response.statusCode == 200) {
-        // Decode the JSON object from the backend
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        // Extract the tipTotal field and convert it to double if necessary
-        return (data['tipTotal'] as num).toDouble();
-      } else {
-        debugPrint(
-            "Error fetching tip amount. Status code: ${response.statusCode}");
-        return 0.0;
-      }
-    } catch (error) {
-      debugPrint("Error fetching tip amount: $error");
-      return 0.0;
-    }
+    final inventory = Provider.of<Inventory>(context, listen: false);
+    inventory.clearInventory();
   }
 
   void _updateLists() {
@@ -155,7 +133,7 @@ class _OrdersPageState extends State<CloudLinkPage>
             child: Text(
               order.name,
               style: const TextStyle(
-                  fontSize: 24,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.white), // Larger title
             ),
@@ -191,7 +169,7 @@ class _OrdersPageState extends State<CloudLinkPage>
                       child: const Text(
                         'Cancel',
                         style: TextStyle(
-                            fontSize: 20, color: Colors.white), // Larger text
+                            fontSize: 16, color: Colors.white), // Larger text
                       ),
                     ),
                     const SizedBox(
@@ -218,7 +196,7 @@ class _OrdersPageState extends State<CloudLinkPage>
                       child: const Text(
                         'Ready',
                         style: TextStyle(
-                            fontSize: 20, color: Colors.white), // Larger text
+                            fontSize: 16, color: Colors.white), // Larger text
                       ),
                     ),
                   ],
@@ -242,7 +220,7 @@ class _OrdersPageState extends State<CloudLinkPage>
             child: Text(
               order.name,
               style: const TextStyle(
-                  fontSize: 24,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.white), // Larger title
             ),
@@ -287,12 +265,12 @@ class _OrdersPageState extends State<CloudLinkPage>
                       child: const Text(
                         'Cancel',
                         style: TextStyle(
-                            fontSize: 20, color: Colors.white), // Larger text
+                            fontSize: 16, color: Colors.white), // Larger text
                       ),
                     ),
                     const SizedBox(
                         width:
-                            30), // Increased horizontal space between buttons
+                            20), // Increased horizontal space between buttons
                     ElevatedButton(
                       onPressed: () {
                         debugPrint("deliver");
@@ -326,7 +304,7 @@ class _OrdersPageState extends State<CloudLinkPage>
                       child: const Text(
                         'Deliver',
                         style: TextStyle(
-                            fontSize: 20, color: Colors.white), // Larger text
+                            fontSize: 16, color: Colors.white), // Larger text
                       ),
                     ),
                   ],
@@ -395,7 +373,7 @@ class _OrdersPageState extends State<CloudLinkPage>
                         Text(
                           order.name,
                           style: const TextStyle(
-                            fontSize: 21,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             shadows: [
@@ -411,9 +389,9 @@ class _OrdersPageState extends State<CloudLinkPage>
                         ),
                         const Spacer(),
                         Text(
-                          'Tip: \$${order.totalGratuity}',
+                          'tip: \$${order.totalGratuity}',
                           style: const TextStyle(
-                            fontSize: 21,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             shadows: [
@@ -443,7 +421,7 @@ class _OrdersPageState extends State<CloudLinkPage>
                                         TextSpan(
                                           text: '${itemData['itemName']} x ',
                                           style: const TextStyle(
-                                            fontSize: 22,
+                                            fontSize: 16,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
                                             shadows: [
@@ -459,7 +437,7 @@ class _OrdersPageState extends State<CloudLinkPage>
                                           text: '${itemData['quantity']}',
                                           style: const TextStyle(
                                             fontSize:
-                                                26, // 🔥 Bigger font for quantity
+                                                16, // 🔥 Bigger font for quantity
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
                                             shadows: [
@@ -486,12 +464,12 @@ class _OrdersPageState extends State<CloudLinkPage>
                         children: [
                           Text(
                             order.pointOfSale == 'cloudlink'
-                                ? '*CL'
-                                : (order.pointOfSale == 'cloudcats'
-                                    ? '*CC'
+                                ? 'link'
+                                : (order.pointOfSale == 'cloudcast'
+                                    ? 'cast'
                                     : order.pointOfSale),
                             style: const TextStyle(
-                                fontSize: 25,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                                 shadows: [
@@ -505,7 +483,7 @@ class _OrdersPageState extends State<CloudLinkPage>
                           Text(
                             formatElapsedTime(order.getAge()),
                             style: const TextStyle(
-                                fontSize: 25,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                                 shadows: [

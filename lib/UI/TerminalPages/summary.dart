@@ -61,102 +61,119 @@ class _SummaryPageState extends State<SummaryPage> {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    return SizedBox(
-      height: screenHeight * 0.8,
+    return Container(
+      height: screenHeight * 0.7,
       width: screenWidth,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.grey,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        child: _loading
-            ? const Center(
-                child: CircularProgressIndicator(color: Colors.white))
-            : _summaries.isEmpty
-                ? const Center(
-                    child: Text(
-                      "No data available.",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  )
-                : ListView.separated(
-                    itemCount: _summaries.length,
-                    separatorBuilder: (_, __) =>
-                        const Divider(color: Colors.white24),
-                    itemBuilder: (context, index) {
-                      final s = _summaries[index];
-                      final bool isYou = s.employeeId == widget.employeeId;
+       decoration: const BoxDecoration(
+              color: Colors.grey,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+      child: Column(
+        children: [
+           // Drag Bar
+          Container(
+              height: 7,
+              width: 50,
+              margin: const EdgeInsets.only(top: 10, bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              )),
 
-                      return Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white10,
-                          borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 8),
+          Container(
+             height: screenHeight * 0.70 - 45,
+              width: screenWidth,
+            padding: const EdgeInsets.only(left: 15, right: 15),
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.white))
+                : _summaries.isEmpty
+                    ? const Center(
+                        child: Text(
+                          "No data available.",
+                          style: TextStyle(color: Colors.white),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Left Column: name + labels
-                            Column(
+                      )
+                    : ListView.separated(
+                        itemCount: _summaries.length,
+                        separatorBuilder: (_, __) =>
+                            const Divider(color: Colors.white24),
+                        itemBuilder: (context, index) {
+                          final s = _summaries[index];
+                          final bool isYou = s.employeeId == widget.employeeId;
+          
+                          return Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.white24,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  s.name,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
+                                // Left Column: name + labels
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      s.name,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    SizedBox(height: 6),
+                                    Text("Revenue:",
+                                        style: TextStyle(color: Colors.white70)),
+                                    SizedBox(height: 6),
+                                    Text("Gratuity",
+                                        style: TextStyle(color: Colors.white70)),
+                                    SizedBox(height: 6),
+                                    Text("Points:",
+                                        style: TextStyle(color: Colors.white70)),
+                                  ],
                                 ),
-                                SizedBox(height: 6),
-                                Text("Revenue:",
-                                    style: TextStyle(color: Colors.white70)),
-                                SizedBox(height: 6),
-                                Text("Gratuity",
-                                    style: TextStyle(color: Colors.white70)),
-                                SizedBox(height: 6),
-                                Text("Points:",
-                                    style: TextStyle(color: Colors.white70)),
+          
+                                // Right Column: actual values
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      isYou ? "YOU" : "N/A",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: isYou
+                                            ? Colors.greenAccent
+                                            : Colors.redAccent,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text("\$${s.revenue.toStringAsFixed(2)}",
+                                        style:
+                                            const TextStyle(color: Colors.white70)),
+                                    const SizedBox(height: 6),
+                                    Text("\$${s.gratuity.toStringAsFixed(2)}",
+                                        style:
+                                            const TextStyle(color: Colors.white70)),
+                                    const SizedBox(height: 6),
+                                    Text("${s.points} pts",
+                                        style:
+                                            const TextStyle(color: Colors.white70)),
+                                  ],
+                                ),
                               ],
                             ),
-
-                            // Right Column: actual values
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  isYou ? "YOU" : "N/A",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: isYou
-                                        ? Colors.greenAccent
-                                        : Colors.redAccent,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text("\$${s.revenue.toStringAsFixed(2)}",
-                                    style:
-                                        const TextStyle(color: Colors.white70)),
-                                const SizedBox(height: 6),
-                                Text("\$${s.gratuity.toStringAsFixed(2)}",
-                                    style:
-                                        const TextStyle(color: Colors.white70)),
-                                const SizedBox(height: 6),
-                                Text("${s.points} pts",
-                                    style:
-                                        const TextStyle(color: Colors.white70)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
+                          );
+                        }),
+          ),
+        ],
       ),
     );
   }

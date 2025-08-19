@@ -140,7 +140,7 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
       height: screenHeight * .70,
       child: Column(
         children: [
-          // Drag Merchant
+          // Drag Bar
           Container(
               height: 7,
               width: 50,
@@ -818,6 +818,7 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
       }
 
       // Preload merchant data if you want the next page to feel instant
+      // ignore: use_build_context_synchronously
       final localDb = Provider.of<LocalDatabase>(context, listen: false);
       try {
         await localDb.fetchCategoriesAndItems(merchantId);

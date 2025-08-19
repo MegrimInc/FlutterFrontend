@@ -190,6 +190,19 @@ class Inventory extends ChangeNotifier {
 
   List<String> get allCategoryNames => _categoryItemMap.keys.toList();
 
+  List<Item> get allItemsSorted {
+  final list = _items.values.toList();
+  list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  return list;
+}
+
+// Return items filtered by a query (still A→Z)
+List<Item> searchItems(String query) {
+  final q = query.trim().toLowerCase();
+  if (q.isEmpty) return allItemsSorted;
+  return allItemsSorted.where((it) => it.name.trim().toLowerCase().startsWith(q)).toList();
+}
+
   void clearInventory() {
     _inventoryCart.clear();
     _inventoryOrder.clear();
