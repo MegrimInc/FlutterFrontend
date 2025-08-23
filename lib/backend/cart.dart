@@ -21,15 +21,15 @@ class Cart extends ChangeNotifier {
   double finalTotal = 0.0;
 
   // Set the current merchant Id and clear the cart when switching merchants
-  void setMerchant(int newMerchantId) {
+  Future<void> setMerchant(int newMerchantId) async {
     if (merchantId != newMerchantId) {
       merchantId = newMerchantId;
       merchantCart.clear(); // Clear the cart when switching merchants
       typeTotals.clear(); // Reset type totals
       lastAddedTypes.clear();
+      isDiscount = await LocalDatabase().checkDiscountScheduleForMerchant(newMerchantId);
       _fetchPointsForMerchant(newMerchantId);
       retrieveServiceFee();
-      isDiscount = LocalDatabase().isMerchantInDiscountSchedule(newMerchantId);
       recalculateCartTotals();
       notifyListeners();
     }

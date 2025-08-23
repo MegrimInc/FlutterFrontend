@@ -512,14 +512,14 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
                 SizedBox(width: MediaQuery.of(context).size.width * .025),
                 merchant?.image != null && merchant!.image!.isNotEmpty
                     ? CircleAvatar(
-                      radius: avatarRadius + 1,
-                      backgroundColor: Colors.white,
-                      child: CircleAvatar(
-                        backgroundImage:
-                            CachedNetworkImageProvider("$profileImage"),
-                        radius: avatarRadius,
-                      ),
-                    )
+                        radius: avatarRadius + 1,
+                        backgroundColor: Colors.white,
+                        child: CircleAvatar(
+                          backgroundImage:
+                              CachedNetworkImageProvider("$profileImage"),
+                          radius: avatarRadius,
+                        ),
+                      )
                     : CircleAvatar(
                         radius: avatarRadius + 1,
                         backgroundColor: Colors.white,
@@ -824,7 +824,8 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
         await localDb.fetchCategoriesAndItems(merchantId);
       } catch (_) {}
 
-      final cart = Cart()..setMerchant(merchantId);
+      final cart = Cart();
+      await cart.setMerchant(merchantId);
 
       if (transaction != null && transaction!.merchantId == merchantId) {
         debugPrint('Merchant IDs match, using transaction items (fast path)');
@@ -894,9 +895,13 @@ class _BlueTooth extends State<CloudPage> with WidgetsBindingObserver {
         );
       }).toList();
 
-      final cart = Cart();
-      cart.setMerchant(merchantId);
+      // final cart = Cart();
+      // cart.setMerchant(merchantId);
 
+      final cart = Cart();
+      await cart.setMerchant(merchantId);
+
+      // ignore: use_build_context_synchronously
       await Navigator.of(context).pushNamed(
         '/items',
         arguments: {

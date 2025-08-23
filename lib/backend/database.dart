@@ -30,7 +30,7 @@ class LocalDatabase with ChangeNotifier {
   }
 
   LocalDatabase._internal() {
-    updateAndCheckDiscountScheduleStatus();
+    //updateAndCheckDiscountScheduleStatus();
   }
 
   final Map<int, Merchant> _merchants = {};
@@ -85,7 +85,6 @@ class LocalDatabase with ChangeNotifier {
   void addMerchant(Merchant merchant) {
     if (merchant.merchantId != null) {
       _merchants[merchant.merchantId!] = merchant;
-      _checkDiscountScheduleForMerchant(merchant.merchantId!);
       notifyListeners();
       debugPrint(
           'Merchant with Id: ${merchant.merchantId} added by LocalDatabase instance: $hashCode.');
@@ -157,97 +156,97 @@ class LocalDatabase with ChangeNotifier {
     debugPrint('All points have been cleared.');
   }
 
-  void updateAndCheckDiscountScheduleStatus() async {
-    try {
-      // Fetch the current UTC time from an NTP server
-      DateTime now = (await NTP.now()).toUtc();
-      debugPrint("Current NTP UTC time: $now");
+  // void updateAndCheckDiscountScheduleStatus() async {
+  //   try {
+  //     // Fetch the current UTC time from an NTP server
+  //     DateTime now = (await NTP.now()).toUtc();
+  //     debugPrint("Current NTP UTC time: $now");
 
-      bool anyChanges = false;
+  //     bool anyChanges = false;
 
-      _merchants.forEach((merchantId, merchant) {
-        if (merchant.discountSchedule != null) {
-          String dayOfWeek = [
-            'Sunday',
-            'Monday',
-            'Tuesday',
-            'Wednesday',
-            'Thursday',
-            'Friday',
-            'Saturday'
-          ][now.weekday % 7];
+  //     _merchants.forEach((merchantId, merchant) {
+  //       if (merchant.discountSchedule != null) {
+  //         String dayOfWeek = [
+  //           'Sunday',
+  //           'Monday',
+  //           'Tuesday',
+  //           'Wednesday',
+  //           'Thursday',
+  //           'Friday',
+  //           'Saturday'
+  //         ][now.weekday % 7];
 
-          String? todayDiscountSchedule = merchant.discountSchedule![dayOfWeek];
-          bool isDiscount = false;
+  //         String? todayDiscountSchedule = merchant.discountSchedule![dayOfWeek];
+  //         bool isDiscount = false;
 
-          if (todayDiscountSchedule != null) {
-            debugPrint(
-                "Today's ($dayOfWeek) Discount Schedules for merchant Id $merchantId: $todayDiscountSchedule");
-            List<String> timeRanges = todayDiscountSchedule.split(" | ");
+  //         if (todayDiscountSchedule != null) {
+  //           debugPrint(
+  //               "Today's ($dayOfWeek) Discount Schedules for merchant Id $merchantId: $todayDiscountSchedule");
+  //           List<String> timeRanges = todayDiscountSchedule.split(" | ");
 
-            for (var range in timeRanges) {
-              List<String> schedule = range.split(" - ");
-              List<int> startTime =
-                  schedule[0].split(":").map((e) => int.parse(e)).toList();
-              List<int> endTime =
-                  schedule[1].split(":").map((e) => int.parse(e)).toList();
+  //           for (var range in timeRanges) {
+  //             List<String> schedule = range.split(" - ");
+  //             List<int> startTime =
+  //                 schedule[0].split(":").map((e) => int.parse(e)).toList();
+  //             List<int> endTime =
+  //                 schedule[1].split(":").map((e) => int.parse(e)).toList();
 
-              DateTime start = DateTime.utc(
-                now.year,
-                now.month,
-                now.day,
-                startTime[0],
-                startTime[1],
-              );
+  //             DateTime start = DateTime.utc(
+  //               now.year,
+  //               now.month,
+  //               now.day,
+  //               startTime[0],
+  //               startTime[1],
+  //             );
 
-              DateTime end = DateTime.utc(
-                now.year,
-                now.month,
-                now.day,
-                endTime[0],
-                endTime[1],
-              );
+  //             DateTime end = DateTime.utc(
+  //               now.year,
+  //               now.month,
+  //               now.day,
+  //               endTime[0],
+  //               endTime[1],
+  //             );
 
-              debugPrint(
-                  "Checking range - Merchant Id: $merchantId - Discount Schedule UTC start: $start, end: $end");
+  //             debugPrint(
+  //                 "Checking range - Merchant Id: $merchantId - Discount Schedule UTC start: $start, end: $end");
 
-              if ((now.isAfter(start) || now.isAtSameMomentAs(start)) &&
-                  (now.isBefore(end) || now.isAtSameMomentAs(end))) {
-                isDiscount = true;
-                debugPrint(
-                    "Merchant $merchantId is within Discount Schedule range.");
-                break;
-              }
-            }
-          }
+  //             if ((now.isAfter(start) || now.isAtSameMomentAs(start)) &&
+  //                 (now.isBefore(end) || now.isAtSameMomentAs(end))) {
+  //               isDiscount = true;
+  //               debugPrint(
+  //                   "Merchant $merchantId is within Discount Schedule range.");
+  //               break;
+  //             }
+  //           }
+  //         }
 
-          if (!isDiscount) {
-            debugPrint(
-                "Merchant Id: $merchantId is NOT within any Discount Schedule range.");
-          }
+  //         if (!isDiscount) {
+  //           debugPrint(
+  //               "Merchant Id: $merchantId is NOT within any Discount Schedule range.");
+  //         }
 
-          // Update Discount Schedule status if it has changed
-          if (_discountScheduleMap[merchantId] != isDiscount) {
-            _discountScheduleMap[merchantId] = isDiscount;
-            anyChanges = true;
-            debugPrint(
-                "Discount Schedule status updated for Merchant $merchantId to: $isDiscount");
-          }
-        }
-      });
+  //         // Update Discount Schedule status if it has changed
+  //         if (_discountScheduleMap[merchantId] != isDiscount) {
+  //           _discountScheduleMap[merchantId] = isDiscount;
+  //           anyChanges = true;
+  //           debugPrint(
+  //               "Discount Schedule status updated for Merchant $merchantId to: $isDiscount");
+  //         }
+  //       }
+  //     });
 
-      if (anyChanges) {
-        notifyListeners();
-        debugPrint(
-            "Discount Schedule status updated for one or more merchants.");
-      }
-    } catch (e) {
-      debugPrint("Failed to fetch NTP time: $e");
-    }
-  }
+  //     if (anyChanges) {
+  //       notifyListeners();
+  //       debugPrint(
+  //           "Discount Schedule status updated for one or more merchants.");
+  //     }
+  //   } catch (e) {
+  //     debugPrint("Failed to fetch NTP time: $e");
+  //   }
+  // }
 
   // New function to check Discount Schedule status for a specific merchant
-  Future<void> _checkDiscountScheduleForMerchant(int merchantId) async {
+  Future<bool> checkDiscountScheduleForMerchant(int merchantId) async {
     DateTime now = (await NTP.now()).toUtc();
     debugPrint(
         "Checking Discount Schedule status for merchant $merchantId at time $now");
@@ -309,10 +308,8 @@ class LocalDatabase with ChangeNotifier {
       debugPrint(
           "Discount Schedule status updated for merchant $merchantId to: $isDiscount");
     }
-  }
 
-  bool isMerchantInDiscountSchedule(int merchantId) {
-    return _discountScheduleMap[merchantId] ?? false;
+    return isDiscount;
   }
 
   Customer? _customer;

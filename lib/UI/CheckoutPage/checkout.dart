@@ -597,11 +597,12 @@ class CheckoutPageState extends State<CheckoutPage>
 
                           final isDiscount = cart.isDiscount;
 
-                          final price = (isDiscount
+                          final base = isDiscount
                               ? item.discountPrice
-                              : item.regularPrice +
-                                  item.regularPrice * item.taxPercent +
-                                  item.regularPrice * item.gratuityPercent);
+                              : item.regularPrice;
+                          final price = base +
+                              base * item.taxPercent +
+                              base * item.gratuityPercent;
 
                           final priceOrPoints = entry.key.contains("points")
                               ? "${(entry.value * item.pointPrice).toInt()} pts"
@@ -865,11 +866,8 @@ class CheckoutPageState extends State<CheckoutPage>
   }) {
     final isDiscount = cart.isDiscount;
     final item = LocalDatabase().getItemById(itemId);
-    final price = (isDiscount
-        ? item.discountPrice
-        : item.regularPrice +
-            item.regularPrice * item.taxPercent +
-            item.regularPrice * item.gratuityPercent);
+    final base = isDiscount ? item.discountPrice : item.regularPrice;
+    final price = base + base * item.taxPercent + base * item.gratuityPercent;
     // Update label with the dynamic price
     final updatedLabel = usePoints
         ? "$label:  ${item.pointPrice.toInt()} pts"

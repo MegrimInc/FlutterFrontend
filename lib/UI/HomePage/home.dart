@@ -542,7 +542,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       highlightColor: Colors.white,
                       period: Duration(milliseconds: 1500),
                       child: const Text(
-                        'Tap to Reorder',
+                        'TAP TO REORDER',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 15,
